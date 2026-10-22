@@ -1,0 +1,81 @@
+name: Enhanced budget focused draft QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/588-budget-focused-qa.yml'
+      - 'scripts/budget-rules-qa.mjs'
+      - 'src/lib/budgets.ts'
+      - 'src/components/BudgetRuleSettings.tsx'
+      - 'src/pages/ReportsPage.tsx'
+      - 'src/qa.tsx'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: budget-588-focused-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  actual-budget-chromium:
+    name: Subcategory carryover browser evidence
+    if: ${{ github.event.pull_request.draft == true && github.head_ref == 'feat/588-enhanced-budgets-batch-f' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Real responsive budget lifecycle assertions on primary Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev:web >/tmp/myfinhub-budget-vite.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill "$WEB_PID" 2>/dev/null || true' EXIT
+          app_ready=0
+          for i in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html >/dev/null; then app_ready=1; break; fi
+            sleep 1
+          done
+          if [ "$app_ready" -ne 1 ]; then cat /tmp/myfinhub-budget-vite.log; exit 1; fi
+          BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$BROWSER" ]; then echo "Primary Chromium unavailable"; exit 1; fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$BROWSER"
+          export MYFINHUB_UX_EVIDENCE_DIR=/tmp/myfinhub-budget-focused
+          # Repository-standard strict primary startup preflight, no fallback.
+          preflight_pass=0
+          for attempt in 1 2; do
+            rm -rf /tmp/myfinhub-budget-preflight
+            "$BROWSER" --headless=new --remote-debugging-port=9305 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/myfinhub-budget-preflight --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --no-default-browser-check about:blank >/tmp/myfinhub-budget-chrome.log 2>&1 &
+            CHROME_PID=$!
+            browser_ready=0
+            for i in {1..100}; do
+              if curl --fail --silent http://127.0.0.1:9305/json/version >/dev/null; then browser_ready=1; break; fi
+              if ! kill -0 "$CHROME_PID" 2>/dev/null; then break; fi
+              sleep .2
+            done
+            kill "$CHROME_PID" 2>/dev/null || true
+            wait "$CHROME_PID" 2>/dev/null || true
+            rm -rf /tmp/myfinhub-budget-preflight
+            if [ "$browser_ready" -eq 1 ]; then preflight_pass=1; break; fi
+            tail -c 1500 /tmp/myfinhub-budget-chrome.log || true
+            sleep .75
+          done
+          if [ "$preflight_pass" -ne 1 ]; then echo "Primary Chromium failed cold-start preflight"; exit 1; fi
+          node scripts/qa-script-runner.mjs scripts/budget-rules-qa.mjs
+      - name: Upload synthetic budget screenshots for assistant visual inspection
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: myfinhub-focused-budgets-${{ github.event.pull_request.head.sha }}
+          path: /tmp/myfinhub-budget-focused/*.png
+          if-no-files-found: warn
+          retention-days: 14
