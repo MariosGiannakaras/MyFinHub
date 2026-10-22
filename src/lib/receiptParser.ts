@@ -160,18 +160,4 @@ export function parseReceiptText(text: string, ocrConfidence = 0): ReceiptPropos
   return proposal;
 }
 
-export function suggestReceiptCategory(data: FinanceData, merchant?: string) {
-  const key = fold(merchant ?? '');
-  if (!key) return undefined;
-  const rows = (data.state.events ?? []).filter((event) => {
-    if (event.kind !== 'expense' || !event.category) return false;
-    const note = fold(event.note ?? '');
-    return note === key || note.includes(key) || key.includes(note);
-  });
-  if (rows.length < 2) return undefined;
-  const counts = new Map<string, number>();
-  for (const row of rows) counts.set(row.category!, (counts.get(row.category!) ?? 0) + 1);
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-  if (!best) return undefined;
-  return best[1] / rows.length >= 0.6 ? best[0] : undefined;
-}
+export { suggestReceiptCategory } from './reviewedMerchantSignals.js';
