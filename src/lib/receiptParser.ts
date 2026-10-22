@@ -151,6 +151,7 @@ export function parseReceiptText(text: string, ocrConfidence = 0): ReceiptPropos
   const items=receiptItemCandidates(lines,proposal.total,normalizedOcr);
   if(items.length){
     proposal.items=items;
+    proposal.itemsCurrency=currency;
     if(proposal.total!==undefined){
       const totalCents=items.reduce((sum,item)=>sum+Math.round(item.amount*100),0);
       proposal.itemsBalanced=totalCents===Math.round(proposal.total*100);

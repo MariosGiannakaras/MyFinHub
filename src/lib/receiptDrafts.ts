@@ -25,6 +25,8 @@ export type ReceiptProposal = {
   accountId?: string;
   /** Untrusted, locally detected item suggestions; not posted financial events. */
   items?: ReceiptItemProposal[];
+  /** Currency printed on the original OCR item lines, even after EUR total correction. */
+  itemsCurrency?: string;
   /** Whether OCR item cents sum to the explicit grand total; never an auto-save approval. */
   itemsBalanced?: boolean;
   confidence?: ReceiptFieldConfidence;

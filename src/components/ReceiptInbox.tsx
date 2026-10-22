@@ -13,6 +13,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { normalizeReceiptFile } from '../lib/receiptImage';
 import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
+import { normalizeReceiptLineReview } from '../lib/receiptItemReview';
 import { findReceiptPurchaseCandidates } from '../lib/receiptPurchaseMatches';
 import {
   createReceiptDraft,
@@ -113,6 +114,7 @@ export function ReceiptInbox({
   const [error, setError] = useState('');
   const [reviewProposal,setReviewProposal]=useState<ReceiptProposal|null>(null);
   const [reviewTotal,setReviewTotal]=useState('');
+  const [reviewItemAmounts,setReviewItemAmounts]=useState<Record<string,string>>({});
   const [reviewDirty,setReviewDirty]=useState(false);
   const [reviewTotalEdited,setReviewTotalEdited]=useState(false);
   const [reviewSaving,setReviewSaving]=useState(false);
@@ -124,6 +126,10 @@ export function ReceiptInbox({
   const selected = useMemo(() => drafts.find((draft) => draft.id === selectedId) ?? null, [drafts, selectedId]);
   // Advisory only: calculate candidates from the owner's current review edits,
   // never alter transactions or associate receipts without a separate action.
+  const lineReview=useMemo(
+    ()=>reviewProposal?normalizeReceiptLineReview(reviewProposal,reviewItemAmounts,reviewTotal):null,
+    [reviewProposal,reviewItemAmounts,reviewTotal]
+  );
   const purchaseMatches=useMemo(()=>{
     if(!reviewProposal)return [];
     const totalText=reviewTotal.trim();
@@ -137,6 +143,7 @@ export function ReceiptInbox({
     const proposal=selected?.proposal;
     setReviewProposal(proposal?{...proposal}:null);
     setReviewTotal(typeof proposal?.total==='number'?String(proposal.total):'');
+    setReviewItemAmounts(Object.fromEntries((proposal?.items??[]).map(item=>[item.id,String(item.amount)])));
     setReviewDirty(false);
     setReviewTotalEdited(false);
   },[selected?.id,selected?.updatedAt]);
@@ -261,8 +268,23 @@ export function ReceiptInbox({
     setMessage('');
     setError('');
   };
+  const updateReviewLine=(id:string,patch:Partial<NonNullable<ReceiptProposal['items']>[number]>)=>{
+    if(!reviewProposal?.items)return;
+    updateReview({items:reviewProposal.items.map(item=>item.id===id?{...item,...patch}:item)});
+  };
+  const addReviewLine=()=>{
+    if(!reviewProposal||(reviewProposal.items?.length??0)>=40)return;
+    const id=typeof crypto?.randomUUID==='function'?crypto.randomUUID():`manual-line-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    updateReview({items:[...(reviewProposal.items??[]),{id,description:'',amount:0,confidence:0}]});
+    setReviewItemAmounts(current=>({...current,[id]:''}));
+  };
+  const removeReviewLine=(id:string)=>{
+    if(!reviewProposal)return;
+    updateReview({items:(reviewProposal.items??[]).filter(item=>item.id!==id)});
+    setReviewItemAmounts(current=>{const next={...current};delete next[id];return next});
+  };
   const normalizedReview=()=>{
-    if(!reviewProposal)return null;
+    if(!reviewProposal||!lineReview?.valid)return null;
     const totalText=reviewTotal.trim();
     const parsedTotal=totalText===''?undefined:Number(totalText);
     if(parsedTotal!==undefined&&(!Number.isFinite(parsedTotal)||parsedTotal<0))return null;
@@ -276,6 +298,11 @@ export function ReceiptInbox({
       currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEurAmount?reviewProposal.currency:'EUR',
       category:reviewProposal.category?.trim()||undefined,
       subcategory:reviewProposal.subcategory?.trim()||undefined,
+      items:lineReview.items,
+      // Foreign OCR amounts must not be silently reinterpreted as EUR splits.
+      itemsBalanced:(reviewProposal.itemsCurrency??reviewProposal.currency) &&
+        (reviewProposal.itemsCurrency??reviewProposal.currency)!=='EUR'
+        ?undefined:lineReview.balanced,
     } satisfies ReceiptProposal;
   };
   const saveReview=async(apply=false)=>{
@@ -302,6 +329,9 @@ export function ReceiptInbox({
   const nonEur = Boolean(reviewed?.currency && reviewed.currency !== 'EUR');
   const reviewTotalInvalid=Boolean(reviewTotal.trim()&&(!Number.isFinite(Number(reviewTotal))||Number(reviewTotal)<0));
   const needsEurTotal=nonEur&&!(reviewTotalEdited&&reviewTotal.trim()!==''&&Number.isFinite(Number(reviewTotal))&&Number(reviewTotal)>0);
+  const reviewLinesInvalid=Boolean(lineReview&&!lineReview.valid);
+  const linesForeign=Boolean((reviewed?.itemsCurrency??proposal?.currency)&&
+    (reviewed?.itemsCurrency??proposal?.currency)!=='EUR');
   const scanning = Boolean(scanningId);
   const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 
@@ -344,7 +374,22 @@ export function ReceiptInbox({
               <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewDirty(true);setMessage('');setError('')}}/></label>
 
               <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} subcategory={reviewed.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας ή υποκατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
-            </div>{reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{needsEurTotal ? <div className="receipt-currency-warning" role="alert">Το OCR αναγνώρισε {reviewed.currency} στην απόδειξη. Η καταχώριση γίνεται μόνο σε €. Διόρθωσε το ποσό σε ευρώ πριν συνεχίσεις.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
+            </div>
+            {reviewed.items?.length ? <section className="receipt-items-review" aria-label="Επεξεργασία γραμμών απόδειξης">
+              <h4>Γραμμές απόδειξης</h4>
+              <p>Τα OCR ποσά είναι προτάσεις. Έλεγξέ τα πριν από οποιαδήποτε καταχώριση· δεν δημιουργούν αυτόματα δαπάνες.</p>
+              <div className="receipt-items-list">{reviewed.items.map((item,index)=><div key={item.id} className="receipt-item-row">
+                <label><span>Περιγραφή γραμμής {index+1}</span><AppTextInput value={item.description} maxLength={90} aria-label={`Διόρθωση περιγραφής γραμμής ${index+1}`} onChange={event=>updateReviewLine(item.id,{description:event.target.value})}/></label>
+                <label><span>Ποσό γραμμής {index+1}</span><MoneyInput value={reviewItemAmounts[item.id]??String(item.amount)} aria-label={`Διόρθωση ποσού γραμμής ${index+1}`} onValueChange={value=>{setReviewItemAmounts(current=>({...current,[item.id]:value}));setReviewDirty(true);setError('');setMessage('')}}/></label>
+                <label className="receipt-item-category"><span>Κατηγορία γραμμής {index+1}</span><CategorySelectInput settings={data.state.settings} kind="expense" category={item.category??''} subcategory={item.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label={`Κατηγορία γραμμής ${index+1}`} onChange={selection=>updateReviewLine(item.id,{category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
+                <Button type="button" variant="ghost" className="danger" onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής {index+1}</Button>
+              </div>)}</div>
+              {reviewLinesInvalid?<FormError id="receipt-review-items-error">Κάθε γραμμή χρειάζεται περιγραφή και θετικό ποσό με ακρίβεια λεπτού.</FormError>:null}
+              {linesForeign?<p className="receipt-item-balance">Οι γραμμές προέρχονται από απόδειξη σε άλλο νόμισμα. Δεν υπολογίζονται ως ευρώ ούτε χρησιμοποιούνται αυτόματα για κατανομή δαπάνης.</p>:
+                <p className="receipt-item-balance" aria-live="polite">Σύνολο γραμμών: {(lineReview?.sumCents??0)/100} € · Σύνολο απόδειξης: {lineReview?.totalCents===null?'—':`${lineReview.totalCents/100} €`} · Διαφορά: {lineReview?.totalCents===null?'—':`${(lineReview.totalCents-(lineReview.sumCents??0))/100} €`}{lineReview?.balanced?' · Συμφωνεί':' · Χρειάζεται έλεγχο'}</p>}
+            </section> : null}
+            <Button type="button" variant="secondary" disabled={(reviewed.items?.length??0)>=40} onClick={addReviewLine}>Προσθήκη γραμμής</Button>
+            {reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{needsEurTotal ? <div className="receipt-currency-warning" role="alert">Το OCR αναγνώρισε {reviewed.currency} στην απόδειξη. Η καταχώριση γίνεται μόνο σε €. Διόρθωσε το ποσό σε ευρώ πριν συνεχίσεις.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
             {purchaseMatches.length ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
               <h3>Έλεγξε αν έχει ήδη καταχωριστεί η αγορά</h3>
               <p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>
@@ -354,8 +399,8 @@ export function ReceiptInbox({
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
               <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
-              {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
-              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
+              {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid||reviewLinesInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
+              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>
