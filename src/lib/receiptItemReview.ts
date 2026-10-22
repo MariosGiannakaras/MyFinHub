@@ -34,7 +34,7 @@ export function normalizeReceiptLineReview(proposal:ReceiptProposal,amounts:Reco
 
 /** Only owner-confirmed original EUR cents in live categories may enter a split draft. */
 export function receiptSplitParts(proposal:ReceiptProposal,settings:FinanceSettings):SplitPart[]|null{
-  if(proposal.currency!=='EUR'||(proposal.itemsCurrency&&proposal.itemsCurrency!=='EUR'))return null;
+  if(proposal.currency!=='EUR'||proposal.itemsCurrency!=='EUR')return null;
   if(!proposal.items||proposal.items.length<2||proposal.items.length>40)return null;
   const normalized=normalizeReceiptLineReview(proposal,
     Object.fromEntries(proposal.items.map(item=>[item.id,String(item.amount)])),String(proposal.total??''));

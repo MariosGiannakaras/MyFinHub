@@ -278,7 +278,9 @@ export function ReceiptInbox({
   const addReviewLine=()=>{
     if(!reviewProposal||(reviewProposal.items?.length??0)>=40)return;
     const id=typeof crypto?.randomUUID==='function'?crypto.randomUUID():`manual-line-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    updateReview({items:[...(reviewProposal.items??[]),{id,description:'',amount:0,confidence:0}]});
+    // Explicit owner-added lines inherit EUR only from a known EUR receipt.
+    updateReview({items:[...(reviewProposal.items??[]),{id,description:'',amount:0,confidence:0}],
+      itemsCurrency:reviewProposal.currency==='EUR'&&!reviewProposal.itemsCurrency?'EUR':reviewProposal.itemsCurrency});
     setReviewItemAmounts(current=>({...current,[id]:''}));
   };
   const removeReviewLine=(id:string)=>{

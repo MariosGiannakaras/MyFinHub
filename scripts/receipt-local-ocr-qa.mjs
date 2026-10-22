@@ -261,6 +261,31 @@ try {
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'reviewed OCR line local save receipt');
   const localLines=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').getAll();req.onsuccess=()=>{const p=req.result[0]?.proposal;db.close();resolve({count:p?.items?.length??0,sum:p?.items?.reduce((n,x)=>n+Math.round(x.amount*100),0),balanced:p?.itemsBalanced})};req.onerror=()=>reject(req.error)};request.onerror=()=>reject(request.error)})}`);
   assert(localLines.count===2&&localLines.sum===2450&&localLines.balanced===true,`exact 2450 cents stored only as owner-reviewed local proposal: ${JSON.stringify(localLines)}`);
+  console.log('Receipt OCR QA: reviewed categories open one canonical split, without posting money');
+  for(let i=0;i<2;i++){
+    const chosen=await c.call("function(index){const select=[...document.querySelectorAll('.receipt-item-category select')][index];if(!select)return false;const option=[...select.options].find(o=>o.value&&!o.disabled);if(!option)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(select,option.value);select.dispatchEvent(new Event('change',{bubbles:true}));return option.value}",[i]);
+    assert(chosen,`full taxonomy option present on receipt item ${i+1}`);
+    await waitFor("function(index,value){return [...document.querySelectorAll('.receipt-item-category select')][index]?.value===value}",'category review selection',[i,chosen]);
+    await sleep(70);
+  }
+  const possibleExisting=await c.call("function(){const c=document.querySelector('.receipt-existing-confirm input');if(!c)return false;c.click();return true}");
+  if(possibleExisting)await waitFor("function(){return document.querySelector('.receipt-existing-confirm input')?.checked===true}",'explicit duplicate review confirmation');
+  await waitFor("function(){const node=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση ως επιμερισμένη δαπάνη'));return Boolean(node&&!node.disabled)}",'owner-reviewed split becomes available');
+  await screenshot('receipt-reviewed-split-ready-desktop');
+  const handoff=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση ως επιμερισμένη δαπάνη'));if(!button||button.disabled)return false;button.click();return true}");
+  assert(handoff,'owner explicitly chose reviewed receipt split');
+  await waitFor("function(){const dialog=document.querySelector('.quick-modal:not(.contextual-quick-modal)');return Boolean(dialog&&!document.querySelector('.receipt-inbox')&&dialog.querySelector('.generic-kind-grid [aria-pressed=\"true\"]')?.textContent?.includes('Σύνθετη αγορά'))}",'existing canonical split Quick Entry handoff');
+  const prefill=await c.call("function(){const m=document.querySelector('.quick-modal:not(.contextual-quick-modal)');return {parts:m?.querySelectorAll('.split-line-taxonomy').length??0,amounts:[...(m?.querySelectorAll('input[aria-label^=\"Ποσό μέρους\"]')||[])].map(x=>x.value),notes:[...(m?.querySelectorAll('input[aria-label^=\"Περιγραφή μέρους\"]')||[])].map(x=>x.value)}}");
+  assert(prefill.parts===2&&prefill.amounts.join(',')==='20.25,4.25'&&prefill.notes[0]==='QA τοπικό προϊόν 1',`verified receipt split prefill: ${JSON.stringify(prefill)}`);
+  assert((await receiptCount())===1,'split handoff alone preserves local receipt until durable save');
+  await screenshot('receipt-reviewed-split-quick-entry');
+  const cancelled=await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(n=>(n.textContent||'').trim()==='Ακύρωση');b?.click();return Boolean(b)}");
+  assert(cancelled,'split Quick Entry cancellation available');
+  await waitFor("function(){return !document.querySelector('.quick-modal:not(.contextual-quick-modal)')}",'cancelled split Quick Entry closes');
+  assert((await receiptCount())===1,'cancelled split never deletes the receipt');
+  await openReceiptInbox();
+  await waitFor("function(){return document.querySelectorAll('.receipt-item-row').length===2}",'receipt remains editable after split cancellation');
+
 
   console.log('Receipt OCR QA: foreign OCR cannot be applied without explicit corrected EUR amount');
   const changedCurrency=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readwrite');const store=tx.objectStore('receipts');const all=store.getAll();all.onsuccess=()=>{const row=all.result[0];if(!row?.proposal){db.close();resolve(false);return}store.put({...row,proposal:{...row.proposal,currency:'USD',itemsCurrency:'USD'},updatedAt:new Date(Date.now()+1000).toISOString()})};tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};request.onerror=()=>reject(request.error)})}`);

@@ -14,7 +14,7 @@ describe('owner-confirmed receipt split into canonical QuickAdd',()=>{
   expect(base.items![0].id).toBe('ocr-1');
  });
  it('rejects mismatch, unknown or foreign currency and retired category/subcategory',()=>{
-  for(const p of [{...base,total:.31},{...base,currency:'USD'},{...base,itemsCurrency:'USD'},{...base,currency:undefined},
+  for(const p of [{...base,total:.31},{...base,currency:'USD'},{...base,itemsCurrency:'USD'},{...base,itemsCurrency:undefined},{...base,currency:undefined},
    {...base,items:[{...base.items![0],category:'Άγνωστο'},base.items![1]]},
    {...base,items:[{...base.items![0],subcategory:'Άγνωστο'},base.items![1]]}])
     expect(receiptSplitParts(p,settings)).toBeNull();
