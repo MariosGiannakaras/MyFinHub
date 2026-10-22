@@ -1,5 +1,19 @@
 # Release-readiness automation checkpoint
 
+
+## Unified CI orchestration (owner-approved, 2026-10-21, issue #598)
+
+The canonical **`.github/workflows/ci.yml`** is the central pull-request / `develop` / `main` CI entrypoint. **Protected-code-scanning compatibility:** the enforced GitHub CodeQL ruleset still requires a direct `pull_request` analysis; until it recognizes scans from reusable workflows, `.github/workflows/codeql.yml` also runs that independent security scan on PRs. The central gate retains its own required nested CodeQL result. This deliberate duplicate must not be removed by bypassing or weakening the security ruleset. It runs existing checks as parallel reusable jobs, without cloning or weakening their commands: source/hygiene/type/build/unit/audit/Chromium rendered QA; CodeQL; pinned Playwright/WebKit; production-mode Lighthouse and loading-shift; Windows Desktop package/installer; Windows first-run; and clean-launch.
+
+- Draft PR: run core source/build/unit/audits and CodeQL. Expensive browser, performance and Windows jobs are explicitly deferred.
+- Ready PR or integration push: every required job runs on the same source ref and the `CI / Unified required gate` job fails closed for failed, cancelled or missing required results. All ordinary checks should appear under this one workflow, not as duplicate independent PR jobs.
+- Optional Final Visual: add the `final-visual-qa` PR label for a final accepted review head (triggers the unified workflow), or dispatch `CI` with `final_visual=true`. It waits for required jobs to pass, captures the established 216-image matrix, validates the count, uploads a 30-day artifact, and **does not commit or push PNGs**.
+- Manual diagnostic invocations and the independently scheduled weekly CodeQL scan remain available. The controlled Windows `myfinhub-v*` release tag publishing workflow remains separate, requires `main` ancestry and the existing installer gates, and is never invoked for normal PRs.
+- Existing branch-protection rules may reference the former separate workflow contexts. The owner/administrator must migrate required status checks to `CI / Unified required gate` **after** the new workflow passes on a real Ready PR and before deleting any old protections. Do not bypass protections or prematurely declare integration success.
+- The 2026-10-21 visual screenshot commit produced by the superseded workflow remains historical review evidence; new final screenshot runs are artifact-only. Ordinary screenshot-only PR updates remain excluded by the `visual-qa/**` ignore rule.
+
+The historical #165/#182 instructions below describe the previous split workflow configuration; the unified model above supersedes those trigger/cadence details without changing their functional test contracts.
+
 This document records the repository/CI evidence used for MyFinHub release-readiness tracking. Issue #165 is complete and closed. Human-only physical-device, assistive-technology and browser-owned visual checks are not repository completion gates.
 
 ## Current integration baseline
