@@ -27,10 +27,10 @@ drop index if exists private.rheomiq_budgets_logical_key_idx;
 create unique index rheomiq_budgets_logical_key_idx
   on private.rheomiq_budgets (
     owner_user_id, month_key, scope, coalesce(category,''),
-    case when scope='subcategory'
+    (case when scope='subcategory'
       then coalesce(nullif(btrim(payload->>'subcategory'),''),'')
       else ''
-    end
+    end)
   );
 
 commit;

@@ -13,6 +13,8 @@ describe('#588 forward-only relational budget expansion',()=>{
     expect(migration).toContain('create unique index rheomiq_budgets_logical_key_idx');
     expect(migration).toContain("owner_user_id, month_key, scope, coalesce(category,'')");
     expect(migration).toContain("case when scope='subcategory'");
+    // PostgreSQL CREATE INDEX requires a CASE expression to be parenthesized.
+    expect(migration).toMatch(/\(case when scope='subcategory'[\s\S]*?end\)/);
     expect(migration).toContain("else ''");
     expect(migration).not.toMatch(/delete\s+from|truncate\s+|drop\s+table|disable\s+row\s+level\s+security/i);
   });
