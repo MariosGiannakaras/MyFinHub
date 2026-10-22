@@ -9,11 +9,14 @@ describe('QuickAdd shared action primitive ownership',()=>{
   it('moves generic dialog and split-part text actions to shared primitives',()=>{
     expect(quickAdd).toContain("from './Button'");
     expect(quickAdd).toContain("from './IconButton'");
-    expect(quickAdd.match(/<Button/g)).toHaveLength(3);
+    expect(quickAdd.match(/<Button/g)).toHaveLength(4);
+    // The new funding-row action reuses the existing ghost primitive.
+    expect(quickAdd.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
+    expect(quickAdd).toContain('disabled={fundingRows.length>=12}');
+    expect(quickAdd).toContain('>+ Προσθήκη πηγής</Button>');
     expect(quickAdd.match(/<IconButton/g)).toHaveLength(1);
     expect(quickAdd.match(/<Button[^>]+variant="primary"/g)).toHaveLength(1);
     expect(quickAdd.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
-    expect(quickAdd.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(1);
     expect(quickAdd).toContain('<IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}>');
     expect(quickAdd).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
     expect(quickAdd).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
@@ -24,7 +27,10 @@ describe('QuickAdd shared action primitive ownership',()=>{
   });
 
   it('keeps QuickAdd domain and composite choices raw',()=>{
-    expect(quickAdd.match(/<button/g)).toHaveLength(3);
+    expect(quickAdd.match(/<button/g)).toHaveLength(4);
+    // Funding-row removal is a domain choice, not another custom button style.
+    expect(quickAdd).toContain('aria-label={`Αφαίρεση πηγής ${index+1}`}');
+    expect(quickAdd).toContain('disabled={fundingRows.length<=2}');
     expect(quickAdd).toContain('className="kind-grid generic-kind-grid"');
     expect(quickAdd).toContain('genericKinds.map(k=><button type="button"');
     expect(quickAdd).toContain('className="frequent-strip"');

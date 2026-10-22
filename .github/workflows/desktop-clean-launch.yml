@@ -1,39 +1,8 @@
 name: Windows Clean Launch
 
 on:
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - desktop/**
-      - server/**
-      - tests/desktop-*.test.ts
-      - package.json
-      - package-lock.json
-      - vite.config.ts
-      - tsconfig.json
-      - tsconfig.app.json
-      - tsconfig.node.json
-      - scripts/sync-ocr-assets.mjs
-      - scripts/bundle-budget.mjs
-      - .nvmrc
-      - .github/workflows/desktop-clean-launch.yml
-  push:
-    branches: [develop]
-    paths:
-      - desktop/**
-      - server/**
-      - tests/desktop-*.test.ts
-      - package.json
-      - package-lock.json
-      - vite.config.ts
-      - tsconfig.json
-      - tsconfig.app.json
-      - tsconfig.node.json
-      - scripts/sync-ocr-assets.mjs
-      - scripts/bundle-budget.mjs
-      - .nvmrc
-      - .github/workflows/desktop-clean-launch.yml
+  workflow_call:
+  workflow_dispatch:
 
 concurrency:
   group: desktop-clean-launch-${{ github.ref }}

@@ -165,8 +165,10 @@ try{
   await openGlobalQuickEntry();
   await clickText('.generic-kind-grid button','Διόρθωση');
   const reconciliationActual=await c.call("function(){const text=document.querySelector('.reconcile-preview b')?.textContent||'';const normalized=text.replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,'');const base=Number(normalized);return Number.isFinite(base)?(base+1).toFixed(2):'1.00'}");
-  await setByLabel('Πραγματικό υπόλοιπο',reconciliationActual);
+  await setByLabel('Επαληθευμένο υπόλοιπο',reconciliationActual);
   await setByLabel('Σχόλιο','QA Generic Reconciliation');
+  const ownerConfirmed=await c.call("function(){const box=document.querySelector('.quick-modal .quick-field input[type=checkbox]');box?.click();return Boolean(box?.checked)}");
+  assert(ownerConfirmed,'owner approves verified date-specific bank balance adjustment');
   await clickText('.quick-modal footer button','Καταχώριση');
   await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=reconciliation][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Reconciliation'))}",'generic reconciliation created');
   await shot('generic-quick-entry-intents');

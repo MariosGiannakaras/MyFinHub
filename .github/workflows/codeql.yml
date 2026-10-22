@@ -1,12 +1,10 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main, develop]
+  workflow_call:
+  # Compatibility scan for enforced CodeQL ruleset on PRs.
   pull_request:
     branches: [main, develop]
-    paths-ignore:
-      - 'visual-qa/**'
   schedule:
     - cron: '17 4 * * 1'
 
