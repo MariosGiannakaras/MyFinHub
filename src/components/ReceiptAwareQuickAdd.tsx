@@ -1,11 +1,11 @@
 import { ReceiptText } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteReceiptDraft, type ReceiptProposal } from '../lib/receiptDrafts';
 import { receiptSplitParts } from '../lib/receiptItemReview';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
 import { QuickAdd, type QuickPrefill } from './QuickAdd';
-import { ReceiptInbox } from './ReceiptInbox';
+const ReceiptInbox=lazy(async()=>({default:(await import('./ReceiptInbox')).ReceiptInbox}));
 
 export function ReceiptAwareQuickAdd({
   open,
@@ -107,6 +107,6 @@ export function ReceiptAwareQuickAdd({
       />
       {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
     </> : null}
-    <ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/>
+    {receiptOpen?<Suspense fallback={<div className="modal-backdrop receipt-inbox-backdrop" role="status" aria-live="polite">Φόρτωση αποδείξεων…</div>}><ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/></Suspense>:null}
   </>;
 }

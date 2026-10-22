@@ -1,3 +1,4 @@
+import '../styles/receipt-inbox.css';
 import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppDateInput } from './AppDateInput';
