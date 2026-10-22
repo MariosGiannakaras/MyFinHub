@@ -860,6 +860,65 @@ async function main(){
     const serviceObjectsAfterDelete=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterDelete.length===initialServiceObjects.length,'Recurring service asset Storage object survived reference-aware purge.');
 
+
+    // Owner-controlled variable estimates are the same revisioned Recurring
+    // model; they are never generated as booked finance expense events.
+    console.log('[real-stack] stage variable-recurring-real-db-roundtrip');
+    const varBefore=await primary.request('/api/data');
+    expect(varBefore,200,undefined,'variable-before');
+    const varHistory=await primary.request('/api/history');
+    expect(varHistory,200,undefined,'variable-history-before');
+    const varState=structuredClone(varBefore.body.data.state);
+    const existingEventCount=(varState.events||[]).length;
+    varState.recurringCustom=varState.recurringCustom.map((row:any)=>row.id===serviceId?
+      {...row,amount:80,amountMode:'variable',estimateMin:60,estimateMax:100}:row);
+    assert(varState.recurringCustom.some((row:any)=>row.id===serviceId&&row.amountMode==='variable'),
+      'Synthetic recurring row missing before variable range save.');
+    const varSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(varBefore.body.revision),
+        'x-rheomiq-history-generation':String(varHistory.body.generation)},
+      body:{state:varState,updatedAt:new Date().toISOString(),historyLabel:'Owner confirmed variable recurring estimate'},
+    });
+    expect(varSave,200,undefined,'variable-save');
+    const varReload=await restored.request('/api/data');
+    expect(varReload,200,undefined,'variable-second-session-reload');
+    assert(varReload.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===80&&row.amountMode==='variable'&&
+      row.estimateMin===60&&row.estimateMax===100),
+      'Variable estimated recurring range did not persist through real relational storage.');
+    assert((varReload.body?.data?.state?.events||[]).length===existingEventCount,
+      'Variable recurring estimate posted a phantom ledger event.');
+    const varStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(varBefore.body.revision),
+        'x-rheomiq-history-generation':String(varHistory.body.generation)},
+      body:{state:varState,updatedAt:new Date().toISOString(),historyLabel:'Stale estimate writer'},
+    });
+    assert(varStale.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(varStale.body?.code||'')),
+      'Stale variable recurring writer bypassed finance revision guard.');
+    const varUndo=await primary.request('/api/history/undo',{method:'POST',
+      headers:{'if-match':String(varSave.body.revision),
+        'x-rheomiq-history-generation':String(varSave.body.history.generation)},body:{}});
+    expect(varUndo,200,undefined,'variable-undo');
+    assert(varUndo.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===12&&row.amountMode===undefined),
+      'Undo did not restore the prior fixed recurring amount.');
+    const varRedo=await primary.request('/api/history/redo',{method:'POST',
+      headers:{'if-match':String(varUndo.body.revision),
+        'x-rheomiq-history-generation':String(varUndo.body.history.generation)},body:{}});
+    expect(varRedo,200,undefined,'variable-redo');
+    assert(varRedo.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===80&&row.amountMode==='variable'&&
+      row.estimateMin===60&&row.estimateMax===100),
+      'Redo did not restore the saved variable recurring estimate.');
+    const varRestored=await primary.request('/api/history/undo',{method:'POST',
+      headers:{'if-match':String(varRedo.body.revision),
+        'x-rheomiq-history-generation':String(varRedo.body.history.generation)},body:{}});
+    expect(varRestored,200,undefined,'variable-final-undo');
+    assert((varRestored.body?.data?.state?.events||[]).length===existingEventCount,
+      'Variable estimate undo/redo changed the posted event count.');
+
     console.log('[real-stack] stage provider-storage-registration-failure-cleanup');
     const missingProviderId='real-stack-missing-provider';
     const missingProviderPrefix='providers/'+missingProviderId;
