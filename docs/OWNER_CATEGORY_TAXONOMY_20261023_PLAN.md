@@ -26,5 +26,14 @@ Owner approved **20 expense categories and 6 income categories** (final Greek si
 
 ## Checkpoint
 Branch: `feat/20261023-owner-category-taxonomy` from develop@9ec6730b4abe6bc86a9098565a3378b87693be94.
-Current validation: not yet run.
-Exact next action: implement source contract and targeted tests, verify authorized DB write path; avoid unguarded live SQL.
+Implementation staged (not yet accepted):
+- Exact 20/6 taxonomy tree and pure identity-preserving migration: `src/lib/ownerApprovedTaxonomy.ts`.
+- Added authenticated owner-confirmed Settings action that persists via existing `onFinanceDurably` and audited revision/history-protected RPC.
+- Recurring category/subcategory persisted in model and carried into one linked payment event.
+- Expense-per-installment payment takes selected purpose; liability repayment and self-loan flow unchanged; legacy fallback is neutral `Άλλο`.
+- Generic finance defaults no longer infer transaction purpose from owner frequency order; added tests for linked payments and staged taxonomy.
+- Live SQL connection: `auth.uid() IS NULL`, `rheomiq_is_owner_aal2()=false`. **No live DB write performed**, as direct SQL would bypass required owner+AAL2, history generation, atomic relational state, and audit.
+- PR #596 also edits `src/types.ts` and `server/validation.ts`; its advanced budget code belongs to separate workstream. Rebase/reconcile these additive changes explicitly on integration; do not overwrite either PR.
+- Source patches reviewed via GitHub diff; full typecheck, Vitest, rendered QA and CI have not run in this environment. No physical-device gate required.
+
+Exact next action: mark PR #600 Ready for Review and run required exact-head CI/rendered/security/Windows matrix. Inspect failures/artifacts before corrections and leave draft if gates fail. After reviewed deployment, open the app with owner+AAL2 and use Settings > Categories > Apply Approved Taxonomy; verify 20/6, identity aliases, linked recurring/budgets, real payment categorization and Undo/Redo. Never use unguarded administrative SQL.
