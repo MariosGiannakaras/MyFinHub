@@ -156,7 +156,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         }else if((loan.accountingMode??'expense-per-installment')==='liability-repayment'){
           event=createEvent({kind:'card_payment',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,fromAccountId:accountId});
         }else{
-          event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,category:'Δόσεις / δάνεια',accountId});
+          event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,category:loan.expenseCategory||'Άλλο',accountId});
+          if(loan.expenseSubcategory)event.subcategory=loan.expenseSubcategory;
         }
         event.loanId=loan.id;
         if(loanPaymentPlan)setLoanPaymentInstallmentCount(event,loanPaymentPlan.count);
@@ -170,6 +171,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
       }else if(context.mode==='recurring'){
         if(!recurring)throw new Error('Το πάγιο δεν είναι πλέον διαθέσιμο.');const accountError=recurringAccountError(accounts.map(account=>account.id),accountId);if(accountError)throw new Error(accountError);
         event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`,category:recurring.category,accountId,recurringId:recurring.id});
+        if(recurring.subcategory)event.subcategory=recurring.subcategory;
       }else{
         if(!savingsSources.some(account=>account.id===fromAccountId))throw new Error('Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος.');
         if(!savingsTargets.some(account=>account.id===toAccountId))throw new Error('Ο αποταμιευτικός λογαριασμός δεν είναι πλέον διαθέσιμος.');
