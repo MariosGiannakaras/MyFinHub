@@ -198,7 +198,7 @@ describe('completion UX contracts',()=>{
     expect(quick).toContain('max-height:94dvh');
     expect(coordination).toContain('.quick-modal{max-height:96dvh}');
     expect(receipts).toContain('height:min(820px,94dvh)');
-    expect(receipts).toContain('.receipt-inbox{height:96dvh;width:98vw');
+    expect(receipts).toContain('.receipt-inbox{height:96dvh;width:calc(100vw - 20px);max-width:calc(100vw - 20px)');
   });
 
 

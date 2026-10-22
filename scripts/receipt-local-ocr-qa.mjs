@@ -90,6 +90,7 @@ try {
   await c.send('Page.enable');
   await c.send('Runtime.enable');
   await c.send('Network.enable');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
 
   const externalRequests = [];
   const baseOrigin = new URL(baseUrl).origin;
@@ -249,10 +250,14 @@ try {
   await waitFor("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}",'precisely balanced 20.25+4.25 EUR receipt items');
   const itemInputs=await c.call("function(){return {items:document.querySelectorAll('.receipt-item-row').length,categorySelectors:document.querySelectorAll('.receipt-item-category [aria-label^=\"Κατηγορία γραμμής\"]').length,balanced:(document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}}");
   assert(itemInputs.items===2&&itemInputs.categorySelectors===2&&itemInputs.balanced,`OCR item review must expose live taxonomy and exactly reconciled EUR cents: ${JSON.stringify(itemInputs)}`);
+  await c.call("function(){document.querySelector('.receipt-items-review')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(120);
   await screenshot('receipt-local-reviewed-items-desktop');
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await sleep(160);
-  const itemMobile=await c.call("function(){const parent=document.querySelector('.receipt-inbox'),rows=[...document.querySelectorAll('.receipt-item-row')],rect=parent?.getBoundingClientRect();return {rows:rows.length,overlap:rows.some(row=>{const r=row.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>innerWidth+1)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,modal:rect?{left:rect.left,right:rect.right}:null}}");
+  await c.call("function(){document.querySelector('.receipt-items-review')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(120);
+  const itemMobile=await c.call("function(){const parent=document.querySelector('.receipt-inbox'),rows=[...document.querySelectorAll('.receipt-item-row')],rect=parent?.getBoundingClientRect();return {rows:rows.length,cssWidth:innerWidth,visualWidth:visualViewport?.width??null,overlap:rows.some(row=>{const r=row.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>376)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,modal:rect?{left:rect.left,right:rect.right}:null}}");
   assert(itemMobile.rows===2&&!itemMobile.overlap&&itemMobile.overflow<=1&&itemMobile.modal?.left>=-1&&itemMobile.modal?.right<=376,`375px item editor remains contained: ${JSON.stringify(itemMobile)}`);
   await screenshot('receipt-local-reviewed-items-mobile');
   await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
