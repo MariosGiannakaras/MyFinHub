@@ -10,11 +10,11 @@ if(!chrome)throw new Error('Chrome/Chromium is required for recurring cadence QA
 const port=9264;
 const profile='/tmp/myfinhub-recurring-cadence-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:['ignore','ignore','pipe']});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','ignore','pipe']});
 let browserStderr='';
 child.stderr.on('data',chunk=>{browserStderr=(browserStderr+String(chunk)).slice(-1500)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<120;i++){if(child.exitCode!==null)break;try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Recurring Chromium startup failed (exit ${child.exitCode??'pending'}): ${browserStderr.slice(-900)||'No browser stderr'}`)}
+async function waitHttp(url){for(let i=0;i<120;i++){if(child.exitCode!==null)break;try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}; recurring Chromium startup failed (exit ${child.exitCode??'pending'}): ${browserStderr.slice(-900)||'No browser stderr'}`)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}

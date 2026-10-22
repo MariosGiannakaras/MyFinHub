@@ -51,6 +51,28 @@ jobs:
           if [ -z "$BROWSER" ]; then echo "Chromium required"; exit 1; fi
           export MYFINHUB_QA_PRIMARY_BROWSER="$BROWSER"
           export MYFINHUB_UX_EVIDENCE_DIR=/tmp/myfinhub-recurring-focused
+          # Match the repository's proven strict Chromium warm-up sequence.
+          # This checks browser readiness, never bypasses feature assertions.
+          PRE_PROFILE=/tmp/myfinhub-recurring-preflight
+          preflight_ok=0
+          for attempt in 1 2; do
+            rm -rf "$PRE_PROFILE"
+            "$BROWSER" --headless=new --remote-debugging-port=9302 --remote-debugging-address=127.0.0.1 --user-data-dir="$PRE_PROFILE" --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --no-default-browser-check about:blank >/tmp/myfinhub-recurring-chrome.log 2>&1 &
+            CHROME_PID=$!
+            ready_browser=0
+            for i in {1..100}; do
+              if curl --fail --silent http://127.0.0.1:9302/json/version > /dev/null; then ready_browser=1; break; fi
+              if ! kill -0 "$CHROME_PID" 2>/dev/null; then break; fi
+              sleep .2
+            done
+            kill "$CHROME_PID" 2>/dev/null || true
+            wait "$CHROME_PID" 2>/dev/null || true
+            rm -rf "$PRE_PROFILE"
+            if [ "$ready_browser" -eq 1 ]; then preflight_ok=1; echo "Primary Chromium startup preflight passed"; break; fi
+            tail -c 1500 /tmp/myfinhub-recurring-chrome.log || true
+            sleep .75
+          done
+          if [ "$preflight_ok" -ne 1 ]; then echo "Chromium startup preflight failed twice"; exit 1; fi
           node scripts/qa-script-runner.mjs scripts/recurring-cadence-qa.mjs
       - name: Upload synthetic recurring evidence
         if: always()
