@@ -76,6 +76,8 @@ try{
   await waitFor("function(){return !document.querySelector('[role=dialog]')}",'variable recurring saved receipt');
   const savedVariable=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
   assert(savedVariable,'responsive recurring list visibly labels the forecast amount as estimate');
+  const duplicateSuccess=await c.call("function(){return (document.querySelector('.recurring-approved-page .action-status')?.textContent||'').includes('αποθηκεύτηκε')}");
+  assert(!duplicateSuccess,'true top-edge save progress remains the only routine save confirmation');
   await shot('recurring-variable-estimate-saved-mobile');
 
   console.log('Recurring amount QA: failed exact save retains variable draft and original actual money');
@@ -86,7 +88,7 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('[data-active-recurring]'))}",'fresh recurring page with rejected receipt');
   const beforeFailedSave=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
   assert(!beforeFailedSave,'failed-save fixture starts from the unchanged fixed recurring baseline');
-  const reopen=await c.call("function(){const node=[...document.querySelectorAll('button[aria-label^=\\\"Επεξεργασία\\\"]')].find(element=>element.getClientRects().length>0);node?.click();return Boolean(node)}");
+  const reopen=await c.call("function(){const menu=[...document.querySelectorAll('.mobile-recurring-row .mobile-action-menu')].find(node=>node.getClientRects().length>0);if(!menu)return false;menu.querySelector('summary')?.click();const button=[...menu.querySelectorAll('button')].find(node=>(node.textContent||'').includes('Επεξεργασία'));if(!button||!menu.open)return false;button.click();return true}");
   assert(reopen,'the recurring editor reopens after navigation');
   await waitFor("function(){return Boolean(document.querySelector('[role=dialog]'))}",'rejected-save editor');
   const selectMode=await c.call("function(){const span=[...document.querySelectorAll('[role=dialog] label>span')].find(item=>item.textContent?.trim()==='Τύπος ποσού');const input=span?.parentElement?.querySelector('[role=combobox]');input?.click();return Boolean(input)}");

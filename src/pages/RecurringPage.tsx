@@ -90,7 +90,6 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
   const save=async()=>{
     if(!edit||editBusy)return;
-    const existed=active.some(item=>item.id===edit.id)||inactive.some(item=>item.id===edit.id);
     const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
     const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
     if(error){setEditError(error);return}
@@ -116,7 +115,9 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
         catch{cleanupWarning=' Το προηγούμενο λογότυπο δεν ήταν δυνατό να αποδεσμευτεί· η οικονομική αλλαγή έχει αποθηκευτεί.'}
       }
       releaseEdit();
-      setMessage((existed?'Το πάγιο ενημερώθηκε και αποθηκεύτηκε.':'Το νέο πάγιο δημιουργήθηκε και αποθηκεύτηκε.')+cleanupWarning);
+      // True server-acknowledged top progress is the sole routine save feedback.
+      // Only preserve action status when a logo cleanup issue needs attention.
+      setMessage(cleanupWarning.trim());
     }catch(reason){
       let cleanupWarning='';
       if(uploaded&&!persisted){
@@ -126,7 +127,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
       setEditError(userErrorMessage(reason,'Η αποθήκευση του παγίου δεν επιβεβαιώθηκε. Επαναφόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.')+cleanupWarning);
     }finally{setEditBusy(false)}
   };
-  const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>{onUpsert({...item,status,active:status==='active'});setMessage(status==='active'?'Το πάγιο ενεργοποιήθηκε ξανά.':status==='paused'?'Το πάγιο μπήκε σε παύση και διατηρήθηκε στο ιστορικό.':'Το πάγιο σταμάτησε και διατηρήθηκε στο ιστορικό.')};
+  const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>onUpsert({...item,status,active:status==='active'});
   const startPay=(item:RecurringItem)=>onPayRecurring(item.id);
   const mobileUpcoming=upcoming.slice(0,mobileActiveLimit);
   const nextThree=upcoming.slice(0,3);
