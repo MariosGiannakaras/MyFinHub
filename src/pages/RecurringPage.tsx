@@ -84,6 +84,15 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const releaseEdit=()=>{setEdit(null);setEditAmount('');setEditError('');resetLogoDraft()};
   const closeEdit=()=>{if(!editBusy)releaseEdit()};
   const editRef=useModalFocus<HTMLElement>(Boolean(edit),'input',closeEdit);
+  // On a scrollable phone dialog, a rejected save must expose its actual error.
+  // The shared FormError already announces it to assistive technology.
+  useEffect(()=>{
+    if(!editError)return;
+    const frame=requestAnimationFrame(()=>{
+      document.getElementById('recurring-editor-error')?.scrollIntoView({block:'nearest',behavior:'auto'});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[editError]);
   const startNew=()=>{resetLogoDraft();setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:data.state.settings.expenseCategories[0]||'Άλλο',active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
   const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
   const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setEditError('')};

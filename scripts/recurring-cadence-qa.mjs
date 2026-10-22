@@ -44,6 +44,8 @@ try{
   const editor=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const labels=[...dialog.querySelectorAll('label')].map(label=>label.querySelector('span')?.textContent||'');const every=[...dialog.querySelectorAll('label')].find(label=>(label.querySelector('span')?.textContent||'')==='Κάθε')?.querySelector('input');const unit=[...dialog.querySelectorAll('label')].find(label=>(label.querySelector('span')?.textContent||'').includes('Μονάδα επανάληψης'))?.querySelector('[role=combobox],input');return {labels,everyValue:every?.value,unit:Boolean(unit)}}");
   assert(editor.labels.includes('Κάθε')&&editor.labels.includes('Μονάδα επανάληψης'),'editor exposes interval and unit controls');
   assert(editor.everyValue==='1'&&editor.unit,'legacy monthly item defaults to one-month cadence');
+  await waitFor("function(){const node=document.querySelector('.recurring-editor-dialog');return Boolean(node&&Number.parseFloat(getComputedStyle(node).opacity)>=0.99)}",'desktop recurring modal visible');
+  await sleep(320);
   await shot('recurring-cadence-editor-desktop');
   console.log('Recurring amount QA: variable estimate has explicit controls and keeps actual payments separate');
   const chooseAmountMode=await c.call("function(){const span=[...document.querySelectorAll('[role=dialog] label>span')].find(item=>item.textContent?.trim()==='Τύπος ποσού');const input=span?.parentElement?.querySelector('[role=combobox]');input?.click();return Boolean(input)}");
@@ -103,6 +105,8 @@ try{
   await waitFor("function(){return (document.querySelector('#recurring-editor-error')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected durable recurring receipt');
   const held=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const error=document.querySelector('#recurring-editor-error')?.textContent||'';const inputs=[...dialog?.querySelectorAll('label')||[]];const val=label=>inputs.find(x=>(x.querySelector('span')?.textContent||'').includes(label))?.querySelector('input')?.value;return {open:!!dialog,min:val('Κατώτερη εκτίμηση'),max:val('Ανώτερη εκτίμηση'),error,storedText:document.querySelector('[data-active-recurring]')?.textContent||''}}");
   assert(held.open&&held.min==='60'&&held.max==='100'&&held.error.includes('δοκιμαστική')&&!held.storedText.includes('Εκτίμηση'),'failed finance receipt retains editable variable draft without mutating the persisted recurring baseline');
+  await waitFor("function(){const node=document.querySelector('#recurring-editor-error');if(!node)return false;const rect=node.getBoundingClientRect();return rect.height>0&&rect.top>=-1&&rect.bottom<=innerHeight+1}",'rejected save error is visible inside 375px viewport');
+  await sleep(160);
   await shot('recurring-variable-rejected-save-mobile');
   c.close();console.log('Recurring cadence rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
