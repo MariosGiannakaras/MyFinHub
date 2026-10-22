@@ -5,7 +5,12 @@ import type {FinanceData,FinanceEvent,CounterpartyRecord} from '../src/types.js'
 const now='2026-10-22T11:00:00.000Z';
 const merchant:CounterpartyRecord={id:'cp-market-1',kind:'merchant',displayName:'Αγορά Νέας Αρτάκης',aliases:['MARKET'],createdAt:now,updatedAt:now};
 const purchase={id:'event-1',kind:'expense',date:'2026-10-21',amount:12,note:'Παλιό σχόλιο αγοράς',legs:[],createdAt:now,updatedAt:now} as FinanceEvent;
-const base=()=>({state:{counterparties:[],events:[purchase]}} as unknown as FinanceData);
+const base=()=>({
+  app:'RheomIQ',schemaVersion:3,updatedAt:now,
+  seed:{accounts:[],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},
+  state:{customTransactions:[],overrides:{},deleted:[],recurringCustom:[],recurringOverrides:{},loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],counterparties:[],events:[purchase],
+  settings:{excludedFromAvailable:[],accountNames:{},expenseCategories:[],incomeCategories:[],customPresets:[],pinnedPresets:[],defaultExpenseAccount:'',defaultIncomeAccount:'',defaultLoanAccount:''}}
+} as FinanceData);
 describe('optional canonical counterparty identity / finance history',()=>{
   it('creates a stable immutable ID and leaves all historical events and free-form notes unchanged',()=>{
     const original=base();

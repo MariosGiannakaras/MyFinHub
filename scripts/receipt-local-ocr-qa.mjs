@@ -345,11 +345,15 @@ try {
   assert(linked?.source==='event'&&typeof linked.sourceId==='string'&&linked.sourceId.length>0,`confirmed purchase link must persist source-scoped only: ${JSON.stringify(linked)}`);
   const linkedEntryBlocked=await c.call("function(){return [...document.querySelectorAll('.receipt-review-actions button')].some(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&b.disabled)}");
   assert(linkedEntryBlocked,'already-associated receipt cannot post an accidental duplicate');
+  await c.call("function(){document.querySelector('.receipt-existing-matches[role=status]')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(220);
   await screenshot('receipt-existing-purchase-associated');
   const unlink=await c.call("function(){const b=[...document.querySelectorAll('.receipt-existing-matches button')].find(x=>(x.textContent||'').includes('Κατάργηση συσχέτισης'));if(!b||b.disabled)return false;b.click();return true}");
   assert(unlink,'owner may remove local-only linkage without changing ledger history');
   await waitFor("function(){return ![...document.querySelectorAll('.receipt-existing-matches button')].some(b=>(b.textContent||'').includes('Κατάργηση συσχέτισης'))}",'local purchase association removed');
   assert((await receiptCount())===1,'unlink preserves local receipt for owner review');
+  await c.call("function(){document.querySelector('.receipt-existing-matches li')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(220);
   await screenshot('receipt-existing-purchase-unlinked');
   const deleteSynthetic=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(x=>(x.textContent||'').trim()==='Διαγραφή');if(!b||b.disabled)return false;b.click();return true}");
   assert(deleteSynthetic,'owner can explicitly remove the synthetic reviewed receipt');
@@ -369,6 +373,7 @@ try {
   assert(!launcherGeometry.overlap,`mobile receipt launcher overlaps primary footer actions: ${JSON.stringify(launcherGeometry)}`);
   assert(launcherGeometry.receipt.left>=launcherGeometry.footer.left-1&&launcherGeometry.receipt.right<=launcherGeometry.footer.right+1,'mobile receipt launcher stays within footer bounds');
   assert(launcherGeometry.receipt.height>=40,'mobile receipt launcher is touch-safe');
+  await sleep(350);
   await screenshot('receipt-local-mobile-quick-entry');
   const mobileReceiptOpened=await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");
   assert(mobileReceiptOpened,'mobile receipt launcher opens inbox');

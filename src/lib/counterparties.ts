@@ -14,7 +14,7 @@ export function findCounterpartySuggestion(data:FinanceData,label:string,kind:Co
   const key=counterpartyNameKey(label);
   if(key.length<2)return null;
   const matches=(data.state.counterparties??[]).filter(row=>row.kind===kind&&
-    [row.displayName,...row.aliases??[]].some(item=>counterpartyNameKey(item)===key));
+    [row.displayName,...(row.aliases??[])].some(item=>counterpartyNameKey(item)===key));
   return matches.length===1?matches[0]:null;
 }
 /** Pure revisioned state updater: IDs and historical finance descriptions are immutable. */
