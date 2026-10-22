@@ -486,7 +486,7 @@ try{
   await noOverflow('budget/rules narrow reports');
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
-  c.close();
+  // Keep CDP alive through the enhanced lifecycle; finally performs cleanup.
   console.log('Budget/Rules QA: enhanced subcategory budget + rollover + edit');
   await navigate('reports','budget-enhanced',1440,1000);
   await waitFor("function(){return Boolean(document.querySelector('#report-budgets summary'))}",'enhanced budgets panel');
