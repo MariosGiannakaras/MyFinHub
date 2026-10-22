@@ -913,6 +913,93 @@ async function main(){
     assert((varRestored.body?.data?.state?.events||[]).length===existingEventCount,
       'Variable estimate undo/redo changed the posted event count.');
 
+    // Genuine owner+AAL2 revisioned JSON-state budget verification.
+    // Creates only isolated synthetic budgets. The final Undo removes both
+    // budget records, while preserving pre-existing finance events/history.
+    console.log('[real-stack] stage enhanced-budget-real-db-roundtrip');
+    const budgetBefore=await primary.request('/api/data');
+    const budgetBeforeHistory=await primary.request('/api/history');
+    expect(budgetBefore,200,undefined,'enhanced-budget-before');
+    expect(budgetBeforeHistory,200,undefined,'enhanced-budget-history-before');
+    const budgetStamp=new Date().toISOString();
+    const budgetCategory=budgetBefore.body.data.state.settings.expenseCategories[0];
+    assert(typeof budgetCategory==='string'&&budgetCategory.trim().length>0,
+      'Missing owner-defined synthetic budget category.');
+    const knownSubcategory=(budgetBefore.body.data.state.settings.expenseCategoryTree||[])
+      .find((row:any)=>row.name===budgetCategory&&row.subcategories?.length)?.subcategories[0]||
+      'Synthetic QA subcategory';
+    const budgetIdPrefix='qa-budget-real-stack-';
+    const budgetState=structuredClone(budgetBefore.body.data.state);
+    const budgetEventCount=(budgetState.events||[]).length;
+    budgetState.budgets=[...(budgetState.budgets||[]),
+      {id:budgetIdPrefix+'prior',month:'2027-01',scope:'subcategory',
+        category:budgetCategory,subcategory:knownSubcategory,amount:50,carryover:false,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp},
+      {id:budgetIdPrefix+'current',month:'2027-02',scope:'subcategory',
+        category:budgetCategory,subcategory:knownSubcategory,amount:80,carryover:true,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp}
+    ];
+    validateCompleteFinanceData({...budgetBefore.body.data,state:budgetState});
+    const budgetSaved=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetBefore.body.revision),
+        'x-rheomiq-history-generation':String(budgetBeforeHistory.body.generation)},
+      body:{state:budgetState,updatedAt:budgetStamp,
+        historyLabel:'Synthetic owner reviewed budget with carryover'},
+    });
+    expect(budgetSaved,200,undefined,'enhanced-budget-real-save');
+    const budgetReload=await restored.request('/api/data');
+    expect(budgetReload,200,undefined,'enhanced-budget-real-reload');
+    const budgetRows=budgetReload.body.data.state.budgets||[];
+    const budgetActual=budgetRows.find((item:any)=>item.id===budgetIdPrefix+'current');
+    assert(budgetActual?.scope==='subcategory'&&budgetActual.category===budgetCategory&&
+      budgetActual.subcategory===knownSubcategory&&budgetActual.amount===80&&
+      budgetActual.carryover===true,
+      'Owner-reviewed subcategory limit and carryover did not survive real DB reload.');
+    assert((budgetReload.body.data.state.events||[]).length===budgetEventCount,
+      'Budget-only changes unexpectedly created or removed posted money.');
+    const budgetForged=structuredClone(budgetReload.body.data.state);
+    const forgedRow=budgetForged.budgets.find((item:any)=>item.id===budgetIdPrefix+'current');
+    forgedRow.subcategoryIdentityId='qa-nonexistent-taxonomy-identity';
+    const budgetInvalid=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetReload.body.revision),
+        'x-rheomiq-history-generation':String(budgetSaved.body.history.generation)},
+      body:{state:budgetForged,updatedAt:new Date().toISOString(),
+        historyLabel:'Forged budget identity must fail'},
+    });
+    expect(budgetInvalid,400,'INVALID_DATA','enhanced-budget-invalid-identity');
+    const budgetStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetBefore.body.revision),
+        'x-rheomiq-history-generation':String(budgetBeforeHistory.body.generation)},
+      body:{state:budgetState,updatedAt:new Date().toISOString(),
+        historyLabel:'Stale budget overwrite must fail'},
+    });
+    assert(budgetStale.status===409&&
+      ['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(budgetStale.body?.code||'')),
+      'Stale budget writer was not rejected by revision/history protection.');
+    const budgetUndo=await historyAction('undo',budgetSaved);
+    expect(budgetUndo,200,undefined,'enhanced-budget-real-undo');
+    assert(!(budgetUndo.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'),
+      'Budget Undo failed to remove both synthetic periods.');
+    const budgetRedo=await historyAction('redo',budgetUndo);
+    expect(budgetRedo,200,undefined,'enhanced-budget-real-redo');
+    assert((budgetRedo.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'current'&&item.carryover===true),
+      'Budget Redo failed to restore the subcategory carryover limit.');
+    const budgetFinish=await historyAction('undo',budgetRedo);
+    expect(budgetFinish,200,undefined,'enhanced-budget-real-final-undo');
+    const budgetClean=await restored.request('/api/data');
+    expect(budgetClean,200,undefined,'enhanced-budget-real-final-reload');
+    assert(!(budgetClean.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'),
+      'Synthetic budget records persisted after final Undo.');
+    assert((budgetClean.body.data.state.events||[]).length===budgetEventCount,
+      'Budget Do/Undo/Redo modified the canonical event ledger.');
+    console.log('[real-stack] PASS subcategory budget persistence, forged taxonomy rejection, stale revision and Undo/Redo');
+
     console.log('[real-stack] stage provider-storage-registration-failure-cleanup');
     const missingProviderId='real-stack-missing-provider';
     const missingProviderPrefix='providers/'+missingProviderId;
