@@ -4,6 +4,7 @@ import { isValidDateOnly, isValidDateStamp, isValidMonthOnly } from '../src/lib/
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { SUPPORTED_FINANCE_SCHEMA_VERSION } from '../src/lib/schemaVersion.js';
 import { ApiError } from './http.js';
+import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
 
 function invalid(message: string): never {
   throw new ApiError(400, 'INVALID_DATA', message);
@@ -261,7 +262,7 @@ function validateLending(value: unknown, name: string) {
   }
 }
 
-const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','card_purchase','card_payment','reconciliation','split'] as const;
+const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','lending_writeoff','card_purchase','card_payment','reconciliation','split'] as const;
 const PART_KINDS = ['expense','income','refund','saving','transfer','reconciliation'] as const;
 
 function validateSplitPart(value: unknown, name: string) {
@@ -287,12 +288,14 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.person, `${name}.person`, 1_000);
+  optionalText(value.counterpartyId, `${name}.counterpartyId`, 200);
   optionalDateOnly(value.expectedReturnDate, `${name}.expectedReturnDate`);
   optionalText(value.source, `${name}.source`, 100);
   optionalDateStamp(value.createdAt, `${name}.createdAt`);
   optionalDateStamp(value.updatedAt, `${name}.updatedAt`);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
+  optionalText(value.feeForEventId, `${name}.feeForEventId`, 200);
   if (value.installmentCount !== undefined && value.installmentCount !== null) {
     finiteNumber(value.installmentCount, `${name}.installmentCount`, 100_000);
     if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);
@@ -306,6 +309,16 @@ function validateEvent(value: unknown, name: string) {
     if (!object(leg)) invalid(`Invalid ${name}.legs[${index}].`);
     text(leg.accountId, `${name}.legs[${index}].accountId`, 200);
     finiteNumber(leg.amount, `${name}.legs[${index}].amount`);
+  }
+  if (value.funding !== undefined) {
+    array(value.funding, `${name}.funding`, 12);
+    for(const [index,part] of value.funding.entries()){
+      const key=`${name}.funding[${index}]`;
+      if(!object(part))invalid(`Invalid ${key}.`);
+      oneOf(part.kind,['account','credit'],`${key}.kind`);
+      text(part.sourceId,`${key}.sourceId`,200);
+      finiteNumber(part.amount,`${key}.amount`);
+    }
   }
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
@@ -337,6 +350,25 @@ function validateSavingsGoal(value: unknown, name: string) {
   dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
+
+function validateLendingSettlementPlan(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,200);
+  text(value.person,`${name}.person`,120);
+  if(!value.person.trim())invalid(`Invalid ${name}.person.`);
+  dateOnly(value.asOf,`${name}.asOf`);
+  dateOnly(value.firstDueDate,`${name}.firstDueDate`);
+  dateStamp(value.confirmedAt,`${name}.confirmedAt`);
+  if(value.firstDueDate<value.asOf)invalid(`Invalid ${name}.firstDueDate.`);
+  finiteNumber(value.total,`${name}.total`);
+  const cents=Math.round(value.total*100);
+  if(cents<=0||!Number.isSafeInteger(cents)||Math.abs(value.total*100-cents)>0.00001)
+    invalid(`Invalid ${name}.total.`);
+  if(typeof value.installments!=='number'||!Number.isInteger(value.installments)||value.installments<1||value.installments>60||value.installments>cents)
+    invalid(`Invalid ${name}.installments.`);
+  if(typeof value.everyMonths!=='number'||!Number.isInteger(value.everyMonths)||value.everyMonths<1||value.everyMonths>24)
+    invalid(`Invalid ${name}.everyMonths.`);
+}
 
 function validateScheduledTransaction(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
@@ -452,6 +484,20 @@ function validateIconColors(value:unknown,name:string){
   for(const [target,color] of Object.entries(value)){
     text(target,`${name} key`,2_000);
     if(typeof color!=='string'||!/^#[0-9a-fA-F]{6}$/.test(color))invalid(`Invalid ${name}.${target}.`);
+  }
+}
+
+function validateCounterparty(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,160);
+  if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(value.id))invalid(`Invalid ${name}.id.`);
+  oneOf(value.kind,['merchant','beneficiary'],`${name}.kind`);
+  text(value.displayName,`${name}.displayName`,120);
+  if(value.displayName.trim().length<2)invalid(`Invalid ${name}.displayName.`);
+  dateStamp(value.createdAt,`${name}.createdAt`);
+  dateStamp(value.updatedAt,`${name}.updatedAt`);
+  if(value.aliases!==undefined){
+    stringArray(value.aliases,`${name}.aliases`,16,120);
   }
 }
 
@@ -576,6 +622,19 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
   array(state.lendingCustom, 'state.lendingCustom', 100_000);
+  if(state.lendingPlans!==undefined){
+    array(state.lendingPlans,'state.lendingPlans',1000);
+    state.lendingPlans.forEach((item,index)=>validateLendingSettlementPlan(item,`state.lendingPlans[${index}]`));
+    ensureUniqueIds(state.lendingPlans,'state.lendingPlans');
+    const people=new Set<string>();
+    for(const plan of state.lendingPlans){
+      if(!object(plan))invalid('Invalid settlement plan.');
+      text(plan.person,'state.lendingPlans.person',120);
+      const person=plan.person.trim();
+      if(people.has(person))invalid('Multiple active settlement plans for one person.');
+      people.add(person);
+    }
+  }
   validateSettings(state.settings);
   if (state.cardBanks !== undefined) {
     array(state.cardBanks, 'state.cardBanks', 100);
@@ -588,10 +647,41 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));
     ensureUniqueIds(state.cards, 'state.cards');
   }
+  const identities=new Map<string,'merchant'|'beneficiary'>();
+  if(state.counterparties!==undefined){
+    array(state.counterparties,'state.counterparties',2_000);
+    state.counterparties.forEach((item,index)=>validateCounterparty(item,`state.counterparties[${index}]`));
+    ensureUniqueIds(state.counterparties,'state.counterparties');
+    const names=new Set<string>();
+    for(const item of state.counterparties){
+      if(!object(item))invalid('Invalid counterparty.');
+      const kind=item.kind as 'merchant'|'beneficiary';
+      const id=item.id as string, label=(item.displayName as string).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
+      const aliases=Array.isArray(item.aliases)?item.aliases as string[]:[];
+      const namesForItem=[label,...aliases.map(alias=>alias.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim())];
+      for(const candidate of new Set(namesForItem)){
+        if(candidate.length<2)invalid('Invalid counterparty alias.');
+        const key=kind+':'+candidate;
+        if(names.has(key))invalid('Duplicate counterparty name or alias.');
+        names.add(key);
+      }
+      identities.set(id,kind);
+    }
+  }
   if (state.events !== undefined) {
     array(state.events, 'state.events', 100_000);
     state.events.forEach((item, index) => validateEvent(item, `state.events[${index}]`));
     ensureUniqueIds(state.events, 'state.events');
+    for(const event of state.events){
+      if(!object(event)||event.counterpartyId===undefined)continue;
+      const kind=identities.get(event.counterpartyId as string);
+      if(!kind)invalid('Transaction references an unknown counterparty.');
+      const merchantKind=['expense','card_purchase','split','refund'].includes(event.kind as string);
+      const beneficiaryKind=['income','lending','repayment','lending_writeoff'].includes(event.kind as string);
+      if((merchantKind&&kind!=='merchant')||(beneficiaryKind&&kind!=='beneficiary')||(!merchantKind&&!beneficiaryKind)){
+        invalid('Transaction references an incompatible counterparty.');
+      }
+    }
   }
   if (state.scheduled !== undefined) {
     array(state.scheduled, 'state.scheduled', 100_000);
@@ -613,6 +703,11 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     array(state.budgets, 'state.budgets', 10_000);
     state.budgets.forEach((item, index) => validateBudget(item, `state.budgets[${index}]`));
     ensureUniqueIds(state.budgets, 'state.budgets');
+    // Only new stable budget-ID associations require the extended taxonomy
+    // alias and parent-path proof; existing name-only history stays valid.
+    if(state.budgets.some(budget=>object(budget)&&
+      (budget.categoryIdentityId!==undefined||budget.subcategoryIdentityId!==undefined)))
+      validateCategoryIdentityState(state);
   }
   if (state.savingsGoals !== undefined) {
     array(state.savingsGoals, 'state.savingsGoals', 1_000);

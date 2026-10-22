@@ -8,7 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Surface } from '../components/Surface';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { budgetProgress } from '../lib/budgets';
-import { categoryKey, categoryPath } from '../lib/categories';
+import { categoryKey } from '../lib/categories';
 import { accountBalances, allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
 import { monthOnlyToUtcDate } from '../lib/dateOnly';
 import { cleanNote, money, shortDate } from '../lib/format';
@@ -40,13 +40,16 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
    url.searchParams.delete('reportSection');
    history.replaceState(history.state,'',url.toString());
  },[]);
- const snapshot=operationalReportSnapshot(data,month,asOf);
- const insights=reportInsightModel(data,month,asOf);
- const series=reportFlowSeries(data,month,6,asOf);
+ // Keep full-ledger report aggregates stable during local editor, disclosure,
+ // privacy and layout updates; large datasets must not be rescanned per render.
+ // Keys include the immutable revisioned FinanceData object and as-of filters.
+ const snapshot=useMemo(()=>operationalReportSnapshot(data,month,asOf),[data,month,asOf]);
+ const insights=useMemo(()=>reportInsightModel(data,month,asOf),[data,month,asOf]);
+ const series=useMemo(()=>reportFlowSeries(data,month,6,asOf),[data,month,asOf]);
  const cumulativeSeries=useMemo(()=>{let running=0;return series.map(row=>({...row,cumulative:(running+=row.income-row.expense)}))},[series]);
- const momentum=categoryMomentum(data,month,100,asOf);
- const counterparties=reportExpenseCounterparties(data,month,5,asOf);
- const loanBurden=reportLoanBurden(data,reportingPeriodEndDate(month,asOf));
+ const momentum=useMemo(()=>categoryMomentum(data,month,100,asOf),[data,month,asOf]);
+ const counterparties=useMemo(()=>reportExpenseCounterparties(data,month,5,asOf),[data,month,asOf]);
+ const loanBurden=useMemo(()=>reportLoanBurden(data,reportingPeriodEndDate(month,asOf)),[data,month,asOf]);
  // The chart is not mounted until the owner explicitly reveals private balances.
  // Avoid six full-ledger snapshots for values that are not visible.
  const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data]);
@@ -167,9 +170,9 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
     </div>
     <div className="report-budget-health-grid">
      <article className="report-budget-health-card"><div className="report-budget-health-copy"><span>Συνολική χρήση</span><b>{Math.round(budgetRatio*100)}%</b><small>{budgetStatusText}</small></div><div className="report-budget-meter" role="progressbar" aria-label="Συνολική χρήση ενεργών προϋπολογισμών" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(budgetRatio*100))}><i style={{width:`${Math.min(100,budgetRatio*100)}%`}}/></div><p>{money.format(budgetUsed)} από {money.format(budgetLimit)} · {budgetRemaining>=0?`${money.format(budgetRemaining)} διαθέσιμα`:`${money.format(Math.abs(budgetRemaining))} υπέρβαση`}</p></article>
-     <div className="report-budget-attention" aria-label="Προϋπολογισμοί που χρειάζονται προσοχή"><div className="report-budget-attention-head"><span>Τι χρειάζεται προσοχή</span><small>Υψηλότερη χρήση πρώτα.</small></div>{budgetAttentionRows.map(row=><article key={row.id} className={`report-budget-attention-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':categoryPath(row.category,row.subcategory)}</b><small>{money.format(row.used)} / {money.format(row.limit)}{row.projectedDue>0?` · γνωστά εκκρεμή ${money.format(row.projectedDue)}`:''}</small></div><strong>{Math.round(row.ratio*100)}%</strong><div className="report-budget-meter"><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div></article>)}</div>
+     <div className="report-budget-attention" aria-label="Προϋπολογισμοί που χρειάζονται προσοχή"><div className="report-budget-attention-head"><span>Τι χρειάζεται προσοχή</span><small>Υψηλότερη χρήση πρώτα.</small></div>{budgetAttentionRows.map(row=><article key={row.id} className={`report-budget-attention-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} / {money.format(row.limit)}</small></div><strong>{Math.round(row.ratio*100)}%</strong><div className="report-budget-meter"><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div></article>)}</div>
     </div>
-   </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό όριο, κατηγορία ή υποκατηγορία, με προαιρετική μεταφορά αχρησιμοποίητου ορίου.</span></div>}
+   </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό ή ανά κατηγορία όριο μόνο αν θέλεις να παρακολουθείς budget για αυτή την περίοδο.</span></div>}
    <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/></details>
   </section>
 

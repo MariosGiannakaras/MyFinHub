@@ -12,7 +12,11 @@ describe('live summary amount transitions',()=>{
   });
 
   it('keeps historical transaction/payment rows static',()=>{
-    expect(read('src/pages/CreditCardPage.tsx')).toContain('money.format(event.amount)');
+    const creditHistory=read('src/pages/CreditCardPage.tsx');
+    expect(creditHistory).toContain('money.format(creditPurchaseAmount(event)>.005?creditPurchaseAmount(event):event.amount)');
+    expect(creditHistory).toContain('creditPurchaseAmount(event)>.005');
+    // Historical rows remain static; only true credit-funded share belongs to the card.
+    expect(creditHistory).not.toContain('<AnimatedAmount value={event.amount}');
     expect(read('src/pages/RecurringPage.tsx')).toContain('money.format(lastPayment.amount)');
     expect(read('src/pages/ReportsPage.tsx')).toContain('money.format(row.income)');
   });

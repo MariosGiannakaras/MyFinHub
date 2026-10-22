@@ -32,6 +32,12 @@ function cleanup(){
 try{
   cleanup();
   const ledgerBefore=sql('select count(*) from supabase_migrations.schema_migrations;');
+  console.log('[migration-recovery] stage noncash-writeoff-constraint');
+  assert(sql(`select count(*) from pg_constraint
+    where conrelid='private.rheomiq_transactions'::regclass
+      and conname='rheomiq_transactions_event_kind_check'
+      and pg_get_constraintdef(oid) like '%lending_writeoff%';`)==='1',
+    'The installed forward-only ledger CHECK does not allow auditable lending writeoffs.');
 
   console.log('[migration-recovery] stage partial-state');
   sql(partial);
