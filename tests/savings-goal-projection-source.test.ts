@@ -16,6 +16,9 @@ describe('savings goal forecast is advisory, shared-first and responsive (#588 #
     expect(panel).toContain('Το υπόλοιπο αποταμίευσης είναι κοινό σε όλους τους στόχους');
     expect(browser).toContain('savings-goal-projection-desktop');
     expect(browser).toContain('savings-goal-projection-mobile');
+    expect(browser).toContain('savings-goal-projection-mobile-scenarios');
+    expect(browser).toContain("desktop projection is present and can be brought into the viewport");
+    expect(browser).toContain('mobile hypothetical scenarios visible in viewport');
     expect(browser).toContain('editable hypothetical contribution does not post finance events');
   });
 });

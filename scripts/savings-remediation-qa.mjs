@@ -52,6 +52,11 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.savings-desktop-target [data-savings-goal-projection]'))}",'desktop goal advisory panel');
   const advisory=await c.call("function(){const el=document.querySelector('.savings-desktop-target [data-savings-goal-projection]');return el?.textContent||''}");
   assert(advisory.includes('Κοινό πραγματικό υπόλοιπο')&&advisory.includes('Καμία μεταφορά')&&advisory.includes('γνωστές κινήσεις'),'goal projection distinguishes shared real balance, hypothetical funding and bounded assumptions');
+  // The projection row starts below the desktop fold. Capture the actual
+  // advisory metrics/scenarios rather than only the surrounding Savings hero.
+  const framedDesktop=await c.call("function(){const node=document.querySelector('.savings-desktop-target [data-savings-goal-projection]');if(!node)return false;node.scrollIntoView({block:'center',behavior:'instant'});const box=node.getBoundingClientRect();return box.width>240&&box.height>150}");
+  assert(framedDesktop,'desktop projection is present and can be brought into the viewport');
+  await sleep(150);
   await screenshot('savings-goal-projection-desktop');
   const enteredScenario=await c.call("function(){const input=document.querySelector('.savings-desktop-target [data-savings-goal-projection] input[aria-label=\"Υποθετική μηνιαία αποταμίευση\"]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'50');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
   assert(enteredScenario,'what-if monthly contribution uses shared finance money input');
@@ -59,10 +64,15 @@ try{
   const stillReal=await state();
   assert(JSON.stringify(realBefore)===JSON.stringify(stillReal),'editable hypothetical contribution does not post finance events or change realized account balances');
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
-  await c.call("function(){document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]')?.scrollIntoView({block:'start'});return true}");
+  const framedMobile=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]');if(!node)return false;node.scrollIntoView({block:'start',behavior:'instant'});window.scrollBy(0,-100);return node.getBoundingClientRect().width>0}");
+  assert(framedMobile,'mobile goal advisory header can be framed below the fixed toolbar');
   await sleep(170);
   const mobileProjection=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]');const r=node?.getBoundingClientRect();return {exists:Boolean(node),width:r?.width||0,left:r?.left??-1,right:r?.right??9999,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,panels:node?.querySelectorAll('.savings-projection-scenario').length??0}}");
   await screenshot('savings-goal-projection-mobile');
+  const scenarioFramed=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection] .savings-projection-scenarios');if(!node||node.querySelectorAll('.savings-projection-scenario').length<2)return false;node.scrollIntoView({block:'center',behavior:'instant'});const box=node.getBoundingClientRect();return box.width>0&&box.height>40&&box.top<innerHeight-70&&box.bottom>65}");
+  assert(scenarioFramed,'mobile hypothetical scenarios visible in viewport before evidence capture');
+  await sleep(120);
+  await screenshot('savings-goal-projection-mobile-scenarios');
   assert(mobileProjection.exists&&mobileProjection.overflow<=1&&mobileProjection.left>=-1&&mobileProjection.right<=376,'goal projection mobile has no clipping or horizontal overflow');
   await c.call("function(){[...document.querySelectorAll('.savings-mobile-legacy [data-savings-goal-projection] button')].find(el=>(el.textContent||'').includes('Κλείσιμο'))?.click();return true}");
   await waitFor("function(){return !document.querySelector('[data-savings-goal-projection]')}",'projection closes without a ledger mutation');
