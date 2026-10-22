@@ -56,7 +56,8 @@ describe('all category/subcategory options follow revisioned finance settings',(
     expect(selector).toContain('item.subcategories.map');
     expect(selector).toContain('data-option-level="invalid"');
     const budget=read('src/components/BudgetRuleSettings.tsx');
-    expect(budget).toContain('includeSubcategories={false}'); // category-level budget remains intentional
+    expect(budget).toContain("includeSubcategories={budgetScope==='subcategory'}"); // child budgets use the complete canonical taxonomy
+    expect(budget).toContain('<option value="subcategory">Υποκατηγορία</option>');
     expect(budget).toContain('scope:');
   });
   it('keeps authoritative revisioned save and reload rather than a stale local category cache',()=>{
