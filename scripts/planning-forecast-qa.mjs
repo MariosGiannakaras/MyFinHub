@@ -141,6 +141,12 @@ try{
   await noUnnamed('scenario open mobile 375');
   await c.call("function(){document.querySelector('[data-forecast-scenario-panel]')?.scrollIntoView({block:'start'});return true}");
   await screenshot('planning-whatif-mobile');
+  // The stacked 375px form is taller than one viewport: capture real outcome
+  // separately instead of treating an off-screen DOM assertion as visual proof.
+  const visibleResults=await c.call("function(){const panel=document.querySelector('[data-scenario-results]');if(!panel)return false;panel.scrollIntoView({block:'center',behavior:'instant'});return panel.getClientRects().length>0}");
+  assert(visibleResults,'mobile scenario result is available for direct visual review');
+  await sleep(180);
+  await screenshot('planning-whatif-mobile-results');
   await clickText('.forecast-scenario-actions button','Καθαρισμός');
   await waitFor("function(){return !document.querySelector('[data-scenario-results]')&&document.querySelectorAll('.forecast-scenario-row').length===0}",'hypothesis removal restores initial forecast');
   assert((await currentLiquidity())===realBeforeScenario,'clearing hypothetical changes leaves real money intact');

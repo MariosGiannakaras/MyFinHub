@@ -30,6 +30,8 @@ describe('30/60/90 what-if scenario UI and finance nonposting boundaries (#588 #
     expect(browser).toContain('Planning QA: isolated what-if scenario remains nonposting and mobile-safe');
     expect(browser).toContain('planning-whatif-desktop');
     expect(browser).toContain('planning-whatif-mobile');
+    expect(browser).toContain('planning-whatif-mobile-results');
+    expect(browser).toContain("panel.scrollIntoView({block:'center',behavior:'instant'})");
     expect(browser).toContain('scenario input does not change actual cash balance');
     expect(browser).toContain('noOverflow(\'scenario open mobile 375\')');
   });
