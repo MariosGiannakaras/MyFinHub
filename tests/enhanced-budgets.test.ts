@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {budgetProgress,budgetProjectedCommitments,budgetStableId,categoryBudgetSpending,normalizeBudget,subcategoryBudgetSpending} from '../src/lib/budgets.js';
 import {createEvent,migrateData} from '../src/lib/domain.js';
+import {validateFinanceData} from '../server/validation.js';
 import type {FinanceData,MonthlyBudget} from '../src/types.js';
 
 const stamp='2026-08-01T00:00:00Z';
@@ -109,7 +110,22 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   expect(()=>normalizeBudget(budget('2026-13','overall',40))).toThrow(/μήνα/);
   expect(normalizeBudget(budget('2026-08','overall',40))).toMatchObject({scope:'overall',carryover:false});
  });
- it('preserves two legitimate separate commitments with equal cents when their names differ',()=>{
+ it('enforces budget-only identity and carryover types at the canonical server boundary',()=>{
+  const d=fixture();
+  d.state.budgets=[budget('2026-08','subcategory',100,'Τρόφιμα','Σούπερ μάρκετ',true)];
+  expect(()=>validateFinanceData(d)).not.toThrow();
+  d.state.budgets=[{...d.state.budgets[0],carryover:'yes'} as unknown as MonthlyBudget];
+  expect(()=>validateFinanceData(d)).toThrow(/carryover/);
+  d.state.budgets=[{...d.state.budgets[0],carryover:true,categoryIdentityId:22} as unknown as MonthlyBudget];
+  expect(()=>validateFinanceData(d)).toThrow(/categoryIdentityId/);
+  d.state.budgets=[{...budget('2026-08','overall',100),categoryIdentityId:'cat-food'}];
+  expect(()=>validateFinanceData(d)).toThrow(/categoryIdentityId/);
+  d.state.budgets=[{...budget('2026-08','category',100,'Τρόφιμα'),subcategory:'Σούπερ μάρκετ'}];
+  expect(()=>validateFinanceData(d)).toThrow(/subcategory/);
+  d.state.budgets=[budget('2026-08','category',100,'Τρόφιμα')];
+  expect(()=>validateFinanceData(d)).not.toThrow();
+ });
+  it('preserves two legitimate separate commitments with equal cents when their names differ',()=>{
   const d=fixture();
   d.state.scheduled=[{id:'s1',dueDate:'2026-08-20',status:'pending',kind:'expense',amount:30,
     note:'Grocery',category:'Τρόφιμα',accountId:'bank',createdAt:stamp,updatedAt:stamp}];

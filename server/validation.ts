@@ -90,10 +90,6 @@ function validateLegacyTransaction(value: unknown, name: string) {
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.category, `${name}.category`, 1_000);
   optionalText(value.subcategory, `${name}.subcategory`, 1_000);
-  optionalText(value.categoryIdentityId, `${name}.categoryIdentityId`, 200);
-  optionalText(value.subcategoryIdentityId, `${name}.subcategoryIdentityId`, 200);
-  if(value.carryover!==undefined&&typeof value.carryover!=='boolean')invalid(`Invalid ${name}.carryover.`);
-  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   optionalText(value.source, `${name}.source`, 1_000);
   optionalText(value.cell, `${name}.cell`, 200);
   optionalText(value.sheet, `${name}.sheet`, 500);
@@ -385,6 +381,11 @@ function validateBudget(value: unknown, name: string) {
   monthOnly(value.month, `${name}.month`);
   oneOf(value.scope, ['category','subcategory','overall'], `${name}.scope`);
   optionalText(value.category, `${name}.category`, 1_000);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
+  optionalText(value.categoryIdentityId, `${name}.categoryIdentityId`, 200);
+  optionalText(value.subcategoryIdentityId, `${name}.subcategoryIdentityId`, 200);
+  if(value.carryover!==undefined&&typeof value.carryover!=='boolean')invalid(`Invalid ${name}.carryover.`);
+  if (value.scope === 'overall' && value.categoryIdentityId !== undefined) invalid(`Invalid ${name}.categoryIdentityId for scope.`);
   if (value.scope !== 'overall' && (typeof value.category !== 'string' || !value.category.trim())) invalid(`Invalid ${name}.category.`);
   if (value.scope === 'subcategory' && (typeof value.subcategory !== 'string' || !value.subcategory.trim())) invalid(`Invalid ${name}.subcategory.`);
   if (value.scope !== 'subcategory' && value.subcategory !== undefined) invalid(`Invalid ${name}.subcategory for scope.`);
