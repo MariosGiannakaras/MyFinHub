@@ -50,6 +50,7 @@ export function migrateData(input: FinanceData): FinanceData {
       loanOverrides: state.loanOverrides ?? {},
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
+      lendingPlans: state.lendingPlans ?? [],
       settings: {
         ...(state.settings ?? {}),
         excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,
@@ -196,6 +197,15 @@ export function createEvent(args: {
       legs.push({ accountId: requireAccount(args.accountId), amount });
       receivableDelta = -amount;
       break;
+    case 'lending_writeoff':
+      if(!args.person?.trim()||args.accountId||args.fromAccountId||args.toAccountId)
+        throw new Error('Η διαγραφή απαίτησης χρειάζεται πρόσωπο χωρίς ταμειακό λογαριασμό.');
+      if(Math.abs(amount*100-Math.round(amount*100))>1e-6)
+        throw new Error('Η διαγραφή απαίτησης πρέπει να έχει ακριβώς δύο δεκαδικά σε λεπτά ευρώ.');
+      if(args.loanId||args.recurringId||args.cardId||args.parts?.length)
+        throw new Error('Η διαγραφή απαίτησης δεν συνδέεται με δόση, κάρτα ή διάσπαση δαπάνης.');
+      receivableDelta = -amount;
+      break;
     case 'card_purchase':
       legs.push({ accountId: CREDIT_ACCOUNT.id, amount: -amount });
       creditDelta = -amount;
@@ -206,6 +216,7 @@ export function createEvent(args: {
       break;
     case 'reconciliation': {
       const delta = Number(args.actualBalance ?? 0) - Number(args.currentBalance ?? 0);
+      if(Math.round(delta*100)===0)throw new Error('Δεν υπάρχει διαφορά λογαριασμού για διόρθωση.');
       legs.push({ accountId: requireAccount(args.accountId), amount: delta });
       break;
     }

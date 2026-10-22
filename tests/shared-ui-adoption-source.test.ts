@@ -120,12 +120,14 @@ describe('shared finance UI adoption contracts',()=>{
   it('adopts shared action primitives for Lending generic actions while preserving domain and composite controls',()=>{
     expect(lending).toContain("from '../components/Button'");
     expect(lending).toContain("from '../components/IconButton'");
-    expect(lending.match(/<Button/g)).toHaveLength(11);
+    expect(lending.match(/<Button/g)).toHaveLength(15);
+    expect(lending.match(/action:'writeoff'/g)).toHaveLength(2);
+    expect(lending).toContain('onSaveLendingPlan?:(draft:LendingSettlementDraft)=>Promise<void>');
     expect(lending.match(/<IconButton/g)).toHaveLength(1);
     expect(lending.match(/<button/g)).toHaveLength(2);
     expect(lending.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
-    expect(lending.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(6);
-    expect(lending.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
+    expect(lending.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(8);
+    expect(lending.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(4);
     expect(lending).toContain('<IconButton type="button" aria-label="Κλείσιμο κίνησης δανεικών"');
     expect(lending).not.toContain('className="save-button"');
     expect(lending).not.toContain('className="secondary privacy-toggle"');

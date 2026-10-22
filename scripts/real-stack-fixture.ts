@@ -30,7 +30,7 @@ export function realStackFinanceData(): FinanceData {
       recurring: [],
       subscriptions: [],
       loans: [],
-      lending: [],
+      lending: [{ person: 'Synthetic QA Receivable', outstanding: 10, entries: [] }],
       stats: { transactions: 1 },
     },
     state: {

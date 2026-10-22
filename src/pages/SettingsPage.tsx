@@ -14,6 +14,8 @@ import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
+import { CounterpartyDirectorySettings } from '../components/CounterpartyDirectorySettings';
+import { withCounterparty } from '../lib/counterparties';
 import { categoryTree } from '../lib/categories';
 import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
@@ -284,6 +286,7 @@ export function SettingsPage({
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
             <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
+            <CounterpartyDirectorySettings data={data} onSave={record=>onFinanceDurably(current=>withCounterparty(current,record))}/>
           </div>
         ) : null}
 

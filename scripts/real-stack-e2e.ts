@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
 
@@ -334,6 +335,14 @@ async function main(){
       ...nextState.settings,
       accountNames:{...(nextState.settings?.accountNames||{}),'qa-cash':'Local Real Stack QA'},
     };
+    // A non-cash writeoff must survive the real revisioned RPC, relational
+    // transaction table, API reload, Undo and Redo without touching cash.
+    const writeoff=createEvent({
+      kind:'lending_writeoff',date:'2026-10-04',person:'Synthetic QA Receivable',
+      amount:2.5,note:'Synthetic noncash settlement, not a cash movement',
+    });
+    nextState.events=[...(nextState.events??[]),writeoff];
+    validateCompleteFinanceData({...initial.body.data,state:nextState});
     console.log('[real-stack] stage mutable-save');
     const saved=await primary.request('/api/data',{
       method:'PUT',
@@ -359,6 +368,9 @@ async function main(){
     const persisted=await restored.request('/api/data');
     expect(persisted,200,undefined,'reload-read');
     assert(persisted.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
+    assert(persisted.body?.data?.state?.events?.some((event:any)=>event.id===writeoff.id&&
+      event.kind==='lending_writeoff'&&event.receivableDelta===-2.5&&event.legs.length===0),
+      'Noncash writeoff did not round-trip through revisioned API and relational finance storage.');
     const savedGeneration=String(saved.body?.history?.generation||'');
     assert(/^\d+$/.test(savedGeneration),'Mutable save did not return a history generation.');
     console.log('[real-stack] stage history-undo');
@@ -369,6 +381,8 @@ async function main(){
     });
     expect(undone,200,undefined,'history-undo');
     assert(undone.body?.data?.state?.settings?.accountNames?.['qa-cash']!=='Local Real Stack QA','Undo did not restore the previous finance state.');
+    assert(!(undone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id),
+      'Finance Undo did not reverse the noncash writeoff in the same revision.');
 
     console.log('[real-stack] stage history-redo');
     const redone=await primary.request('/api/history',{
@@ -378,6 +392,8 @@ async function main(){
     });
     expect(redone,200,undefined,'history-redo');
     assert(redone.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Redo did not restore the saved finance state.');
+    assert((redone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id&&event.receivableDelta===-2.5),
+      'Finance Redo did not restore the exact noncash writeoff.');
 
     console.log('[real-stack] stage card-vault-write');
     const vaultSaved=await primary.request('/api/card-secrets',{
@@ -468,7 +484,16 @@ async function main(){
     assert(vaultAfterRestore.body?.pan===TEST_PAN&&vaultAfterRestore.body?.expiry===TEST_EXPIRY&&vaultAfterRestore.body?.cvv===TEST_CVV,'Finance backup restore unexpectedly changed the separate card vault.');
 
     const health=await upstreamJson(`${local.apiUrl}/rest/v1/rpc/rheomiq_database_health`,local.serviceRole,{method:'POST',body:'{}'}) as any;
-    assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
+    // Only count-based, non-sensitive integrity fields may appear in this
+    // diagnostic. Never print backup contents, personal notes or card data.
+    const failingHealthChecks=Object.entries(health?.checks??{})
+      .filter(([,value])=>typeof value==='number'&&value!==0)
+      .map(([key,value])=>`${key}:${value}`).join(',')||'none';
+    assert(health?.ok===true&&health?.storageMode==='relational_v1',
+      `Database health is not clean after backup restore (nonzero counts: ${failingHealthChecks}).`);
+    assert(Number(health?.checks?.events_without_legs)===0
+      &&Number(health?.checks?.invalid_writeoff_legs)===0,
+      'Zero-leg noncash writeoff was not recognized by the relational health contract.');
     assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
 
     console.log('[real-stack] stage card-profile-vault-durable-cleanup');
@@ -648,6 +673,77 @@ async function main(){
     expect(metadataFinish,200,undefined,'metadata-roundtrip-final-undo');
     assert(!(metadataFinish.body.data.state.cards||[]).some((c:any)=>c.id===metadataId),
       'Metadata-only QA card remains after Undo roundtrip.');
+
+
+    // Counterparty IDs and selected posted-event associations must survive
+    // the actual owner+AAL2, revisioned relational Supabase persistence layer.
+    // Deliberately do not add an independent table or rewrite legacy notes.
+    console.log('[real-stack] stage canonical-counterparty-real-db-roundtrip');
+    const cpBefore=await primary.request('/api/data');
+    const cpHistory=await primary.request('/api/history');
+    expect(cpBefore,200,undefined,'counterparty-before');
+    expect(cpHistory,200,undefined,'counterparty-history');
+    const cpNow=new Date().toISOString();
+    const cpId='cp-real-stack-merchant-1';
+    const cpPurchase=createEvent({
+      kind:'expense',date:'2026-10-05',accountId:'qa-cash',
+      amount:12.34,note:'Synthetic exact merchant reference',
+      category:'Synthetic expense',
+    });
+    const cpState=structuredClone(cpBefore.body.data.state);
+    cpState.counterparties=[...(cpState.counterparties||[]),{
+      id:cpId,kind:'merchant',displayName:'Synthetic reviewed merchant',
+      aliases:['SYNTHETIC SHOP'],createdAt:cpNow,updatedAt:cpNow,
+    }];
+    cpState.events=[...(cpState.events||[]),{...cpPurchase,counterpartyId:cpId}];
+    validateCompleteFinanceData({...cpBefore.body.data,state:cpState});
+    const cpDo=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:cpNow,historyLabel:'Reviewed merchant identity'},
+    });
+    expect(cpDo,200,undefined,'counterparty-real-save');
+    const cpRead=await restored.request('/api/data');
+    expect(cpRead,200,undefined,'counterparty-real-reload');
+    const cpRows=cpRead.body?.data?.state?.counterparties||[];
+    const cpEvents=cpRead.body?.data?.state?.events||[];
+    assert(cpRows.some((row:any)=>row.id===cpId&&row.kind==='merchant'&&
+      row.displayName==='Synthetic reviewed merchant'&&row.aliases?.[0]==='SYNTHETIC SHOP'),
+      'Reviewed counterparty identity did not survive revisioned DB reload.');
+    assert(cpEvents.some((event:any)=>event.id===cpPurchase.id&&
+      event.counterpartyId===cpId&&event.note===cpPurchase.note&&
+      event.kind==='expense'&&event.amount===12.34),
+      'Owner-selected merchant relation did not round-trip through the real relational event payload.');
+    const cpStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:new Date().toISOString(),
+        historyLabel:'Stale merchant overwrite must lose'},
+    });
+    assert(cpStale.status===409&&
+      ['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(cpStale.body?.code||'')),
+      'Stale merchant identity writer was not rejected by revision/history protection.');
+    const cpUndo=await historyAction('undo',cpDo);
+    expect(cpUndo,200,undefined,'counterparty-real-undo');
+    assert(!(cpUndo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpUndo.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Undo did not atomically remove the owner identity and posted expense reference.');
+    const cpRedo=await historyAction('redo',cpUndo);
+    expect(cpRedo,200,undefined,'counterparty-real-redo');
+    assert((cpRedo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      (cpRedo.body?.data?.state?.events||[]).some((event:any)=>
+        event.id===cpPurchase.id&&event.counterpartyId===cpId),
+      'Redo did not atomically restore the reviewed identity and posted expense reference.');
+    const cpFinish=await historyAction('undo',cpRedo);
+    expect(cpFinish,200,undefined,'counterparty-real-final-undo');
+    const cpClean=await restored.request('/api/data');
+    expect(cpClean,200,undefined,'counterparty-real-final-reload');
+    assert(!(cpClean.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpClean.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Final merchant Undo did not leave the actual database history clean.');
+    console.log('[real-stack] PASS selected merchant ID, relational payload, stale conflict and Undo/Redo');
 
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');

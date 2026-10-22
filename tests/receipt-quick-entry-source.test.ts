@@ -43,10 +43,13 @@ describe('receipt to Quick Entry contract',()=>{
     expect(bridge).toContain('subcategory: receiptProposal?.subcategory');
     expect(inbox).not.toContain('Διόρθωση νομίσματος απόδειξης');
     expect(inbox).toContain("currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEurAmount?reviewProposal.currency:'EUR'");
-    expect(inbox).toContain('disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal}');
+    expect(inbox).toContain('disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)}');
     expect(inbox).toContain('const correctedEurAmount=reviewTotalEdited&&totalText');
     expect(inbox).toContain('const needsEurTotal=nonEur&&!(reviewTotalEdited');
     expect(inbox).toContain('subcategory={reviewed.subcategory??\'\'}');
-    expect(bridge).toContain("initialKind={receiptDraftId ? 'expense' : initialKind}");
+    expect(bridge).toContain("initialKind={receiptDraftId ? (receiptProposal?.reviewedSplit?'split':'expense') : initialKind}");
+    expect(inbox).toContain('Χρήση ως επιμερισμένη δαπάνη');
+    expect(inbox).toContain('purchaseMatches.length&&!reviewNewPurchaseConfirmed');
+    expect(bridge).toContain('parts:receiptProposal?.reviewedSplit?receiptSplitParts');
   });
 });
