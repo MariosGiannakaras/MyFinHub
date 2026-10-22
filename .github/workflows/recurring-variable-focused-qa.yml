@@ -1,0 +1,62 @@
+name: Recurring variable focused draft QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/recurring-variable-focused-qa.yml'
+      - 'scripts/recurring-cadence-qa.mjs'
+      - 'src/pages/RecurringPage.tsx'
+      - 'src/lib/recurringVariable.ts'
+      - 'src/lib/forecast.ts'
+      - 'src/lib/inputSemantics.ts'
+      - 'tests/recurring-variable*.test.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recurring-variable-focused-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  recurring-editor-chromium:
+    name: Variable recurring desktop and mobile evidence
+    if: ${{ github.event.pull_request.draft == true && github.head_ref == 'feat/588-variable-recurring-batch-d2' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Verify variable recurring browser and rejected save
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev:web > /tmp/myfinhub-recurring-vite.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill $WEB_PID || true' EXIT
+          ready=0
+          for i in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-recurring-vite.log; exit 1; fi
+          BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$BROWSER" ]; then echo "Chromium required"; exit 1; fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$BROWSER"
+          export MYFINHUB_UX_EVIDENCE_DIR=/tmp/myfinhub-recurring-focused
+          node scripts/qa-script-runner.mjs scripts/recurring-cadence-qa.mjs
+      - name: Upload synthetic recurring evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: myfinhub-focused-recurring-${{ github.event.pull_request.head.sha }}
+          path: /tmp/myfinhub-recurring-focused/*.png
+          if-no-files-found: warn
+          retention-days: 14
