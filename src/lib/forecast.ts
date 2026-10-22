@@ -107,7 +107,7 @@ function recurringMovements(data: FinanceData, asOf: string, endDate: string, id
       pushMovement(result, {
         id: `forecast-recurring-${item.id}-${date}`,
         date,
-        label: item.name,
+        label: item.amountMode==='variable'?`Εκτίμηση: ${item.name}`:item.name,
         source: 'recurring',
         legs: [{ accountId: item.accountId, amount: -Math.abs(Number(item.amount || 0)) }],
       }, ids);
