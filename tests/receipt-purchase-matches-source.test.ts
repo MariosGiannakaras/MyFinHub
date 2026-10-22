@@ -18,5 +18,9 @@ describe('receipt purchase match review UX contract (#588 C/#3)',()=>{
     expect(helper).toContain('Math.min(12,');
     expect(helper).toContain('if(distance>3||cents(amount)!==targetAmount)return');
     expect(css).toContain('.receipt-existing-matches');
+    const browser=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
+    expect(browser).toContain('receipt-existing-purchase-associated');
+    expect(browser).toContain('receipt-existing-purchase-unlinked');
+    expect(browser).toContain('potential duplicate cannot go directly to Quick Entry without owner review');
   });
 });
