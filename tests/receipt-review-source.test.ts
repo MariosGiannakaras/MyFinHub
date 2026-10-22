@@ -4,7 +4,7 @@ describe('receipt editable line review UI contract (#588 C)',()=>{
   it('uses shared controls, local item state, strict EUR-cent checks and owner-only persistence',()=>{
     const ui=readFileSync('src/components/ReceiptInbox.tsx','utf8');
     const css=readFileSync('src/styles/receipt-inbox.css','utf8');
-    expect(ui).toContain("import { normalizeReceiptLineReview } from '../lib/receiptItemReview'");
+    expect(ui).toContain("import { normalizeReceiptLineReview, receiptSplitParts } from '../lib/receiptItemReview'");
     expect(ui).toContain('const [reviewItemAmounts,setReviewItemAmounts]');
     expect(ui).toContain('const lineReview=useMemo(');
     expect(ui).toContain('()=>reviewProposal?normalizeReceiptLineReview(reviewProposal,reviewItemAmounts,reviewTotal):null');
@@ -13,7 +13,9 @@ describe('receipt editable line review UI contract (#588 C)',()=>{
     expect(ui).toContain('CategorySelectInput settings={data.state.settings} kind="expense"');
     expect(ui).toContain('itemsBalanced:reviewProposal.items===undefined?undefined:');
     expect(ui).toContain('reviewLinesInvalid');
-    expect(ui).toContain('await saveReceiptProposal(selected.id,normalized)');
+    expect(ui).toContain('(reviewed?.items?.length??0)>=2');
+    expect(ui).toContain('const reviewedSplit=split?{...normalized,reviewedSplit:true}:normalized');
+    expect(ui).toContain('await saveReceiptProposal(selected.id,reviewedSplit)');
     const browser=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
     expect(browser).toContain('receipt-local-reviewed-items-desktop');
     expect(browser).toContain('receipt-local-reviewed-items-mobile');

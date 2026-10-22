@@ -412,7 +412,7 @@ export function ReceiptInbox({
               <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
               {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid||reviewLinesInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
               {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
-              {proposal&&(reviewed.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
+              {proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>
