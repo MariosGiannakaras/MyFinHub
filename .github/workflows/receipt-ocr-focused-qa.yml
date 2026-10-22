@@ -1,0 +1,66 @@
+name: Receipt OCR focused draft QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/receipt-ocr-focused-qa.yml'
+      - 'scripts/receipt-local-ocr-qa.mjs'
+      - 'src/components/ReceiptInbox.tsx'
+      - 'src/components/ReceiptAwareQuickAdd.tsx'
+      - 'src/components/QuickAdd.tsx'
+      - 'src/lib/receipt*.ts'
+      - 'src/lib/reviewedMerchantSignals.ts'
+      - 'src/styles/receipt-inbox.css'
+      - 'src/styles/receipt-launch.css'
+      - 'tests/receipt*.test.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: receipt-ocr-focused-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  private-receipt-chromium:
+    name: Local OCR browser and responsive evidence
+    if: ${{ github.event.pull_request.draft == true && github.head_ref == 'feat/588-receipt-counterparties-batch-c' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Run focused local OCR browser contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev:web > /tmp/myfinhub-receipt-vite.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill $WEB_PID || true' EXIT
+          ready=0
+          for i in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-receipt-vite.log; exit 1; fi
+          BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$BROWSER" ]; then echo "Chromium is mandatory for receipt QA"; exit 1; fi
+          echo "Receipt QA browser: $("$BROWSER" --version)"
+          export MYFINHUB_QA_PRIMARY_BROWSER="$BROWSER"
+          export MYFINHUB_UX_EVIDENCE_DIR=/tmp/myfinhub-receipt-draft-evidence
+          node scripts/receipt-local-ocr-qa.mjs
+      - name: Upload private synthetic receipt evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: myfinhub-focused-receipt-${{ github.event.pull_request.head.sha }}
+          path: /tmp/myfinhub-receipt-draft-evidence/*.png
+          if-no-files-found: warn
+          retention-days: 14
