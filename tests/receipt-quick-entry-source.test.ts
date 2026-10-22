@@ -43,7 +43,7 @@ describe('receipt to Quick Entry contract',()=>{
     expect(bridge).toContain('subcategory: receiptProposal?.subcategory');
     expect(inbox).not.toContain('Διόρθωση νομίσματος απόδειξης');
     expect(inbox).toContain("currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEurAmount?reviewProposal.currency:'EUR'");
-    expect(inbox).toContain('disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal}');
+    expect(inbox).toContain('disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal}');
     expect(inbox).toContain('const correctedEurAmount=reviewTotalEdited&&totalText');
     expect(inbox).toContain('const needsEurTotal=nonEur&&!(reviewTotalEdited');
     expect(inbox).toContain('subcategory={reviewed.subcategory??\'\'}');

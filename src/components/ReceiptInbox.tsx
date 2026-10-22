@@ -298,9 +298,10 @@ export function ReceiptInbox({
       currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEurAmount?reviewProposal.currency:'EUR',
       category:reviewProposal.category?.trim()||undefined,
       subcategory:reviewProposal.subcategory?.trim()||undefined,
-      items:lineReview.items,
+      items:reviewProposal.items===undefined?undefined:lineReview.items,
       // Foreign OCR amounts must not be silently reinterpreted as EUR splits.
-      itemsBalanced:(reviewProposal.itemsCurrency??reviewProposal.currency) &&
+      itemsBalanced:reviewProposal.items===undefined?undefined:
+        (reviewProposal.itemsCurrency??reviewProposal.currency) &&
         (reviewProposal.itemsCurrency??reviewProposal.currency)!=='EUR'
         ?undefined:lineReview.balanced,
     } satisfies ReceiptProposal;

@@ -7,11 +7,11 @@ describe('receipt editable line review UI contract (#588 C)',()=>{
     expect(ui).toContain("import { normalizeReceiptLineReview } from '../lib/receiptItemReview'");
     expect(ui).toContain('const [reviewItemAmounts,setReviewItemAmounts]');
     expect(ui).toContain('const lineReview=useMemo(');
-    expect(ui).toContain('return normalizeReceiptLineReview(reviewProposal,reviewItemAmounts,reviewTotal)');
+    expect(ui).toContain('()=>reviewProposal?normalizeReceiptLineReview(reviewProposal,reviewItemAmounts,reviewTotal):null');
     expect(ui).toContain('reviewed.items.map((item,index)=>');
     expect(ui).toContain('Διόρθωση ποσού γραμμής');
     expect(ui).toContain('CategorySelectInput settings={data.state.settings} kind="expense"');
-    expect(ui).toContain('itemsBalanced:');
+    expect(ui).toContain('itemsBalanced:reviewProposal.items===undefined?undefined:');
     expect(ui).toContain('reviewLinesInvalid');
     expect(ui).toContain('await saveReceiptProposal(selected.id,normalized)');
     expect(css).toContain('.receipt-items-review');

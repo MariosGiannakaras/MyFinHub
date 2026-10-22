@@ -60,3 +60,7 @@ Initial item parsing and local draft metadata underway; no item-to-ledger mutati
 
 ### Draft TS preflight of OCR item review — 2026-10-22
 - Draft [CI #39743481042](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39743481042) halted at TypeScript guard: the new item balance JSX dereferenced nullable `lineReview` within an optional-chain null comparison. Used explicit `lineReview&&lineReview.totalCents!==null` narrowing in both displayed grand-total and difference paths; item arithmetic/validation and EUR thresholds are unchanged. New full draft source/unit/build validation pending. Continue to preserve the local-only/no-posting boundary; acceptance counters unchanged.
+
+### C1 reviewed-item source regression alignment — 2026-10-22
+- Draft [CI #39743709932](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39743709932): 1,378/1,381 tests passed; only three source guards were stale after two real shared Button additions and a memo callback syntax variant. Updated expected Button counts (12 total: primary 2, secondary 7, ghost 3), retained action/receipt security assertions, locked invalid-item disable condition, and aligned the item memo guard with the actual expression. No acceptance gates weakened.
+- Hardened draft compatibility: if no OCR items exist, saving the owner-reviewed proposal retains `items` and `itemsBalanced` as absent instead of manufacturing `[]` and false. Full draft CI remains required on the changed head. Roadmap counters **Implementations 2/12 · Sub-implementations 4/24** unchanged; no merge/deploy.

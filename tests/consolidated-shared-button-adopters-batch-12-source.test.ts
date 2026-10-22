@@ -68,15 +68,17 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('keeps ReceiptInbox capture, review and apply actions on shared primitives',()=>{
     expect(receipts).toContain("from './Button'");
     expect(receipts).toContain("from './IconButton'");
-    expect(receipts.match(/<Button/g)).toHaveLength(10);
+    expect(receipts.match(/<Button/g)).toHaveLength(12);
     expect(receipts.match(/<IconButton/g)).toHaveLength(1);
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(6);
-    expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
+    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(7);
+    expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(3);
     expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
     expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
     expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal}');
+    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal}');
+    expect(receipts).toContain('onClick={addReviewLine}>Προσθήκη γραμμής</Button>');
+    expect(receipts).toContain('onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής');
     expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
     expect(receipts).toContain('<Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}>');
     expect(receipts).toContain('onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button>');
