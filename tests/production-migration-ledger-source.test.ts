@@ -60,6 +60,7 @@ const releasePending=[
   "20261019110000_protect_irreversible_history_boundaries.sql",
   "20261021091500_add_lending_writeoff_event_kind.sql",
   "20261021211500_allow_noncash_writeoff_health.sql",
+  "20261022213500_expand_budget_scope_to_subcategories.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -77,6 +78,7 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261010013500_atomic_card_vault_cleanup.sql');
     expect(releasePending).toContain('20261010145500_guard_pending_card_secret_cleanup_intent.sql');
     expect(releasePending).toContain('20261019110000_protect_irreversible_history_boundaries.sql');
+    expect(releasePending).toContain('20261022213500_expand_budget_scope_to_subcategories.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

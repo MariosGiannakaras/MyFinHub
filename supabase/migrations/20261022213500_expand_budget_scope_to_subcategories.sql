@@ -15,10 +15,8 @@ alter table private.rheomiq_budgets
 alter table private.rheomiq_budgets
   add constraint rheomiq_budget_scope_category
     check (
-      (scope='overall' and category is null
-        and nullif(btrim(coalesce(payload->>'subcategory','')),'') is null)
-      or (scope='category' and nullif(btrim(category),'') is not null
-        and nullif(btrim(coalesce(payload->>'subcategory','')),'') is null)
+      (scope='overall' and category is null)
+      or (scope='category' and nullif(btrim(category),'') is not null)
       or (scope='subcategory' and nullif(btrim(category),'') is not null
         and nullif(btrim(coalesce(payload->>'subcategory','')),'') is not null)
     );
@@ -29,7 +27,10 @@ drop index if exists private.rheomiq_budgets_logical_key_idx;
 create unique index rheomiq_budgets_logical_key_idx
   on private.rheomiq_budgets (
     owner_user_id, month_key, scope, coalesce(category,''),
-    coalesce(nullif(btrim(payload->>'subcategory'),''),'')
+    case when scope='subcategory'
+      then coalesce(nullif(btrim(payload->>'subcategory'),''),'')
+      else ''
+    end
   );
 
 commit;

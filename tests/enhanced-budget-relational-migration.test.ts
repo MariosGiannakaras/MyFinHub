@@ -12,6 +12,8 @@ describe('#588 forward-only relational budget expansion',()=>{
     expect(migration).toContain('drop index if exists private.rheomiq_budgets_logical_key_idx');
     expect(migration).toContain('create unique index rheomiq_budgets_logical_key_idx');
     expect(migration).toContain("owner_user_id, month_key, scope, coalesce(category,'')");
+    expect(migration).toContain("case when scope='subcategory'");
+    expect(migration).toContain("else ''");
     expect(migration).not.toMatch(/delete\s+from|truncate\s+|drop\s+table|disable\s+row\s+level\s+security/i);
   });
   it('tests two different subcategories under one category/month through live revisioned finance',()=>{
