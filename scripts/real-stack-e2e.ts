@@ -897,24 +897,18 @@ async function main(){
     });
     assert(varStale.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(varStale.body?.code||'')),
       'Stale variable recurring writer bypassed finance revision guard.');
-    const varUndo=await primary.request('/api/history/undo',{method:'POST',
-      headers:{'if-match':String(varSave.body.revision),
-        'x-rheomiq-history-generation':String(varSave.body.history.generation)},body:{}});
+    const varUndo=await historyAction('undo',varSave);
     expect(varUndo,200,undefined,'variable-undo');
     assert(varUndo.body?.data?.state?.recurringCustom?.some((row:any)=>
       row.id===serviceId&&row.amount===12&&row.amountMode===undefined),
       'Undo did not restore the prior fixed recurring amount.');
-    const varRedo=await primary.request('/api/history/redo',{method:'POST',
-      headers:{'if-match':String(varUndo.body.revision),
-        'x-rheomiq-history-generation':String(varUndo.body.history.generation)},body:{}});
+    const varRedo=await historyAction('redo',varUndo);
     expect(varRedo,200,undefined,'variable-redo');
     assert(varRedo.body?.data?.state?.recurringCustom?.some((row:any)=>
       row.id===serviceId&&row.amount===80&&row.amountMode==='variable'&&
       row.estimateMin===60&&row.estimateMax===100),
       'Redo did not restore the saved variable recurring estimate.');
-    const varRestored=await primary.request('/api/history/undo',{method:'POST',
-      headers:{'if-match':String(varRedo.body.revision),
-        'x-rheomiq-history-generation':String(varRedo.body.history.generation)},body:{}});
+    const varRestored=await historyAction('undo',varRedo);
     expect(varRestored,200,undefined,'variable-final-undo');
     assert((varRestored.body?.data?.state?.events||[]).length===existingEventCount,
       'Variable estimate undo/redo changed the posted event count.');
