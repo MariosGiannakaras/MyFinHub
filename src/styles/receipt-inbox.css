@@ -110,3 +110,7 @@
 .receipt-item-row>button{grid-column:1/-1;justify-self:start}
 .receipt-items-review .receipt-item-balance{padding:9px;border-radius:9px;border:1px solid var(--border-subtle);font-size:10px;overflow-wrap:anywhere;color:var(--ink)}
 @media(max-width:520px){.receipt-item-row{grid-template-columns:minmax(0,1fr)}.receipt-item-row>label,.receipt-item-row .receipt-item-category{grid-column:1}.receipt-item-row>button{min-height:44px}}
+
+.receipt-existing-confirm{display:flex;align-items:flex-start;gap:9px;margin-top:10px;font-size:10px;line-height:1.5;color:var(--ink)}
+.receipt-existing-confirm input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--accent)}
+.receipt-existing-confirm span{min-width:0;overflow-wrap:anywhere}

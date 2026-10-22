@@ -2,6 +2,7 @@ import { ReceiptText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteReceiptDraft, type ReceiptProposal } from '../lib/receiptDrafts';
+import { receiptSplitParts } from '../lib/receiptItemReview';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
 import { QuickAdd, type QuickPrefill } from './QuickAdd';
 import { ReceiptInbox } from './ReceiptInbox';
@@ -63,10 +64,12 @@ export function ReceiptAwareQuickAdd({
       amount: explicitNonEur ? 0 : (receiptProposal?.total ?? 0),
       category: receiptProposal?.category,
       subcategory: receiptProposal?.subcategory,
+      parts:receiptProposal?.reviewedSplit?receiptSplitParts(receiptProposal,data.state.settings)??undefined:undefined,
     };
-  }, [receiptDraftId, receiptProposal]);
+  }, [receiptDraftId, receiptProposal,data.state.settings]);
 
   const applyReceipt = (draftId: string, proposal: ReceiptProposal) => {
+    if(proposal.reviewedSplit&&!receiptSplitParts(proposal,data.state.settings))throw new Error('Η κατανομή δεν συμφωνεί με τα ελεγμένα ποσά και τις τρέχουσες κατηγορίες.');
     setReceiptDraftId(draftId);
     setReceiptProposal(proposal);
     setReceiptOpen(false);
@@ -94,7 +97,7 @@ export function ReceiptAwareQuickAdd({
         data={data}
         asOf={receiptProposal?.date ?? asOf}
         initial={initial}
-        initialKind={receiptDraftId ? 'expense' : initialKind}
+        initialKind={receiptDraftId ? (receiptProposal?.reviewedSplit?'split':'expense') : initialKind}
         prefill={receiptDraftId ? receiptPrefill : prefill}
         motionMode={motionMode}
         onClose={onClose}

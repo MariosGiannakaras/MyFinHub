@@ -29,6 +29,8 @@ export type ReceiptProposal = {
   itemsCurrency?: string;
   /** Whether OCR item cents sum to the explicit grand total; never an auto-save approval. */
   itemsBalanced?: boolean;
+  /** Local owner-selected handoff only; not a posted finance event. */
+  reviewedSplit?: boolean;
   confidence?: ReceiptFieldConfidence;
 };
 

@@ -40,7 +40,7 @@ type FundingSourceRow={id:string;sourceKey:string;amountText:string};
 const linkedFeeFor=(data:FinanceData,principalId:string):FinanceEvent|null=>
   (data.state.events??[]).find(event=>event.feeForEventId===principalId)??null;
 
-export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string };
+export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string; parts?:SplitPart[] };
 
 const intentIcons:Record<EntryIntent,ReactNode>={
   expense:<CircleDollarSign/>,
@@ -151,7 +151,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);
       setFeeAmount('');setFeeCategory(data.state.settings.expenseCategories[0]||'Άλλο');
       setMultiFundingOpen(false);setFundingRows(freshFundingRows());
-      setParts(freshParts());
+      setParts(initialKind==='split'&&prefill?.parts?.length?prefill.parts:freshParts());
     }
     setError('');setDirty(false);
   },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to]);
