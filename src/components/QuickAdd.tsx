@@ -11,7 +11,7 @@ import { FinanceIcon } from './FinanceIcon';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
-import { categoryTree, subcategoriesFor } from '../lib/categories';
+import { categoryTree, defaultCategory, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
 import { manualReconciliationPreview, manualReconciliationDraftError } from '../lib/manualReconciliation';
 // Only load the linked fee builder for a confirmed paid transfer.
@@ -81,7 +81,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [date,setDate]=useState(asOf);
   const [note,setNote]=useState('');
   const [counterpartyId,setCounterpartyId]=useState('');
-  const [category,setCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [category,setCategory]=useState(defaultCategory(data.state.settings,'expense'));
   const [subcategory,setSubcategory]=useState('');
   const [accountId,setAccountId]=useState(data.state.settings.defaultExpenseAccount||fallbackAccount);
   const [from,setFrom]=useState(transferDefaults.from);
@@ -90,11 +90,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [actualBalance,setActualBalance]=useState('');
   const [statementMovement,setStatementMovement]=useState('');
   const [feeAmount,setFeeAmount]=useState('');
-  const [feeCategory,setFeeCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [feeCategory,setFeeCategory]=useState(defaultCategory(data.state.settings,'expense'));
   const [multiFundingOpen,setMultiFundingOpen]=useState(false);
   const [fundingRows,setFundingRows]=useState<FundingSourceRow[]>([]);
   const [reconciliationConfirmed,setReconciliationConfirmed]=useState(false);
-  const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||data.state.settings.expenseCategories[0]||'Άλλο',amount:0}]);
+  const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||defaultCategory(data.state.settings,'expense'),amount:0}]);
   const [error,setError]=useState('');
   const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
@@ -109,8 +109,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   };
 
   const freshParts=()=>[
-    {id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},
-    {id:'p2',label:'',category:data.state.settings.expenseCategories[1]||data.state.settings.expenseCategories[0]||'Άλλο',amount:0},
+    {id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},
+    {id:'p2',label:'',category:data.state.settings.expenseCategories[1]||defaultCategory(data.state.settings,'expense'),amount:0},
   ] satisfies SplitPart[];
 
   useEffect(()=>{
@@ -134,7 +134,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setStatementMovement('');setReconciliationConfirmed(false);
       const oldFee=linkedFeeFor(data,initial.id);
       setFeeAmount(oldFee?String(oldFee.amount):'');
-      setFeeCategory(oldFee?.category||data.state.settings.expenseCategories[0]||'Άλλο');
+      setFeeCategory(oldFee?.category||defaultCategory(data.state.settings,'expense'));
       setMultiFundingOpen(Boolean(initial.funding?.length));
       setFundingRows(initial.funding?.length?initial.funding.map((row,index)=>({
         id:'funding-'+(index+1),sourceKey:row.kind+':'+row.sourceId,amountText:String(row.amount)
@@ -154,7 +154,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setTo(initialKind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to);
       setPerson('');
       setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);
-      setFeeAmount('');setFeeCategory(data.state.settings.expenseCategories[0]||'Άλλο');
+      setFeeAmount('');setFeeCategory(defaultCategory(data.state.settings,'expense'));
       setMultiFundingOpen(false);setFundingRows(freshFundingRows());
       setParts(initialKind==='split'&&prefill?.parts?.length?prefill.parts:freshParts());
     }
