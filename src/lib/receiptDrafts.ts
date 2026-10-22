@@ -31,6 +31,8 @@ export type ReceiptProposal = {
   itemsBalanced?: boolean;
   /** Local owner-selected handoff only; not a posted finance event. */
   reviewedSplit?: boolean;
+  /** Owner-reviewed local-only association to an existing posted purchase. */
+  matchedPurchase?: {source:'event'|'legacy';sourceId:string};
   confidence?: ReceiptFieldConfidence;
 };
 

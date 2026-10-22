@@ -12,6 +12,9 @@ describe('receipt purchase match review UX contract (#588 C/#3)',()=>{
     expect(inbox).toContain('return findReceiptPurchaseCandidates(data,{merchant:reviewProposal.merchant,date:reviewProposal.date,total:parsedTotal,currency})');
     expect(inbox).toContain('purchaseMatches.map(row=>');
     expect(inbox).toContain('Η απόδειξη δεν συσχετίζεται αυτόματα');
+    expect(inbox).toContain('matchedPurchase:link');
+    expect(inbox).toContain('onClick={()=>void setPurchaseAssociation({source:row.source,sourceId:row.sourceId})}');
+    expect(inbox).toContain('Κατάργηση συσχέτισης');
     expect(helper).toContain('Math.min(12,');
     expect(helper).toContain('if(distance>3||cents(amount)!==targetAmount)return');
     expect(css).toContain('.receipt-existing-matches');

@@ -140,6 +140,8 @@ export function ReceiptInbox({
     const currency=reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEur?reviewProposal.currency:'EUR';
     return findReceiptPurchaseCandidates(data,{merchant:reviewProposal.merchant,date:reviewProposal.date,total:parsedTotal,currency});
   },[data,reviewProposal,reviewTotal,reviewTotalEdited]);
+  const linkedPurchase=reviewProposal?.matchedPurchase;
+  const linkedCandidate=linkedPurchase?purchaseMatches.find(item=>item.source===linkedPurchase.source&&item.sourceId===linkedPurchase.sourceId):null;
 
   useEffect(()=>{
     const proposal=selected?.proposal;
@@ -267,7 +269,7 @@ export function ReceiptInbox({
 
   const updateReview=(patch:Partial<ReceiptProposal>)=>{
     setReviewNewPurchaseConfirmed(false);
-    setReviewProposal(current=>current?{...current,...patch}:current);
+    setReviewProposal(current=>current?{...current,matchedPurchase:undefined,...patch}:current);
     setReviewDirty(true);
     setMessage('');
     setError('');
@@ -313,6 +315,24 @@ export function ReceiptInbox({
         ?undefined:lineReview.balanced,
     } satisfies ReceiptProposal;
   };
+  const setPurchaseAssociation=async(link?:NonNullable<ReceiptProposal['matchedPurchase']>)=>{
+    if(!selected||!reviewProposal||reviewSaving)return;
+    const normalized=normalizedReview();
+    if(!normalized){setError('Διόρθωσε τα ποσά και τις γραμμές της απόδειξης πριν επιβεβαιώσεις τη συσχέτιση.');return}
+    if(link&&!purchaseMatches.some(item=>item.source===link.source&&item.sourceId===link.sourceId)){
+      setError('Η επιλεγμένη κίνηση δεν είναι πλέον διαθέσιμη προς συσχέτιση.');return;
+    }
+    setReviewSaving(true);setError('');
+    try{
+      await saveReceiptProposal(selected.id,{...normalized,reviewedSplit:false,matchedPurchase:link});
+      await refresh(selected.id);
+      setReviewDirty(false);
+      setReviewNewPurchaseConfirmed(false);
+      setMessage(link?'Η απόδειξη συσχετίστηκε τοπικά με υπάρχουσα κίνηση. Δεν δημιουργήθηκε νέα δαπάνη.':'Η τοπική συσχέτιση καταργήθηκε. Καμία οικονομική κίνηση δεν άλλαξε.');
+    }catch(reason){
+      setError(reason instanceof Error?reason.message:'Δεν αποθηκεύτηκε η τοπική συσχέτιση.');
+    }finally{setReviewSaving(false)}
+  };
   const splitProposal=normalizedReview();
   const splitReady=Boolean(splitProposal&&receiptSplitParts(splitProposal,data.state.settings));
   const saveReview=async(apply=false,split=false)=>{
@@ -320,6 +340,7 @@ export function ReceiptInbox({
     const normalized=normalizedReview();
     if(!normalized){setError('Έλεγξε το διορθωμένο ποσό της απόδειξης.');return}
     if(apply&&normalized.currency!=='EUR'){setError('Η απόδειξη είναι σε ξένο νόμισμα. Διόρθωσε πρώτα το ποσό σε ευρώ.');return}
+    if(apply&&normalized.matchedPurchase){setError('Η απόδειξη έχει ήδη συσχετιστεί με υπάρχουσα αγορά. Κατάργησε πρώτα τη συσχέτιση.');return}
     if(apply&&purchaseMatches.length&&!reviewNewPurchaseConfirmed){setError('Έλεγξε τις πιθανές υπάρχουσες αγορές και επιβεβαίωσε ότι πρόκειται για νέα, διαφορετική αγορά.');return}
     if(split&&!receiptSplitParts(normalized,data.state.settings)){setError('Ο επιμερισμός χρειάζεται δύο ελεγμένες γραμμές με έγκυρες κατηγορίες και άθροισμα ίσο με το σύνολο σε ευρώ.');return}
     setReviewSaving(true);setError('');
@@ -384,7 +405,7 @@ export function ReceiptInbox({
             {proposal&&reviewed ? <div className="receipt-proposal receipt-proposal-editable" aria-label="Έλεγχος και διόρθωση στοιχείων OCR"><div className="receipt-proposal-head"><div><h3>Έλεγχος πρότασης OCR</h3><small>Τα ποσοστά αφορούν την αρχική αναγνώριση. Οι διορθώσεις σου υπερισχύουν πριν περάσουν στη Γρήγορη Κίνηση.</small></div>{reviewDirty?<span>Μη αποθηκευμένες διορθώσεις</span>:<span className="saved">Τοπικά αποθηκευμένη</span>}</div><div className="receipt-review-grid">
               <label><span>Κατάστημα <small>OCR {confidenceLabel(proposal.confidence?.merchant)}</small></span><AppTextInput value={reviewed.merchant??''} maxLength={120} aria-label="Διόρθωση καταστήματος απόδειξης" onChange={event=>updateReview({merchant:event.target.value})}/></label>
               <label><span>Ημερομηνία <small>OCR {confidenceLabel(proposal.confidence?.date)}</small></span><div className="receipt-review-date"><AppDateInput value={reviewed.date??''} aria-label="Διόρθωση ημερομηνίας απόδειξης" onChange={event=>updateReview({date:event.target.value})}/>{reviewed.date?<Button type="button" variant="ghost" onClick={()=>updateReview({date:undefined})}>Καθαρισμός</Button>:null}</div></label>
-              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewNewPurchaseConfirmed(false);setReviewDirty(true);setMessage('');setError('')}}/></label>
+              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewNewPurchaseConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setMessage('');setError('')}}/></label>
 
               <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} subcategory={reviewed.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας ή υποκατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
             </div>
@@ -393,7 +414,7 @@ export function ReceiptInbox({
               <p>Τα OCR ποσά είναι προτάσεις. Έλεγξέ τα πριν από οποιαδήποτε καταχώριση· δεν δημιουργούν αυτόματα δαπάνες.</p>
               <div className="receipt-items-list">{reviewed.items.map((item,index)=><div key={item.id} className="receipt-item-row">
                 <label><span>Περιγραφή γραμμής {index+1}</span><AppTextInput value={item.description} maxLength={90} aria-label={`Διόρθωση περιγραφής γραμμής ${index+1}`} onChange={event=>updateReviewLine(item.id,{description:event.target.value})}/></label>
-                <label><span>Ποσό γραμμής {index+1}</span><MoneyInput value={reviewItemAmounts[item.id]??String(item.amount)} aria-label={`Διόρθωση ποσού γραμμής ${index+1}`} onValueChange={value=>{setReviewItemAmounts(current=>({...current,[item.id]:value}));setReviewNewPurchaseConfirmed(false);setReviewDirty(true);setError('');setMessage('')}}/></label>
+                <label><span>Ποσό γραμμής {index+1}</span><MoneyInput value={reviewItemAmounts[item.id]??String(item.amount)} aria-label={`Διόρθωση ποσού γραμμής ${index+1}`} onValueChange={value=>{setReviewItemAmounts(current=>({...current,[item.id]:value}));setReviewNewPurchaseConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setError('');setMessage('')}}/></label>
                 <label className="receipt-item-category"><span>Κατηγορία γραμμής {index+1}</span><CategorySelectInput settings={data.state.settings} kind="expense" category={item.category??''} subcategory={item.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label={`Κατηγορία γραμμής ${index+1}`} onChange={selection=>updateReviewLine(item.id,{category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
                 <Button type="button" variant="ghost" className="danger" onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής {index+1}</Button>
               </div>)}</div>
@@ -406,16 +427,20 @@ export function ReceiptInbox({
             {purchaseMatches.length ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
               <h3>Έλεγξε αν έχει ήδη καταχωριστεί η αγορά</h3>
               <p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>
-              <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small></li>)}</ul>
+              <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small><Button type="button" variant="secondary" disabled={reviewSaving||Boolean(linkedPurchase)||reviewDirty} onClick={()=>void setPurchaseAssociation({source:row.source,sourceId:row.sourceId})}>Συσχέτιση με αυτήν</Button></li>)}</ul>
               <label className="receipt-existing-confirm"><input type="checkbox" checked={reviewNewPurchaseConfirmed} onChange={event=>setReviewNewPurchaseConfirmed(event.target.checked)}/><span>Έλεγξα τις παραπάνω καταχωρίσεις και επιβεβαιώνω ότι πρόκειται για διαφορετική νέα αγορά.</span></label>
             </aside> : null}
+            {linkedPurchase?<div className="receipt-existing-matches" role="status" aria-live="polite">
+              <p>{linkedCandidate?'Η απόδειξη έχει συσχετιστεί τοπικά με την ήδη καταχωρισμένη αγορά: '+(linkedCandidate.note||linkedCandidate.date):'Η προηγούμενη συσχέτιση δεν επιβεβαιώνεται πλέον από τις τρέχουσες κινήσεις.'} Δεν δημιουργήθηκε οικονομική εγγραφή.</p>
+              <Button type="button" variant="secondary" disabled={reviewSaving} onClick={()=>void setPurchaseAssociation()}>Κατάργηση συσχέτισης</Button>
+            </div>:null}
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
-              <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
+              <Button type="button" variant="secondary" disabled={scanning||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
               {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid||reviewLinesInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
-              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
-              {proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
+              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
+              {proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>

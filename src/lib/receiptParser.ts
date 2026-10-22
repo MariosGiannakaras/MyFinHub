@@ -1,4 +1,3 @@
-import type { FinanceData } from '../types.js';
 import type { ReceiptProposal } from './receiptDrafts.js';
 
 const TOTAL_WORDS = ['συνολο','πληρωτεο','τελικο','γενικο συνολο','total','grand total','amount due','payable'];

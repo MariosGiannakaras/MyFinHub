@@ -112,3 +112,5 @@
 .receipt-existing-confirm input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--accent)}
 .receipt-existing-confirm span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:520px){.receipt-item-row{grid-template-columns:minmax(0,1fr)}.receipt-item-row>label,.receipt-item-row .receipt-item-category{grid-column:1}.receipt-item-row>button{min-height:44px}}
+
+.receipt-existing-matches li>button,.receipt-existing-matches>button{justify-self:start;min-height:44px}
