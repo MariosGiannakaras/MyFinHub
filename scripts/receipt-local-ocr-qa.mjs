@@ -285,6 +285,10 @@ try {
   const prefill=await c.call("function(){const m=document.querySelector('.quick-modal:not(.contextual-quick-modal)');return {parts:m?.querySelectorAll('.split-line-taxonomy').length??0,amounts:[...(m?.querySelectorAll('input[aria-label^=\"Ποσό μέρους\"]')||[])].map(x=>x.value),notes:[...(m?.querySelectorAll('input[aria-label^=\"Περιγραφή μέρους\"]')||[])].map(x=>x.value)}}");
   assert(prefill.parts===2&&prefill.amounts.join(',')==='20.25,4.25'&&prefill.notes[0]==='QA τοπικό προϊόν 1',`verified receipt split prefill: ${JSON.stringify(prefill)}`);
   assert((await receiptCount())===1,'split handoff alone preserves local receipt until durable save');
+  // A transitioning modal can be partially transparent in a screenshot even
+  // after the DOM and form fields exist; await the real stable painted state.
+  await waitFor("function(){const m=document.querySelector('.quick-modal:not(.contextual-quick-modal)');if(!m)return false;return Number.parseFloat(getComputedStyle(m).opacity)>=0.99}",'settled canonical split modal opacity');
+  await sleep(350);
   await screenshot('receipt-reviewed-split-quick-entry');
   const cancelled=await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(n=>(n.textContent||'').trim()==='Ακύρωση');b?.click();return Boolean(b)}");
   assert(cancelled,'split Quick Entry cancellation available');

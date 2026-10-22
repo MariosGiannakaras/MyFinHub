@@ -674,6 +674,77 @@ async function main(){
     assert(!(metadataFinish.body.data.state.cards||[]).some((c:any)=>c.id===metadataId),
       'Metadata-only QA card remains after Undo roundtrip.');
 
+
+    // Counterparty IDs and selected posted-event associations must survive
+    // the actual owner+AAL2, revisioned relational Supabase persistence layer.
+    // Deliberately do not add an independent table or rewrite legacy notes.
+    console.log('[real-stack] stage canonical-counterparty-real-db-roundtrip');
+    const cpBefore=await primary.request('/api/data');
+    const cpHistory=await primary.request('/api/history');
+    expect(cpBefore,200,undefined,'counterparty-before');
+    expect(cpHistory,200,undefined,'counterparty-history');
+    const cpNow=new Date().toISOString();
+    const cpId='cp-real-stack-merchant-1';
+    const cpPurchase=createEvent({
+      kind:'expense',date:'2026-10-05',accountId:'qa-cash',
+      amount:12.34,note:'Synthetic exact merchant reference',
+      category:'Synthetic expense',
+    });
+    const cpState=structuredClone(cpBefore.body.data.state);
+    cpState.counterparties=[...(cpState.counterparties||[]),{
+      id:cpId,kind:'merchant',displayName:'Synthetic reviewed merchant',
+      aliases:['SYNTHETIC SHOP'],createdAt:cpNow,updatedAt:cpNow,
+    }];
+    cpState.events=[...(cpState.events||[]),{...cpPurchase,counterpartyId:cpId}];
+    validateCompleteFinanceData({...cpBefore.body.data,state:cpState});
+    const cpDo=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:cpNow,historyLabel:'Reviewed merchant identity'},
+    });
+    expect(cpDo,200,undefined,'counterparty-real-save');
+    const cpRead=await restored.request('/api/data');
+    expect(cpRead,200,undefined,'counterparty-real-reload');
+    const cpRows=cpRead.body?.data?.state?.counterparties||[];
+    const cpEvents=cpRead.body?.data?.state?.events||[];
+    assert(cpRows.some((row:any)=>row.id===cpId&&row.kind==='merchant'&&
+      row.displayName==='Synthetic reviewed merchant'&&row.aliases?.[0]==='SYNTHETIC SHOP'),
+      'Reviewed counterparty identity did not survive revisioned DB reload.');
+    assert(cpEvents.some((event:any)=>event.id===cpPurchase.id&&
+      event.counterpartyId===cpId&&event.note===cpPurchase.note&&
+      event.kind==='expense'&&event.amount===12.34),
+      'Owner-selected merchant relation did not round-trip through the real relational event payload.');
+    const cpStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:new Date().toISOString(),
+        historyLabel:'Stale merchant overwrite must lose'},
+    });
+    assert(cpStale.status===409&&
+      ['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(cpStale.body?.code||'')),
+      'Stale merchant identity writer was not rejected by revision/history protection.');
+    const cpUndo=await historyAction('undo',cpDo);
+    expect(cpUndo,200,undefined,'counterparty-real-undo');
+    assert(!(cpUndo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpUndo.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Undo did not atomically remove the owner identity and posted expense reference.');
+    const cpRedo=await historyAction('redo',cpUndo);
+    expect(cpRedo,200,undefined,'counterparty-real-redo');
+    assert((cpRedo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      (cpRedo.body?.data?.state?.events||[]).some((event:any)=>
+        event.id===cpPurchase.id&&event.counterpartyId===cpId),
+      'Redo did not atomically restore the reviewed identity and posted expense reference.');
+    const cpFinish=await historyAction('undo',cpRedo);
+    expect(cpFinish,200,undefined,'counterparty-real-final-undo');
+    const cpClean=await restored.request('/api/data');
+    expect(cpClean,200,undefined,'counterparty-real-final-reload');
+    assert(!(cpClean.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpClean.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Final merchant Undo did not leave the actual database history clean.');
+    console.log('[real-stack] PASS selected merchant ID, relational payload, stale conflict and Undo/Redo');
+
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
 
