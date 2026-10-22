@@ -13,6 +13,7 @@ import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
 import { MoneyInput } from '../components/MoneyInput';
 import { PlanningApprovedDesktop } from '../components/PlanningApprovedDesktop';
+import { ForecastScenarioPanel } from '../components/ForecastScenarioPanel';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
@@ -168,6 +169,7 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
     {message ? <div className="action-status" role="status" aria-live="polite">{message}</div> : null}
 
     <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>
+    <ForecastScenarioPanel data={data} asOf={asOf}/>
 
     <section className="planning-summary-grid" data-content-entrance="grid" aria-label="Σύνοψη προγραμματισμού">
       <article className="surface-raised"><span>Εκκρεμούν τώρα</span><b className={due.length ? 'negative' : ''}>{due.length}</b><small>{due.length ? 'Προγραμματισμένες κινήσεις με ημερομηνία έως σήμερα' : 'Δεν υπάρχει scheduled κίνηση που να εκκρεμεί τώρα'}</small></article>
