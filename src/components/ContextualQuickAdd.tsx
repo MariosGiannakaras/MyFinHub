@@ -12,6 +12,7 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { RecurringBrandMark } from './RecurringBrandMark';
 import { allAccounts, createEvent } from '../lib/domain';
+import { defaultCategory } from '../lib/categories';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { savingContributionDraftError } from '../lib/ledgerFoundations';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
@@ -107,7 +108,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [paymentFee,setPaymentFee]=useState('');
   const [writeoffConfirmed,setWriteoffConfirmed]=useState(false);
   const [confirmedWriteoffAmount,setConfirmedWriteoffAmount]=useState('');
-  const [paymentFeeCategory,setPaymentFeeCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [paymentFeeCategory,setPaymentFeeCategory]=useState(defaultCategory(data.state.settings,'expense'));
   const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount,asOf):null;
   const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
@@ -126,7 +127,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
           event=createEvent({kind:'card_payment',date,amount:numeric,note:note.trim()||`Αποπληρωμή ${cardLabel(card)}`,fromAccountId:accountId,cardId:card.id});
           if(selectedStatement)event.statementId=selectedStatement.id;
         }else{
-          event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||`Αγορά με ${cardLabel(card)}`,category:context.category||data.state.settings.expenseCategories[0]||'Άλλο',cardId:card.id});
+          event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||`Αγορά με ${cardLabel(card)}`,category:context.category||defaultCategory(data.state.settings,'expense'),cardId:card.id});
         }
       }else if(context.mode==='lending'){
         if(context.action!=='writeoff'&&!accounts.some(account=>account.id===accountId))
