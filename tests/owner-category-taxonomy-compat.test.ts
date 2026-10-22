@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { installmentExpensePurpose, recurringExpensePurpose } from '../src/lib/linkedPaymentPurpose.js';
 import { defaultCategory } from '../src/lib/categories.js';
+import { qaFinanceData } from '../src/qaFixture.js';
 
 describe('owner-approved taxonomy linked payment compatibility',()=>{
   it('does not let the first frequency-sorted category silently categorize unrelated entries',()=>{
-    const settings={expenseCategories:['JobFood','Καφές','Άλλο'],incomeCategories:['Μισθοδοσία & Εργασία','Άλλο πραγματικό έσοδο']} as any;
+    const settings={...qaFinanceData().state.settings,expenseCategories:['JobFood','Καφές','Άλλο'],incomeCategories:['Μισθοδοσία & Εργασία','Άλλο πραγματικό έσοδο'],expenseCategoryTree:undefined,incomeCategoryTree:undefined};
     expect(defaultCategory(settings,'expense')).toBe('Άλλο');
     expect(defaultCategory(settings,'income')).toBe('Άλλο πραγματικό έσοδο');
   });
