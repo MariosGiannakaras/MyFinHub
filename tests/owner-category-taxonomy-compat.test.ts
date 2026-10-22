@@ -1,9 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { installmentExpensePurpose, recurringExpensePurpose } from '../src/lib/linkedPaymentPurpose.js';
-import type { Loan, RecurringItem } from '../src/types.js';
+import { defaultCategory } from '../src/lib/categories.js';
 
 describe('owner-approved taxonomy linked payment compatibility',()=>{
+  it('does not let the first frequency-sorted category silently categorize unrelated entries',()=>{
+    const settings={expenseCategories:['JobFood','Καφές','Άλλο'],incomeCategories:['Μισθοδοσία & Εργασία','Άλλο πραγματικό έσοδο']} as any;
+    expect(defaultCategory(settings,'expense')).toBe('Άλλο');
+    expect(defaultCategory(settings,'income')).toBe('Άλλο πραγματικό έσοδο');
+  });
   it('uses the recurring configuration category and subcategory as the expense purpose',()=>{
     expect(recurringExpensePurpose({category:'Ψηφιακή υπηρεσία',subcategory:'Streaming'})).toEqual({category:'Ψηφιακή υπηρεσία',subcategory:'Streaming'});
     expect(recurringExpensePurpose({category:'Τηλεπικοινωνίες'})).toEqual({category:'Τηλεπικοινωνίες'});
