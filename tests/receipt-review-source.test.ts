@@ -14,6 +14,13 @@ describe('receipt editable line review UI contract (#588 C)',()=>{
     expect(ui).toContain('itemsBalanced:reviewProposal.items===undefined?undefined:');
     expect(ui).toContain('reviewLinesInvalid');
     expect(ui).toContain('await saveReceiptProposal(selected.id,normalized)');
+    const browser=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
+    expect(browser).toContain('receipt-local-reviewed-items-desktop');
+    expect(browser).toContain('receipt-local-reviewed-items-mobile');
+    expect(browser).toContain('sub-cent receipt item save guard');
+    expect(browser).toContain('exact 2450 cents stored only as owner-reviewed local proposal');
+    expect(browser).toContain("currency:'USD',itemsCurrency:'USD'");
+
     expect(css).toContain('.receipt-items-review');
     expect(ui).not.toContain('createEvent(');
   });

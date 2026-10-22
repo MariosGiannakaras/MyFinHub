@@ -223,10 +223,47 @@ try {
   assert(persistedOcrProposal?.currency==='EUR', `stored OCR currency proposal missing: ${JSON.stringify(persistedOcrProposal)}`);
   assert(!reviewValues.currencyPicker, `EUR-only receipt review must not expose a currency dropdown: ${JSON.stringify(reviewValues)}`);
   assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
+
   await screenshot('receipt-local-ocr-proposal');
 
+  console.log('Receipt OCR QA: owner-reviewed item cents, invalid guard and persistent local correction');
+  const addReviewItem=async expected=>{
+    const clicked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-proposal button')].find(node=>(node.textContent||'').trim()==='Προσθήκη γραμμής');button?.click();return Boolean(button&&!button.disabled)}");
+    assert(clicked,'owner can add a local OCR line without posting a transaction');
+    await waitFor("function(count){return document.querySelectorAll('.receipt-item-row').length===count}",'receipt item count',[expected]);
+  };
+  const editReviewField=async(label,value)=>{
+    const updated=await c.call("function(label,value){const input=[...document.querySelectorAll('input[aria-label]')].find(node=>node.getAttribute('aria-label')===label);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);
+    assert(updated,`receipt item editor input exists: ${label}`);
+    await waitFor("function(label,value){return [...document.querySelectorAll('input[aria-label]')].some(node=>node.getAttribute('aria-label')===label&&node.value===value)}",'edited receipt item field',[label,value]);
+  };
+  await addReviewItem(1);
+  await editReviewField('Διόρθωση περιγραφής γραμμής 1','QA τοπικό προϊόν 1');
+  await editReviewField('Διόρθωση ποσού γραμμής 1','20.25');
+  await addReviewItem(2);
+  await editReviewField('Διόρθωση περιγραφής γραμμής 2','QA τοπικό προϊόν 2');
+  await editReviewField('Διόρθωση ποσού γραμμής 2','4.251');
+  await waitFor("function(){const save=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));return Boolean(save?.disabled&&document.querySelector('#receipt-review-items-error'))}",'sub-cent receipt item save guard');
+  assert((await receiptCount())===1,'invalid OCR item edit never deletes its local receipt');
+  await editReviewField('Διόρθωση ποσού γραμμής 2','4.25');
+  await waitFor("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}",'precisely balanced 20.25+4.25 EUR receipt items');
+  const itemInputs=await c.call("function(){return {items:document.querySelectorAll('.receipt-item-row').length,categorySelectors:document.querySelectorAll('.receipt-item-category [aria-label^=\"Κατηγορία γραμμής\"]').length,balanced:(document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}}");
+  assert(itemInputs.items===2&&itemInputs.categorySelectors===2&&itemInputs.balanced,`OCR item review must expose live taxonomy and exactly reconciled EUR cents: ${JSON.stringify(itemInputs)}`);
+  await screenshot('receipt-local-reviewed-items-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await sleep(160);
+  const itemMobile=await c.call("function(){const parent=document.querySelector('.receipt-inbox'),rows=[...document.querySelectorAll('.receipt-item-row')],rect=parent?.getBoundingClientRect();return {rows:rows.length,overlap:rows.some(row=>{const r=row.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>innerWidth+1)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,modal:rect?{left:rect.left,right:rect.right}:null}}");
+  assert(itemMobile.rows===2&&!itemMobile.overlap&&itemMobile.overflow<=1&&itemMobile.modal?.left>=-1&&itemMobile.modal?.right<=376,`375px item editor remains contained: ${JSON.stringify(itemMobile)}`);
+  await screenshot('receipt-local-reviewed-items-mobile');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  const persistItemsClicked=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));b?.click();return Boolean(b&&!b.disabled)}");
+  assert(persistItemsClicked,'valid reviewed OCR lines can be saved independently of finance');
+  await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'reviewed OCR line local save receipt');
+  const localLines=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').getAll();req.onsuccess=()=>{const p=req.result[0]?.proposal;db.close();resolve({count:p?.items?.length??0,sum:p?.items?.reduce((n,x)=>n+Math.round(x.amount*100),0),balanced:p?.itemsBalanced})};req.onerror=()=>reject(req.error)};request.onerror=()=>reject(request.error)})}`);
+  assert(localLines.count===2&&localLines.sum===2450&&localLines.balanced===true,`exact 2450 cents stored only as owner-reviewed local proposal: ${JSON.stringify(localLines)}`);
+
   console.log('Receipt OCR QA: foreign OCR cannot be applied without explicit corrected EUR amount');
-  const changedCurrency=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readwrite');const store=tx.objectStore('receipts');const all=store.getAll();all.onsuccess=()=>{const row=all.result[0];if(!row?.proposal){db.close();resolve(false);return}store.put({...row,proposal:{...row.proposal,currency:'USD'},updatedAt:new Date(Date.now()+1000).toISOString()})};tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};request.onerror=()=>reject(request.error)})}`);
+  const changedCurrency=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readwrite');const store=tx.objectStore('receipts');const all=store.getAll();all.onsuccess=()=>{const row=all.result[0];if(!row?.proposal){db.close();resolve(false);return}store.put({...row,proposal:{...row.proposal,currency:'USD',itemsCurrency:'USD'},updatedAt:new Date(Date.now()+1000).toISOString()})};tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};request.onerror=()=>reject(request.error)})}`);
   assert(changedCurrency,'synthetic local foreign currency OCR fixture updated without finance write');
   await c.call("function(){document.querySelector('.receipt-inbox-header .icon-button')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.receipt-inbox')}",'receipt closes before foreign rehydrate');
@@ -234,6 +271,7 @@ try {
   await waitFor("function(){return Boolean(document.querySelector('.receipt-currency-warning'))}",'foreign OCR guard warning');
   const foreignBlocked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(button?.disabled)&&!document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')}");
   assert(foreignBlocked,'foreign source requires explicit EUR correction and never offers currency selector');
+  assert((await c.call("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('άλλο νόμισμα')}")),'foreign OCR lines are never silently denominated in EUR');
   await screenshot('receipt-foreign-currency-safety');
 
   console.log('Receipt OCR QA: user corrections persist locally and reviewed proposal owns the Quick Entry prefill');
