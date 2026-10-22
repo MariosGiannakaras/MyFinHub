@@ -15,5 +15,8 @@ describe('owner-selected stable identity UI',()=>{
   expect(quick).toContain("setCounterpartyId('')");
   expect(selector).toContain('<option value="">Χωρίς συσχέτιση</option>');
   expect(selector).toContain('Δεν επιλέγεται αυτόματα.');
+  const browser=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
+  expect(browser).toContain('counterparty-owner-directory-dark-mobile');
+  expect(browser).toContain('counterparty-owner-quick-entry-selected');
  });
 });

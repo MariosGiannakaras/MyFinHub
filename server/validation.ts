@@ -647,7 +647,8 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
       if(!object(item))invalid('Invalid counterparty.');
       const kind=item.kind as 'merchant'|'beneficiary';
       const id=item.id as string, label=(item.displayName as string).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
-      const namesForItem=[label,...(item.aliases??[]).map((alias:string)=>alias.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim())];
+      const aliases=Array.isArray(item.aliases)?item.aliases as string[]:[];
+      const namesForItem=[label,...aliases.map(alias=>alias.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim())];
       for(const candidate of new Set(namesForItem)){
         if(candidate.length<2)invalid('Invalid counterparty alias.');
         const key=kind+':'+candidate;
