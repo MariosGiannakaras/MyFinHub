@@ -20,7 +20,6 @@ import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
 import { isSavingsAccount } from './lib/accountSemantics';
-import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { reportingMonthForDate } from './lib/localDate';
 import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
@@ -105,10 +104,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const cleanupAttempted=useRef(new Set<string>());
-  // A Dashboard card's filter is only the next navigation's context.
-  // Navigating elsewhere must not re-apply it on later generic Transactions visits.
+  // Dashboard card selection is scoped to the next Transactions navigation.
   useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
-
   const cleanupInFlight=useRef(new Map<string,Promise<void>>());
   const [cleanupBusy,setCleanupBusy]=useState(false);
   const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
@@ -210,20 +207,31 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
   const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
-  const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    await finance.updateDurably(current=>withConfirmedLendingPlan(current,draft,true));
+  };
+  const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
+    const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
+    return finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee));
+  };
+  const withoutEventGroup=(current:FinanceData,id:string):FinanceData=>({...current,state:{...current.state,
+    events:(current.state.events??[]).filter(event=>event.id!==id&&event.feeForEventId!==id)
+  }});
+  const deleteEvent=(id:string)=>finance.update(current=>withoutEventGroup(current,id));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
-    setEditingEventId(id);
+    setEditingEventId(event?.feeForEventId??id);
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
   // Transactions lifecycle waits for the exact revision/history receipt.
   const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
-    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
-    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id)}};
+    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση άλλαξε. Ανανέωσε πριν τη διαγράψεις.');
+    return withoutEventGroup(current,id);
   });
-  const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
-  const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
+  const editLegacy=async(transaction:LegacyTransaction)=>{const {withLegacyOverride}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyOverride(current,transaction))};
+  const deleteLegacy=async(id:string)=>{const {withLegacyTombstone}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyTombstone(current,id))};
   const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
     const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
     if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};
@@ -364,7 +372,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
-    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
@@ -378,7 +386,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

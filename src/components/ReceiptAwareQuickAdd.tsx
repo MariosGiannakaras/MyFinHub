@@ -16,6 +16,7 @@ export function ReceiptAwareQuickAdd({
   motionMode = 'system',
   onClose,
   onCreate,
+  onCreateLinkedTransfer,
   currentBalance,
 }: {
   open: boolean;
@@ -27,6 +28,7 @@ export function ReceiptAwareQuickAdd({
   motionMode?: 'system' | 'reduced' | 'full';
   onClose: () => void;
   onCreate: (event: FinanceEvent) => Promise<void>;
+  onCreateLinkedTransfer?: (principal: FinanceEvent, fee: FinanceEvent | null) => Promise<void>;
   currentBalance: (accountId: string) => number;
 }) {
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -97,6 +99,7 @@ export function ReceiptAwareQuickAdd({
         motionMode={motionMode}
         onClose={onClose}
         onCreate={create}
+        onCreateLinkedTransfer={onCreateLinkedTransfer}
         currentBalance={currentBalance}
       />
       {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}

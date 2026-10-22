@@ -261,7 +261,7 @@ function validateLending(value: unknown, name: string) {
   }
 }
 
-const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','card_purchase','card_payment','reconciliation','split'] as const;
+const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','lending_writeoff','card_purchase','card_payment','reconciliation','split'] as const;
 const PART_KINDS = ['expense','income','refund','saving','transfer','reconciliation'] as const;
 
 function validateSplitPart(value: unknown, name: string) {
@@ -293,6 +293,7 @@ function validateEvent(value: unknown, name: string) {
   optionalDateStamp(value.updatedAt, `${name}.updatedAt`);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
+  optionalText(value.feeForEventId, `${name}.feeForEventId`, 200);
   if (value.installmentCount !== undefined && value.installmentCount !== null) {
     finiteNumber(value.installmentCount, `${name}.installmentCount`, 100_000);
     if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);
@@ -306,6 +307,16 @@ function validateEvent(value: unknown, name: string) {
     if (!object(leg)) invalid(`Invalid ${name}.legs[${index}].`);
     text(leg.accountId, `${name}.legs[${index}].accountId`, 200);
     finiteNumber(leg.amount, `${name}.legs[${index}].amount`);
+  }
+  if (value.funding !== undefined) {
+    array(value.funding, `${name}.funding`, 12);
+    for(const [index,part] of value.funding.entries()){
+      const key=`${name}.funding[${index}]`;
+      if(!object(part))invalid(`Invalid ${key}.`);
+      oneOf(part.kind,['account','credit'],`${key}.kind`);
+      text(part.sourceId,`${key}.sourceId`,200);
+      finiteNumber(part.amount,`${key}.amount`);
+    }
   }
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
@@ -337,6 +348,25 @@ function validateSavingsGoal(value: unknown, name: string) {
   dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
+
+function validateLendingSettlementPlan(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,200);
+  text(value.person,`${name}.person`,120);
+  if(!value.person.trim())invalid(`Invalid ${name}.person.`);
+  dateOnly(value.asOf,`${name}.asOf`);
+  dateOnly(value.firstDueDate,`${name}.firstDueDate`);
+  dateStamp(value.confirmedAt,`${name}.confirmedAt`);
+  if(value.firstDueDate<value.asOf)invalid(`Invalid ${name}.firstDueDate.`);
+  finiteNumber(value.total,`${name}.total`);
+  const cents=Math.round(value.total*100);
+  if(cents<=0||!Number.isSafeInteger(cents)||Math.abs(value.total*100-cents)>0.00001)
+    invalid(`Invalid ${name}.total.`);
+  if(typeof value.installments!=='number'||!Number.isInteger(value.installments)||value.installments<1||value.installments>60||value.installments>cents)
+    invalid(`Invalid ${name}.installments.`);
+  if(typeof value.everyMonths!=='number'||!Number.isInteger(value.everyMonths)||value.everyMonths<1||value.everyMonths>24)
+    invalid(`Invalid ${name}.everyMonths.`);
+}
 
 function validateScheduledTransaction(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
@@ -567,6 +597,19 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
   array(state.lendingCustom, 'state.lendingCustom', 100_000);
+  if(state.lendingPlans!==undefined){
+    array(state.lendingPlans,'state.lendingPlans',1000);
+    state.lendingPlans.forEach((item,index)=>validateLendingSettlementPlan(item,`state.lendingPlans[${index}]`));
+    ensureUniqueIds(state.lendingPlans,'state.lendingPlans');
+    const people=new Set<string>();
+    for(const plan of state.lendingPlans){
+      if(!object(plan))invalid('Invalid settlement plan.');
+      text(plan.person,'state.lendingPlans.person',120);
+      const person=plan.person.trim();
+      if(people.has(person))invalid('Multiple active settlement plans for one person.');
+      people.add(person);
+    }
+  }
   validateSettings(state.settings);
   if (state.cardBanks !== undefined) {
     array(state.cardBanks, 'state.cardBanks', 100);

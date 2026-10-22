@@ -13,3 +13,12 @@
 .kind-grid b{display:block;font-size:8.5px;margin-top:7px}
 .kind-grid small{display:block;font-size:7px;color:var(--muted);line-height:1.35;margin-top:2px}
 
+
+/* One logical purchase with distinct funding sources; same shared input owners. */
+.multi-funding-editor{display:grid;gap:10px;min-width:0}
+.multi-funding-choice{display:flex;align-items:center;gap:8px;font-weight:720}
+.multi-funding-choice input{width:18px;height:18px;min-width:18px}
+.multi-funding-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.55fr) 44px;gap:8px;align-items:center;min-width:0}
+.multi-funding-row>*{min-width:0}
+.multi-funding-row>button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+@media(max-width:500px){.multi-funding-row{grid-template-columns:minmax(0,1fr) minmax(90px,.7fr) 40px;gap:5px}.multi-funding-row>button{min-width:40px}}

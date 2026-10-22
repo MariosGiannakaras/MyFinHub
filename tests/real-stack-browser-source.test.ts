@@ -1,9 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { transformSync } from 'esbuild';
 
 const source=readFileSync('scripts/real-stack-browser-e2e.ts','utf8');
 
 describe('actual-browser real-stack source contract',()=>{
+  it('parses the entire real-stack browser runner before expensive container/browser startup',()=>{
+    expect(()=>transformSync(source,{
+      sourcefile:'scripts/real-stack-browser-e2e.ts',
+      loader:'ts',
+      format:'esm',
+      target:'es2022'
+    })).not.toThrow();
+  });
+
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain("document.querySelector('#login-title')");
@@ -34,6 +44,10 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Saving','saving_cash_offset']");
     expect(source).toContain("['Real Browser Quick Refund','refund']");
     expect(source).toContain("['Real Browser Quick Reconciliation','reconciliation']");
+    expect(source).toContain("setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45')");
+    expect(source).toContain('unconfirmed reconciliation must fail closed');
+    expect(source).toContain('Real owner review checkbox could not be confirmed.');
+    expect(source).not.toContain("setByLabel('Πραγματικό υπόλοιπο'");
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');

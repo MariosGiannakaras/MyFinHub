@@ -25,6 +25,7 @@ import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
+import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -447,10 +448,8 @@ function QaWorkspace(){
   const [month,setMonth]=useState('2026-08');
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const today='2026-08-17';
-  // A Dashboard card's filter is only the next navigation's context.
-  // Navigating elsewhere must not re-apply it on later generic Transactions visits.
+  // Dashboard's account filter expires after leaving the Transactions route.
   useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
-
 
   useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
@@ -461,7 +460,18 @@ function QaWorkspace(){
   const redo=()=>{const next=redoStack[0];if(!next)return;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');setData(next)};
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};
   const importData=(incoming:FinanceData)=>{setUndoStack(stack=>[...stack.slice(-19),data]);setRedoStack([]);setData(incoming)};
-  const addEvent=(event:FinanceEvent)=>update(current=>{const events=current.state.events??[];const exists=events.some(existing=>existing.id===event.id);const nextEvent=exists?event:applyTransactionRules(current,event);return {...current,state:{...current.state,events:exists?events.map(existing=>existing.id===event.id?nextEvent:existing):[...events,nextEvent]}}});
+  const addEvent=(event:FinanceEvent)=>update(current=>{
+    const events=current.state.events??[],exists=events.some(existing=>existing.id===event.id);
+    const ruledEvent=exists?event:applyTransactionRules(current,event);
+    const prepared=prepareCreditStatementEvent(current,ruledEvent);
+    return {...current,state:{...current.state,creditStatements:prepared.statements,
+      events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
+  });
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    await transactionReceipt();
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    update(current=>withConfirmedLendingPlan(current,draft,true));
+  };
   const addEventDurably=async(event:FinanceEvent)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
@@ -470,8 +480,17 @@ function QaWorkspace(){
     });
     addEvent(event);
   };
-  const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
-  const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
+  const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση μεταφοράς απέτυχε.');
+    if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
+      (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
+    });
+    const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
+    update(current=>replaceLinkedTransferWithFee(current,principal,fee));
+  };
+  const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id&&e.feeForEventId!==id)}}));
+  const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(event?.feeForEventId??id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
   const transactionReceipt=async()=>{
     const params=new URLSearchParams(location.search);
     if(params.get('transaction-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση συναλλαγής απέτυχε.');
@@ -598,7 +617,7 @@ function QaWorkspace(){
     :page==='cards'?<CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     :page==='loans'?<LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
-    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
@@ -613,7 +632,7 @@ function QaWorkspace(){
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }

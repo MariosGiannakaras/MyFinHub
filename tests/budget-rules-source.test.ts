@@ -18,7 +18,8 @@ describe('category budget and rule integration source contracts',()=>{
   it('applies rules only to newly submitted events and keeps existing edits explicit',()=>{
     expect(app).toMatch(/const ruledEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
     expect(app).toContain('prepareCreditStatementEvent(current,ruledEvent)');
-    expect(qa).toMatch(/const nextEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
+    expect(qa).toMatch(/const ruledEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
+    expect(qa).toContain('prepareCreditStatementEvent(current,ruledEvent)');
     expect(app).toContain('const completeScheduled');
     expect(app).toContain('applyTransactionRules(current,event)');
   });
