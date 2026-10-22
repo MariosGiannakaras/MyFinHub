@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import { RecurringBrandMark } from '../components/RecurringBrandMark';
 import { Surface } from '../components/Surface';
 import { CategorySelectInput } from '../components/CategorySelectInput';
+import { defaultCategory } from '../lib/categories';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
@@ -93,7 +94,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
     });
     return()=>cancelAnimationFrame(frame);
   },[editError]);
-  const startNew=()=>{resetLogoDraft();setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:data.state.settings.expenseCategories[0]||'Άλλο',active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
+  const startNew=()=>{resetLogoDraft();setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:defaultCategory(data.state.settings,'expense'),active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
   const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
   const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setEditError('')};
   const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
