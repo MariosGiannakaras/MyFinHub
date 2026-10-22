@@ -287,6 +287,7 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.person, `${name}.person`, 1_000);
+  optionalText(value.counterpartyId, `${name}.counterpartyId`, 200);
   optionalDateOnly(value.expectedReturnDate, `${name}.expectedReturnDate`);
   optionalText(value.source, `${name}.source`, 100);
   optionalDateStamp(value.createdAt, `${name}.createdAt`);
@@ -476,6 +477,19 @@ function validateIconColors(value:unknown,name:string){
   }
 }
 
+function validateCounterparty(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,160);
+  oneOf(value.kind,['merchant','beneficiary'],`${name}.kind`);
+  text(value.displayName,`${name}.displayName`,120);
+  if(value.displayName.trim().length<2)invalid(`Invalid ${name}.displayName.`);
+  dateStamp(value.createdAt,`${name}.createdAt`);
+  dateStamp(value.updatedAt,`${name}.updatedAt`);
+  if(value.aliases!==undefined){
+    stringArray(value.aliases,`${name}.aliases`,16,120);
+  }
+}
+
 function validateSettings(value: unknown) {
   if (!object(value)) invalid('Missing settings.');
   stringArray(value.excludedFromAvailable, 'state.settings.excludedFromAvailable', 10_000, 200);
@@ -622,10 +636,36 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));
     ensureUniqueIds(state.cards, 'state.cards');
   }
+  const identities=new Map<string,'merchant'|'beneficiary'>();
+  if(state.counterparties!==undefined){
+    array(state.counterparties,'state.counterparties',2_000);
+    state.counterparties.forEach((item,index)=>validateCounterparty(item,`state.counterparties[${index}]`));
+    ensureUniqueIds(state.counterparties,'state.counterparties');
+    const names=new Set<string>();
+    for(const item of state.counterparties){
+      if(!object(item))invalid('Invalid counterparty.');
+      const kind=item.kind as 'merchant'|'beneficiary';
+      const id=item.id as string, label=(item.displayName as string).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
+      const key=kind+':'+label;
+      if(names.has(key))invalid('Duplicate counterparty name.');
+      names.add(key);
+      identities.set(id,kind);
+    }
+  }
   if (state.events !== undefined) {
     array(state.events, 'state.events', 100_000);
     state.events.forEach((item, index) => validateEvent(item, `state.events[${index}]`));
     ensureUniqueIds(state.events, 'state.events');
+    for(const event of state.events){
+      if(!object(event)||event.counterpartyId===undefined)continue;
+      const kind=identities.get(event.counterpartyId as string);
+      if(!kind)invalid('Transaction references an unknown counterparty.');
+      const merchantKind=['expense','card_purchase','split','refund'].includes(event.kind as string);
+      const beneficiaryKind=['income','lending','repayment','lending_writeoff'].includes(event.kind as string);
+      if((merchantKind&&kind!=='merchant')||(beneficiaryKind&&kind!=='beneficiary')||(!merchantKind&&!beneficiaryKind)){
+        invalid('Transaction references an incompatible counterparty.');
+      }
+    }
   }
   if (state.scheduled !== undefined) {
     array(state.scheduled, 'state.scheduled', 100_000);
