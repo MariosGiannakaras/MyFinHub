@@ -38,6 +38,11 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("runRealStackBrowserProof({");
     expect(script).toContain("[real-stack] stage provider-storage-registration-failure-cleanup");
     expect(script).toContain("[real-stack] stage recurring-service-asset-durability");
+    expect(script).toContain("[real-stack] stage variable-recurring-real-db-roundtrip");
+    expect(script).toContain("'Variable estimated recurring range did not persist through real relational storage.'");
+    expect(script).toContain("'Stale variable recurring writer bypassed finance revision guard.'");
+    expect(script).toContain("'Undo did not restore the prior fixed recurring amount.'");
+    expect(script).toContain("'Redo did not restore the saved variable recurring estimate.'");
     expect(script).toContain("[real-stack] stage card-profile-vault-durable-cleanup");
     expect(script).toContain("'CARD_SECRET_DELETE_NOT_COMMITTED'");
     expect(script).toContain('card-cleanup-pending-receipt');

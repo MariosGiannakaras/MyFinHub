@@ -60,6 +60,27 @@ describe('isolated 30/60/90-day what-if scenarios (#588 #7)',()=>{
     expect(actual.points.find(point=>point.date==='2026-08-18')?.portfolio).toBe(980);
     expect(actual.evidence).toMatchObject({declared:1,hypothetical:1});
   });
+  it('inherits approved #8 variable recurrence as an estimate, never a real posting',()=>{
+    const d=fixture();
+    d.seed.recurring=[{
+      id:'variable-bill',name:'Power estimate',amount:80,amountMode:'variable',
+      estimateMin:60,estimateMax:100,firstExpectedDate:'2026-08-21',
+      recurrenceUnit:'month',recurrenceInterval:1,
+      accountId:'bank',category:'Άλλο',active:true
+    }];
+    const snapshot=JSON.stringify(d);
+    const result=cashFlowScenario(d,'2026-08-17',30,[
+      {id:'hypo',date:'2026-08-24',accountId:'bank',kind:'extra_expense',amount:25.50}
+    ]);
+    const recurring=result.baseline.movements.filter(move=>move.source==='recurring');
+    expect(recurring).toHaveLength(1);
+    expect(recurring[0]).toMatchObject({date:'2026-08-21',label:'Εκτίμηση: Power estimate',portfolioDelta:-80});
+    expect(result.evidence).toMatchObject({declared:1,estimated:1,hypothetical:1});
+    expect(result.baseline.projectedPortfolio).toBe(960);
+    expect(result.projectedPortfolio).toBe(934.50);
+    expect(JSON.stringify(d)).toBe(snapshot);
+    expect(d.state.events).toEqual([]);
+  });
   it('supports an empty scenario as unchanged read-only forecast across all horizons',()=>{
     const d=fixture();
     for(const horizon of [30,60,90] as const){
