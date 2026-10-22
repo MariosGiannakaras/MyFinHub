@@ -937,6 +937,9 @@ async function main(){
         alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp},
       {id:budgetIdPrefix+'current',month:'2027-02',scope:'subcategory',
         category:budgetCategory,subcategory:knownSubcategory,amount:80,carryover:true,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp},
+      {id:budgetIdPrefix+'other-subcategory',month:'2027-02',scope:'subcategory',
+        category:budgetCategory,subcategory:'QA distinct subcategory',amount:60,carryover:false,
         alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp}
     ];
     validateCompleteFinanceData({...budgetBefore.body.data,state:budgetState});
@@ -956,6 +959,10 @@ async function main(){
       budgetActual.subcategory===knownSubcategory&&budgetActual.amount===80&&
       budgetActual.carryover===true,
       'Owner-reviewed subcategory limit and carryover did not survive real DB reload.');
+    assert(budgetRows.some((item:any)=>item.id===budgetIdPrefix+'other-subcategory'&&
+      item.scope==='subcategory'&&item.category===budgetCategory&&
+      item.subcategory==='QA distinct subcategory'),
+      'Same-month same-parent distinct subcategory budget was not persisted.');
     assert((budgetReload.body.data.state.events||[]).length===budgetEventCount,
       'Budget-only changes unexpectedly created or removed posted money.');
     const budgetForged=structuredClone(budgetReload.body.data.state);
@@ -982,7 +989,7 @@ async function main(){
     const budgetUndo=await historyAction('undo',budgetSaved);
     expect(budgetUndo,200,undefined,'enhanced-budget-real-undo');
     assert(!(budgetUndo.body.data.state.budgets||[]).some((item:any)=>
-      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'),
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'||item.id===budgetIdPrefix+'other-subcategory'),
       'Budget Undo failed to remove both synthetic periods.');
     const budgetRedo=await historyAction('redo',budgetUndo);
     expect(budgetRedo,200,undefined,'enhanced-budget-real-redo');
@@ -994,7 +1001,7 @@ async function main(){
     const budgetClean=await restored.request('/api/data');
     expect(budgetClean,200,undefined,'enhanced-budget-real-final-reload');
     assert(!(budgetClean.body.data.state.budgets||[]).some((item:any)=>
-      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'),
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'||item.id===budgetIdPrefix+'other-subcategory'),
       'Synthetic budget records persisted after final Undo.');
     assert((budgetClean.body.data.state.events||[]).length===budgetEventCount,
       'Budget Do/Undo/Redo modified the canonical event ledger.');
