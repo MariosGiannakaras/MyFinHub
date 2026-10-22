@@ -268,10 +268,12 @@ try {
   assert(localLines.count===2&&localLines.sum===2450&&localLines.balanced===true,`exact 2450 cents stored only as owner-reviewed local proposal: ${JSON.stringify(localLines)}`);
   console.log('Receipt OCR QA: reviewed categories open one canonical split, without posting money');
   for(let i=0;i<2;i++){
-    const chosen=await c.call("function(index){const select=[...document.querySelectorAll('.receipt-item-category select')][index];if(!select)return false;const option=[...select.options].find(o=>o.value&&!o.disabled);if(!option)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(select,option.value);select.dispatchEvent(new Event('change',{bubbles:true}));return option.value}",[i]);
-    assert(chosen,`full taxonomy option present on receipt item ${i+1}`);
-    await waitFor("function(index,value){return [...document.querySelectorAll('.receipt-item-category select')][index]?.value===value}",'category review selection',[i,chosen]);
-    await sleep(70);
+    const opened=await c.call("function(index){const input=document.querySelector('input[role=combobox][aria-label=\"Κατηγορία γραμμής '+(index+1)+'\"]');if(!input||input.disabled)return false;input.click();return true}",[i]);
+    assert(opened,`shared category combobox exists on receipt item ${i+1}`);
+    await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=option][data-option-level=category]:not(:disabled)'))}",'full live taxonomy popover');
+    const chosen=await c.call("function(){const option=document.querySelector('.owned-select-popover [role=option][data-option-level=category]:not(:disabled)');if(!option)return null;const label=(option.textContent||'').trim();option.click();return label}");
+    assert(chosen,`at least one actual expense taxonomy category is offered for item ${i+1}`);
+    await waitFor("function(index,label){const input=document.querySelector('input[role=combobox][aria-label=\"Κατηγορία γραμμής '+(index+1)+'\"]');return Boolean(input?.value===label&&input.getAttribute('aria-expanded')==='false')}",'owner-selected category from real popover',[i,chosen]);
   }
   const possibleExisting=await c.call("function(){const c=document.querySelector('.receipt-existing-confirm input');if(!c)return false;c.click();return true}");
   if(possibleExisting)await waitFor("function(){return document.querySelector('.receipt-existing-confirm input')?.checked===true}",'explicit duplicate review confirmation');
