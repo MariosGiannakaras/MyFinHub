@@ -1,0 +1,90 @@
+name: Forecast what-if focused draft QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/588-forecast-focused-qa.yml'
+      - 'scripts/planning-forecast-qa.mjs'
+      - 'src/components/ForecastScenarioPanel.tsx'
+      - 'src/lib/forecastScenarios.ts'
+      - 'src/pages/PlanningPage.tsx'
+      - 'src/pages/PlanningCompletion.css'
+      - 'tests/forecast-scenarios.test.ts'
+      - 'tests/planning-scenarios-source.test.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forecast-focused-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scenarios-chromium:
+    name: Isolated cashflow scenario and responsive evidence
+    if: ${{ github.event.pull_request.draft == true && github.head_ref == 'feat/588-forecast-scenarios-batch-d' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Run strict primary Chromium scenario proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev:web >/tmp/myfinhub-forecast-vite.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill "$WEB_PID" 2>/dev/null || true' EXIT
+          app_ready=0
+          for i in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html >/dev/null; then app_ready=1; break; fi
+            sleep 1
+          done
+          if [ "$app_ready" -ne 1 ]; then cat /tmp/myfinhub-forecast-vite.log; exit 1; fi
+          PRIMARY="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$PRIMARY" ]; then echo "Primary Chromium missing"; exit 1; fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$PRIMARY"
+          export MYFINHUB_UX_EVIDENCE_DIR=/tmp/myfinhub-forecast-focused
+          # Strict warm-up matching the canonical rendered runner; no fallback.
+          preflight_pass=0
+          for attempt in 1 2; do
+            rm -rf /tmp/myfinhub-forecast-preflight
+            "$PRIMARY" --headless=new --remote-debugging-port=9311 --remote-debugging-address=127.0.0.1 --user-data-dir=/tmp/myfinhub-forecast-preflight --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --no-default-browser-check about:blank >/tmp/myfinhub-forecast-chrome.log 2>&1 &
+            CHROME_PID=$!
+            browser_ready=0
+            for i in {1..100}; do
+              if curl --fail --silent http://127.0.0.1:9311/json/version >/dev/null; then browser_ready=1; break; fi
+              if ! kill -0 "$CHROME_PID" 2>/dev/null; then break; fi
+              sleep .2
+            done
+            kill "$CHROME_PID" 2>/dev/null || true
+            wait "$CHROME_PID" 2>/dev/null || true
+            rm -rf /tmp/myfinhub-forecast-preflight
+            if [ "$browser_ready" -eq 1 ]; then preflight_pass=1; break; fi
+            tail -c 1500 /tmp/myfinhub-forecast-chrome.log || true
+            sleep .75
+          done
+          if [ "$preflight_pass" -ne 1 ]; then echo "Primary Chromium cold-start preflight failed"; exit 1; fi
+          mkdir -p /tmp/myfinhub-forecast-browser-bin
+          cat > /tmp/myfinhub-forecast-browser-bin/google-chrome <<'BROWSER_WRAPPER'
+          #!/usr/bin/env bash
+          exec "$MYFINHUB_QA_PRIMARY_BROWSER" --disable-dev-shm-usage "$@"
+          BROWSER_WRAPPER
+          chmod +x /tmp/myfinhub-forecast-browser-bin/google-chrome
+          export PATH="/tmp/myfinhub-forecast-browser-bin:$PATH"
+          node scripts/qa-script-runner.mjs scripts/planning-forecast-qa.mjs
+      - name: Upload synthetic scenario screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: myfinhub-focused-forecast-${{ github.event.pull_request.head.sha }}
+          path: /tmp/myfinhub-forecast-focused/*.png
+          if-no-files-found: warn
+          retention-days: 14
