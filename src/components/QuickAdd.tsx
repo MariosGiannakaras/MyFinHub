@@ -94,7 +94,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [multiFundingOpen,setMultiFundingOpen]=useState(false);
   const [fundingRows,setFundingRows]=useState<FundingSourceRow[]>([]);
   const [reconciliationConfirmed,setReconciliationConfirmed]=useState(false);
-  const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||defaultCategory(data.state.settings,'expense'),amount:0}]);
+  const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},{id:'p2',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0}]);
   const [error,setError]=useState('');
   const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
@@ -110,7 +110,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   const freshParts=()=>[
     {id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},
-    {id:'p2',label:'',category:data.state.settings.expenseCategories[1]||defaultCategory(data.state.settings,'expense'),amount:0},
+    {id:'p2',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},
   ] satisfies SplitPart[];
 
   useEffect(()=>{
