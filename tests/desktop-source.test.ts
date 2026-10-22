@@ -22,6 +22,8 @@ const recoveryRenderer = read('desktop/setup-renderer.js');
 const settings = read('src/pages/SettingsPage.tsx');
 const updatePanel = read('src/components/DesktopUpdatePanel.tsx');
 const workflow = read('.github/workflows/desktop-windows.yml');
+const releaseWorkflow = read('.github/workflows/desktop-publish-release.yml');
+const unifiedCi = read('.github/workflows/ci.yml');
 const firstRunWorkflow = read('.github/workflows/desktop-first-run.yml');
 const cleanLaunchWorkflow = read('.github/workflows/desktop-clean-launch.yml');
 const prepareBuild = read('desktop/prepare-build.mjs');
@@ -210,20 +212,29 @@ describe('MyFinHub Windows desktop boundary', () => {
   it('reruns every Windows gate when the bundled Node runtime contract changes', () => {
     for (const source of [workflow, firstRunWorkflow, cleanLaunchWorkflow]) {
       expect(source).toContain('node-version-file: .nvmrc');
-      const pathEntries=(source.match(/- \.nvmrc/g)??[]).length;
-      expect(pathEntries).toBeGreaterThanOrEqual(2);
+      expect(source).toContain('workflow_call:');
     }
+    // The unified Ready gate always executes the existing Windows jobs,
+    // including when the tracked Node runtime/build contract changes.
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-windows.yml');
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-first-run.yml');
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-clean-launch.yml');
+    expect(unifiedCi).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
     expect(prepareBuild).toContain('fs.copyFileSync(process.execPath,runtimeExe)');
   });
 
-  it('publishes unsigned personal releases safely and keeps signing optional', () => {
-    expect(workflow).toContain("tags: ['myfinhub-v*']");
-    expect(workflow).toContain('MyFinHub-Setup-*-x64.exe');
-    expect(workflow).toContain('MYFINHUB_SIGNING_ENABLED=false');
-    expect(workflow).toContain('Configure both Windows signing secrets or neither.');
-    expect(workflow).toContain('Unknown publisher / SmartScreen');
-    expect(workflow).toContain('Get-FileHash -Algorithm SHA256');
-    expect(workflow).not.toContain('Signed desktop releases require');
+  it('publishes unsigned personal releases only on tag, with optional signing and main ancestry', () => {
+    expect(releaseWorkflow).toContain("tags: ['myfinhub-v*']");
+    expect(releaseWorkflow).toContain('uses: ./.github/workflows/desktop-windows.yml');
+    expect(releaseWorkflow).toContain("startsWith(github.ref, 'refs/tags/myfinhub-v')");
+    expect(releaseWorkflow).toContain('git merge-base --is-ancestor $env:GITHUB_SHA origin/main');
+    expect(releaseWorkflow).toContain('MyFinHub-Setup-*-x64.exe');
+    expect(releaseWorkflow).toContain('MYFINHUB_SIGNING_ENABLED=false');
+    expect(releaseWorkflow).toContain('Configure both Windows signing secrets or neither.');
+    expect(releaseWorkflow).toContain('Unknown publisher / SmartScreen');
+    expect(releaseWorkflow).toContain('Get-FileHash -Algorithm SHA256');
+    expect(releaseWorkflow).not.toContain('Signed desktop releases require');
+    expect(workflow).not.toContain('contents: write');
   });
 
   it('validates native title-bar maximize, restore and resize states from the packaged Electron BrowserWindow', () => {
@@ -291,7 +302,9 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(prepareBuild).not.toContain('resize-icon.ps1');
     expect(desktopPackage.build.win.icon).toBe('../public/brand/icon-512.svg');
     expect(desktopPackage.build.extraResources).toContainEqual(expect.objectContaining({from:'../public/brand/icon-512.png',to:'app/icon.png'}));
-    expect(workflow).toContain('assets/branding/myfinhub/**');
+    // Normal Ready CI always rebuilds and packages branded assets through
+    // the unchanged desktop job, instead of using an independent path filter.
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-windows.yml');
   });
 
   it('keeps CVV out of the server-side desktop boundary', () => {

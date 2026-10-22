@@ -127,6 +127,7 @@ export type EventKind =
   | 'refund'
   | 'lending'
   | 'repayment'
+  | 'lending_writeoff'
   | 'card_purchase'
   | 'card_payment'
   | 'reconciliation'
@@ -134,6 +135,12 @@ export type EventKind =
 
 export interface LedgerLeg {
   accountId: string;
+  amount: number;
+}
+
+export interface PurchaseFundingLeg {
+  kind: 'account' | 'credit';
+  sourceId: string;
   amount: number;
 }
 
@@ -173,6 +180,10 @@ export interface FinanceEvent {
   recurringId?: string;
   cardId?: string;
   statementId?: string;
+  /** One economic purchase with multiple funding sources, not multiple expense events. */
+  funding?: PurchaseFundingLeg[];
+  /** Separate expense fee linked to one non-spending principal operation. */
+  feeForEventId?: string;
 }
 
 export interface ScheduledTransaction {
@@ -256,6 +267,17 @@ export interface TransactionRule {
   updatedAt: string;
 }
 
+export interface LendingSettlementPlan {
+  id:string;
+  person:string;
+  asOf:string;
+  firstDueDate:string;
+  total:number;
+  installments:number;
+  everyMonths:number;
+  confirmedAt:string;
+}
+
 export interface FinanceData {
   app: string;
   schemaVersion: number;
@@ -288,6 +310,7 @@ export interface FinanceData {
     loanOverrides: Record<string, Loan>;
     customLoans: Loan[];
     lendingCustom: unknown[];
+    lendingPlans?: LendingSettlementPlan[];
     settings: FinanceSettings;
     cardBanks?: CardBank[];
     cards?: PaymentCard[];

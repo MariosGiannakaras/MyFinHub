@@ -74,6 +74,10 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage mfa-enroll");
     expect(script).toContain("[real-stack] stage import");
     expect(script).toContain("[real-stack] stage mutable-save");
+    expect(script).toContain("kind:'lending_writeoff'");
+    expect(script).toContain('Noncash writeoff did not round-trip through revisioned API and relational finance storage.');
+    expect(script).toContain('Finance Undo did not reverse the noncash writeoff in the same revision.');
+    expect(script).toContain('Finance Redo did not restore the exact noncash writeoff.');
     expect(script).toContain("[real-stack] stage device-lifecycle");
     expect(script).toContain("[real-stack] stage history-undo");
     expect(script).toContain("[real-stack] stage history-redo");

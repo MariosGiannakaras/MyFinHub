@@ -1,29 +1,7 @@
 name: Windows First Run
 
 on:
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - desktop/**
-      - server/**
-      - tests/desktop-*.test.ts
-      - package.json
-      - package-lock.json
-      - .nvmrc
-      - .github/workflows/desktop-first-run.yml
-      - .github/workflows/desktop-clean-launch.yml
-  push:
-    branches: [develop]
-    paths:
-      - desktop/**
-      - server/**
-      - tests/desktop-*.test.ts
-      - package.json
-      - package-lock.json
-      - .nvmrc
-      - .github/workflows/desktop-first-run.yml
-      - .github/workflows/desktop-clean-launch.yml
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

@@ -155,7 +155,18 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Local Real Stack QA')});
     await addQuickIntent('Αποταμίευση','Real Browser Quick Saving','saving_cash_offset','7.30',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
     await addQuickIntent('Επιστροφή','Real Browser Quick Refund','refund','8.40');
-    await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');await setByLabel('Πραγματικό υπόλοιπο','123.45')});
+    await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{
+      await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');
+      await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45');
+      // Verify that the real browser cannot persist a correction silently.
+      const review=await c!.call<boolean>("function(){const modal=document.querySelector('.quick-modal');if(!modal)return false;const candidates=[...modal.querySelectorAll('[aria-label]')].some(node=>node.getAttribute('aria-label')==='Κινήσεις προς σύγκριση');return Boolean(candidates&&modal.querySelector('.reconcile-preview')?.textContent?.includes('Υπολογισμένο υπόλοιπο στις')&&modal.querySelector('input[type=checkbox]'))}");
+      assert(review,'Reconciliation must compare dated canonical movements and require owner review.');
+      await clickText('.quick-modal footer button','Καταχώριση');
+      await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Επιβεβαίωσε')}",'unconfirmed reconciliation must fail closed');
+      assert(Boolean(await c!.call("function(){return Boolean(document.querySelector('.quick-modal'))}")),'Unconfirmed bank correction unexpectedly closed the real editor.');
+      const confirmed=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
+      assert(confirmed,'Real owner review checkbox could not be confirmed.');
+    });
     await addQuickIntent('Σύνθετη αγορά','Real Browser Quick Split','split',null,async()=>{await setByLabel('Περιγραφή μέρους 1','Real Browser Part A');await setByLabel('Ποσό μέρους 1','3.25');await setByLabel('Περιγραφή μέρους 2','Real Browser Part B');await setByLabel('Ποσό μέρους 2','4.75')});
     const quickIntentMatrix=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after Quick Entry intent matrix');
