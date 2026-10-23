@@ -65,7 +65,7 @@ export function savingsGoalProjection(
   const scenarios:Scenario[]=[];
   const addScenario=(label:Scenario['label'],monthlyCents:number)=>{
     if(months===null)return;
-    const total=Math.min(Number.MAX_SAFE_INTEGER,savedCents+monthlyCents*months);
+    const total=savedCents+monthlyCents*months;
     if(!Number.isSafeInteger(total))throw new Error('Υπέρβαση του επιτρεπτού χρηματικού ορίου.');
     scenarios.push({label,monthly:centsToMoney(monthlyCents),totalAtDeadline:centsToMoney(total),
       gapAtDeadline:centsToMoney(Math.max(0,targetCents-total))});
