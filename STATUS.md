@@ -1,8 +1,29 @@
 # MyFinHub status
 
-## Current production
+## Consolidated v1.6.0 preparation — **NOT YET RELEASED** (2026-10-23)
 
-MyFinHub v1.4.0 is the current production/web and Windows stable release baseline.
+- **Current public production remains v1.5.0** at `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc` and [mgfinhub.vercel.app](https://mgfinhub.vercel.app). The v1.5.0 published Windows installer/tag/checksum are immutable and untouched.
+- **Release candidate** is the reconciled v1.6.0 branch based on the fully validated `develop@579ccdb202870ab0a15e896737c23260595003df` with both develop/main ancestry. Pending release PR complete required gates; **no Production promotion, database migration, new installer, tag, or Card Vault key change has occurred**.
+- Completed #588 advanced finance roadmap **12/12 implementations · 24/24 sub-implementations**, code-level taxonomy #601 **4/4 · 8/8**; actual database still 18/6 and requires owner-AAL2 post-release activation. Four additive migrations are pending with backup/health checks before any write; details in `docs/CONSOLIDATED_RELEASE_20261023.md`.
+- Source check: develop push [CI #39960354101](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39960354101) succeeded; release-candidate head must pass its own exact CI and security/rendered/Windows gates before a production merge. Do not claim candidate gate PASS from develop alone.
+
+---
+
+
+## Current production — v1.5.0 Web + Windows stable
+
+- **Release source:** `main@0b4e20560908d2378e88ab8746d0bfd9a00e7e01`; Git tree `abcedfc2a65fd4b667a1a636bb2946625dcf9cdc` byte-identical to tested PR #564 head `83aaf59e`, merged via GitHub's mandatory squash policy.
+- **Web:** Vercel production `dpl_FAJm6XCfPR8rKM4XRjYR17ZW8wvp` READY and aliased to `mgfinhub.vercel.app`, exact commit SHA verified. Event-driven Production Smoke [#38527362224](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38527362224) SUCCESS with deployed SHA, health/security/auth/404/no-cache/region contracts.
+- **Source security/QA:** release Ready head validated by CI #38525358313 (1,298 tests; 615 rendered screenshots; 0 high audit vulnerabilities), CodeQL #38525358527, Real Stack #38525358374, WebKit #38525358435, Lighthouse #38525358416, Windows Desktop #38525358692, First Run #38525358369 and Clean Launch #38525358476. Actual desktop/tablet/mobile evidence manually inspected; Reports large-data readiness 2,820 ms vs unchanged 5,000 ms limit.
+- **Supabase:** production project `ahsukppxwaiagampsuzb` ACTIVE_HEALTHY, 52/52 exact source-versioned forward-only migrations through `20261010145500`, owner/TOTP AAL2 and RLS/Storage/guarded card-vault RPC boundaries validated. No finance history rewrite or destructive database operation. Existing Free-plan leaked-password-protection advisory remains WARN.
+- **Windows stable release:** [`myfinhub-v1.5.0`](https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.5.0), **published 2026-10-14**, neither draft nor prerelease. Immutable tag directly resolves to the exact production `main` SHA. Provenance publisher #38527378877 SUCCESS; tagged Windows Desktop run [#38527396101](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38527396101) **both jobs SUCCESS**, covering actual packaged executable/backend, NSIS install/launch/uninstall, integrity and public upload. Public installer [`MyFinHub-Setup-1.5.0-x64.exe`](https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.5.0/MyFinHub-Setup-1.5.0-x64.exe) (156,577,901 bytes), SHA-256 `0c8f120b29b132f33e675de9f832c672d2cec3d62d71c4cd31f39bb201d40b68`. Companion [`.sha256`](https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.5.0/MyFinHub-Setup-1.5.0-x64.exe.sha256) is 96 bytes, SHA-256 `1f0aaa36cadc5547086d39ad9b4db978be6123fbcce000496e5b6c9ed551375e`, independently confirmed equal to the canonical ASCII checksum line containing that installer hash, filename and CRLF. The published installer is an **unsigned personal-use build**; Windows may display Unknown publisher / SmartScreen. Independent CI validation artifact #11876985208 used a separate Windows build and has a different hash; these are not falsely claimed byte-identical, but both are source-pinned to the same release commit.
+- **Public metadata closeout:** [PR #565](https://github.com/MariosGiannakaras/MyFinHub/pull/565) publishes canonical stable README/CHANGELOG links and this verified STATUS record. The Vercel deployment of the subsequent docs-only `main` commit must independently pass event-driven Production Smoke; stable release tag/artifacts above remain immutable.
+- **Rollback:** preserve v1.4.0 installer and Vercel deployment `dpl_9g9LdWmzVecqhX25uyjJN5ANrTii` as separately verified artifacts; four v1.5.0 migrations are forward-only and must not be reverse-dropped as part of runtime rollback. Main's later documentation-only commits must independently pass event-driven Production Smoke.
+- **Scope:** MyFinHub Web/API, database, Windows; Android remains a separate repository and release.
+
+## Historical v1.4.0 production baseline (2026-10-06)
+
+MyFinHub v1.4.0 was the Web + Windows stable release baseline at its 2026-10-06 publication. Its immutable tagged installer and checksum remain available as a rollback source.
 
 - Tagged v1.4.0 release commit: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
 - Release-candidate Vercel deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, sourced from that exact tagged release commit.
@@ -13,7 +34,7 @@ MyFinHub v1.4.0 is the current production/web and Windows stable release baselin
 - Published installer: `MyFinHub-Setup-1.4.0-x64.exe` (155,945,414 bytes).
 - Published installer SHA-256: `c670ca3c47c7c2ae72c7be5acdafad7cf86a1a4156a3262b9f6c76b1b44e41a4`.
 - Published checksum asset: `MyFinHub-Setup-1.4.0-x64.exe.sha256`; its 96-byte asset digest `e19efc8fd520246c5d81832bdb569a378f6b234437a5c8dde27b9bf4dc0a982a` matches the expected CRLF checksum record for the installer digest/name.
-- Production Supabase remains `ACTIVE_HEALTHY` on PostgreSQL 17.6.1.155 with 48/48 migrations through `20261001220945_reject_cross_account_id_collisions`; no release migration or destructive database action was required.
+- At the v1.4.0 milestone, Supabase was `ACTIVE_HEALTHY` on PostgreSQL 17.6.1.155 with 48 migrations through `20261001220945_reject_cross_account_id_collisions`; no release migration or destructive database action was required *for v1.4.0*. Four additive migrations were subsequently applied for v1.5.0.
 - The known v1.3.0 Vercel/Windows state remains the documented rollback baseline; no database history rewrite is part of rollback.
 - Post-release metadata-only PR #513 advanced `main` to `78aa5ee2df35649a4124e557a905920afc685887`; its Vercel deployment also reached READY and event-driven Production Smoke #173 succeeded, confirming the docs-only closeout did not regress the runtime.
 
