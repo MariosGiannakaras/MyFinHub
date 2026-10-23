@@ -159,9 +159,11 @@ export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:st
     if(!nextDate||!nextDate.startsWith(month+'-')||nextDate<=asOf||!item.category||Number(item.amount)<=0)continue;
     if((data.state.events??[]).some(e=>e.recurringId===item.id&&e.date.slice(0,7)===month))continue;
     const duplicate=scheduled.some(s=>s.dueDate===nextDate&&s.accountId===item.accountId&&normalize(s.note)===normalize(item.name)&&
-      cents(s.amount)===cents(item.amount)&&normalize(s.category)===normalize(item.category));
+      cents(s.amount)===cents(item.amount)&&normalize(s.category)===normalize(item.category)&&
+      normalize(s.subcategory)===normalize(item.subcategory));
     if(duplicate)continue;
-    result.push({id:item.id,date:nextDate,category:item.category,amount:Number(item.amount),source:'recurring'});
+    result.push({id:item.id,date:nextDate,category:item.category,subcategory:item.subcategory,
+      amount:Number(item.amount),source:'recurring'});
   }
   return result;
 }

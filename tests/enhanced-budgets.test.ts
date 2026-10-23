@@ -110,6 +110,33 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   expect(budgetProjectedCommitments(d,'2026-08','2026-08-17')).toHaveLength(1);
   expect(budgetProgress(d,'2026-08','2026-08-17')[0].projectedDue).toBe(30);
  });
+ it('projects recurring child-category charges and only deduplicates an identical scheduled purpose',()=>{
+  const d=fixture();
+  d.state.recurringCustom=[{id:'rec-child',name:'Grocery',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',
+    accountId:'bank',day:20,amount:30,active:true}];
+  d.state.budgets=[
+    budget('2026-08','subcategory',70,'Τρόφιμα','Σούπερ μάρκετ'),
+    budget('2026-08','category',120,'Τρόφιμα')
+  ];
+  const due=()=>budgetProjectedCommitments(d,'2026-08','2026-08-17');
+  const sub=()=>budgetProgress(d,'2026-08','2026-08-17').find(row=>row.scope==='subcategory');
+  expect(due()).toMatchObject([{id:'rec-child',subcategory:'Σούπερ μάρκετ',source:'recurring',amount:30}]);
+  expect(sub()).toMatchObject({used:0,projectedDue:30,projectedUsed:30});
+  expect(d.state.events).toHaveLength(0);
+
+  d.state.scheduled=[{id:'scheduled-child',dueDate:'2026-08-20',status:'pending',kind:'expense',
+    amount:30,note:'Grocery',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',
+    accountId:'bank',createdAt:stamp,updatedAt:stamp}];
+  expect(due()).toHaveLength(1);
+  expect(sub()?.projectedDue).toBe(30);
+
+  d.state.scheduled[0]!.subcategory='Λαϊκή';
+  expect(due()).toHaveLength(2);
+  expect(due().find(item=>item.id==='rec-child')?.subcategory).toBe('Σούπερ μάρκετ');
+  expect(sub()?.projectedDue).toBe(30);
+  expect(budgetProgress(d,'2026-08','2026-08-17').find(row=>row.scope==='category')?.projectedDue).toBe(60);
+  expect(d.state.events).toHaveLength(0);
+ });
  it('rejects subcategory-free and sub-cent budgets without changing existing typed categories',()=>{
   expect(()=>normalizeBudget(budget('2026-08','subcategory',40,'Τρόφιμα'))).toThrow(/υποκατηγορία/);
   expect(()=>normalizeBudget(budget('2026-08','category',40.001,'Τρόφιμα'))).toThrow(/λεπτά/);
