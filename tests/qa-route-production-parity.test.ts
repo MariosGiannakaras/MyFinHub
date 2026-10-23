@@ -19,5 +19,13 @@ describe('rendered QA matches production page-level code splitting',()=>{
     expect(qa).toContain('lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content');
     expect(qa).toContain('const content=page');
     expect(qa).toContain('saveState===\'loading\'');
+    // Lighthouse must build the exact same QA routing and not silently
+    // rewrite imports only for its separate performance-dist fixture.
+    const performanceConfig=readFileSync('vite.performance.config.ts','utf8');
+    expect(performanceConfig).toContain('if (!code.includes(dynamicImport))');
+    expect(performanceConfig).toContain("return null;");
+    expect(performanceConfig).not.toContain('next.replace(source');
+    expect(performanceConfig).toContain("!code.includes('<Suspense fallback={<PageSkeleton/>}>')");
+
   });
 });
