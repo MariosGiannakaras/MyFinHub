@@ -10,7 +10,7 @@ function fixture(){
   const data=structuredClone(qaFinanceData());
   data.seed.transactions=[];
   data.seed.recurring=[];
-  data.state.recurringCustom=[{id:'fixture-recurring',name:'Streaming fixture',amount:10,accountId:'cash',category:'Συνδρομές',active:true}];
+  data.state.recurringCustom=[{id:'fixture-recurring',name:'Spotify + cloud storage',amount:10,accountId:'cash',category:'Συνδρομές',active:true}];
   data.state.recurringOverrides={};
   data.state.budgets=[{id:'fixture-budget',month:'2026-10',scope:'category',category:'Λογαριασμοί',amount:200,alertThreshold:0.8,createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'}];
   data.state.scheduled=[];
@@ -29,7 +29,7 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
   it('stages all 20/6 names and exact subcategory ordering',()=>{
     const input=fixture();
     const before=structuredClone(input);
-    const oldDigitalId=resolveCategoryIdentity(input.state.settings,'expense','Συνδρομές')!.id;
+    const oldSubscriptionId=resolveCategoryIdentity(input.state.settings,'expense','Συνδρομές')!.id;
     const next=prepareApprovedOwnerTaxonomy(input,'2026-10-23');
     expect(next.state.settings.expenseCategoryTree).toEqual(OWNER_EXPENSE_TREE);
     expect(next.state.settings.incomeCategoryTree).toEqual(OWNER_INCOME_TREE);
@@ -37,8 +37,8 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
     expect(next.state.settings.incomeCategories).toEqual(OWNER_INCOME_TREE.map(item=>item.name));
     expect(next.state.settings.expenseCategoryTree).toHaveLength(20);
     expect(next.state.settings.incomeCategoryTree).toHaveLength(6);
-    expect(resolveCategoryIdentity(next.state.settings,'expense','Ψηφιακή υπηρεσία')?.id).toBe(oldDigitalId);
-    expect(resolveCategoryIdentity(next.state.settings,'expense','Συνδρομές')?.id).toBe(oldDigitalId);
+    expect(resolveCategoryIdentity(next.state.settings,'expense','Ψηφιακή υπηρεσία')?.id).not.toBe(oldSubscriptionId);
+    expect(resolveCategoryIdentity(next.state.settings,'expense','Συνδρομές')?.id).toBe(oldSubscriptionId);
     expect(next.state.recurringCustom[0].category).toBe('Ψηφιακή υπηρεσία');
     expect(next.state.budgets?.[0].category).toBe('Λογαριασμός κατοικίας');
     expect(next.state.events).toEqual(before.state.events);
@@ -50,6 +50,11 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
     input.state.settings.expenseCategoryTree!.push({name:'Προσωπική ειδική',subcategories:[]} as CategoryDefinition);
     input.state.settings.expenseCategories.push('Προσωπική ειδική');
     expect(()=>prepareApprovedOwnerTaxonomy(input,'2026-10-23')).toThrow(/Unexpected active categories/);
+  });
+  it('rejects ambiguous subscription purposes rather than silently making them digital',()=>{
+    const data=fixture();
+    data.state.recurringCustom[0].name='Unclassified service';
+    expect(()=>prepareApprovedOwnerTaxonomy(data,'2026-10-23')).toThrow(/Επίλεξε πρώτα τον πραγματικό σκοπό/);
   });
   it('retains retired category identities for historic names',()=>{
     const input=fixture();
