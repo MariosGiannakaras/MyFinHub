@@ -57,7 +57,7 @@ const same=(a:string,b:string)=>categoryKey(a)===categoryKey(b);
  * into a digital service. Only clearly identified providers are reassigned.
  */
 function reclassifyKnownSubscription(item:RecurringItem):RecurringItem{
-  if(!same(item.category,'Συνδρομές'))return item;
+  if(!same(item.category,'Συνδρομές')||item.active===false||item.status==='stopped')return item;
   const label=categoryKey(item.name);
   const digital=/(spotify|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
   const telecom=/(cosmote|starlink|vodafone|nova internet|telekom)/i;
