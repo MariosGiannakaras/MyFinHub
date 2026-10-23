@@ -35,7 +35,7 @@ type LegacyLendingSnapshot={outstanding:number;events:number;reconstructed:boole
 export function legacyLendingSnapshot(
   legacy:unknown,asOf?:string
 ):LegacyLendingSnapshot{
-  const record=legacy&&typeof legacy==='object'
+  const record:{outstanding?:unknown;entries?:unknown}=legacy&&typeof legacy==='object'
     ?legacy as {outstanding?:unknown;entries?:unknown}:{};
   const fallback=finiteNumber(record.outstanding);
   const entries=asArray<Record<string,unknown>>(record.entries);
