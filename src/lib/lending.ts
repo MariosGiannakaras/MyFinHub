@@ -77,7 +77,6 @@ export function lendingRows(data: FinanceData,asOf?:string): LendingRow[] {
   for (const legacy of asArray<Record<string,unknown>>(data.seed.lending)) {
     const person=cleanString(legacy.person);
     if(!person)continue;
-    const entries=asArray<unknown>(legacy.entries);
     const row = people.get(person) ?? { person, outstanding: 0, events: 0 };
     const snapshot=legacyLendingSnapshot(legacy,asOf);
     row.outstanding += snapshot.outstanding;
