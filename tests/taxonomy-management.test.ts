@@ -132,7 +132,7 @@ describe('direct taxonomy management',()=>{
     if(!market)throw new Error('missing market');
     const operation={type:'retire-subcategory' as const,kind:'expense' as const,identityId:market.id};
     expect(taxonomyRetirementDependencies(data,operation,'2026-08-23')
-      .filter(item=>item.kind==='recurring').map(item=>item.id)).toEqual(['custom-rec','seed-rec']);
+      .filter(item=>item.kind==='recurring').map(item=>item.id).sort()).toEqual(['custom-rec','seed-rec']);
     expect(()=>applyTaxonomyOperation(data,operation,'2026-08-23')).toThrow(/μπλοκάρεται/);
     data.state.recurringOverrides={'seed-rec':{...data.seed.recurring[0],active:false,status:'stopped'}};
     data.state.recurringCustom=data.state.recurringCustom.map(item=>({...item,active:false,status:'stopped' as const}));
