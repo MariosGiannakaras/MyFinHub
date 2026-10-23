@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createEvent } from '../src/lib/domain';
-import { preserveRecurringPaymentLink } from '../src/lib/recurring';
+import { createEvent } from '../src/lib/domain.js';
+import { preserveRecurringPaymentLink } from '../src/lib/recurring.js';
 
 const expense=(note:string)=>createEvent({kind:'expense',date:'2026-10-21',amount:29.99,note,category:'Διάφορα',accountId:'cash'});
 
