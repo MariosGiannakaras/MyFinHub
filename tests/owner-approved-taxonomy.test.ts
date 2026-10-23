@@ -56,6 +56,31 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
     data.state.recurringCustom[0].name='Unclassified service';
     expect(()=>prepareApprovedOwnerTaxonomy(data,'2026-10-23')).toThrow(/Επίλεξε πρώτα τον πραγματικό σκοπό/);
   });
+  it('reclassifies known legacy demo providers and their Spotify-specific rule without rewriting history',()=>{
+    const data=fixture();
+    const original=data.state.recurringCustom[0];
+    data.state.recurringCustom=[{...original,name:'Netflix'},{...original,id:'demo-icloud',name:'iCloud'}];
+    data.state.transactionRules=[{
+      id:'rule-subscriptions',name:'Συνδρομές',enabled:true,priority:20,
+      scopes:['manual'],match:{description:'SPOTIFY',mode:'contains'},action:{category:'Συνδρομές'},
+      createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'
+    }];
+    const next=prepareApprovedOwnerTaxonomy(data,'2026-10-23');
+    expect(next.state.recurringCustom.map(item=>item.category)).toEqual(['Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία']);
+    expect(next.state.transactionRules[0].action.category).toBe('Ψηφιακή υπηρεσία');
+    expect(next.state.transactionRules[0].id).toBe('rule-subscriptions');
+    expect(next.state.settings.expenseCategories).not.toContain('Συνδρομές');
+    expect(prepareApprovedOwnerTaxonomy(next,'2026-10-23').state).toEqual(next.state);
+  });
+  it('refuses to retire a generic subscription rule without a recognized provider',()=>{
+    const data=fixture();
+    data.state.transactionRules=[{
+      id:'generic-rule',name:'Οποιαδήποτε συνδρομή',enabled:true,priority:20,
+      scopes:['manual'],match:{description:'SUBSCRIPTION',mode:'contains'},action:{category:'Συνδρομές'},
+      createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'
+    }];
+    expect(()=>prepareApprovedOwnerTaxonomy(data,'2026-10-23')).toThrow(/Επίλεξε πρώτα τον πραγματικό σκοπό του στον επεξεργαστή κανόνων/);
+  });
   it('does not reactivate retired categories just to rewrite stopped subscriptions',()=>{
     const data=fixture();
     data.state.recurringCustom[0].name='Historical unspecified subscription';
