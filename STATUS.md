@@ -3,9 +3,9 @@
 ## Consolidated v1.6.0 preparation — **NOT YET RELEASED** (2026-10-23)
 
 - **Current public production remains v1.5.0** at `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc` and [mgfinhub.vercel.app](https://mgfinhub.vercel.app). The v1.5.0 published Windows installer/tag/checksum are immutable and untouched.
-- **Release candidate** is the reconciled v1.6.0 branch based on the fully validated `develop@579ccdb202870ab0a15e896737c23260595003df` with both develop/main ancestry. Pending release PR complete required gates; **no Production promotion, database migration, new installer, tag, or Card Vault key change has occurred**.
+- **Release candidate** is the reconciled v1.6.0 branch reconciled with the reviewed finance source `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382` with both develop/main ancestry. Pending release PR complete required gates; **no Production promotion, database migration, new installer, tag, or Card Vault key change has occurred**.
 - Completed #588 advanced finance roadmap **12/12 implementations · 24/24 sub-implementations**, code-level taxonomy #601 **4/4 · 8/8**; actual database still 18/6 and requires owner-AAL2 post-release activation. Four additive migrations are pending with backup/health checks before any write; details in `docs/CONSOLIDATED_RELEASE_20261023.md`.
-- Source check: develop push [CI #39960354101](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39960354101) succeeded; release-candidate head must pass its own exact CI and security/rendered/Windows gates before a production merge. Do not claim candidate gate PASS from develop alone.
+- Source check: audited #614 [full Unified required CI #40012917908 attempt 2](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40012917908) **SUCCESS**; code merged to `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382`. Its postmerge CI #40015926377 is an independent gate. This reconciled v1.6.0 release head must pass its own new full exact-head CI and rendered inspection before any promotion.
 
 ---
 

@@ -16,6 +16,11 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 - Real database save-progress feedback and login six-digit automatic MFA verification, with audit and history consistency.
 - Preserved production CodeQL, Playwright WebKit, mobile Lighthouse and Windows packaging performance/security thresholds; corrected CI runner contention and performance fixture parity without weakening gates.
 
+#### Fixed (pre-release integration audit)
+- Reconciled Recurring subcategory identity on rename/move/retirement, and corrected target-month budget due projection without silently suppressing unrelated similarly named bills or claiming variable estimates are exact.
+- Preserved actual OCR receipt grand-total currency even when another line mentions EUR.
+- Reconstructed historical receivables only from exact reconciled import evidence, and rejected overflowing cumulative savings-goal scenarios instead of capping them to false financial totals.
+
 #### Release boundary
 - v1.5.0 remains the current published Web/Windows release until v1.6.0 release approval, ordered Production migrations, `main` promotion, deployed-SHA smoke and a **new immutable Windows tag and installer**. Do not reuse v1.5.0 binaries or replace previously published history.
 

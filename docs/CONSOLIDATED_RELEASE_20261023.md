@@ -1,10 +1,16 @@
 # MyFinHub — consolidated 1.6.0 release preparation (not deployed)
 
 ## Scope & branch reconciliation
-- Reviewed integration: `develop@579ccdb202870ab0a15e896737c23260595003df`; existing Production release: `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc`. The common ancestry diverged across old release commits. The candidate preserves both histories as parents while taking the fully reviewed implementation/security/CI sources from develop and historical v1.5.0 release notes/download links from main. No force-push. Old main-only one-shot v1.5.0 publisher is intentionally **not** revived because the published tag is immutable.
+- Reviewed integration: `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382`; existing Production release: `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc`. The common ancestry diverged across old release commits. The candidate preserves both histories as parents while taking the fully reviewed implementation/security/CI sources from develop and historical v1.5.0 release notes/download links from main. No force-push. Old main-only one-shot v1.5.0 publisher is intentionally **not** revived because the published tag is immutable.
 - Release code keeps owner/TOTP AAL2, JWT + RLS, session provenance, immutable finance audit/history and vault ciphertext separation; Android is independent and untouched.
-- Current repository #588 feature code 12/12 implementations · 24/24 subitems complete, accepted full develop-push [CI #39960354101](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39960354101) PASS. #601 taxonomy code 4/4 · 8/8, live activation remains separately open.
+- Current repository #588 feature code 12/12 implementations · 24/24 subitems complete, #601 taxonomy code 4/4 · 8/8. Pre-release cross-feature corrections (#606/#608/#610/#612/#615) were integrated into protected develop through [#614 exact-head CI SUCCESS, attempt 2](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40012917908). New develop postmerge and this updated release candidate's exact-head checks remain separately required; live taxonomy activation remains open.
 - v1.6.0 prepared as **one coherent Web + Windows version** in both package roots and lockfiles; older 1.5.0 download remains the public README link until the new installer is actually published. Never relabel already-released v1.5.0 artifacts.
+
+## Post-audit code reconciliation (not deployed)
+- Source: 16 accepted finance implementation/test/audit files from `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382` now included while preserving prior release branch and published `main` ancestry as separate merge parents. Existing release-only versions, lockfiles, README and v1.5.0 download metadata remain unchanged.
+- [ ] Run new exact-head v1.6.0 full required CI/rendered QA/CodeQL/WebKit/Lighthouse/Windows and inspect the output. Previous release CI is not proof for this new tree.
+- [ ] Confirm postmerge develop push CI and release-vs-develop differences remain restricted to intended release metadata and version files.
+- #606 source fix accepted; #608/#610/#612/#615 included via merged #614; superseded duplicate PRs #609/#611/#613 closed without double applying their content.
 
 ## Mandatory last-mile production checklist — not complete
 - [ ] This release candidate's **Ready exact-head** full strict Chromium rendered, WebKit, CodeQL, Lighthouse and three Windows lifecycle gates/Unified required gate SUCCESS. Inspect fresh responsive output; do not accept historical branch runs as substitute.
