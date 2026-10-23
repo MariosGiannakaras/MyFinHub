@@ -68,8 +68,9 @@ function subscriptionPurpose(name:string):'Ψηφιακή υπηρεσία'|'Τ�
 }
 
 function reclassifyKnownSubscription(item:RecurringItem):RecurringItem{
-  if(!same(item.category,'Συνδρομές')||item.active===false||item.status==='stopped')return item;
+  if(!same(item.category,'Συνδρομές'))return item;
   const target=subscriptionPurpose(item.name);
+  if(!target&&(item.active===false||item.status==='stopped'))return item;
   if(!target)throw new Error('Το πάγιο «'+item.name+'» έχει παλιά γενική κατηγορία «Συνδρομές». Επίλεξε πρώτα τον πραγματικό σκοπό του στην καρτέλα του.');
   return {...item,category:target,subcategory:undefined};
 }
