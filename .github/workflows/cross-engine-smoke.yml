@@ -15,7 +15,9 @@ jobs:
   webkit-smoke:
     name: WebKit compatibility smoke
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    # Pin the known Playwright-compatible LTS image: ubuntu-latest is migrating
+    # to 26.04, whose transient Azure apt mirror stalls in install --with-deps.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
