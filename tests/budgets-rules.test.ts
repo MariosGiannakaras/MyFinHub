@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
+import { defaultCategory } from '../src/lib/categories.js';
 import { allAttentionItems } from '../src/lib/attention.js';
 import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
@@ -92,7 +93,7 @@ describe('monthly category budgets',()=>{
 describe('deterministic transaction rules',()=>{
   it('uses priority then stable id and applies only the first matching rule',()=>{
     const data=clean();data.state.transactionRules=[rule('later',20,'market','Άλλο'),rule('winner',10,'market','Τρόφιμα'),rule('winner-b',10,'market','Μετακινήσεις')];
-    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Corner Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Corner Market',category:defaultCategory(data.state.settings,'expense'),accountId:'piraeus-payroll'});
     const preview=previewTransactionRules(data,event);
     expect(preview.matches.map(item=>item.id)).toEqual(['winner','winner-b','later']);
     expect(applyTransactionRules(data,event).category).toBe('Τρόφιμα');
@@ -109,7 +110,7 @@ describe('deterministic transaction rules',()=>{
 
   it('honors explicit manual/imported/review scope in both apply and preview',()=>{
     const data=clean();const imported=rule('imported',1,'market','Τρόφιμα');imported.scopes=['imported'];data.state.transactionRules=[imported];
-    const manual=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const manual=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:defaultCategory(data.state.settings,'expense'),accountId:'piraeus-payroll'});
     const migration={...manual,id:'migration',source:'migration' as const};data.state.events=[manual,migration];
     expect(previewTransactionRules(data,manual).winner).toBeNull();
     expect(previewTransactionRules(data,migration).winner?.id).toBe('imported');
@@ -118,7 +119,7 @@ describe('deterministic transaction rules',()=>{
 
   it('supports default category/subcategory metadata without replacing explicit user metadata',()=>{
     const data=clean();const metadata=rule('meta',1,'market','Τρόφιμα');metadata.action.subcategory='Supermarket';metadata.action.note='Default note';data.state.transactionRules=[metadata];
-    const defaultEvent=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const defaultEvent=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:defaultCategory(data.state.settings,'expense'),accountId:'piraeus-payroll'});
     const applied=applyTransactionRules(data,defaultEvent);
     expect(applied.category).toBe('Τρόφιμα');expect(applied.subcategory).toBe('Supermarket');expect(applied.note).toBe('Market');
     const explicit={...defaultEvent,category:'Υγεία',subcategory:'Φαρμακείο'};
@@ -136,7 +137,7 @@ describe('deterministic transaction rules',()=>{
     expect(previewTransactionRules(data,income)).toEqual({winner:null,matches:[]});
     expect(applyTransactionRules(data,income)).toBe(income);
     expect(transactionRuleMatchingEvents(data,expenseRule)).toEqual([]);
-    const refund=createEvent({kind:'refund',date:'2026-08-06',amount:5,note:'Salary refund',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const refund=createEvent({kind:'refund',date:'2026-08-06',amount:5,note:'Salary refund',category:defaultCategory(data.state.settings,'expense'),accountId:'piraeus-payroll'});
     expect(previewTransactionRules(data,refund).winner?.id).toBe('expense-taxonomy');
     expect(applyTransactionRules(data,refund)).toMatchObject({category:'Τρόφιμα',subcategory:'Σούπερ Μάρκετ'});
     expect(data.state.events).toEqual(before);
@@ -153,7 +154,7 @@ describe('deterministic transaction rules',()=>{
     expect(applyTransactionRules(data,income)).toMatchObject({category:data.state.settings.incomeCategories[0],note:'Αυτόματη σημείωση'});
     const manualCategory={...income,category:'Άλλο'};
     expect(applyTransactionRules(data,manualCategory)).toMatchObject({category:'Άλλο',note:'Αυτόματη σημείωση'});
-    const expense=createEvent({kind:'expense',date:'2026-08-05',amount:30,note:'Groceries',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const expense=createEvent({kind:'expense',date:'2026-08-05',amount:30,note:'Groceries',category:defaultCategory(data.state.settings,'expense'),accountId:'piraeus-payroll'});
     expect(previewTransactionRules(data,expense).winner?.id).toBe('category-first');
     expect(applyTransactionRules(data,expense).category).toBe('Τρόφιμα');
   });

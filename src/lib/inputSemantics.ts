@@ -1,5 +1,6 @@
 import type { EventKind, FinanceSettings, Loan, RecurringItem, SplitPart } from '../types.js';
 import { isValidDateOnly } from './dateOnly.js';
+import { defaultCategory } from './categories.js';
 import { isSafeMoneyValue } from './money.js';
 import { recurringVariableAmountError } from './recurringVariable.js';
 
@@ -9,12 +10,12 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
   if (kind === 'income') {
     return {
       accountId: settings.defaultIncomeAccount || fallbackAccount,
-      category: settings.incomeCategories[0] || 'Άλλο',
+      category: defaultCategory(settings,'income'),
     };
   }
   return {
     accountId: settings.defaultExpenseAccount || fallbackAccount,
-    category: settings.expenseCategories[0] || 'Άλλο',
+    category: defaultCategory(settings,'expense'),
   };
 }
 

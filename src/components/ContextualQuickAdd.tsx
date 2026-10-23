@@ -12,6 +12,7 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { RecurringBrandMark } from './RecurringBrandMark';
 import { allAccounts, createEvent } from '../lib/domain';
+import { defaultCategory } from '../lib/categories';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { savingContributionDraftError } from '../lib/ledgerFoundations';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
@@ -19,6 +20,7 @@ import { creditPurchaseAmount, creditStatementById, creditStatementEvents, recom
 import { lendingOutstandingFor } from '../lib/lending';
 import { isSelfLoan, loanInstallmentPaymentPlan, loanOutstanding, loanRemainingInstallments, setLoanPaymentInstallmentCount } from '../lib/loans';
 import { allRecurringItems, recurringAccountError } from '../lib/recurring';
+import { installmentExpensePurpose, recurringExpensePurpose } from '../lib/linkedPaymentPurpose';
 import { pendingScheduled, scheduledToEvent, transitionScheduled } from '../lib/scheduled';
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
@@ -106,7 +108,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [paymentFee,setPaymentFee]=useState('');
   const [writeoffConfirmed,setWriteoffConfirmed]=useState(false);
   const [confirmedWriteoffAmount,setConfirmedWriteoffAmount]=useState('');
-  const [paymentFeeCategory,setPaymentFeeCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [paymentFeeCategory,setPaymentFeeCategory]=useState(defaultCategory(data.state.settings,'expense'));
   const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount,asOf):null;
   const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
@@ -125,7 +127,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
           event=createEvent({kind:'card_payment',date,amount:numeric,note:note.trim()||`Αποπληρωμή ${cardLabel(card)}`,fromAccountId:accountId,cardId:card.id});
           if(selectedStatement)event.statementId=selectedStatement.id;
         }else{
-          event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||`Αγορά με ${cardLabel(card)}`,category:context.category||data.state.settings.expenseCategories[0]||'Άλλο',cardId:card.id});
+          event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||`Αγορά με ${cardLabel(card)}`,category:context.category||defaultCategory(data.state.settings,'expense'),cardId:card.id});
         }
       }else if(context.mode==='lending'){
         if(context.action!=='writeoff'&&!accounts.some(account=>account.id===accountId))
@@ -156,7 +158,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         }else if((loan.accountingMode??'expense-per-installment')==='liability-repayment'){
           event=createEvent({kind:'card_payment',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,fromAccountId:accountId});
         }else{
-          event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,category:'Δόσεις / δάνεια',accountId});
+          const purpose=installmentExpensePurpose(loan);
+          event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Δόση: ${loan.name}`,category:purpose.category,accountId});
+          if(purpose.subcategory)event.subcategory=purpose.subcategory;
         }
         event.loanId=loan.id;
         if(loanPaymentPlan)setLoanPaymentInstallmentCount(event,loanPaymentPlan.count);
@@ -169,7 +173,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         onClose();return;
       }else if(context.mode==='recurring'){
         if(!recurring)throw new Error('Το πάγιο δεν είναι πλέον διαθέσιμο.');const accountError=recurringAccountError(accounts.map(account=>account.id),accountId);if(accountError)throw new Error(accountError);
-        event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`,category:recurring.category,accountId,recurringId:recurring.id});
+        const purpose=recurringExpensePurpose(recurring);
+        event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`,category:purpose.category,accountId,recurringId:recurring.id});
+        if(purpose.subcategory)event.subcategory=purpose.subcategory;
       }else{
         if(!savingsSources.some(account=>account.id===fromAccountId))throw new Error('Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος.');
         if(!savingsTargets.some(account=>account.id===toAccountId))throw new Error('Ο αποταμιευτικός λογαριασμός δεν είναι πλέον διαθέσιμος.');

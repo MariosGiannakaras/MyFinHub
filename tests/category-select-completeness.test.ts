@@ -47,7 +47,10 @@ describe('all category/subcategory options follow revisioned finance settings',(
     expect(quick).not.toContain('genericCategoryTree(');
     expect(credit).not.toContain('genericCategoryTree(');
     expect(quick).toContain("categoryTree(data.state.settings,'expense')");
-    expect(credit).toContain("categoryTree(data.state.settings,'expense')");
+    // Credit purchase editor delegates the complete revisioned tree to CategorySelectInput;
+    // category display order must not force an unintended initial spending purpose.
+    expect(credit).toContain('CategorySelectInput settings={data.state.settings} kind="expense" category={category} subcategory={subcategory}');
+    expect(credit).toContain("defaultCategory(data.state.settings,'expense')");
     expect(inbox).toContain("subcategory={reviewed.subcategory??''}");
     expect(ledger).toContain("categoryTree(data.state.settings,kind as 'expense'|'income')");
     expect(ledger).toContain('...sourceRows.map(row=>categoryLabel(row))');

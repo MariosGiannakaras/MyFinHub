@@ -1,4 +1,5 @@
 import type { FinanceData, FinanceEvent, TransactionRule, TransactionRuleScope } from '../types.js';
+import { defaultCategory } from './categories.js';
 
 interface RulePreview {
   winner: TransactionRule | null;
@@ -63,8 +64,8 @@ export function previewTransactionRules(data: FinanceData, event: FinanceEvent):
 export function applyTransactionRules(data: FinanceData, event: FinanceEvent) {
   const { winner } = previewTransactionRules(data, event);
   if (!winner) return event;
-  const expenseDefault = data.state.settings.expenseCategories[0] || 'Άλλο';
-  const incomeDefault = data.state.settings.incomeCategories[0] || 'Άλλο';
+  const expenseDefault = defaultCategory(data.state.settings,'expense');
+  const incomeDefault = defaultCategory(data.state.settings,'income');
   const genericDefault = event.kind === 'income' ? incomeDefault : expenseDefault;
   const categoryIsDefault = !event.category || event.category === genericDefault;
   // Defence in depth for income taxonomies, even if a future caller changes
