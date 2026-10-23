@@ -131,7 +131,19 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
    return rows.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
  },[data,month,asOf]);
  const recentTransactions=activityRows.slice(0,5);
- const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
+ const openActivityTransaction=(row:ActivityRow)=>{
+    const source=row.id.startsWith('legacy:')?'legacy':'event';
+    const id=row.id.slice(source.length+1);
+    if(!id)return;
+    const url=new URL(location.href);
+    url.searchParams.set('commandTx',id);
+    url.searchParams.set('commandSource',source);
+    url.searchParams.set('commandMonth',month);
+    url.hash='#/transactions';
+    history.pushState(history.state,'',url.toString());
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+  const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
  const periodEndDate=reportingPeriodEndDate(month,asOf);
  const periodBalances=useMemo(()=>accountBalances(data,periodEndDate),[data,periodEndDate]);
  const accountDistribution=useMemo(()=>accounts.map(account=>({id:account.id,name:accountDisplayName(data,account.id),balance:periodBalances[account.id]||0})).filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5),[accounts,data,periodBalances]);
@@ -185,7 +197,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
 
   <Button type="button" variant="secondary" className="report-mobile-disclosure" aria-expanded={mobileSupportExpanded} onClick={()=>setMobileSupportExpanded(value=>!value)}>{mobileSupportExpanded?'Λιγότερες αναλύσεις':'Περισσότερες αναλύσεις'}</Button>
   <section className={`report-support-grid report-support-grid-four ${mobileSupportExpanded?'':'mobile-collapsed'}`} id="report-support">
-   <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list" data-content-entrance="list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
+   <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list" data-content-entrance="list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small><Button type="button" variant="ghost" aria-label={`Προβολή συναλλαγής ${row.title} στην ημερομηνία ${row.date}`} onClick={()=>openActivityTransaction(row)}>Άνοιγμα συναλλαγής</Button></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
 
    <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>{month===asOf.slice(0,7)?'Θετικά υπόλοιπα έως σήμερα.':'Θετικά υπόλοιπα στο τέλος της περιόδου.'}</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list" data-content-entrance="list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
 

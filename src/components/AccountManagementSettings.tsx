@@ -89,18 +89,20 @@ function newAccountId(mode:AccountMode,providerId:string){
   const prefix=mode==='bank'?(providerId||'bank'):'cash';
   return `account-${prefix}-${globalThis.crypto.randomUUID()}`;
 }
-function accountReferenced(data:FinanceData,id:string){
+function accountReferenceReasons(data:FinanceData,id:string):string[]{
+  const reasons:string[]=[];
   const legacy=[...(data.seed.transactions??[]),...(data.state.customTransactions??[]),...Object.values(data.state.overrides??{})];
-  if(legacy.some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id))return true;
-  if((data.state.events??[]).some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id||item.legs.some(leg=>leg.accountId===id)))return true;
-  if((data.state.scheduled??[]).some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id))return true;
+  if(legacy.some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id))reasons.push('ιστορικές συναλλαγές');
+  if((data.state.events??[]).some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id||item.legs.some(leg=>leg.accountId===id)))reasons.push('οικονομικές κινήσεις');
+  if((data.state.scheduled??[]).some(item=>item.accountId===id||item.fromAccountId===id||item.toAccountId===id))reasons.push('προγραμματισμένες κινήσεις');
   const recurring=[...(data.seed.recurring??[]),...(data.state.recurringCustom??[]),...Object.values(data.state.recurringOverrides??{})];
-  if(recurring.some(item=>item.accountId===id))return true;
+  if(recurring.some(item=>item.accountId===id))reasons.push('πάγια');
   const loans=[...(data.seed.loans??[]),...(data.state.customLoans??[]),...Object.values(data.state.loanOverrides??{})];
-  if(loans.some(item=>item.defaultAccountId===id))return true;
-  if((data.state.transactionRules??[]).some(item=>item.match.accountId===id))return true;
-  return false;
+  if(loans.some(item=>item.defaultAccountId===id))reasons.push('δόσεις / δάνεια');
+  if((data.state.transactionRules??[]).some(item=>item.match.accountId===id))reasons.push('κανόνες συναλλαγών');
+  return reasons;
 }
+function accountReferenced(data:FinanceData,id:string){return accountReferenceReasons(data,id).length>0}
 
 function AccountIcon({account,providers}:{account:ProviderAccount;providers:FinancialProvider[]}){
   if(account.kind==='cash')return <span className="account-management-icon is-cash"><WalletCards/></span>;
@@ -248,7 +250,8 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const requestDelete=(account:ProviderAccount)=>{
     const custom=(settings.customAccounts??[]).some(item=>item.id===account.id);
     if(!custom){setMessage('Οι αρχικοί λογαριασμοί διατηρούνται για να μην χαθεί το ιστορικό τους. Μπορείς να αλλάξεις όνομα και στοιχεία.');return}
-    if(accountReferenced(data,account.id)){setMessage('Ο λογαριασμός χρησιμοποιείται ήδη σε οικονομικό ιστορικό και δεν μπορεί να διαγραφεί.');return}
+    const references=accountReferenceReasons(data,account.id);
+    if(references.length){setMessage(`Ο λογαριασμός δεν μπορεί να διαγραφεί, επειδή συνδέεται με: ${references.join(', ')}. Οι καταχωρίσεις διατηρούνται· δεν μεταφέρονται αυτόματα σε άλλο λογαριασμό.`);return}
     setMessage('');setPendingDelete(account);
   };
   const confirmDelete=async()=>{
