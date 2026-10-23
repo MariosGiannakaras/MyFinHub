@@ -33,10 +33,12 @@ type LegacyLendingSnapshot={outstanding:number;events:number;reconstructed:boole
  * Incomplete workbooks keep their original documented snapshot, never an
  * invented historic balance or a destructive correction. */
 export function legacyLendingSnapshot(
-  legacy:{outstanding:unknown;entries:unknown},asOf?:string
+  legacy:unknown,asOf?:string
 ):LegacyLendingSnapshot{
-  const fallback=finiteNumber(legacy.outstanding);
-  const entries=asArray<Record<string,unknown>>(legacy.entries);
+  const record=legacy&&typeof legacy==='object'
+    ?legacy as {outstanding?:unknown;entries?:unknown}:{};
+  const fallback=finiteNumber(record.outstanding);
+  const entries=asArray<Record<string,unknown>>(record.entries);
   const preserved={outstanding:fallback,events:entries.length,reconstructed:false};
   if(!asOf||!isValidDateOnly(asOf)||entries.length===0)return preserved;
   const parsed:Array<{date:string;delta:number}>=[];
