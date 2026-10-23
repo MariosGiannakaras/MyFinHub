@@ -11,7 +11,9 @@ describe('Dashboard selected reporting-period contract',()=>{
     expect(dashboard).toContain('const balances=selectAccountBalances(data,periodEndDate)');
     expect(dashboard).toContain('selectMonthlyFlow(data,month,asOf)');
     expect(dashboard).toContain('selectCategoryTotals(data,month,asOf)');
-    expect(dashboard).toContain('budgetProgress(data,month,asOf)');
+    // The selected month/as-of remains authoritative, while Dashboard only
+    // consumes verified budget status, not future obligations shown in Reports.
+    expect(dashboard).toContain('budgetProgress(data,month,asOf,false)');
     expect(dashboard).toContain('tx.date<=periodEndDate');
     expect(dashboard).toContain('event.date<=periodEndDate');
     expect(dashboard).toContain('dashboardAccountHistory(data,primary.map(account=>account.id),accountHistoryStart,periodEndDate)');
