@@ -1,4 +1,4 @@
-import type { CategoryDefinition, FinanceData } from '../types.js';
+import type { CategoryDefinition, FinanceData, RecurringItem } from '../types.js';
 import { categoryKey, categoryTree } from './categories.js';
 import { ensureCategoryIdentities } from './categoryIdentity.js';
 import { applyTaxonomyOperation, taxonomyCategoryId, taxonomySubcategoryId } from './taxonomyManagement.js';
@@ -37,7 +37,6 @@ export const OWNER_INCOME_TREE:CategoryDefinition[]=[
 ];
 
 const renamed:ReadonlyArray<{kind:'expense'|'income';from:string;to:string}>=[
-  {kind:'expense',from:'Συνδρομές',to:'Ψηφιακή υπηρεσία'},
   {kind:'expense',from:'Αγορές',to:'Αγορά'},
   {kind:'expense',from:'Λογαριασμοί',to:'Λογαριασμός κατοικίας'},
   {kind:'expense',from:'Ταξίδια',to:'Ταξίδι'},
@@ -46,12 +45,41 @@ const renamed:ReadonlyArray<{kind:'expense'|'income';from:string;to:string}>=[
   {kind:'income',from:'Δώρο / οικογένεια',to:'Δώρο & Οικογενειακή ενίσχυση'},
   {kind:'income',from:'Άλλο έσοδο',to:'Άλλο πραγματικό έσοδο'},
 ];
-const retired=[{kind:'expense',label:'Δόσεις / δάνεια'},{kind:'income',label:'Επιστροφή χρημάτων'},{kind:'income',label:'Κατάθεση'}] as const;
+const retired=[{kind:'expense',label:'Συνδρομές'},{kind:'expense',label:'Δόσεις / δάνεια'},{kind:'income',label:'Επιστροφή χρημάτων'},{kind:'income',label:'Κατάθεση'}] as const;
 const renamedVehicleSubcategories=[
   {from:'Καύσιμα',to:'Βενζίνη'},
   {from:'Συντήρηση & Service',to:'Service'},
 ] as const;
 const same=(a:string,b:string)=>categoryKey(a)===categoryKey(b);
+
+/**
+ * The retired «Συνδρομές» category must not turn every recurring payment
+ * into a digital service. Only clearly identified providers are reassigned.
+ */
+function reclassifyKnownSubscription(item:RecurringItem):RecurringItem{
+  if(!same(item.category,'Συνδρομές'))return item;
+  const label=categoryKey(item.name);
+  const digital=/(spotify|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
+  const telecom=/(cosmote|starlink|vodafone|nova internet|telekom)/i;
+  const insurance=/(interamerican|insurance.*moto|ασφαλ.*μηχαν)/i;
+  const target=digital.test(label)?'Ψηφιακή υπηρεσία'
+    :telecom.test(label)?'Τηλεπικοινωνίες'
+    :insurance.test(label)?'Όχημα'
+    :null;
+  if(!target)throw new Error('Το πάγιο «'+item.name+'» έχει παλιά γενική κατηγορία «Συνδρομές». Επίλεξε πρώτα τον πραγματικό σκοπό του στην καρτέλα του.');
+  return {...item,category:target,subcategory:undefined};
+}
+
+function reconcileLegacySubscriptions(data:FinanceData):FinanceData{
+  const recurringOverrides={...(data.state.recurringOverrides??{})};
+  for(const seed of data.seed.recurring??[]){
+    const existing=recurringOverrides[seed.id]??seed;
+    const next=reclassifyKnownSubscription(existing);
+    if(next!==existing)recurringOverrides[seed.id]=next;
+  }
+  const recurringCustom=(data.state.recurringCustom??[]).map(reclassifyKnownSubscription);
+  return {...data,state:{...data.state,recurringOverrides,recurringCustom}};
+}
 
 /**
  * Pure migration. Call only within an owner+AAL2 revision/history-protected save.
@@ -77,6 +105,7 @@ export function prepareApprovedOwnerTaxonomy(input:FinanceData,asOf:string):Fina
   if(combinedParking&&categoryTree(data.state.settings,'expense').some(c=>same(c.name,'Όχημα')&&c.subcategories.some(s=>same(s,'Parking & Διόδια')))){
     data=applyTaxonomyOperation(data,{type:'retire-subcategory',kind:'expense',identityId:combinedParking},asOf);
   }
+  data=reconcileLegacySubscriptions(data);
   for(const {kind,label} of retired){
     const category=categoryTree(data.state.settings,kind).find(item=>same(item.name,label));
     if(!category)continue;
