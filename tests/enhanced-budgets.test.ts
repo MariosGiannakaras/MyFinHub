@@ -100,15 +100,72 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   d.state.scheduled[0]!.status='completed';
   expect(budgetProgress(d,'2026-08','2026-08-17')[0].projectedDue).toBe(0);
  });
- it('does not duplicate scheduled and recurring obligation with identical owner-confirmed payment',()=>{
+ it('does not hide two independent obligations with equal merchant-like labels and cents',()=>{
   const d=fixture();
   d.state.scheduled=[{id:'sch-1',dueDate:'2026-08-20',status:'pending',kind:'expense',amount:30,
     note:'Grocery',category:'Τρόφιμα',accountId:'bank',createdAt:stamp,updatedAt:stamp}];
   d.state.recurringCustom=[{id:'rec-1',name:'Grocery',category:'Τρόφιμα',accountId:'bank',
     day:20,amount:30,active:true}];
   d.state.budgets=[budget('2026-08','category',40,'Τρόφιμα')];
-  expect(budgetProjectedCommitments(d,'2026-08','2026-08-17')).toHaveLength(1);
-  expect(budgetProgress(d,'2026-08','2026-08-17')[0].projectedDue).toBe(30);
+  // These rows have no stable shared obligation identity. Their coincident
+  // amounts and labels must not suppress a second real bill.
+  expect(budgetProjectedCommitments(d,'2026-08','2026-08-17')).toHaveLength(2);
+  expect(budgetProgress(d,'2026-08','2026-08-17')[0].projectedDue).toBe(60);
+ });
+ it('projects recurring child-category charges independently of unlinked scheduled charges',()=>{
+  const d=fixture();
+  d.state.recurringCustom=[{id:'rec-child',name:'Grocery',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',
+    accountId:'bank',day:20,amount:30,active:true}];
+  d.state.budgets=[
+    budget('2026-08','subcategory',70,'Τρόφιμα','Σούπερ μάρκετ'),
+    budget('2026-08','category',120,'Τρόφιμα')
+  ];
+  const due=()=>budgetProjectedCommitments(d,'2026-08','2026-08-17');
+  const sub=()=>budgetProgress(d,'2026-08','2026-08-17').find(row=>row.scope==='subcategory');
+  expect(due()).toMatchObject([{id:'rec-child',subcategory:'Σούπερ μάρκετ',source:'recurring',amount:30}]);
+  expect(sub()).toMatchObject({used:0,projectedDue:30,projectedUsed:30});
+  expect(d.state.events).toHaveLength(0);
+
+  d.state.scheduled=[{id:'scheduled-child',dueDate:'2026-08-20',status:'pending',kind:'expense',
+    amount:30,note:'Grocery',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',
+    accountId:'bank',createdAt:stamp,updatedAt:stamp}];
+  expect(due()).toHaveLength(2);
+  expect(sub()?.projectedDue).toBe(60);
+
+  d.state.scheduled[0]!.subcategory='Λαϊκή';
+  expect(due()).toHaveLength(2);
+  expect(due().find(item=>item.id==='rec-child')?.subcategory).toBe('Σούπερ μάρκετ');
+  expect(sub()?.projectedDue).toBe(30);
+  expect(budgetProgress(d,'2026-08','2026-08-17').find(row=>row.scope==='category')?.projectedDue).toBe(60);
+  expect(d.state.events).toHaveLength(0);
+ });
+ it('projects a later selected month by real recurring cadence and omits variable estimates from known due',()=>{
+  const d=fixture(),asOf='2026-08-17',month='2026-09';
+  d.state.recurringCustom=[
+    {id:'monthly',name:'Monthly',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',accountId:'bank',
+      day:10,firstExpectedDate:'2026-01-10',recurrenceUnit:'month',recurrenceInterval:1,amount:25,active:true},
+    {id:'annual',name:'Annual',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',accountId:'bank',
+      day:12,firstExpectedDate:'2025-09-12',recurrenceUnit:'year',recurrenceInterval:1,amount:70,active:true},
+    {id:'variable',name:'Electricity estimate',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',
+      accountId:'bank',day:15,firstExpectedDate:'2026-01-15',amount:30,amountMode:'variable',
+      estimateMin:20,estimateMax:40,active:true}
+  ];
+  d.state.budgets=[budget(month,'subcategory',100,'Τρόφιμα','Σούπερ μάρκετ')];
+  const original=JSON.stringify(d);
+  const commitments=budgetProjectedCommitments(d,month,asOf);
+  expect(commitments.map(c=>({id:c.id,date:c.date,amount:c.amount}))).toEqual([
+    {id:'monthly',date:'2026-09-10',amount:25},
+    {id:'annual',date:'2026-09-12',amount:70}
+  ]);
+  expect(budgetProgress(d,month,asOf)[0]).toMatchObject({used:0,projectedDue:95,projectedUsed:95});
+  expect(JSON.stringify(d)).toBe(original);
+  // A linked actual September payment removes that recurrence, not the other bill.
+  d.state.events=[{...createEvent({kind:'expense',date:'2026-09-03',amount:25,
+    note:'Paid early',accountId:'bank',category:'Τρόφιμα'}),recurringId:'monthly'}];
+  expect(budgetProjectedCommitments(d,month,asOf).map(c=>c.id)).toEqual(['annual']);
+  expect(budgetProgress(d,month,asOf)[0].projectedDue).toBe(70);
+  // Variable estimates are still present in Cash Flow, explicitly labeled estimates,
+  // but may not be represented as guaranteed known amounts in a budget.
  });
  it('rejects subcategory-free and sub-cent budgets without changing existing typed categories',()=>{
   expect(()=>normalizeBudget(budget('2026-08','subcategory',40,'Τρόφιμα'))).toThrow(/υποκατηγορία/);

@@ -11,6 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
+import { legacyLendingSnapshot } from './lending.js';
 import { isSafeMoneyValue } from './money.js';
 import { isSavingsAccount } from './accountSemantics.js';
 
@@ -316,8 +317,8 @@ export function accountBalances(data: FinanceData, asOf: string): Record<string,
   return balances;
 }
 
-function legacyOutstandingReceivables(data: FinanceData) {
-  return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
+function legacyOutstandingReceivables(data: FinanceData,asOf:string) {
+  return (data.seed.lending ?? []).reduce((sum, p) => sum + legacyLendingSnapshot(p,asOf).outstanding, 0);
 }
 
 function eventReceivables(data: FinanceData,asOf:string) {
@@ -328,7 +329,7 @@ export function netWorth(data: FinanceData, asOf: string) {
   const balances = accountBalances(data, asOf);
   const assets = allAccounts(data).filter((a) => a.kind !== 'credit').reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
   const credit = Math.min(0, balances[CREDIT_ACCOUNT.id] ?? 0);
-  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data,asOf);
+  return assets + credit + legacyOutstandingReceivables(data,asOf) + eventReceivables(data,asOf);
 }
 
 export function availableMoney(data: FinanceData, asOf: string) {

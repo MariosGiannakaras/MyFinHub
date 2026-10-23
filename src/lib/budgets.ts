@@ -2,7 +2,7 @@ import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewD
 import { categoryKey, categoryPath } from './categories.js';
 import { moneyToCents, centsToMoney } from './money.js';
 import { pendingScheduled } from './scheduled.js';
-import { recurringUpcoming } from './recurring.js';
+import { activeRecurringItems, nextRecurringDate } from './recurring.js';
 import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
 type BudgetStatus = 'ok' | 'near' | 'exceeded';
@@ -144,9 +144,10 @@ function monthlyBudgets(data:FinanceData,month:string){
     .slice().sort((a,b)=>a.scope.localeCompare(b.scope)||(a.category??'').localeCompare(b.category??'','el')||a.id.localeCompare(b.id));
 }
 
-/** Explicit, known but NOT booked obligations. Do not turn future bills into
- * financial events, count completed scheduled payments or double-count a
- * recurring bill already represented by a pending scheduled obligation. */
+/** Explicit, known but NOT booked obligations. Never conflate independent
+ * Scheduled and Recurring facts by same-looking date/name/amount: no canonical
+ * link between these separate source rows is available. Variable recurring
+ * amounts are advisory estimates, not known exact due commitments. */
 export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:string):BudgetCommitment[]{
   const end=`${month}-${new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).getUTCDate()}`;
   if(end<=asOf)return [];
@@ -155,13 +156,17 @@ export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:st
     item.dueDate.startsWith(month+'-')&&!item.completedEventId&&item.category&&Number(item.amount)>0);
   for(const item of scheduled)result.push({id:item.id,date:item.dueDate,category:item.category!,subcategory:item.subcategory,
     amount:Number(item.amount),source:'scheduled'});
-  for(const {item,nextDate} of recurringUpcoming(data,asOf)){
-    if(!nextDate||!nextDate.startsWith(month+'-')||nextDate<=asOf||!item.category||Number(item.amount)<=0)continue;
+  // A budget can target a later month than the next occurrence after asOf.
+  // Resolve the target month with the one canonical Recurring cadence engine.
+  const monthStart=`${month}-01`;
+  const targetAsOf=monthStart>asOf?monthStart:asOf;
+  for(const item of activeRecurringItems(data)){
+    if(item.amountMode==='variable'||!item.category||Number(item.amount)<=0)continue;
+    const nextDate=nextRecurringDate(data,item,targetAsOf);
+    if(!nextDate||!nextDate.startsWith(month+'-')||nextDate<=asOf)continue;
     if((data.state.events??[]).some(e=>e.recurringId===item.id&&e.date.slice(0,7)===month))continue;
-    const duplicate=scheduled.some(s=>s.dueDate===nextDate&&s.accountId===item.accountId&&normalize(s.note)===normalize(item.name)&&
-      cents(s.amount)===cents(item.amount)&&normalize(s.category)===normalize(item.category));
-    if(duplicate)continue;
-    result.push({id:item.id,date:nextDate,category:item.category,amount:Number(item.amount),source:'recurring'});
+    result.push({id:item.id,date:nextDate,category:item.category,subcategory:item.subcategory,
+      amount:Number(item.amount),source:'recurring'});
   }
   return result;
 }

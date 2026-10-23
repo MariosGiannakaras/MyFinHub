@@ -114,6 +114,11 @@ export function taxonomyRetirementDependencies(data:FinanceData,operation:Retire
     if(!parent)throw new Error('Η γονική κατηγορία δεν βρέθηκε.');
     const parentTree=categoryTree(settings,operation.kind).find(item=>resolveCategoryIdentity(settings,operation.kind,item.name)?.id===parent.id);
     if(!parentTree||!parentTree.subcategories.some(label=>resolveSubcategoryIdentity(settings,operation.kind,parentTree.name,label)?.id===record.id))throw new Error('Η υποκατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+    for(const item of effectiveRecurringItems(data)){
+      if(!recurringIsLive(item)||!item.subcategory)continue;
+      if(resolveSubcategoryIdentity(settings,operation.kind,item.category,item.subcategory)?.id===record.id)
+        result.push(dependency('recurring',item.id,`Recurring «${item.name}»`));
+    }
     for(const item of data.state.scheduled??[]){
       if(item.status!=='pending'||!item.category||!item.subcategory)continue;
       if(resolveSubcategoryIdentity(settings,operation.kind,item.category,item.subcategory)?.id===record.id)result.push(dependency('scheduled',item.id,`Προγραμματισμένη «${item.note||item.id}»`));
@@ -194,6 +199,19 @@ function reconcileRecurringCategory(data:FinanceData,fromCategory:string,toCateg
   return {recurringOverrides,recurringCustom};
 }
 
+function reconcileRecurringSubcategory(data:FinanceData,
+  fromCategory:string,toCategory:string,fromSubcategory:string,toSubcategory:string){
+  const matches=(item:RecurringItem)=>same(item.category,fromCategory)&&same(item.subcategory,fromSubcategory);
+  const remap=(item:RecurringItem):RecurringItem=>matches(item)
+    ?{...item,category:toCategory,subcategory:toSubcategory}:item;
+  const recurringOverrides={...(data.state.recurringOverrides??{})};
+  for(const seeded of data.seed.recurring??[]){
+    const current=recurringOverrides[seeded.id]??seeded;
+    if(matches(current))recurringOverrides[seeded.id]=remap(current);
+  }
+  return {recurringOverrides,recurringCustom:(data.state.recurringCustom??[]).map(remap)};
+}
+
 function reconcilePendingScheduled(data:FinanceData,fromCategory:string,toCategory:string,fromSubcategory?:string,toSubcategory?:string){
   return (data.state.scheduled??[]).map(item=>{
     if(item.status!=='pending'||!same(item.category,fromCategory))return item;
@@ -263,6 +281,7 @@ export function applyTaxonomyOperation(data:FinanceData,operation:TaxonomyOperat
     if(previous&&current&&previousParent&&currentParent){
       nextState={
         ...nextState,
+        ...reconcileRecurringSubcategory(data,previousParent.label,currentParent.label,previous.label,current.label),
         scheduled:reconcilePendingScheduled(data,previousParent.label,currentParent.label,previous.label,current.label),
         transactionRules:reconcileRules(data,previousParent.label,currentParent.label,previous.label,current.label),
         budgets:reconcileSubcategoryBudgets(data,asOf,previousParent.label,previous.label,
