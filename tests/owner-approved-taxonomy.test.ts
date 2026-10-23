@@ -67,8 +67,8 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
     }];
     const next=prepareApprovedOwnerTaxonomy(data,'2026-10-23');
     expect(next.state.recurringCustom.map(item=>item.category)).toEqual(['Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία']);
-    expect(next.state.transactionRules[0].action.category).toBe('Ψηφιακή υπηρεσία');
-    expect(next.state.transactionRules[0].id).toBe('rule-subscriptions');
+    expect(next.state.transactionRules?.[0]?.action.category).toBe('Ψηφιακή υπηρεσία');
+    expect(next.state.transactionRules?.[0]?.id).toBe('rule-subscriptions');
     expect(next.state.settings.expenseCategories).not.toContain('Συνδρομές');
     expect(prepareApprovedOwnerTaxonomy(next,'2026-10-23').state).toEqual(next.state);
   });
