@@ -19,15 +19,19 @@ Counts represent **implemented source and focused regression guards** only, neve
   - [x] 4b. Decouple frequency display order from implicit transaction defaults and add regression tests for taxonomy identity, recurring, rules, inactive entries and form contract
 
 ## Validation / CI (NOT part of implementation counters)
-- Review head `9679386fb1a12fd4d98e4d5c56babb2d90ec9e58`: CI run `39871378055` failed; validate hygiene unused export `LinkedExpensePurpose` and Lighthouse median mobile dashboard LCP 5509ms vs 5500ms requirement. CodeQL, WebKit and Windows passed.
-- Removed the unused export; no performance limits relaxed. Mobile Lighthouse miss was 9ms on same unrelated dashboard route; inspect result on next coherent exact review head before attributing root cause or treating as noise.
-- Current new head: must inspect live GitHub before referencing SHA/run. Draft after first failure while fixing the batch.
-- **Focused unit/type/regression/runtime/rendered evidence on latest source not yet confirmed passing; do not assert PASS.**
+- Source implementations and focused regression guards: **Implementations 4/4 completed · Sub-implementations 8/8 completed**.
+- Prior full review CI on `4041409fcafb8450910ee175f266c0eab82a7eba`, run `39912994451`, passed validate, CodeQL, WebKit, Lighthouse, three Windows jobs and Unified required gate after re-running transient WebKit package download cancellation.
+- Integrating the latest prior `develop` into taxonomy PR #600 uncovered a strict Transactions rendered latency result of 2270ms against the unchanged <2000ms assertion. The taxonomy management rendered QA itself passed.
+- The independent #588 workstream resolved runner contention in PR [#602](https://github.com/MariosGiannakaras/MyFinHub/pull/602), merge `9569e5b7318241303d36394d33031f6082bd5a2b`: strict Transactions and large-data latency probes now run in the existing serial resource-isolated stage; unchanged latency thresholds and explicit regression tests. Its full CI and CodeQL passed.
+- PR #600 has now reconciled the **four #602 files** with current `develop` as an additive merge; reverse compare confirms behind=0 and no loss of current integration baseline. New full CI and CodeQL were started for this integration. **Do not merge until exact final review-head mandatory gates are green**.
+- Relevant earlier taxonomy, recurring, payment and Settings browser screenshots were directly inspected, including desktop and mobile; retain current-head rendered QA acceptance requirement. Do not relax performance/visual/security gates.
 
 ## Integration / release
-- PR [#600](https://github.com/MariosGiannakaras/MyFinHub/pull/600) targets `develop`, presently draft for CI correction. Separate budget draft [#596](https://github.com/MariosGiannakaras/MyFinHub/pull/596) edits `src/types.ts` and `server/validation.ts`; reconcile additive changes, do not wholesale overwrite.
-- User-authorized **live Supabase migration remains unapplied**: admin connector returned `auth.uid() IS NULL` and owner+AAL2 `false`. After reviewed merge and deliberate deployment, use Settings > Categories confirmation while signed in as owner with AAL2. Verify settings, relational recurring/budgets, aliases, one linked payment and history. Do not bypass the canonical RPC.
-- Windows/desktop automated gates and rendered evidence required, not physical hardware.
+- PR [#600](https://github.com/MariosGiannakaras/MyFinHub/pull/600) targets `develop`. The only newer `develop` changes were Savings and the independent Transactions runner fix #602; both are retained.
+- Separate draft [#596](https://github.com/MariosGiannakaras/MyFinHub/pull/596) owns advanced budgets, subcategory carryover and its shared-file additions. Reconcile #596 before its future merge, rather than overwriting it here. The #596 owner was notified of frequency-first category/default compatibility.
+- Live Supabase **not changed**: last authenticated administrative read confirmed revision **465**, old **18 expense / 6 income** active categories. The direct administrative SQL attempt was rejected by connected-tool safety checks before execution. Do not misrepresent the DB state. The owner-approved target remains 20/6 with 71 subcategories, already in `src/lib/ownerApprovedTaxonomy.ts`.
+- Deliberate production promotion is separate from develop integration and is not automatically authorized. Production category application uses the documented non-destructive, revision/history/audit-preserving owner path; do not bypass repository security controls.
+- Windows/desktop correctness is validated by automated CI and artifact inspection, not physical hardware.
 
 ## Safety and invariants
 - Treat SQL/direct state mutations as privileged exceptions; do not bypass application owner+AAL2/RLS, revision conflict, append-only audit/history, or pre-change backups. If approved RPC cannot be invoked in authorized context, stop DB mutation and record precise blocker.
@@ -37,7 +41,11 @@ Counts represent **implemented source and focused regression guards** only, neve
 - Another open PR #596 owns advanced budgets; avoid modifying its files and reconcile only if necessary.
 
 ## Checkpoint
-Branch `feat/20261023-owner-category-taxonomy`, PR #600 targeting `develop`, scope issue #601.
-Implementation source/guards staged: **Implementations 4/4 completed · Sub-implementations 8/8 completed**.
-Live Supabase unchanged, authorized owner+AAL2 session unavailable to connector. Earlier ready-head CI failed hygiene unused export and 9ms mobile Lighthouse LCP; unused export fixed and new guard batch pushed.
-**Exact next action:** inspect latest draft-head validate CI. If red, inspect complete failures and correct owning causes in one batch. Then mark ready and run full required review-head CI/CodeQL/WebKit/Lighthouse/Windows/rendered QA; directly inspect artifacts. Merge only green after checking overlap #596. Owner AAL2 activation/deployment remains separate blocked production action.
+Workstream: `feat/20261023-owner-category-taxonomy`, PR #600, issue #601, target `develop`.
+**Implementations 4/4 completed · Sub-implementations 8/8 completed** (source and focused regressions; no claim of live activation).
+
+Newest merged integration baseline includes #602 Transactions strict-latency isolation, merged to `develop` as `9569e5b7318241303d36394d33031f6082bd5a2b`. The taxonomy branch has an additive reconciliation merge based on that commit, preserving the complete approved taxonomy. Exact final head, status checks, and conclusion: **inspect live PR #600 and latest associated GitHub Actions runs**; the last integration review head before this document change was `879304e76418ae2e80cd5b6795b48caebcec497e`, with CI `39924517983` and CodeQL `39924517723` initially in progress.
+
+**Exact next action:** inspect all required gates on the latest PR #600 head, including strict Transactions rendered QA, and direct generated QA evidence. If green and mergeable, protected squash-merge #600 to `develop`, then verify the resulting head and any required develop push CI. If a required check fails, repair the owning cause without reducing thresholds, then revalidate one coherent new head.
+
+**Production/release:** Live database at revision 465 with old 18/6 taxonomy at last confirmed read; direct administrative connector write was rejected. No SQL migration, release, or Android change was executed. Post-release activation/verification is a separate pending action. Never claim active 20/6 database taxonomy until a successful write and direct verification.
