@@ -95,9 +95,18 @@ try{
 
   console.log('Action Center QA: exact recurring and loan deep actions');
   await navigate('attention');
-  await clickAttention('recurring:rec-1');await waitModal('Πληρωμή παγίου');
-  assert(await c.call("function(){return [...document.querySelectorAll('.contextual-quick-modal input')].some(input=>String(input.value).length>0)}"),'recurring context carries defaults');
+  await clickAttention('recurring:rec-1');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'Attention navigates to canonical Recurring domain');
+  await waitFor("function(){return document.activeElement?.dataset.commandRecurringId==='rec-1'}",'exact recurring row focused after Attention');
+  assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')}"),'Attention did not silently open a competing payment modal');
+  await screenshot('action-center-recurring-domain-focus');
+  const payFromRecurring=await c.call("function(){const row=document.querySelector('[data-command-recurring-id=rec-1]');const button=row?.querySelector('.pay-action');button?.click();return Boolean(button)}");
+  assert(payFromRecurring,'pay action belongs to the focused Recurring row');
+  await waitModal('Πληρωμή παγίου');
+  assert(await c.call("function(){return [...document.querySelectorAll('.contextual-quick-modal input')].some(input=>String(input.value).length>0)}"),'Recurring payment context carries linked item defaults');
+  await screenshot('action-center-recurring-domain-pay');
   await pressEscape();await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'recurring Escape close');
+  await navigate('attention');
   await clickAttention('loan:loan-long');await waitModal('Πληρωμή δόσης');
   assert(await c.call("function(){return [...document.querySelectorAll('.contextual-quick-modal input')].some(input=>(input.value||'').includes('Δόση:'))}"),'loan context preserves exact obligation note');
   await closeModal();
