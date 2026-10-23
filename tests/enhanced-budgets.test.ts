@@ -89,6 +89,12 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   d.state.budgets=[budget('2026-08','subcategory',60,'Τρόφιμα','Σούπερ μάρκετ')];
   const row=budgetProgress(d,'2026-08','2026-08-17')[0];
   expect(row).toMatchObject({used:20,projectedDue:30,projectedUsed:50,remaining:40,projectedRemaining:10});
+  const statusOnly=budgetProgress(d,'2026-08','2026-08-17',false)[0];
+  // Same actual expense, limit, status and carryover; skip due obligations
+  // that neither Dashboard nor Attention display on their first paint.
+  expect(statusOnly).toMatchObject({used:20,limit:60,remaining:40,status:row.status,
+    projectedDue:0,projectedUsed:20,projectedRemaining:40});
+  expect(row.projectedDue).toBe(30);
   expect(d.state.events).toHaveLength(1);
   expect(budgetProjectedCommitments(d,'2026-08','2026-08-24')).toHaveLength(0);
   d.state.scheduled[0]!.status='completed';

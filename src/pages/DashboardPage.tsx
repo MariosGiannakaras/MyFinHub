@@ -158,7 +158,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const visibleSecondary=remaining.slice(0,4);const hiddenSecondary=Math.max(0,remaining.length-visibleSecondary.length);
   const largestCategory=categories[0];const daysElapsed=month===asOf.slice(0,7)?Math.max(1,Number(asOf.slice(-2))):Number(range.end.slice(-2));const previousDays=Math.max(1,Number(previousRange.end.slice(-2)));
   const averageDailyExpense=flow.expense/daysElapsed;const previousAverageDailyExpense=previousFlow.expense/previousDays;const dailyExpenseComparison=percentChange(averageDailyExpense,previousAverageDailyExpense);
-  const budgetRows=budgetProgress(data,month,asOf);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
+  const budgetRows=budgetProgress(data,month,asOf,false);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
   const openingDate=previousDate(range.start);const openingBalances=selectAccountBalances(data,openingDate);const openingTotal=accounts.reduce((sum,account)=>sum+(openingBalances[account.id]??0),0);const endingTotal=accounts.reduce((sum,account)=>sum+(balances[account.id]??0),0);
   const privacyMoney=(value:number)=>privacyVisible?money.format(value):'•••••• €';
   const attentionCount=visibleAttentionItems(data,asOf).length;

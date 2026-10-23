@@ -47,7 +47,10 @@ describe('all category/subcategory options follow revisioned finance settings',(
     expect(quick).not.toContain('genericCategoryTree(');
     expect(credit).not.toContain('genericCategoryTree(');
     expect(quick).toContain("categoryTree(data.state.settings,'expense')");
-    expect(credit).toContain("categoryTree(data.state.settings,'expense')");
+    // Credit purchases adopted the shared taxonomy owner; requiring a second
+    // page-local categoryTree() scan would reintroduce duplicated picker logic.
+    expect(credit).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
+    expect(credit).toContain('subcategory={subcategory}');
     expect(inbox).toContain("subcategory={reviewed.subcategory??''}");
     expect(ledger).toContain("categoryTree(data.state.settings,kind as 'expense'|'income')");
     expect(ledger).toContain('...sourceRows.map(row=>categoryLabel(row))');

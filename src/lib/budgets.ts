@@ -166,7 +166,9 @@ export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:st
   return result;
 }
 
-export function budgetProgress(data:FinanceData,month:string,asOf?:string):BudgetProgress[]{
+/** On status-only surfaces, skip unrendered future commitments. Reports and
+ * budget editors retain the full default, nonposting projection contract. */
+export function budgetProgress(data:FinanceData,month:string,asOf?:string,includeProjectedDue=true):BudgetProgress[]{
   const selected=monthlyBudgets(data,month);
   if(!selected.length)return [];
   const previousSpending=new Map<string,ReturnType<typeof spending>>();
@@ -186,7 +188,7 @@ export function budgetProgress(data:FinanceData,month:string,asOf?:string):Budge
     return Math.max(0,before-used);
   };
   const actual=spent(month,asOf);
-  const commitments=asOf?budgetProjectedCommitments(data,month,asOf):[];
+  const commitments=asOf&&includeProjectedDue?budgetProjectedCommitments(data,month,asOf):[];
   return selected.map(budget=>{
     const usedCents=useBudget(data,budget,actual);
     const carriedCents=previousCarry(budget,0);
