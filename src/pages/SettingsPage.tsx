@@ -17,6 +17,7 @@ import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspa
 import { CounterpartyDirectorySettings } from '../components/CounterpartyDirectorySettings';
 import { withCounterparty } from '../lib/counterparties';
 import { categoryTree } from '../lib/categories';
+import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE, prepareApprovedOwnerTaxonomy } from '../lib/ownerApprovedTaxonomy';
 import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
@@ -150,6 +151,7 @@ export function SettingsPage({
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [pendingOwnerTaxonomy, setPendingOwnerTaxonomy] = useState(false);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
   const draftRef = useRef(draft);
 
@@ -188,6 +190,20 @@ export function SettingsPage({
         ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
         : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
     );
+  };
+
+  const ownerTaxonomyApplied=JSON.stringify(categoryTree(data.state.settings,'expense'))===JSON.stringify(OWNER_EXPENSE_TREE)
+    &&JSON.stringify(categoryTree(data.state.settings,'income'))===JSON.stringify(OWNER_INCOME_TREE);
+  const confirmOwnerTaxonomy=async()=>{
+    if(busy)return;
+    setBusy(true);
+    setMessage('');
+    try{
+      await onFinanceDurably(current=>prepareApprovedOwnerTaxonomy(current,asOf));
+      setPendingOwnerTaxonomy(false);
+    }catch(reason){
+      setMessage(userErrorMessage(reason,'Η εφαρμογή των κατηγοριών δεν αποθηκεύτηκε. Τα προηγούμενα δεδομένα παραμένουν ανέπαφα.'));
+    }finally{setBusy(false)}
   };
 
   const requestImport = (file?: File) => {
@@ -273,6 +289,7 @@ export function SettingsPage({
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">
+            {!ownerTaxonomyApplied?<Surface as="section" variant="flat" className="panel settings-owner-taxonomy"><div className="panel-head"><div><b>Εγκεκριμένη προσωπική ταξινόμηση</b><small>20 κατηγορίες εξόδων · 6 κατηγορίες εσόδων. Αλλαγή με ιστορικό και προστασία συγκρούσεων, χωρίς επανεγγραφή συναλλαγών.</small></div><Button type="button" variant="secondary" disabled={busy} onClick={()=>setPendingOwnerTaxonomy(true)}>Εφαρμογή εγκεκριμένης λίστας</Button></div></Surface>:null}
             <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="taxonomy" />
           </div>
         ) : null}
@@ -345,6 +362,15 @@ export function SettingsPage({
         ) : null}
       </div>
 
+      <ConfirmDialog
+        open={pendingOwnerTaxonomy}
+        title="Εφαρμογή εγκεκριμένης ταξινομίας;"
+        description="Θα οριστούν οι 20 κατηγορίες εξόδων και οι 6 εσόδων με την εγκεκριμένη σειρά και τις υποκατηγορίες τους. Οι υπάρχουσες ταυτότητες, οι συνδεδεμένες εγγραφές και το οικονομικό ιστορικό προστατεύονται. Αν υπάρχουν μη επιλύσιμες εξαρτήσεις, η ενημέρωση θα απορριφθεί ολόκληρη."
+        confirmLabel="Εφαρμογή"
+        busy={busy}
+        onConfirm={()=>void confirmOwnerTaxonomy()}
+        onCancel={()=>{if(!busy)setPendingOwnerTaxonomy(false)}}
+      />
       <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"

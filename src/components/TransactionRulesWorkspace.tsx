@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronUp, CirclePause, ListFilter, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
-import { categoryTree } from '../lib/categories';
+import { categoryTree, defaultCategory } from '../lib/categories';
 import { money } from '../lib/format';
 import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/transactionRules';
 import { MAX_TRANSACTION_RULES, ruleScopeChoice, scopesForRuleChoice, type TransactionRuleScopeChoice } from '../lib/transactionRuleEditor';
@@ -35,7 +35,7 @@ export function TransactionRulesWorkspace({
   onReorderRule:(id:string,direction:-1|1)=>Promise<void>;
 }){
   const expenseTree=useMemo(()=>categoryTree(data.state.settings,'expense'),[data.state.settings]);
-  const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
+  const expenseFallback=defaultCategory(data.state.settings,'expense');
   const categorySubcategories=useMemo(()=>new Map(expenseTree.map(item=>[item.name,new Set(item.subcategories)])),[expenseTree]);
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
   const accountIds=new Set(accounts.map(account=>account.id));

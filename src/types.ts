@@ -387,6 +387,8 @@ export interface RecurringItem {
   recurrenceInterval?: number;
   accountId: string;
   category: string;
+  /** Optional purpose subcategory propagated to linked payments. */
+  subcategory?: string;
   active: boolean;
   status?: RecurringStatus;
   logoAssetKey?: string | null;
@@ -415,6 +417,9 @@ export interface Loan {
   legacyPaidAmount?: number;
   source?: string;
   accountingMode?: 'expense-per-installment' | 'liability-repayment';
+  /** Spending purpose for expense-per-installment, not a second charge on liability payments. */
+  expenseCategory?: string;
+  expenseSubcategory?: string;
   kind?: LoanKind;
   firstExpectedDate?: string | null;
   defaultAccountId?: string;

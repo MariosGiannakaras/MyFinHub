@@ -17,6 +17,7 @@ import { ForecastScenarioPanel } from '../components/ForecastScenarioPanel';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
+import { defaultCategory } from '../lib/categories';
 import { cashFlowForecast, LOW_BALANCE_THRESHOLD, type ForecastHorizon } from '../lib/forecast';
 import { defaultTransferPair } from '../lib/ledgerFoundations';
 import { money, shortDate } from '../lib/format';
@@ -100,19 +101,19 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
   useEffect(()=>{if(completeError)completeRef.current?.querySelector<HTMLElement>('#scheduled-complete-error')?.scrollIntoView({block:'center',behavior:'instant'});},[completeError,completeRef]);
 
   const newDraft = (): Draft => ({
-    kind: 'expense', dueDate: asOf, amount: '', note: '', category: data.state.settings.expenseCategories[0] || 'Άλλο', subcategory: '',
+    kind: 'expense', dueDate: asOf, amount: '', note: '', category: defaultCategory(data.state.settings,'expense'), subcategory: '',
     accountId: data.state.settings.defaultExpenseAccount || accounts[0]?.id || '', fromAccountId: pair.from, toAccountId: pair.to,
   });
   const startNew = () => { setError(''); setDraft(newDraft()); };
   const startEdit = (item: ScheduledTransaction) => {
     if (item.status !== 'pending') return;
     setError('');
-    setDraft({ id: item.id, createdAt: item.createdAt, kind: item.kind, dueDate: item.dueDate, amount: String(item.amount), note: item.note, category: item.category || (item.kind === 'income' ? data.state.settings.incomeCategories[0] : data.state.settings.expenseCategories[0]) || 'Άλλο', subcategory: item.subcategory || '', accountId: item.accountId || data.state.settings.defaultExpenseAccount || accounts[0]?.id || '', fromAccountId: item.fromAccountId || pair.from, toAccountId: item.toAccountId || pair.to });
+    setDraft({ id: item.id, createdAt: item.createdAt, kind: item.kind, dueDate: item.dueDate, amount: String(item.amount), note: item.note, category: item.category || (item.kind === 'income' ? defaultCategory(data.state.settings,'income') : defaultCategory(data.state.settings,'expense')) || 'Άλλο', subcategory: item.subcategory || '', accountId: item.accountId || data.state.settings.defaultExpenseAccount || accounts[0]?.id || '', fromAccountId: item.fromAccountId || pair.from, toAccountId: item.toAccountId || pair.to });
   };
   const closeDraft = () => { if(saving)return;setDraft(null);setError(''); };
   const changeKind = (kind: ScheduledKind) => {
     if (!draft) return;
-    const category = kind === 'income' ? data.state.settings.incomeCategories[0] || 'Άλλο' : data.state.settings.expenseCategories[0] || 'Άλλο';
+    const category = kind === 'income' ? defaultCategory(data.state.settings,'income') || 'Άλλο' : defaultCategory(data.state.settings,'expense');
     const accountId = kind === 'income' ? data.state.settings.defaultIncomeAccount || accounts[0]?.id || '' : data.state.settings.defaultExpenseAccount || accounts[0]?.id || '';
     setDraft({ ...draft, kind, category, subcategory: '', accountId, fromAccountId: pair.from, toAccountId: pair.to });
   };

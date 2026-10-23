@@ -38,6 +38,13 @@ export function genericCategoryTree(settings:FinanceSettings,kind:'expense'|'inc
   return generic.length?generic:tree;
 }
 
+/** Display order is a user preference, never an implicit transaction purpose. */
+export function defaultCategory(settings:FinanceSettings,kind:'expense'|'income'){
+  const tree=categoryTree(settings,kind);
+  const fallback=kind==='expense'?'Άλλο':'Άλλο πραγματικό έσοδο';
+  return tree.find(item=>categoryKey(item.name)===categoryKey(fallback))?.name??tree[0]?.name??fallback;
+}
+
 export function subcategoriesFor(settings:FinanceSettings,kind:'expense'|'income',category:string){
   const key=categoryKey(category);
   return categoryTree(settings,kind).find(item=>categoryKey(item.name)===key)?.subcategories??[];
