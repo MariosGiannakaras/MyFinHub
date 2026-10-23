@@ -56,6 +56,15 @@ describe('advisory target-date savings goal projection (#588 #13 E1)',()=>{
   }
   expect(savingsGoalProjection(d,goal(50,'2026-10-01'),'2026-10-21')).toMatchObject({status:'reached',remaining:0,suggestedMonthly:0});
  });
+ it('rejects an unsafe accumulated scenario instead of silently capping valid monthly euros',()=>{
+  const d=fixture(),before=JSON.stringify(d);
+  // 40 trillion EUR per month is individually safe in cents, but 3 months
+  // exceed JavaScript's safe exact-cent integer range.
+  expect(()=>savingsGoalProjection(d,goal(400),'2026-10-21',40_000_000_000_000)).toThrow(/ορίου/);
+  expect(savingsGoalProjection(d,goal(400),'2026-10-21',110).scenarios.find(x=>x.label==='custom'))
+    .toMatchObject({monthly:110,totalAtDeadline:430,gapAtDeadline:0});
+  expect(JSON.stringify(d)).toBe(before);
+ });
  it('rejects unsafe or sub-cent target/scenario amounts and invalid dates',()=>{
   const d=fixture();
   expect(()=>savingsGoalProjection(d,goal(100.001),'2026-10-21')).toThrow(/λεπτά/);
