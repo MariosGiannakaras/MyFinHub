@@ -91,7 +91,10 @@ describe('unified command search',()=>{
     const index=buildCommandSearchIndex(clone(),'2026-08-17');
     const result=index.find(row=>row.kind==='recurring');
     expect(result?.action).toEqual({type:'recurring_focus',recurringId:result?.id.slice('recurring:'.length)});
-    expect(index.find(row=>row.id===`action:recurring:${result?.id.slice('recurring:'.length)}`)?.action.type).toBe('recurring_payment');
+    const pay=index.find(row=>row.id===`action:recurring:${result?.id.slice('recurring:'.length)}`);
+    expect(pay?.action.type).toBe('recurring_payment');
+    expect(pay?.title).toContain('Στα Πάγια · ');
+    expect(pay?.subtitle).toContain('στην οθόνη παγίων');
   });
 
   it('selects an exact Lending person instead of opening a generic collection',()=>{

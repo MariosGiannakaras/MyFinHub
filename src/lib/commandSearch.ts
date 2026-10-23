@@ -85,7 +85,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  }
  for(const recurring of allRecurringItems(data)){
   rows.push(item({id:`recurring:${recurring.id}`,kind:'recurring',title:recurring.name,subtitle:recurringStatus(recurring)==='active'?'Ενεργό πάγιο':'Ανενεργό πάγιο',keywords:[recurring.name,recurring.category,accountName(data,recurring.accountId),recurring.id],action:{type:'recurring_focus',recurringId:recurring.id},priority:56}));
-  if(recurringStatus(recurring)==='active')rows.push(item({id:`action:recurring:${recurring.id}`,kind:'command',title:`Πληρωμή ${recurring.name}`,subtitle:'Πληρωμή συγκεκριμένου παγίου',keywords:[recurring.name,recurring.category,'πάγιο','πληρωμή'],action:{type:'recurring_payment',recurringId:recurring.id,accountId:recurring.accountId},priority:21}));
+  if(recurringStatus(recurring)==='active')rows.push(item({id:`action:recurring:${recurring.id}`,kind:'command',title:`Στα Πάγια · ${recurring.name}`,subtitle:'Άνοιγμα στην οθόνη παγίων για πληρωμή',keywords:[recurring.name,recurring.category,'πάγιο','πληρωμή'],action:{type:'recurring_payment',recurringId:recurring.id,accountId:recurring.accountId},priority:21}));
  }
  for(const planned of data.state.scheduled??[]){
   if(planned.status!=='pending')continue;
