@@ -50,7 +50,7 @@ const renamedVehicleSubcategories=[
   {from:'Καύσιμα',to:'Βενζίνη'},
   {from:'Συντήρηση & Service',to:'Service'},
 ] as const;
-const same=(a:string,b:string)=>categoryKey(a)===categoryKey(b);
+const same=(a:string|undefined,b:string)=>Boolean(a&&categoryKey(a)===categoryKey(b));
 
 /**
  * The retired «Συνδρομές» category must not turn every recurring payment
