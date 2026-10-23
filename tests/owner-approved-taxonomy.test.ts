@@ -59,14 +59,14 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
   it('reclassifies known legacy demo providers and their Spotify-specific rule without rewriting history',()=>{
     const data=fixture();
     const original=data.state.recurringCustom[0];
-    data.state.recurringCustom=[{...original,name:'Netflix'},{...original,id:'demo-icloud',name:'iCloud'}];
+    data.state.recurringCustom=[{...original,name:'Netflix'},{...original,id:'demo-icloud',name:'iCloud'},{...original,id:'demo-disney',name:'Disney+',active:false,status:'stopped'}];
     data.state.transactionRules=[{
       id:'rule-subscriptions',name:'Συνδρομές',enabled:true,priority:20,
       scopes:['manual'],match:{description:'SPOTIFY',mode:'contains'},action:{category:'Συνδρομές'},
       createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'
     }];
     const next=prepareApprovedOwnerTaxonomy(data,'2026-10-23');
-    expect(next.state.recurringCustom.map(item=>item.category)).toEqual(['Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία']);
+    expect(next.state.recurringCustom.map(item=>item.category)).toEqual(['Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία','Ψηφιακή υπηρεσία']);
     expect(next.state.transactionRules[0].action.category).toBe('Ψηφιακή υπηρεσία');
     expect(next.state.transactionRules[0].id).toBe('rule-subscriptions');
     expect(next.state.settings.expenseCategories).not.toContain('Συνδρομές');
