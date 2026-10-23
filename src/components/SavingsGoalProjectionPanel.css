@@ -1,0 +1,21 @@
+/* Layout-only goal projection: shared controls own colors/focus/input geometry. */
+.savings-goal-projection{margin:10px 14px 16px;padding:16px;border:1px solid var(--line);border-radius:14px;min-width:0;display:grid;gap:12px}
+.savings-goal-projection>.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.savings-goal-projection .panel-head>div{min-width:0}
+.savings-goal-projection .panel-head>button{flex:0 0 auto}
+.savings-projection-status,.savings-projection-horizon,.savings-projection-disclaimer,.savings-projection-warning{margin:0;line-height:1.5;font-size:.83rem;color:var(--ink-2);overflow-wrap:anywhere}
+.savings-projection-warning{border-left:3px solid var(--warning,#b58231);padding-left:10px}
+.savings-projection-metrics{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.savings-projection-metrics>div,.savings-projection-scenario{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.savings-projection-metrics dt{font-size:.76rem;color:var(--muted);line-height:1.4}
+.savings-projection-metrics dd{font-weight:780;font-variant-numeric:tabular-nums;margin:6px 0 0;overflow-wrap:anywhere}
+.savings-projection-custom{display:grid;gap:7px;max-width:340px;min-width:0}
+.savings-projection-custom>span{font-weight:700;font-size:.83rem}
+.savings-projection-custom small{font-weight:400;color:var(--muted)}
+.savings-projection-scenarios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-width:0}
+.savings-projection-scenario{display:grid;gap:5px}
+.savings-projection-scenario b{font-size:.82rem}
+.savings-projection-scenario span,.savings-projection-scenario small{font-size:.76rem;color:var(--muted)}
+.savings-projection-scenario strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:700px){.savings-goal-projection{margin:8px 0 14px;padding:12px}.savings-projection-scenarios,.savings-projection-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.savings-projection-scenarios,.savings-projection-metrics{grid-template-columns:minmax(0,1fr)}.savings-goal-projection>.panel-head{align-items:stretch;flex-direction:column}.savings-goal-projection .panel-head>button{align-self:flex-end}}

@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
 import { MoneyInput } from '../components/MoneyInput';
+import { SavingsGoalProjectionPanel } from '../components/SavingsGoalProjectionPanel';
 import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, createEvent } from '../lib/domain';
@@ -98,6 +99,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const [deleteGoalError,setDeleteGoalError]=useState('');
   const [deleteGoalTarget,setDeleteGoalTarget]=useState<SavingsGoal|null>(null);
   const [goalLimit,setGoalLimit]=useState(12);
+  const [projectionGoalId,setProjectionGoalId]=useState<string|null>(null);
   const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>{if(!entrySavingRef.current)setOpen(false)});
   const goalModalRef=useModalFocus<HTMLElement>(Boolean(goalEdit),'[data-goal-autofocus="true"]',()=>{if(!goalSavingRef.current)setGoalEdit(null)});
 
@@ -154,11 +156,16 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   };
   const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}));
   const visibleGoalRows=goalRows.slice(0,goalLimit);
+  const projectionGoal=goals.find(goal=>goal.id===projectionGoalId)||null;
   const renderGoals=(surface:'desktop'|'mobile')=><section className={`panel surface-raised savings-goals savings-goals-${surface}`} aria-labelledby={`savings-goals-title-${surface}`}>
     <div className="panel-head"><div><span id={`savings-goals-title-${surface}`}>Στόχοι αποταμίευσης</span><small>Όλοι οι προσωπικοί στόχοι συγκρίνονται με το ίδιο κοινό υπόλοιπο αποταμίευσης. Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.</small></div><Button type="button" variant="secondary" disabled={goalBusy} onClick={()=>startGoal()}><Plus size={15}/> Νέος στόχος</Button></div>
     <div className="savings-goals-head"><span>Στόχος</span><span>Πρόοδος</span><span>Κοινό υπόλοιπο</span><span>Στόχος</span><span>Προθεσμία</span></div>
     <div className="savings-goal-row supported"><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>Μηνιαίος ρυθμός αποταμίευσης</b><small>{target>0?`${Math.round(target*100)}% των πραγματικών εσόδων`:'Δεν έχει οριστεί ποσοστιαίος στόχος'}</small></span></div><div className="savings-goal-progress"><span><i style={{width:`${goalProgress}%`}}/></span><b>{Math.round(goalProgress)}%</b></div><strong>{money.format(flow.saving)}</strong><strong>{targetTotal>0?money.format(targetTotal):'—'}</strong><span>{goalDeadline}</span></div>
-    {goalRows.length?visibleGoalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" disabled={goalBusy} onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" disabled={goalBusy} onClick={()=>{setDeleteGoalError('');setDeleteGoalTarget(goal)}}>Διαγραφή</Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="empty-state savings-goals-empty"><b>Δεν έχεις προσωπικό στόχο</b><span>Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)} και δεν ανήκει σε κάποιον στόχο. Πρόσθεσε στόχο ποσού μόνο αν θέλεις να παρακολουθείς την πρόοδό σου.</span></div>}{goalRows.length>visibleGoalRows.length?<Button type="button" variant="secondary" className="savings-goals-more" disabled={goalBusy} onClick={()=>setGoalLimit(limit=>limit+12)}>Προβολή περισσότερων · {goalRows.length-visibleGoalRows.length} ακόμη</Button>:null}
+    {goalRows.length?visibleGoalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" disabled={goalBusy} onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" disabled={goalBusy} onClick={()=>{setDeleteGoalError('');setDeleteGoalTarget(goal)}}>Διαγραφή</Button>
+    <Button type="button" variant="ghost" className="savings-goal-inline-action" aria-expanded={projectionGoalId===goal.id} aria-controls={`savings-goal-projection-${surface}`} onClick={()=>setProjectionGoalId(id=>id===goal.id?null:goal.id)}>
+      {projectionGoalId===goal.id?'Κλείσιμο προβολής':'Προβολή στόχου'}
+    </Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="empty-state savings-goals-empty"><b>Δεν έχεις προσωπικό στόχο</b><span>Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)} και δεν ανήκει σε κάποιον στόχο. Πρόσθεσε στόχο ποσού μόνο αν θέλεις να παρακολουθείς την πρόοδό σου.</span></div>}{goalRows.length>visibleGoalRows.length?<Button type="button" variant="secondary" className="savings-goals-more" disabled={goalBusy} onClick={()=>setGoalLimit(limit=>limit+12)}>Προβολή περισσότερων · {goalRows.length-visibleGoalRows.length} ακόμη</Button>:null}
+    {projectionGoal?<SavingsGoalProjectionPanel id={`savings-goal-projection-${surface}`} key={projectionGoal.id} data={data} goal={projectionGoal} asOf={periodEndDate} onClose={()=>setProjectionGoalId(null)}/>:null}
   </section>;
 
   const start=(next:SavingSource)=>{
