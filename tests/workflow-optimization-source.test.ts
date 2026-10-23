@@ -47,6 +47,11 @@ describe('CI workflow optimization contracts',()=>{
       expect(reusable).not.toContain('  pull_request:');
       expect(reusable).not.toContain('    branches: [main, develop]');
     }
+    // Keep WebKit's pinned driver on a stable LTS apt baseline until 26.04
+    // dependency installation is validated; never skip the real WebKit gate.
+    expect(cross).toContain('runs-on: ubuntu-24.04');
+    expect(cross).toContain('timeout-minutes: 20');
+    expect(cross).toContain('install --with-deps webkit');
     expect(cross).toContain('playwright@1.62.1');
     expect(cross).toContain('scripts/webkit-smoke.mjs');
     expect(performance).toContain('lighthouse@13.4.1');
