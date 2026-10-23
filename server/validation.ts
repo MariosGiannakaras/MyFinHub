@@ -212,6 +212,7 @@ function validateRecurring(value: unknown, name: string) {
   optionalDateOnly(value.endDate, `${name}.endDate`);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
   if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
   if (value.logoAssetKey !== undefined && value.logoAssetKey !== null) {
@@ -249,6 +250,8 @@ function validateLoan(value: unknown, name: string) {
   }
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
+  optionalText(value.expenseCategory, `${name}.expenseCategory`, 1_000);
+  optionalText(value.expenseSubcategory, `${name}.expenseSubcategory`, 1_000);
   if (value.kind !== undefined) oneOf(value.kind, ['installment','loan','self-loan'], `${name}.kind`);
   optionalDateOnly(value.firstExpectedDate, `${name}.firstExpectedDate`);
   optionalText(value.defaultAccountId, `${name}.defaultAccountId`, 200);

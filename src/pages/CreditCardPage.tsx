@@ -20,7 +20,7 @@ import { Tooltip } from '../components/Tooltip';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { canPermanentlyDeleteCreditCard, cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, deletedCreditCards, restoreCard } from '../lib/cards';
-import { categoryPath, categoryTree } from '../lib/categories';
+import { categoryPath, defaultCategory } from '../lib/categories';
 import { creditPurchaseAmount, cardStatementConfiguration, creditStatementEvents, creditStatementViews, recommendedPayableStatement, unlinkedCreditStatementEvents } from '../lib/creditStatements';
 import { addCreditRate, creditRateAt, estimateCreditPayoff } from '../lib/creditRates';
 import { allAccounts, createEvent } from '../lib/domain';
@@ -97,7 +97,6 @@ export function CreditCardPage({
   const unlinkedStatementEvents=useMemo(()=>card?unlinkedCreditStatementEvents(data,card.id):[],[data,card]);
   const cardProviderId=card?.bankId??'';
   const eligibleAccounts=allAccounts(data).filter(account=>account.kind!=='credit'&&accountMatchesFinancialProvider(account,cardProviderId));
-  const categories=categoryTree(data.state.settings,'expense');
   const [createOpen,setCreateOpen]=useState(false);
   const [profileCard,setProfileCard]=useState<PaymentCard|null>(null);
   const [detailsCard,setDetailsCard]=useState<PaymentCard|null>(null);
@@ -124,7 +123,7 @@ export function CreditCardPage({
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(asOf);
   const [note,setNote]=useState('');
-  const [category,setCategory]=useState(categories[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο');
+  const [category,setCategory]=useState(defaultCategory(data.state.settings,'expense'));
   const [subcategory,setSubcategory]=useState('');
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
@@ -153,7 +152,7 @@ export function CreditCardPage({
     finally{setRateBusy(false)}
   };
   const reset=()=>{setAmount('');setDate(asOf);setNote('');setError('')};
-  const openPurchase=()=>{if(!card){setMessage('Πρόσθεσε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(categories[0]?.name||'Άλλο');setSubcategory('');setPurchaseOpen(true)};
+  const openPurchase=()=>{if(!card){setMessage('Πρόσθεσε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(defaultCategory(data.state.settings,'expense'));setSubcategory('');setPurchaseOpen(true)};
   const openRepay=()=>{if(!card)return;onPayCard(card.id,payableStatement?.id)};
   const openStatementSetup=()=>{if(!card)return;setStatementClosingText(card.statementClosingDay?String(card.statementClosingDay):'');setStatementDueText(card.statementDueDay?String(card.statementDueDay):'');setStatementBoundary(card.statementBoundaryRule??'next-cycle');setStatementSetupError('');setStatementSetupOpen(true)};
   const saveStatementSetup=()=>{
