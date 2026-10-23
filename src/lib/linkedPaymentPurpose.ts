@@ -1,6 +1,6 @@
 import type { Loan, RecurringItem } from '../types.js';
 
-export type LinkedExpensePurpose={category:string;subcategory?:string};
+type LinkedExpensePurpose={category:string;subcategory?:string};
 
 /** A recurring item's configured purpose travels with its single linked payment. */
 export function recurringExpensePurpose(item:Pick<RecurringItem,'category'|'subcategory'>):LinkedExpensePurpose{
