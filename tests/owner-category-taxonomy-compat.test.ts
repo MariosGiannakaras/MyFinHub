@@ -10,6 +10,11 @@ describe('owner-approved taxonomy linked payment compatibility',()=>{
     expect(defaultCategory(settings,'expense')).toBe('Άλλο');
     expect(defaultCategory(settings,'income')).toBe('Άλλο πραγματικό έσοδο');
   });
+  it('keeps the rules editor default independent of user frequency ordering',()=>{
+    const rules=readFileSync('src/components/TransactionRulesWorkspace.tsx','utf8');
+    expect(rules).toContain("const expenseFallback=defaultCategory(data.state.settings,'expense')");
+    expect(rules).not.toContain("expenseFallback=expenseTree[0]");
+  });
   it('uses the recurring configuration category and subcategory as the expense purpose',()=>{
     expect(recurringExpensePurpose({category:'Ψηφιακή υπηρεσία',subcategory:'Streaming'})).toEqual({category:'Ψηφιακή υπηρεσία',subcategory:'Streaming'});
     expect(recurringExpensePurpose({category:'Τηλεπικοινωνίες'})).toEqual({category:'Τηλεπικοινωνίες'});
