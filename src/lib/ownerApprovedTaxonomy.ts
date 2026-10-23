@@ -58,7 +58,7 @@ const same=(a:string|undefined,b:string)=>Boolean(a&&categoryKey(a)===categoryKe
  */
 function subscriptionPurpose(name:string):'Ψηφιακή υπηρεσία'|'Τηλεπικοινωνίες'|'Όχημα'|null{
   const label=categoryKey(name);
-  const digital=/(spotify|netflix|icloud|disney\\+|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
+  const digital=/(spotify|netflix|icloud|disney\+|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
   const telecom=/(cosmote|starlink|vodafone|nova internet|telekom)/i;
   const insurance=/(interamerican|insurance.*moto|ασφαλ.*μηχαν)/i;
   return digital.test(label)?'Ψηφιακή υπηρεσία'
