@@ -133,7 +133,18 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
-    await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+    // A headless Chromium CDP endpoint can become ready before its first tab
+    // finishes navigating under CI runner pressure. Never skip login or MFA:
+    // diagnose the first paint, then allow one real navigation retry.
+    try{
+      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+    }catch(error){
+      const state=await c.call("function(){return {ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
+      console.warn('[real-browser] initial login paint unavailable; bounded navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
+      try{await shot('login-bootstrap-first-paint')}catch{}
+      await c.send('Page.reload',{ignoreCache:true});
+      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
+    }
     await setSelector('#login-email',email);await setSelector('#login-password',password);await clickText('.login-submit','Σύνδεση');
     await waitFor("function(){return document.querySelector('#mfa-title')?.textContent==='Επαλήθευση'}",'MFA challenge');
     // The owner-approved TOTP auto-check starts on the sixth digit, no submit button.
