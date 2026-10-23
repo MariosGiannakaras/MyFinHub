@@ -56,16 +56,20 @@ const same=(a:string,b:string)=>categoryKey(a)===categoryKey(b);
  * The retired «Συνδρομές» category must not turn every recurring payment
  * into a digital service. Only clearly identified providers are reassigned.
  */
-function reclassifyKnownSubscription(item:RecurringItem):RecurringItem{
-  if(!same(item.category,'Συνδρομές')||item.active===false||item.status==='stopped')return item;
-  const label=categoryKey(item.name);
-  const digital=/(spotify|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
+function subscriptionPurpose(name:string):'Ψηφιακή υπηρεσία'|'Τηλεπικοινωνίες'|'Όχημα'|null{
+  const label=categoryKey(name);
+  const digital=/(spotify|netflix|icloud|disney\\+|youtube|chatgpt|openai|microsoft 365|onedrive|google pro|google one|cloud storage|ubisoft|fortnite|duolingo)/i;
   const telecom=/(cosmote|starlink|vodafone|nova internet|telekom)/i;
   const insurance=/(interamerican|insurance.*moto|ασφαλ.*μηχαν)/i;
-  const target=digital.test(label)?'Ψηφιακή υπηρεσία'
+  return digital.test(label)?'Ψηφιακή υπηρεσία'
     :telecom.test(label)?'Τηλεπικοινωνίες'
     :insurance.test(label)?'Όχημα'
     :null;
+}
+
+function reclassifyKnownSubscription(item:RecurringItem):RecurringItem{
+  if(!same(item.category,'Συνδρομές')||item.active===false||item.status==='stopped')return item;
+  const target=subscriptionPurpose(item.name);
   if(!target)throw new Error('Το πάγιο «'+item.name+'» έχει παλιά γενική κατηγορία «Συνδρομές». Επίλεξε πρώτα τον πραγματικό σκοπό του στην καρτέλα του.');
   return {...item,category:target,subcategory:undefined};
 }
@@ -78,7 +82,17 @@ function reconcileLegacySubscriptions(data:FinanceData):FinanceData{
     if(next!==existing)recurringOverrides[seed.id]=next;
   }
   const recurringCustom=(data.state.recurringCustom??[]).map(reclassifyKnownSubscription);
-  return {...data,state:{...data.state,recurringOverrides,recurringCustom}};
+  const transactionRules=(data.state.transactionRules??[]).map(rule=>{
+    if(!rule.enabled||!same(rule.action.category,'Συνδρομές'))return rule;
+    // Only an exact provider-specific contains match is safe to reclassify;
+    // general subscription rules must be explicitly reviewed by their owner.
+    const target=rule.match.mode==='contains'&&rule.match.description
+      ?subscriptionPurpose(rule.match.description)
+      :null;
+    if(!target)throw new Error('Ο ενεργός κανόνας «'+rule.name+'» χρησιμοποιεί γενική κατηγορία «Συνδρομές». Επίλεξε πρώτα τον πραγματικό σκοπό του στον επεξεργαστή κανόνων.');
+    return {...rule,action:{...rule.action,category:target,subcategory:undefined}};
+  });
+  return {...data,state:{...data.state,recurringOverrides,recurringCustom,transactionRules}};
 }
 
 /**
