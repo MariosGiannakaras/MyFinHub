@@ -87,10 +87,19 @@ function merchantCandidate(lines: string[]) {
   return candidates[0];
 }
 
-function detectedCurrency(text: string) {
-  if (/[€]|\bEUR\b/i.test(text)) return 'EUR';
+function detectedCurrency(text: string, grandTotalLine?: string) {
+  // A second conversion or information line must not override the currency
+  // printed next to the selected grand-total amount.
+  const line=grandTotalLine??'';
+  if (/[$]|\bUSD\b/i.test(line)) return 'USD';
+  if (/[£]|\bGBP\b/i.test(line)) return 'GBP';
+  if (/[€]|\bEUR\b/i.test(line)) return 'EUR';
+
+  // When the selected amount is unmarked, foreign currencies win over an
+  // incidental EUR mention. Never imply a conversion was performed.
   if (/[$]|\bUSD\b/i.test(text)) return 'USD';
   if (/[£]|\bGBP\b/i.test(text)) return 'GBP';
+  if (/[€]|\bEUR\b/i.test(text)) return 'EUR';
   return undefined;
 }
 
@@ -128,7 +137,7 @@ export function parseReceiptText(text: string, ocrConfidence = 0): ReceiptPropos
   const merchant = merchantCandidate(lines);
   const amount = amountCandidates(lines)[0];
   const dateRow = lines.map((line, index) => ({ date: dateCandidate(line), index })).find((row) => row.date);
-  const currency = detectedCurrency(text);
+  const currency = detectedCurrency(text,amount?lines[amount.lineIndex]:undefined);
   const normalizedOcr = Math.max(0, Math.min(1, ocrConfidence > 1 ? ocrConfidence / 100 : ocrConfidence));
   const proposal: ReceiptProposal = { confidence: { ocr: normalizedOcr } };
   if (merchant) {

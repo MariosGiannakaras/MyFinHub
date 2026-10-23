@@ -28,6 +28,24 @@ describe('local receipt parser',()=>{
     expect(proposal.total).toBe(12.4);
   });
 
+  it('does not reinterpret a USD receipt total as EUR when a conversion line mentions euros',()=>{
+    const proposal=parseReceiptText('DEMO SHOP\n21.08.2026\nTOTAL 12.40 USD\nCONVERSION TO EUR 10.80',86);
+    expect(proposal.total).toBe(12.4);
+    expect(proposal.currency).toBe('USD');
+  });
+
+  it('prefers the currency printed on the actual EUR total line over foreign informational text',()=>{
+    const proposal=parseReceiptText('DEMO SHOP\nTOTAL 10.80 EUR\nUSD EXCHANGE RATE 1.10',86);
+    expect(proposal.total).toBe(10.8);
+    expect(proposal.currency).toBe('EUR');
+  });
+
+  it('fails closed on an unmarked total with explicit foreign currency elsewhere',()=>{
+    const proposal=parseReceiptText('DEMO SHOP\nTOTAL 12.40\nCHARGE CURRENCY USD\nREFERENCE EUR',86);
+    expect(proposal.total).toBe(12.4);
+    expect(proposal.currency).toBe('USD');
+  });
+
   it('suggests a category only after a clear repeated merchant pattern',()=>{
     const data={state:{events:[event('ΚΑΦΕ ΑΘΗΝΑ','Φαγητό'),event('Καφέ Αθήνα','Φαγητό'),event('ΚΑΦΕ ΑΘΗΝΑ','Άλλο')]}} as unknown as FinanceData;
     expect(suggestReceiptCategory(data,'καφε αθηνα')).toBe('Φαγητό');
