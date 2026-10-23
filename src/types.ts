@@ -237,8 +237,14 @@ export interface AttentionDecision {
 export interface MonthlyBudget {
   id: string;
   month: string;
-  scope: 'category' | 'overall';
+  scope: 'category' | 'subcategory' | 'overall';
   category?: string;
+  subcategory?: string;
+  /** Optional canonical taxonomy IDs; names remain for legacy read compatibility. */
+  categoryIdentityId?: string;
+  subcategoryIdentityId?: string;
+  /** Explicit opt-in: unused positive allowance from previous budget month. */
+  carryover?: boolean;
   amount: number;
   alertThreshold?: number;
   createdAt: string;

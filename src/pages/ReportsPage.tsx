@@ -8,8 +8,9 @@ import { PageHeader } from '../components/PageHeader';
 import { Surface } from '../components/Surface';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { budgetProgress } from '../lib/budgets';
+import { categoryKey } from '../lib/categories';
 import { accountBalances, allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
-import { calendarMonthRange, monthOnlyToUtcDate } from '../lib/dateOnly';
+import { monthOnlyToUtcDate } from '../lib/dateOnly';
 import { cleanNote, money, shortDate } from '../lib/format';
 import { categoryMomentum, monthEnd, operationalReportSnapshot, primaryAccountSeries, reportExpenseCounterparties, reportFlowSeries, reportInsightModel, reportLoanBurden } from '../lib/reports';
 import { recurringUpcoming } from '../lib/recurring';
@@ -63,19 +64,23 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
  const overallBudget=budgetRows.find(row=>row.scope==='overall')??null;
- const budgetSummaryRows=overallBudget?[overallBudget]:budgetRows.filter(row=>row.scope==='category');
+ // Prevent parent category and its subcategory child being added twice.
+ const parentCategoryRows=budgetRows.filter(row=>row.scope==='category');
+ const budgetSummaryRows=overallBudget?[overallBudget]:[
+   ...parentCategoryRows,
+   ...budgetRows.filter(row=>row.scope==='subcategory'&&!parentCategoryRows.some(parent=>categoryKey(parent.category??'')===categoryKey(row.category??'')))
+ ];
  const budgetLimit=budgetSummaryRows.reduce((sum,row)=>sum+row.limit,0);
  const budgetUsed=budgetSummaryRows.reduce((sum,row)=>sum+row.used,0);
  const budgetRemaining=budgetLimit-budgetUsed;
  const budgetRatio=budgetLimit>0?budgetUsed/budgetLimit:0;
- const budgetDataDate=asOf;
- const budgetDataMonth=budgetDataDate.slice(0,7);
- const budgetMonthRange=calendarMonthRange(month);
- const budgetDaysInMonth=Number(budgetMonthRange.end.slice(8,10));
- const budgetElapsedDays=month<budgetDataMonth?budgetDaysInMonth:month===budgetDataMonth?Math.min(budgetDaysInMonth,Math.max(1,Number(budgetDataDate.slice(8,10))||1)):0;
- const budgetProjection=budgetElapsedDays>0?budgetUsed/(budgetElapsedDays/budgetDaysInMonth):null;
- const budgetProjectionDetail=month<budgetDataMonth?'Καταγεγραμμένο κλείσιμο περιόδου':month===budgetDataMonth?`Με βάση ${budgetElapsedDays} από ${budgetDaysInMonth} ημέρες`:'Θα εμφανιστεί όταν ξεκινήσει η περίοδος';
- const budgetAttentionPool=budgetRows.some(row=>row.scope==='category')?budgetRows.filter(row=>row.scope==='category'):budgetRows;
+ const budgetDataMonth=asOf.slice(0,7);
+ const budgetKnownDue=budgetSummaryRows.reduce((sum,row)=>sum+row.projectedDue,0);
+ const budgetProjection=budgetSummaryRows.length?budgetUsed+budgetKnownDue:null;
+ const budgetProjectionDetail=month<budgetDataMonth?'Καταγεγραμμένο κλείσιμο περιόδου':
+   budgetKnownDue>0?`Πραγματική χρήση + ${money.format(budgetKnownDue)} γνωστές εκκρεμείς υποχρεώσεις (δεν έχουν πληρωθεί)`:
+   'Δεν υπολογίζονται άγνωστες αγορές ή εκτιμήσεις ως πραγματικές κινήσεις';
+ const budgetAttentionPool=budgetRows;
  const budgetAttentionRows=budgetAttentionPool.slice().sort((a,b)=>({exceeded:2,near:1,ok:0}[b.status]-{exceeded:2,near:1,ok:0}[a.status])||b.ratio-a.ratio).slice(0,3);
  const budgetStatusText=!budgetRows.length?'Δεν υπάρχουν ενεργά όρια':exceededBudgets?`${exceededBudgets} ${exceededBudgets===1?'όριο είναι':'όρια είναι'} σε υπέρβαση`:nearBudgets?`${nearBudgets} ${nearBudgets===1?'όριο πλησιάζει':'όρια πλησιάζουν'} το σημείο προειδοποίησης`:'Όλα τα ενεργά όρια είναι εντός στόχου';
  const netFlow=snapshot.flow.income-snapshot.flow.expense;
@@ -158,7 +163,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
    <div className="panel-head"><div><span id="report-budget-overview-title">Προϋπολογισμοί · εικόνα περιόδου</span><small>Χρήση, σημεία προσοχής και πρόβλεψη τέλους μήνα εμφανίζονται πριν από τη διαχείριση.</small></div><ListChecks aria-hidden="true"/></div>
    {budgetRows.length?<>
     <div className="report-budget-summary-grid" data-content-entrance="grid" aria-label="Σύνοψη προϋπολογισμών">
-     <article><span>Συνολικό όριο</span><b>{money.format(budgetLimit)}</b><small>{overallBudget?'Κύρια βάση περιόδου':`${budgetSummaryRows.length} όρια κατηγοριών`}</small></article>
+     <article><span>Συνολικό όριο</span><b>{money.format(budgetLimit)}</b><small>{overallBudget?'Κύρια βάση περιόδου':`${budgetSummaryRows.length} μη επικαλυπτόμενα όρια`}</small></article>
      <article><span>Χρήση ορίων</span><b>{money.format(budgetUsed)}</b><small>{budgetLimit>0?`${Math.round(budgetRatio*100)}% της διαθέσιμης βάσης`:'Χωρίς διαθέσιμη βάση'}</small></article>
      <article className={budgetRemaining<0?'negative':budgetRatio>=.8?'warning':'positive'}><span>{budgetRemaining<0?'Υπέρβαση':'Διαθέσιμο'}</span><b>{money.format(Math.abs(budgetRemaining))}</b><small>{budgetRemaining<0?'Πάνω από τα ενεργά όρια':'Μέχρι τα ενεργά όρια'}</small></article>
      <article className={budgetProjection!==null&&budgetProjection>budgetLimit?'negative':'positive'}><span>{month<budgetDataMonth?'Τελική χρήση':'Πρόβλεψη τέλους μήνα'}</span><b>{budgetProjection===null?'—':money.format(budgetProjection)}</b><small>{budgetProjectionDetail}</small></article>

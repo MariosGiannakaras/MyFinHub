@@ -47,10 +47,10 @@ describe('all category/subcategory options follow revisioned finance settings',(
     expect(quick).not.toContain('genericCategoryTree(');
     expect(credit).not.toContain('genericCategoryTree(');
     expect(quick).toContain("categoryTree(data.state.settings,'expense')");
-    // Credit purchase editor delegates the complete revisioned tree to CategorySelectInput;
-    // category display order must not force an unintended initial spending purpose.
-    expect(credit).toContain('CategorySelectInput settings={data.state.settings} kind="expense" category={category} subcategory={subcategory}');
-    expect(credit).toContain("defaultCategory(data.state.settings,'expense')");
+    // Credit purchases adopted the shared taxonomy owner; requiring a second
+    // page-local categoryTree() scan would reintroduce duplicated picker logic.
+    expect(credit).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
+    expect(credit).toContain('subcategory={subcategory}');
     expect(inbox).toContain("subcategory={reviewed.subcategory??''}");
     expect(ledger).toContain("categoryTree(data.state.settings,kind as 'expense'|'income')");
     expect(ledger).toContain('...sourceRows.map(row=>categoryLabel(row))');
@@ -59,7 +59,8 @@ describe('all category/subcategory options follow revisioned finance settings',(
     expect(selector).toContain('item.subcategories.map');
     expect(selector).toContain('data-option-level="invalid"');
     const budget=read('src/components/BudgetRuleSettings.tsx');
-    expect(budget).toContain('includeSubcategories={false}'); // category-level budget remains intentional
+    expect(budget).toContain("includeSubcategories={budgetScope==='subcategory'}"); // child budgets use the complete canonical taxonomy
+    expect(budget).toContain('<option value="subcategory">Υποκατηγορία</option>');
     expect(budget).toContain('scope:');
   });
   it('keeps authoritative revisioned save and reload rather than a stale local category cache',()=>{

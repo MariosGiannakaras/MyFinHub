@@ -33,7 +33,7 @@ try{
   const urlFor=(page,state='budget-rules')=>{const url=new URL(baseUrl);url.searchParams.set('page',page);if(state)url.searchParams.set('state',state);return url.href};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async(page,state='budget-rules',width=1440,height=1000)=>{await viewport(width,height);await c.send('Page.navigate',{url:urlFor(page,state)});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",`${page} heading`);await sleep(140)};
-  const screenshot=async name=>{if(name==='advanced-automations-desktop'||name==='advanced-automations-mobile')await c.call("function(){document.querySelector('[data-advanced-automations]')?.scrollIntoView({block:'start'});return true}");if(name==='advanced-automations-ordered-desktop')await c.call("function(){document.querySelector('.rule-settings-list')?.scrollIntoView({block:'center'});return true}");if(name.startsWith('reports-budget-overview-'))await c.call("function(){document.querySelector('#report-budget-overview')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");else if(name.startsWith('reports-budget-'))await c.call("function(){document.querySelector('#report-budgets')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");if(name.startsWith('savings-target-'))await c.call("function(){const node=[...document.querySelectorAll('[data-savings-target-editor]')].find(item=>item.getClientRects().length>0);node?.scrollIntoView({block:'center'});return true}");await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
+  const screenshot=async name=>{if(name==='advanced-automations-desktop'||name==='advanced-automations-mobile')await c.call("function(){document.querySelector('[data-advanced-automations]')?.scrollIntoView({block:'start'});return true}");if(name==='advanced-automations-ordered-desktop')await c.call("function(){document.querySelector('.rule-settings-list')?.scrollIntoView({block:'center'});return true}");if(name.startsWith('reports-budget-overview-'))await c.call("function(){document.querySelector('#report-budget-overview')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");else if(name.startsWith('reports-budget-'))await c.call("function(){document.querySelector('#report-budgets')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");if(name.startsWith('reports-subcategory-rollover-')){const focused=await c.call("function(){const row=[...document.querySelectorAll('.budget-setting-row')].find(x=>(x.textContent||'').includes('Σούπερ μάρκετ'));if(!row)return false;row.scrollIntoView({block:'center',behavior:'instant'});return row.getBoundingClientRect().width>0&&row.getBoundingClientRect().height>0}");assert(focused,'subcategory budget evidence focuses actual saved budget row')} if(name.startsWith('savings-target-'))await c.call("function(){const node=[...document.querySelectorAll('[data-savings-target-editor]')].find(item=>item.getClientRects().length>0);node?.scrollIntoView({block:'center'});return true}");await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text)&&item.getClientRects().length>0);node?.click();return Boolean(node)}",[selector,text]);assert(ok,`missing clickable ${text}`);await sleep(100)};
   const clickAria=async label=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll(`button[aria-label=\"${CSS.escape(label)}\"]`)].find(item=>item.getClientRects().length>0);node?.click();return Boolean(node)}",[label]);assert(ok,`missing aria control ${label}`);await sleep(100)};
   const setLabelInput=async(label,value)=>{const ok=await c.call(`function(label,value){const visible=node=>Boolean(node&&node.getClientRects().length>0);const direct=[...document.querySelectorAll('input,textarea')].find(node=>visible(node)&&node.getAttribute('aria-label')===label);const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&visible(node));const input=direct??row?.querySelector('input,textarea');if(!input)return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(input,value);else input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);assert(ok,`missing input ${label}`);await sleep(80)};
@@ -486,6 +486,37 @@ try{
   await noOverflow('budget/rules narrow reports');
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
-  c.close();
+  // Keep CDP alive through the enhanced lifecycle; finally performs cleanup.
+  console.log('Budget/Rules QA: enhanced subcategory budget + rollover + edit');
+  await navigate('reports','budget-enhanced',1440,1000);
+  await waitFor("function(){return Boolean(document.querySelector('#report-budgets summary'))}",'enhanced budgets panel');
+  await clickText('#report-budgets summary','Ορισμός προϋπολογισμού');
+  await selectBudgetScope('Υποκατηγορία');
+  await selectOwnedOption('Κατηγορία / υποκατηγορία','Σούπερ μάρκετ');
+  const carryoverOn=await c.call("function(){const checkbox=document.querySelector('[data-budget-management] .budget-carryover-toggle input');if(!checkbox)return false;checkbox.click();return checkbox.checked}");
+  assert(carryoverOn,'carryover opt-in checkbox can be set deliberately');
+  await setLabelInput('Όριο €','80');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){const row=[...document.querySelectorAll('.budget-setting-row')].find(node=>(node.textContent||'').includes('Σούπερ μάρκετ'));const text=row?.textContent||'';return text.includes('110')&&text.includes('20')&&text.includes('30')&&text.includes('50')}",'real usage 20 + previous carryover 30 and known due 30 but one effective limit 110');
+  const rowText=await c.call("function(){return [...document.querySelectorAll('.budget-setting-row')].find(node=>(node.textContent||'').includes('Σούπερ μάρκετ'))?.textContent||''}");
+  assert(rowText.includes('Πραγματική χρήση')&&rowText.includes('Γνωστές εκκρεμείς υποχρεώσεις')&&rowText.includes('Δεν έχουν καταχωριστεί'),'actual spending and advisory known due are never conflated');
+  assert(await c.call("function(){return document.querySelectorAll('.budget-setting-row').length===1}"),'one budget row per scope and period');
+  const summary=await c.call("function(){return document.querySelector('[data-budget-overview]')?.textContent||''}");
+  assert(summary.includes('110')&&summary.includes('50'),'Reports reconciles one parentless subcategory without double counting');
+  await screenshot('reports-subcategory-rollover-desktop');
+  await clickAria('Επεξεργασία προϋπολογισμού Τρόφιμα › Σούπερ μάρκετ');
+  assert(await c.call("function(){return Boolean(document.querySelector('.budget-carryover-toggle input')?.checked)}"),'editing an existing budget preserves its stored carryover state');
+  await setLabelInput('Όριο €','100');
+  await clickText('[data-budget-management] button','Αποθήκευση αλλαγών');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')].filter(node=>(node.textContent||'').includes('Σούπερ μάρκετ'));return rows.length===1&&(rows[0]?.textContent||'').includes('130')}",'budget edit updates the same stable budget row instead of duplicating it');
+  await viewport(375,812);
+  await waitFor("function(){return document.querySelector('.budget-setting-row')?.getBoundingClientRect().width>0}",'mobile budget row');
+  await noOverflow('subcategory budget 375x812');
+  await touchTargets('subcategory budget mobile');
+  await screenshot('reports-subcategory-rollover-mobile');
+  await viewport(834,1112);
+  await noOverflow('subcategory budget tablet');
+  await screenshot('reports-subcategory-rollover-tablet');
+
   console.log('Budget and Rules rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

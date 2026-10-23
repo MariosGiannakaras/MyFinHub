@@ -4,6 +4,7 @@ import { isValidDateOnly, isValidDateStamp, isValidMonthOnly } from '../src/lib/
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { SUPPORTED_FINANCE_SCHEMA_VERSION } from '../src/lib/schemaVersion.js';
 import { ApiError } from './http.js';
+import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
 
 function invalid(message: string): never {
   throw new ApiError(400, 'INVALID_DATA', message);
@@ -432,9 +433,18 @@ function validateBudget(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 500);
   monthOnly(value.month, `${name}.month`);
-  oneOf(value.scope, ['category','overall'], `${name}.scope`);
+  oneOf(value.scope, ['category','subcategory','overall'], `${name}.scope`);
   optionalText(value.category, `${name}.category`, 1_000);
-  if (value.scope === 'category' && (typeof value.category !== 'string' || !value.category.trim())) invalid(`Invalid ${name}.category.`);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
+  optionalText(value.categoryIdentityId, `${name}.categoryIdentityId`, 200);
+  optionalText(value.subcategoryIdentityId, `${name}.subcategoryIdentityId`, 200);
+  if(value.carryover!==undefined&&typeof value.carryover!=='boolean')invalid(`Invalid ${name}.carryover.`);
+  if (value.scope === 'overall' && value.categoryIdentityId !== undefined) invalid(`Invalid ${name}.categoryIdentityId for scope.`);
+  if (value.scope !== 'overall' && (typeof value.category !== 'string' || !value.category.trim())) invalid(`Invalid ${name}.category.`);
+  if (value.scope === 'subcategory' && (typeof value.subcategory !== 'string' || !value.subcategory.trim())) invalid(`Invalid ${name}.subcategory.`);
+  if (value.scope !== 'subcategory' && value.subcategory !== undefined) invalid(`Invalid ${name}.subcategory for scope.`);
+  if (value.scope === 'overall' && value.category !== undefined) invalid(`Invalid ${name}.category for overall budget.`);
+  if (value.scope !== 'subcategory' && value.subcategoryIdentityId !== undefined) invalid(`Invalid ${name}.subcategoryIdentityId for scope.`);
   finiteNumber(value.amount, `${name}.amount`);
   if (value.amount <= 0) invalid(`Invalid ${name}.amount.`);
   if (value.alertThreshold !== undefined && value.alertThreshold !== null) {
@@ -715,6 +725,11 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     array(state.budgets, 'state.budgets', 10_000);
     state.budgets.forEach((item, index) => validateBudget(item, `state.budgets[${index}]`));
     ensureUniqueIds(state.budgets, 'state.budgets');
+    // Only new stable budget-ID associations require the extended taxonomy
+    // alias and parent-path proof; existing name-only history stays valid.
+    if(state.budgets.some(budget=>object(budget)&&
+      (budget.categoryIdentityId!==undefined||budget.subcategoryIdentityId!==undefined)))
+      validateCategoryIdentityState(state);
   }
   if (state.savingsGoals !== undefined) {
     array(state.savingsGoals, 'state.savingsGoals', 1_000);

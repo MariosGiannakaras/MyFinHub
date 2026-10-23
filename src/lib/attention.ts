@@ -1,4 +1,5 @@
 import { budgetProgress } from './budgets.js';
+import { categoryPath } from './categories.js';
 import { creditCards, creditDebtForCard, creditLimitForCard, cardLabel } from './cards.js';
 import { creditStatementViews } from './creditStatements.js';
 import { accountBalances, allAccounts, effectiveLegacyTransactions } from './domain.js';
@@ -173,9 +174,10 @@ function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return budgetProgress(data,asOf.slice(0,7),asOf).flatMap(row=>{
+  // Attention severity uses verified actual status/ratio, never projectedDue.
+  return budgetProgress(data,asOf.slice(0,7),asOf,false).flatMap(row=>{
     if(row.status==='ok')return [];
-    const label=row.scope==='overall'?'Συνολικό discretionary':row.category??'Κατηγορία';
+    const label=row.scope==='overall'?'Συνολικό όριο':categoryPath(row.category,row.subcategory);
     const severity:AttentionSeverity=row.status==='exceeded'?'danger':'warning';
     const reason=row.status==='exceeded'
       ?`Το budget έχει ξεπεραστεί και βρίσκεται στο ${Math.round(row.ratio*100)}% του ορίου.`

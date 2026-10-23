@@ -28,17 +28,17 @@ import { applyTransactionRules } from './lib/transactionRules';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { SavingsPage } from './pages/SavingsPage';
-import { CardsPage } from './pages/CardsPage';
-import { CreditCardPage } from './pages/CreditCardPage';
-import { LoansPage } from './pages/LoansPage';
-import { LendingPage } from './pages/LendingPage';
-import { RecurringPage } from './pages/RecurringPage';
-import { PlanningPage } from './pages/PlanningPage';
-import { AttentionPage } from './pages/AttentionPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { SettingsPage } from './pages/SettingsPage';
+const TransactionsPage=lazy(()=>import('./pages/TransactionsPage').then(module=>({default:module.TransactionsPage})));
+const SavingsPage=lazy(()=>import('./pages/SavingsPage').then(module=>({default:module.SavingsPage})));
+const CardsPage=lazy(()=>import('./pages/CardsPage').then(module=>({default:module.CardsPage})));
+const CreditCardPage=lazy(()=>import('./pages/CreditCardPage').then(module=>({default:module.CreditCardPage})));
+const LoansPage=lazy(()=>import('./pages/LoansPage').then(module=>({default:module.LoansPage})));
+const LendingPage=lazy(()=>import('./pages/LendingPage').then(module=>({default:module.LendingPage})));
+const RecurringPage=lazy(()=>import('./pages/RecurringPage').then(module=>({default:module.RecurringPage})));
+const PlanningPage=lazy(()=>import('./pages/PlanningPage').then(module=>({default:module.PlanningPage})));
+const AttentionPage=lazy(()=>import('./pages/AttentionPage').then(module=>({default:module.AttentionPage})));
+const ReportsPage=lazy(()=>import('./pages/ReportsPage').then(module=>({default:module.ReportsPage})));
+const SettingsPage=lazy(()=>import('./pages/SettingsPage').then(module=>({default:module.SettingsPage})));
 import { NotFoundPage } from './pages/NotFoundPage';
 import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, SavingsGoal, ScheduledTransaction, TextSizePreference } from './types';
 import './styles.css';
@@ -399,6 +399,32 @@ function buildQaData(params:URLSearchParams){
       ];
     }
   }
+  if(params.get('state')==='budget-enhanced'){
+    // Isolated deterministic owner-free budget fixture. No real finance data.
+    const stamp='2026-08-17T12:00:00.000Z';
+    const tree=next.state.settings.expenseCategoryTree??next.state.settings.expenseCategories.map(name=>({name,subcategories:[]}));
+    next.state.settings.expenseCategoryTree=tree.some(item=>item.name==='Τρόφιμα')
+      ?tree.map(item=>item.name==='Τρόφιμα'?{...item,subcategories:[...new Set([...item.subcategories,'Σούπερ μάρκετ'])]}:item)
+      :[...tree,{name:'Τρόφιμα',subcategories:['Σούπερ μάρκετ']}];
+    next.seed.transactions=[];
+    next.state.customTransactions=[];
+    next.state.overrides={};
+    next.state.deleted=[];
+    next.seed.recurring=[];
+    next.state.recurringCustom=[];
+    next.state.events=[
+      {...createEvent({kind:'expense',date:'2026-07-09',amount:20,note:'QA July grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'},
+      {...createEvent({kind:'expense',date:'2026-08-10',amount:20,note:'QA actual grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'}
+    ];
+    next.state.scheduled=[{id:'qa-known-due',kind:'expense',status:'pending',dueDate:'2026-08-20',
+      amount:30,note:'QA grocery scheduled',accountId:'piraeus-payroll',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',createdAt:stamp,updatedAt:stamp}];
+    next.state.budgets=[{id:'qa-july-subcategory',month:'2026-07',scope:'subcategory',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
+      alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
+  }
   return next;
 }
 
@@ -629,7 +655,7 @@ function QaWorkspace(){
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
-      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
+      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
