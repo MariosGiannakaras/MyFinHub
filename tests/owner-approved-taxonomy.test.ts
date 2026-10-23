@@ -56,6 +56,20 @@ describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
     data.state.recurringCustom[0].name='Unclassified service';
     expect(()=>prepareApprovedOwnerTaxonomy(data,'2026-10-23')).toThrow(/Επίλεξε πρώτα τον πραγματικό σκοπό/);
   });
+  it('does not reactivate retired categories just to rewrite stopped subscriptions',()=>{
+    const data=fixture();
+    data.state.recurringCustom[0].name='Historical unspecified subscription';
+    data.state.recurringCustom[0].active=false;
+    data.state.recurringCustom[0].status='stopped';
+    const migrated=prepareApprovedOwnerTaxonomy(data,'2026-10-23');
+    expect(migrated.state.recurringCustom[0].category).toBe('Συνδρομές');
+    expect(migrated.state.settings.expenseCategories).not.toContain('Συνδρομές');
+  });
+  it('blocks retirement with an active rule referencing the old installment category',()=>{
+    const data=fixture();
+    data.state.transactionRules=[{id:'legacy-rule',name:'old loan default',enabled:true,priority:10,scopes:['manual'],match:{description:'loan',mode:'contains'},action:{category:'Δόσεις / δάνεια'},createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'}];
+    expect(()=>prepareApprovedOwnerTaxonomy(data,'2026-10-23')).toThrow(/απόσυρση μπλοκάρεται/);
+  });
   it('retains retired category identities for historic names',()=>{
     const input=fixture();
     const oldId=resolveCategoryIdentity(input.state.settings,'income','Κατάθεση')!.id;
