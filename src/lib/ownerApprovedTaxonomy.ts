@@ -88,7 +88,7 @@ function reconcileLegacySubscriptions(data:FinanceData):FinanceData{
     // Only an exact provider-specific contains match is safe to reclassify;
     // general subscription rules must be explicitly reviewed by their owner.
     const target=rule.match.mode==='contains'&&rule.match.description
-      ?subscriptionPurpose(rule.match.description)
+      ?subscriptionPurpose(rule.match.description ?? '')
       :null;
     if(!target)throw new Error('Ο ενεργός κανόνας «'+rule.name+'» χρησιμοποιεί γενική κατηγορία «Συνδρομές». Επίλεξε πρώτα τον πραγματικό σκοπό του στον επεξεργαστή κανόνων.');
     return {...rule,action:{...rule.action,category:target,subcategory:undefined}};
