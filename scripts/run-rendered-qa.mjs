@@ -125,9 +125,14 @@ async function runRenderedItem(item){
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
-// Isolate the strict wall-clock browser readiness probe from competing Chromium
-// suites on this shared CI runner. Preserve its unmodified <5s gate and fixtures.
-const resourceIsolatedSuites=new Set(['scripts/large-data-boundaries-qa.mjs']);
+// Preserve strict browser wall-clock gates under representative, uncontended
+// conditions. Other Chromium suites still exercise functional/responsive flows;
+// competing browser start/render must not distort these latency measurements.
+// The <5s readiness and <2s mutation assertions remain completely unchanged.
+const resourceIsolatedSuites=new Set([
+  'scripts/large-data-boundaries-qa.mjs',
+  'scripts/transactions-scanability-qa.mjs',
+]);
 const parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path));
 const isolatedScripts=scripts.filter(item=>resourceIsolatedSuites.has(item.path));
 let cursor=0;
