@@ -226,6 +226,16 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
     await shot('credit-payment-persisted');
 
+    console.log('[real-browser] stage reports-credit-drillthrough');
+    await clickText('.sidebar nav button','Αναφορές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports after credit payment');
+    await waitFor("function(){return [...document.querySelectorAll('.report-activity-list>div')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'credit purchase shown in recent Reports');
+    const openedCredit=await c.call<boolean>("function(){const row=[...document.querySelectorAll('.report-activity-list>div')].find(node=>(node.textContent||'').includes('Real Browser Credit Purchase'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Στην πιστωτική'));button?.click();return Boolean(button)}");
+    assert(openedCredit,'Credit purchase must link to the Credit workspace, not hidden Transactions.');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit domain from report');
+    await waitFor("function(){return [...document.querySelectorAll('.credit-purchases-table tbody tr')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'correct credit card and original purchase in drilldown');
+    await shot('reports-credit-drillthrough');
+
     console.log('[real-browser] stage savings-goal-transfer-reload');
     await clickText('.sidebar nav button','Αποταμίευση');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'savings workspace');
