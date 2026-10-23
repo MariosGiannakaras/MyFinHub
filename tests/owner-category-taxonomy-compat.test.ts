@@ -29,6 +29,13 @@ describe('owner-approved taxonomy linked payment compatibility',()=>{
     expect(source).toContain("if(purpose.subcategory)event.subcategory=purpose.subcategory;");
     expect(source).not.toContain("category:'Δόσεις / δάνεια'");
   });
+  it('requires a confirmed owner finance save instead of direct SQL or silent automatic migration',()=>{
+    const settings=readFileSync('src/pages/SettingsPage.tsx','utf8');
+    expect(settings).toContain('open={pendingOwnerTaxonomy}');
+    expect(settings).toContain('await onFinanceDurably(current=>prepareApprovedOwnerTaxonomy(current,asOf))');
+    expect(settings).toContain('disabled={busy}');
+    expect(settings).toContain('setPendingOwnerTaxonomy(false)');
+  });
   it('offers editable subcategory selection in recurring and expense-installment editors',()=>{
     const recurring=readFileSync('src/pages/RecurringPage.tsx','utf8');
     const loans=readFileSync('src/pages/LoansPage.tsx','utf8');
