@@ -28,6 +28,8 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   const[blockedUntil,setBlockedUntil]=useState(0);
   const[tick,setTick]=useState(Date.now());
   const inputRef=useRef<HTMLInputElement|null>(null);
+  const activeStateRef=useRef(lockState);
+  activeStateRef.current=lockState;
   const retrySeconds=useMemo(()=>Math.max(0,Math.ceil((blockedUntil-tick)/1000)),[blockedUntil,tick]);
 
   const enterLockedState=useCallback((state?:AppLockState)=>{
@@ -66,7 +68,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       }
     };
     void inspect();
-    const lockNow=()=>{if(alive&&lockState.enabled)enterLockedState(lockState)};
+    const lockNow=()=>{if(alive&&activeStateRef.current.enabled)enterLockedState(activeStateRef.current)};
     const lockStateChanged=(event:Event)=>{
       const state=(event as CustomEvent<AppLockState>).detail;
       if(!alive||!state)return;
