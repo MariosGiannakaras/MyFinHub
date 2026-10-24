@@ -76,7 +76,12 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       const state=(event as CustomEvent<AppLockState>).detail;
       if(!alive||!state)return;
       setLockState(state);
-      if(state.enabled)setShared(true);
+      if(state.enabled){
+        setShared(true);
+        // Changing the global PIN/timeout invalidates existing server tickets.
+        // Never leave an already-mounted finance workspace visible after it.
+        enterLockedState(state);
+      }
     };
     const authenticated=()=>{if(alive)void inspect()};
     window.addEventListener('myfinhub:app-lock-now',lockNow);
