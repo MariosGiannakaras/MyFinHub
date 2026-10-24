@@ -133,7 +133,7 @@ try{
     'confirmation has fully dismissed before global keyboard shortcut'
   );
   const sendAppShortcut=async key=>{
-    const result=await c.call("function(key){const modal=[...document.querySelectorAll('[aria-modal=true]')].filter(el=>el.getClientRects().length>0).length;const active=document.activeElement;const event=new KeyboardEvent('keydown',{key,ctrlKey:true,bubbles:true,cancelable:true});window.dispatchEvent(event);return {consumed:event.defaultPrevented,modal,focus:active?.id||active?.tagName||'none',redoDisabled:document.querySelector('button[aria-label=\\\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\\\"]')?.disabled}}",[key]);
+    const result=await c.call("function(key){const modal=[...document.querySelectorAll('[aria-modal=true]')].filter(el=>el.getClientRects().length>0).length;const active=document.activeElement;const event=new KeyboardEvent('keydown',{key,ctrlKey:true,bubbles:true,cancelable:true});window.dispatchEvent(event);return {consumed:event.defaultPrevented,modal,focus:active?.id||active?.tagName||'none',redoDisabled:[...document.querySelectorAll('button')].find(button=>button.getAttribute('aria-label')==='Επαναφορά τελευταίας αναιρεμένης αλλαγής')?.disabled}}",[key]);
     assert(result.consumed,`Ctrl+${key.toUpperCase()} reaches the shared shortcut handler after modal dismissal: ${JSON.stringify(result)}`);
   };
   const focusForShortcut=()=>c.call("function(){const workspace=document.querySelector('#main-workspace');workspace?.focus();return document.activeElement===workspace}");
