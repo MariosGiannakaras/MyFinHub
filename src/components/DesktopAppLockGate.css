@@ -100,3 +100,18 @@ html[data-theme="dark"] .desktop-app-lock-card.is-error .desktop-app-lock-feedba
   .desktop-app-lock-preview>div{border-radius:16px}
   .desktop-app-lock-preview>div:nth-child(2){border-radius:12px}
 }
+
+/* PIN recovery is an explicit secondary flow, with the same shared form primitives. */
+.desktop-app-lock-card:has(.desktop-app-lock-recovery){width:min(94vw,440px);gap:12px}
+.desktop-app-lock-recovery{display:grid;gap:12px;width:100%;text-align:left}
+.desktop-app-lock-recovery>p{max-width:none;margin:2px 0;color:var(--muted);font-size:.85rem;line-height:1.5;text-align:left}
+.desktop-app-lock-recovery label{display:grid;gap:6px;color:var(--ink);font-size:.82rem;font-weight:680;min-width:0}
+.desktop-app-lock-recovery .app-text-input{width:100%;min-height:44px;background:var(--control-bg);border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--ink)}
+.desktop-app-lock-recovery .app-text-input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.desktop-app-lock-recovery-pin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.desktop-app-lock-recovery>.desktop-app-lock-feedback{justify-content:center;text-align:center}
+.desktop-app-lock-recovery>button{min-height:44px;width:100%}
+@media(max-width:520px){
+  .desktop-app-lock-card:has(.desktop-app-lock-recovery){width:min(100%,400px)}
+  .desktop-app-lock-recovery-pin-grid{grid-template-columns:1fr}
+}
