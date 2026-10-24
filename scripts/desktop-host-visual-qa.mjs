@@ -58,6 +58,20 @@ try{
   await waitFor("function(){return (document.querySelector('.desktop-app-lock-feedback')?.textContent||'').includes('Νέα προσπάθεια σε')}","rate-limited PIN feedback");
   await viewport(1100,760);await sleep(120);await noHorizontalOverflow('desktop lock 1100x760');
   await shot('desktop-app-lock-rate-limited-1100x760');
+  // Same unlock gate must remain usable and legible in dark theme, touch-mobile
+  // geometry and OS reduced-motion preference—not just the desktop light screenshot.
+  await viewport(375,812);
+  await c.call("function(){document.documentElement.dataset.theme='dark';return true}");
+  await sleep(140);
+  await noHorizontalOverflow('PIN dark mobile 375x812');
+  assert(await c.call("function(){const c=document.querySelector('.desktop-app-lock-card');const r=c?.getBoundingClientRect();return Boolean(r&&r.width>=260&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight)}"),'mobile PIN card remains contained');
+  await shot('desktop-app-lock-dark-mobile-375x812');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await sleep(90);
+  assert(await c.call("function(){const icon=document.querySelector('.desktop-app-lock-icon');return icon&&getComputedStyle(icon).animationName==='none'}"),'OS reduced-motion disables decorative PIN animation');
+  await shot('desktop-app-lock-reduced-motion-mobile-375x812');
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
+
 
   console.log('Desktop host QA: Update Panel available/downloading/ready/error states');
   const updateUrl=status=>{const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('state','settings-tabs');url.searchParams.set('desktop-update',status);url.searchParams.set('visual','1');return url.href};
