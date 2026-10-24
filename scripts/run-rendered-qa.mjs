@@ -38,6 +38,7 @@ const scripts=[
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
   {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
+  {path:'scripts/desktop-backup-rendered-qa.mjs',key:'desktop-backup-native',surface:'settings-desktop-backup',profiles:['/tmp/myfinhub-desktop-backup-qa-chrome']},
   {path:'scripts/provider-brand-management-qa.mjs',key:'provider-brand-management',surface:'settings-provider-branding',profiles:['/tmp/myfinhub-provider-brand-management-qa-chrome']},
   {path:'scripts/settings-rules-modal-qa.mjs',key:'settings-rules-modal',surface:'settings',profiles:['/tmp/myfinhub-settings-rules-modal-qa-chrome']},
   {path:'scripts/command-palette-qa.mjs',key:'command-palette',surface:'command-palette',profiles:['/tmp/myfinhub-command-palette-qa-chrome']},
@@ -137,6 +138,9 @@ async function runRenderedItem(item){
 // competing browser start/render must not distort these latency measurements.
 // The <5s readiness and <2s mutation assertions remain completely unchanged.
 const resourceIsolatedSuites=new Set([
+  // Receipt-backed Undo/Redo keyboard paths require an uncontended browser.
+  // Assertions and operation deadlines stay strict and unchanged.
+  'scripts/completion-functional-crud-qa.mjs',
   'scripts/large-data-boundaries-qa.mjs',
   'scripts/transactions-scanability-qa.mjs',
 ]);

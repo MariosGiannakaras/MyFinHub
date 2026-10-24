@@ -53,6 +53,8 @@ describe('rendered browser QA reliability contract', () => {
 
   it('keeps the shared primitive adoption suite in the rendered merge gate',()=>{
     expect(coordinator).toContain("scripts/primitives-adoption-qa.mjs");
+    expect(coordinator).toContain("scripts/desktop-backup-rendered-qa.mjs");
+    expect(coordinator).toContain("'scripts/completion-functional-crud-qa.mjs',\n  'scripts/large-data-boundaries-qa.mjs'");
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
   });
 

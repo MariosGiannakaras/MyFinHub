@@ -1,13 +1,14 @@
 import { CheckCircle2, Download, MonitorCog, RefreshCw, RotateCcw, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import packageJson from '../../package.json';
+import type { DesktopBackupBridge } from '../lib/desktopBackups';
 import { Button } from './Button';
 import { Surface } from './Surface';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'installing' | 'error' | 'unsupported';
 type UpdateState = { supported: boolean; currentVersion: string; status: UpdateStatus; availableVersion: string | null; progress: number; message: string };
 type DesktopInfo = { productName: string; version: string; packaged: boolean };
-type DesktopBridge = {
+type DesktopBridge = DesktopBackupBridge & {
   getInfo: () => Promise<DesktopInfo>;
   getUpdateState: () => Promise<UpdateState>;
   checkForUpdates: () => Promise<UpdateState>;

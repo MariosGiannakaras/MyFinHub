@@ -9,6 +9,12 @@ async function rawRecoveryState() {
 
 contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   getInfo: () => ipcRenderer.invoke('myfinhub:get-info'),
+  getBackupStatus: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-status', unlockToken),
+  reportBackupFailure: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-report-failure', unlockToken),
+  saveLocalBackup: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-save', unlockToken),
+  getRestoreCandidate: (name, unlockToken) => ipcRenderer.invoke('myfinhub:backup-restore-candidate', name, unlockToken),
+  chooseBackupFolder: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-choose-folder', unlockToken),
+  openBackupFolder: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-open-folder', unlockToken),
   getUpdateState: () => ipcRenderer.invoke('myfinhub:get-update-state'),
   checkForUpdates: () => ipcRenderer.invoke('myfinhub:check-updates'),
   downloadUpdate: () => ipcRenderer.invoke('myfinhub:download-update'),
