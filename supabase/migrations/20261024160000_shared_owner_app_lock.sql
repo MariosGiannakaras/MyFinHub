@@ -253,9 +253,22 @@ begin
     raise exception using errcode='42501',message='APP_LOCK_FORBIDDEN';
   end if;
   v_session := nullif((select auth.jwt())->>'session_id','')::uuid;
-  if v_session is null or p_token_hash is null or p_token_hash !~ '^[0-9a-f]{64}$' then return false; end if;
+  if v_session is null then return false; end if;
+  if p_action='validate' and not exists(select 1 from public.myfinhub_app_lock where user_id=v_uid) then return true; end if;
+  if p_token_hash is null or p_token_hash !~ '^[0-9a-f]{64}
+    return exists(select 1 from public.myfinhub_app_lock_tickets
+      where user_id=v_uid and session_id=v_session and token_hash=p_token_hash and expires_at>clock_timestamp());
+  end if;
+  if p_action='revoke' then
+    delete from public.myfinhub_app_lock_tickets where user_id=v_uid and session_id=v_session and token_hash=p_token_hash;
+    return true;
+  end if;
+  return false;
+end $$;
+revoke all on function public.myfinhub_app_lock_ticket(text,text) from public,anon;
+grant execute on function public.myfinhub_app_lock_ticket(text,text) to authenticated;
+ then return false; end if;
   if p_action='validate' then
-    if not exists(select 1 from public.myfinhub_app_lock where user_id=v_uid) then return true; end if;
     return exists(select 1 from public.myfinhub_app_lock_tickets
       where user_id=v_uid and session_id=v_session and token_hash=p_token_hash and expires_at>clock_timestamp());
   end if;
