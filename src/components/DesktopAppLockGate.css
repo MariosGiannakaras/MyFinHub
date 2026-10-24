@@ -94,3 +94,9 @@ html[data-theme="dark"] .desktop-app-lock-card.is-error .desktop-app-lock-feedba
 @media(prefers-reduced-motion:reduce){
   .desktop-app-lock-digits>span,.desktop-app-lock-clear,.desktop-app-lock-card form[aria-busy="true"] .desktop-app-lock-digits>span.is-filled i{transition:none!important;animation:none!important}
 }
+
+@media(max-width:520px){
+  .desktop-app-lock-preview{grid-template-columns:minmax(66px,23vw) minmax(0,1fr);grid-template-rows:60px minmax(0,1fr);gap:10px;padding:12px}
+  .desktop-app-lock-preview>div{border-radius:16px}
+  .desktop-app-lock-preview>div:nth-child(2){border-radius:12px}
+}
