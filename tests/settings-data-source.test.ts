@@ -11,7 +11,7 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('await onBackup()');
     expect(settings).toContain('const snapshot = await loadData()');
     expect(settings).toContain('downloadJson(snapshot.data)');
-    expect(settings).toContain('const receipt = await bridge.saveLocalBackup({ data: snapshot.data, revision: snapshot.revision })');
+    expect(settings).toContain('const receipt = await bridge.saveLocalBackup()');
     expect(settings).not.toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('tone="destructive"');
