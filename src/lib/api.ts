@@ -161,6 +161,14 @@ export async function updateSharedAppLock(value:{action:SharedAppLockAction;pin?
   }));
 }
 
+export async function recoverSharedAppLock(value:{email:string;password:string;code:string;newPin:string}):Promise<SharedAppLockState>{
+  return json(await apiRequest('/api/auth/app-lock',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'recover',...value}),
+  }));
+}
+
 export async function getConnectedDevices():Promise<ConnectedDevicesEnvelope>{
   return json(await apiRequest('/api/auth/devices',{cache:'no-store'}));
 }
