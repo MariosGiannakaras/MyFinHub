@@ -1,6 +1,6 @@
 import type { FinanceData } from '../types';
 
-export interface LocalBackupItem {
+interface LocalBackupItem {
   name: string;
   createdAt: string;
   revision: string;
