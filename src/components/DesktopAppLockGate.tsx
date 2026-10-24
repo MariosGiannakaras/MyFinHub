@@ -1,6 +1,6 @@
 import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ApiError, getSession, getSharedAppLockState, updateSharedAppLock } from '../lib/api';
+import { ApiError, getSession, getSharedAppLockState, recoverSharedAppLock, updateSharedAppLock } from '../lib/api';
 import { setAppUnlockToken, getAppUnlockToken, clearAppUnlockToken } from '../lib/appUnlockToken';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
@@ -22,6 +22,12 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   const[lockState,setLockState]=useState<AppLockState>({supported:Boolean(bridge),enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});
   const[everUnlocked,setEverUnlocked]=useState(false);
   const[pin,setPin]=useState('');
+  const[recovering,setRecovering]=useState(false);
+  const[recoveryEmail,setRecoveryEmail]=useState('');
+  const[recoveryPassword,setRecoveryPassword]=useState('');
+  const[recoveryTotp,setRecoveryTotp]=useState('');
+  const[recoveryNewPin,setRecoveryNewPin]=useState('');
+  const[recoveryConfirmPin,setRecoveryConfirmPin]=useState('');
   const[message,setMessage]=useState('');
   const[busy,setBusy]=useState(false);
   const[shake,setShake]=useState(false);
@@ -38,6 +44,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     if(stale)void updateSharedAppLock({action:'lock',unlockToken:stale}).catch(()=>{});
     if(state)setLockState(state);
     setPin('');setMessage('');setSuccess(false);setShake(false);
+    setRecovering(false);setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
     setBlockedUntil(Date.now()+Math.max(0,state?.retryAfterMs??0));
     setTick(Date.now());setPhase('locked');
   },[]);
@@ -50,6 +57,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
         const session=await getSession();
         if(!alive)return;
         if(!session.authenticated){setPhase('unlocked');setEverUnlocked(true);return;}
+        setRecoveryEmail(session.email||'');
         const global=await getSharedAppLockState();
         if(!alive)return;
         if(global.enabled){
@@ -152,6 +160,26 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     }finally{setBusy(false)}
   },[bridge,shared,busy,retrySeconds]);
 
+  const recover=useCallback(async()=>{
+    if(busy)return;
+    if(recoveryNewPin.length!==PIN_LENGTH||recoveryNewPin!==recoveryConfirmPin||!/^[0-9]{6}$/.test(recoveryTotp)){
+      setMessage('Συμπλήρωσε τον κωδικό TOTP και επιβεβαίωσε το νέο 4ψήφιο PIN.');return;
+    }
+    if(!recoveryEmail.trim()||!recoveryPassword){setMessage('Συμπλήρωσε το email και τον κωδικό πρόσβασης.');return}
+    setBusy(true);setMessage('');
+    try{
+      const result=await recoverSharedAppLock({email:recoveryEmail.trim(),password:recoveryPassword,code:recoveryTotp,newPin:recoveryNewPin});
+      if(!result.ok||!result.enabled)throw new Error('APP_LOCK_RECOVERY_NOT_CONFIRMED');
+      // The recovery proof does not unlock the current tab. The new PIN
+      // must be verified by the regular backend ticket-granting flow.
+      setRecovering(false);setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
+      setLockState({...result,supported:true,failedAttempts:0});
+      setMessage('Το PIN άλλαξε. Πληκτρολόγησε το νέο PIN για να ξεκλειδώσεις.');
+    }catch(error){
+      setMessage(error instanceof ApiError&&error.status===429?'Πολλές προσπάθειες επαλήθευσης. Δοκίμασε αργότερα.':'Δεν ολοκληρώθηκε η ανάκτηση. Έλεγξε password, TOTP και νέα στοιχεία.');
+    }finally{setBusy(false)}
+  },[busy,recoveryEmail,recoveryPassword,recoveryTotp,recoveryNewPin,recoveryConfirmPin]);
+
   useEffect(()=>{
     if(pin.length!==PIN_LENGTH||busy||retrySeconds>0||phase!=='locked')return;
     const timer=window.setTimeout(()=>void unlock(pin),90);
@@ -175,7 +203,19 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
         <span className="eyebrow">MYFINHUB LOCK</span>
         <h1 id="app-lock-title">Καλώς ήρθες ξανά</h1>
         <p>Η πρόσβαση στο MyFinHub είναι κλειδωμένη. Πληκτρολόγησε το 4ψήφιο PIN σου.</p>
-        <form aria-busy={busy} onSubmit={event=>{event.preventDefault();void unlock(pin)}}>
+        {recovering?<form className="desktop-app-lock-recovery" aria-busy={busy} onSubmit={event=>{event.preventDefault();void recover()}}>
+          <p>Για νέο PIN απαιτείται νέα επαλήθευση κωδικού λογαριασμού και Authenticator (TOTP).</p>
+          <label>Email<AppTextInput type="email" autoComplete="username" required maxLength={254} value={recoveryEmail} onChange={event=>setRecoveryEmail(event.target.value)} disabled={busy}/></label>
+          <label>Κωδικός λογαριασμού<AppTextInput type="password" autoComplete="current-password" required value={recoveryPassword} onChange={event=>setRecoveryPassword(event.target.value)} disabled={busy}/></label>
+          <label>Κωδικός Authenticator<AppTextInput type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={recoveryTotp} onChange={event=>setRecoveryTotp(event.target.value.replace(/[^0-9]/g,'').slice(0,6))} disabled={busy}/></label>
+          <div className="desktop-app-lock-recovery-pin-grid">
+            <label>Νέο PIN<AppTextInput type="password" inputMode="numeric" autoComplete="off" required maxLength={4} value={recoveryNewPin} onChange={event=>setRecoveryNewPin(digits(event.target.value))} disabled={busy}/></label>
+            <label>Επιβεβαίωση PIN<AppTextInput type="password" inputMode="numeric" autoComplete="off" required maxLength={4} value={recoveryConfirmPin} onChange={event=>setRecoveryConfirmPin(digits(event.target.value))} disabled={busy}/></label>
+          </div>
+          <div className="desktop-app-lock-feedback" role={message?'alert':'status'} aria-live="polite">{busy?'Έλεγχος νέας ταυτοποίησης…':message||'Ο παλιός κωδικός PIN δεν χρειάζεται.'}</div>
+          <Button type="submit" variant="primary" disabled={busy}>Επαναφορά PIN</Button>
+          <Button type="button" variant="secondary" disabled={busy} onClick={()=>{setRecovering(false);setMessage('');setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('')}}>Πίσω στο ξεκλείδωμα</Button>
+        </form>:<form aria-busy={busy} onSubmit={event=>{event.preventDefault();void unlock(pin)}}>
           <AppTextInput ref={inputRef} className="desktop-app-lock-input" aria-label="4ψήφιο PIN εφαρμογής" aria-describedby="app-lock-feedback" invalid={Boolean(message)} type="password" inputMode="numeric" autoComplete="off" autoFocus={false} maxLength={PIN_LENGTH} value={pin} disabled={busy||retrySeconds>0||success} onKeyDown={event=>{if(event.key==='Escape'){setPin('');setMessage('')}}} onChange={event=>{setPin(digits(event.target.value));if(message)setMessage('')}}/>
           <button type="button" className="desktop-app-lock-digits" aria-label="Εισαγωγή PIN" aria-describedby="app-lock-feedback" onClick={()=>inputRef.current?.focus()} disabled={retrySeconds>0||success}>
             {Array.from({length:PIN_LENGTH},(_,index)=><span key={index} className={index<pin.length?'is-filled':''}><i/></span>)}
@@ -184,7 +224,8 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
             {success?<span className="is-good">Ξεκλειδώθηκε</span>:retrySeconds>0?<span>Νέα προσπάθεια σε {retrySeconds} δευτ.</span>:busy?<span>Έλεγχος PIN…</span>:message?<span className="is-error">{message}</span>:<span>Το PIN επαληθεύεται στον λογαριασμό σου</span>}
           </div>
           {pin.length>0&&!busy&&!success?<button type="button" className="desktop-app-lock-clear" onClick={()=>{setPin('');setMessage('');inputRef.current?.focus()}}>Καθαρισμός PIN</button>:null}
-        </form>
+          {shared&&!busy?<button type="button" className="desktop-app-lock-clear" onClick={()=>{setPin('');setMessage('');setRecovering(true)}}>Ξέχασα το PIN</button>:null}
+        </form>}
         <small><ShieldCheck size={14}/> Κλείδωμα μετά από {lockState.idleMinutes} {lockState.idleMinutes===1?'λεπτό':'λεπτά'} αδράνειας.</small>
       </section>:null}
     </div>
