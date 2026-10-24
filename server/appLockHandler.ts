@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { accessTokenAal, assertMutationSessionOrigin, challengeTotp, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, signInWithPassword, verifyTotp } from './auth.js';
+import { accessTokenAal, assertMutationSessionOrigin, challengeTotp, clearSessionCookiesIfCookie, getTotpFactors, requireSession, signInWithPassword, verifyTotp } from './auth.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
 import { isOwner } from './storage.js';
 import { fetchUpstream } from './upstream.js';
@@ -64,6 +64,23 @@ export function parseAppLockRecovery(input:unknown):RecoveryInput{
   return {action:'recover',email,password,code,newPin};
 }
 
+async function revokeTemporaryRecoverySession(accessToken:string){
+  if(!accessToken)return;
+  try{
+    const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
+    const apikey=process.env.SUPABASE_PUBLISHABLE_KEY;
+    if(!url||!apikey)return;
+    // Do NOT use the ordinary global sign-out default: it could revoke
+    // the owner's active Web, Windows and Android sessions.
+    await fetchUpstream(`${url}/auth/v1/logout?scope=local`,{
+      method:'POST',
+      headers:{apikey,authorization:`Bearer ${accessToken}`},
+    },'AUTH');
+  }catch{
+    // A failed local cleanup never authorizes PIN recovery or grants access.
+  }
+}
+
 async function recoverAppLock(session:{accessToken:string;user:{id:string;email?:string|null}},input:RecoveryInput){
   if(session.user.email?.toLowerCase()!==input.email)throw new ApiError(401,'APP_LOCK_RECOVERY_REJECTED','Η επαλήθευση ανάκτησης δεν ολοκληρώθηκε.');
   let temporaryAccess='';
@@ -104,8 +121,8 @@ async function recoverAppLock(session:{accessToken:string;user:{id:string;email?
   }finally{
     // Fresh credentials never replace the user's HttpOnly browser session.
     // End both temporary sessions even when GoTrue or the database rejects.
-    if(verifiedAccess)await revokeSession(verifiedAccess);
-    if(temporaryAccess)await revokeSession(temporaryAccess);
+    if(verifiedAccess)await revokeTemporaryRecoverySession(verifiedAccess);
+    if(temporaryAccess)await revokeTemporaryRecoverySession(temporaryAccess);
   }
 }
 
