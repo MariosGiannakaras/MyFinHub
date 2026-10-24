@@ -61,7 +61,7 @@ async function json<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
     notifyAuthExpired(response.status, details.code);
-    if(response.status===423&&details.code==='APP_LOCK_REQUIRED')window.dispatchEvent(new Event('myfinhub:app-lock-now'));
+    if(response.status===423&&details.code==='APP_LOCK_REQUIRED'&&typeof window!=='undefined')window.dispatchEvent(new Event('myfinhub:app-lock-now'));
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
   }
   return payload as T;
