@@ -53,11 +53,13 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     let alive=true;
     const inspect=async()=>{
       setPhase('checking');setMessage('');
+      let verificationStage:'session'|'app-lock'='session';
       try{
         const session=await getSession();
         if(!alive)return;
         if(!session.authenticated){setPhase('unlocked');setEverUnlocked(true);return;}
         setRecoveryEmail(session.email||'');
+        verificationStage='app-lock';
         const global=await getSharedAppLockState();
         if(!alive)return;
         if(global.enabled){
@@ -75,7 +77,10 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       }catch(error){
         if(!alive)return;
         if(error instanceof ApiError&&error.status===401){setPhase('unlocked');setEverUnlocked(true);return;}
-        setMessage('Δεν ήταν δυνατός ο ασφαλής έλεγχος PIN. Δεν εμφανίζονται οικονομικά δεδομένα.');setPhase('error');
+        setMessage(verificationStage==='session'
+          ?'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας. Η σύνδεση δεν είναι προσωρινά διαθέσιμη. Δεν εμφανίζονται οικονομικά δεδομένα.'
+          :'Δεν ήταν δυνατός ο ασφαλής έλεγχος PIN. Δεν εμφανίζονται οικονομικά δεδομένα.');
+        setPhase('error');
       }
     };
     void inspect();
