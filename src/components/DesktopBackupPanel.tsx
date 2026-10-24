@@ -77,6 +77,10 @@ export function DesktopBackupPanel({
         </div>
       ) : <p className="desktop-backup-empty">Δεν υπάρχει τοπικό αντίγραφο ακόμη. Θα δημιουργηθεί μετά την επιτυχή σύνδεση και ανάγνωση της βάσης.</p>}
       <p className="desktop-backup-note">Αυτά είναι αντίγραφα των οικονομικών δεδομένων εφαρμογής, όχι πλήρη PostgreSQL dumps. Δεν περιλαμβάνουν Card Vault, κωδικούς ή αρχεία Storage. Η επαναφορά απαιτεί ρητή επιβεβαίωση και TOTP.</p>
+      {status?.backups.length && status.lastValidBackupAt &&
+        Date.now() - Date.parse(status.lastValidBackupAt) > 36 * 60 * 60 * 1000 ? (
+          <p role="alert" className="desktop-backup-error"><TriangleAlert size={16}/>Δεν υπάρχει επαληθευμένο backup των τελευταίων 36 ωρών. Άφησε την εφαρμογή συνδεδεμένη και έλεγξε τη σύνδεση και τον φάκελο.</p>
+        ) : null}
       {error ? <p role="alert" className="desktop-backup-error"><TriangleAlert size={16}/>{error}</p> : null}
     </Surface>
   );
