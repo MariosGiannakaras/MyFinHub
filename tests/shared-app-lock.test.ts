@@ -104,6 +104,14 @@ describe('shared owner app privacy PIN',()=>{
     expect(gate).toContain("action:'verify'");
     expect(gate).toContain('Unmount the financial workspace');
     expect(gate).toContain("'visibilitychange'");
+    expect(gate).toContain("verificationStage==='session'");
+    expect(gate).toContain('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας');
+    expect(gate).toContain('Δεν εμφανίζονται οικονομικά δεδομένα.');
+    const rendered=read('scripts/ui-ux-hardening-qa.mjs');
+    expect(rendered).toContain('.desktop-app-lock-screen[data-phase=error]');
+    expect(rendered).toContain("!document.querySelector('.desktop-app-lock-underlay')");
+    expect(rendered).toContain("document.querySelector('.desktop-app-lock-preview')");
+
     expect(settings).toContain('getSharedAppLockState');
     expect(settings).toContain('Τρέχον 4ψήφιο PIN');
   });
