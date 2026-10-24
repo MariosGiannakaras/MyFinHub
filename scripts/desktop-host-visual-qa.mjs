@@ -70,7 +70,10 @@ try{
   // Same unlock gate must remain usable and legible in dark theme, touch-mobile
   // geometry and OS reduced-motion preference—not just the desktop light screenshot.
   await viewport(375,812);
-  await c.call("function(){document.documentElement.dataset.theme='dark';return true}");
+  // Apply the REAL semantic theme tokens, not only data-theme. A dark
+  // backdrop with a light card is an invalid dark-mode acceptance artifact.
+  const darkTheme=await c.call("async function(){const {applyThemePreference}=await import('/src/lib/theme.ts');applyThemePreference('dark');const root=document.documentElement;const card=document.querySelector('.desktop-app-lock-card');if(!card)return {reason:'no PIN card'};const token=getComputedStyle(root).getPropertyValue('--surface').trim();const match=/^#([a-f0-9]{6})$/i.exec(token);if(!match)return {reason:'missing semantic dark surface',token};const rgb=match[1].match(/.{2}/g).map(part=>parseInt(part,16));const style=getComputedStyle(card);const background=style.backgroundColor;const expected='rgb('+rgb.join(', ')+')';const ink=style.color;const channels=value=>(value.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);const lum=value=>{const x=channels(value).map(n=>{const y=n/255;return y<=.04045?y/12.92:((y+.055)/1.055)**2.4});return x.length===3?.2126*x[0]+.7152*x[1]+.0722*x[2]:0};const contrast=(Math.max(lum(background),lum(ink))+.05)/(Math.min(lum(background),lum(ink))+.05);return {theme:root.dataset.theme,tokenMatchesCard:background===expected,darkSurface:rgb.every(n=>n<85),contrast}}");
+  assert(darkTheme.theme==='dark'&&darkTheme.tokenMatchesCard&&darkTheme.darkSurface&&darkTheme.contrast>=4.5,'real semantic dark PIN theme with accessible card/text contrast: '+JSON.stringify(darkTheme));
   await sleep(140);
   await noHorizontalOverflow('PIN dark mobile 375x812');
   assert(await c.call("function(){const c=document.querySelector('.desktop-app-lock-card');const r=c?.getBoundingClientRect();return Boolean(r&&r.width>=260&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight)}"),'mobile PIN card remains contained');
