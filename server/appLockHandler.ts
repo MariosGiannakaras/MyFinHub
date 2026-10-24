@@ -58,7 +58,7 @@ export function parseAppLockRecovery(input:unknown):RecoveryInput{
   const password=typeof body.password==='string'?body.password:'';
   const code=typeof body.code==='string'?body.code.trim():'';
   const newPin=typeof body.newPin==='string'?body.newPin:'';
-  if(email.length<5||email.length>254||!email.includes('@')||password.length<8||password.length>512||!/^\\d{6}$/.test(code)||!PIN.test(newPin)){
+  if(email.length<5||email.length>254||!email.includes('@')||password.length<8||password.length>512||!/^\d{6}$/.test(code)||!PIN.test(newPin)){
     throw new ApiError(400,'INVALID_APP_LOCK_RECOVERY','Συμπλήρωσε έγκυρο email, κωδικό, TOTP και νέο τετραψήφιο PIN.');
   }
   return {action:'recover',email,password,code,newPin};
@@ -83,7 +83,7 @@ async function recoverAppLock(session:{accessToken:string;user:{id:string;email?
     if(!verifiedAccess||accessTokenAal(verifiedAccess)!=='aal2'||verified.user?.id!==session.user.id){
       throw new ApiError(401,'APP_LOCK_RECOVERY_REJECTED','Η επαλήθευση ανάκτησης δεν ολοκληρώθηκε.');
     }
-    const url=process.env.SUPABASE_URL?.replace(/\\/$/,'');
+    const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
     const apikey=process.env.SUPABASE_PUBLISHABLE_KEY;
     if(!url||!apikey)throw new ApiError(503,'APP_LOCK_UNAVAILABLE','Η ανάκτηση PIN δεν είναι διαθέσιμη.',false);
     const response=await fetchUpstream(`${url}/rest/v1/rpc/myfinhub_app_lock_recover`,{
