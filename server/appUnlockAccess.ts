@@ -7,8 +7,14 @@ const protectedPaths = new Set(['/api/data','/api/import','/api/history','/api/b
 export function requiresAppUnlock(req:any) {
   try {
     const raw=String(req?.originalUrl||req?.url||req?.path||'');
-    const pathname=new URL(raw,'http://localhost').pathname;
-    return protectedPaths.has(pathname);
+    const parsed=new URL(raw,'http://localhost');
+    const pathname=parsed.pathname;
+    if(protectedPaths.has(pathname))return true;
+    // Vercel consolidates the account/device handlers into /api/auth/session.
+    // Inspect the strict route marker so the rewrite cannot bypass app unlock.
+    const query=req?.query?.__myfinhub_route;
+    const route=typeof query==='string'?query:parsed.searchParams.get('__myfinhub_route');
+    return pathname==='/api/auth/session'&&(route==='devices'||route==='account');
   } catch { return false; }
 }
 
