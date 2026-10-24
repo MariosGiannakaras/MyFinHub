@@ -30,6 +30,6 @@
 @media(max-width:680px){.settings-import-guide-fields>div{grid-template-columns:minmax(0,1fr)}.settings-import-guide-content{padding:0 12px 12px}.settings-import-guide>summary{padding:12px}}
 
 /* Native backup panel is a single accessible column at every viewport. */
-.settings-data-tab>.desktop-backup-panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.desktop-backup-panel{display:flex;flex-direction:column;gap:12px}
 
 .settings-data-tab>.logic-note.is-error{color:var(--error);border-color:currentColor}
