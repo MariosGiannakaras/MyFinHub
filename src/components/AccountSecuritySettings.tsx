@@ -127,7 +127,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
       const result=await bridge.setAppPin({pin:newPin});
-      publishLockState(result);
+      if(result.ok)publishLockState(result);
       if(!result.ok){setPinMessageTone('error');setPinMessage(pinError(result));return;}
       setNewPin('');setConfirmPin('');setCurrentPin('');
       setPinMessageTone('status');setPinMessage(lockState.enabled?'Το PIN της εφαρμογής άλλαξε.':`Το PIN ενεργοποιήθηκε. Το MyFinHub θα κλειδώνει μετά από ${idleLabel(result.idleMinutes)} αδράνειας.`);
@@ -140,7 +140,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     if(currentPin.length!==PIN_LENGTH){setPinMessageTone('error');setPinMessage('Συμπλήρωσε το τρέχον PIN για αλλαγή χρόνου.');return;}
     setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
-      const result=await bridge.setAppLockTimeout(minutes);publishLockState(result);if(result.ok)setCurrentPin('');
+      const result=await bridge.setAppLockTimeout(minutes);if(result.ok)publishLockState(result);if(result.ok)setCurrentPin('');
       setPinMessageTone(result.ok?'status':'error');setPinMessage(result.ok?`Το αυτόματο κλείδωμα ορίστηκε σε ${idleLabel(result.idleMinutes)}.`:pinError(result));
     }catch{setPinMessageTone('error');setPinMessage('Δεν ήταν δυνατή η αλλαγή του αυτόματου κλειδώματος.')}
     finally{setPinBusy(false)}
@@ -151,7 +151,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     if(currentPin.length!==PIN_LENGTH){setPinMessageTone('error');setPinMessage('Συμπλήρωσε το τρέχον PIN για απενεργοποίηση.');return;}
     setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
-      const result=await bridge.disableAppPin();publishLockState(result);
+      const result=await bridge.disableAppPin();if(result.ok)publishLockState(result);
       if(!result.ok){setPinMessageTone('error');setPinMessage(pinError(result));return;}
       setNewPin('');setConfirmPin('');setCurrentPin('');setPinMessageTone('status');setPinMessage('Το κοινό PIN απενεργοποιήθηκε.');
     }catch{setPinMessageTone('error');setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
