@@ -98,7 +98,7 @@ begin
     if v_session is null then raise exception using errcode='42501',message='APP_LOCK_SESSION_REQUIRED'; end if;
     v_ticket := translate(trim(trailing '=' from encode(extensions.gen_random_bytes(32),'base64')), '+/', '-_');
     insert into public.myfinhub_app_lock_tickets(token_hash,user_id,session_id,expires_at)
-      values(encode(extensions.digest(v_ticket,'sha256'),'hex'),v_uid,v_session,clock_timestamp()+interval '30 minutes');
+      values(encode(extensions.digest(v_ticket,'sha256'),'hex'),v_uid,v_session,clock_timestamp()+make_interval(mins=>v_row.idle_minutes));
     return jsonb_build_object('ok',true,'enabled',true,'idleMinutes',v_row.idle_minutes,'retryAfterMs',0,'unlockToken',v_ticket);
   end if;
   if p_action='disable' then
