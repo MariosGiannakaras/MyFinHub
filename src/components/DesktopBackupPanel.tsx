@@ -63,12 +63,12 @@ export function DesktopBackupPanel({
   const newestFailure = status?.lastFailureAt ? Date.parse(status.lastFailureAt) : NaN;
   const failed = Number.isFinite(newestFailure) && (!Number.isFinite(lastValid) || newestFailure > lastValid);
   const overdue = Number.isFinite(lastValid) && Date.now() - lastValid > 36 * HOUR_MS;
-  const stateText = !status ? 'Έλεγχος κατάστασης' : failed
+  const stateText = !status ? (error ? 'Ο έλεγχος κατάστασης απέτυχε' : 'Έλεγχος κατάστασης') : failed
     ? 'Η τελευταία προσπάθεια απέτυχε'
     : !Number.isFinite(lastValid)
       ? 'Αναμονή πρώτου αντιγράφου'
       : overdue ? 'Απαιτείται νέο αντίγραφο' : 'Υπάρχει επαληθευμένο αντίγραφο';
-  const statusAttention = failed || overdue;
+  const statusAttention = Boolean(error) || failed || overdue;
   const nextEligible = Number.isFinite(lastValid)
     ? Date.now() >= lastValid + 24 * HOUR_MS
       ? 'Έτοιμο για νέο backup όταν η εφαρμογή είναι συνδεδεμένη'
@@ -85,7 +85,7 @@ export function DesktopBackupPanel({
         <HardDriveDownload size={20} aria-hidden="true" />
       </div>
       <div className={`desktop-backup-health${statusAttention ? ' is-warning' : ''}`} role="status" aria-live="polite">
-        {statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
+        {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div>
           <strong>{stateText}</strong>
           <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}` : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
@@ -118,7 +118,7 @@ export function DesktopBackupPanel({
                 <span>{item.valid ? <CheckCircle2 size={16} aria-hidden="true"/> : <TriangleAlert size={16} aria-hidden="true"/>} {dateLabel(item.createdAt)}</span>
                 <small>Revision {item.revision} · {Math.ceil(item.bytes / 1024)} KB · {item.valid ? 'Επαληθευμένο (SHA-256)' : 'Μη έγκυρο αρχείο — απαγορεύεται η επαναφορά'}</small>
               </div>
-              <Button type="button" variant="secondary" disabled={busy || !item.valid} aria-label={undefined} onClick={() => void action(
+              <Button type="button" variant="secondary" disabled={busy || !item.valid} aria-label={`Επαναφορά αντιγράφου ${dateLabel(item.createdAt)}`} onClick={() => void action(
                 'restore', async () => { onPrepareRestore(await bridge.getRestoreCandidate(item.name)); },
               )}>{operation === 'restore' ? 'Έλεγχος…' : 'Επαναφορά'}</Button>
             </div>
