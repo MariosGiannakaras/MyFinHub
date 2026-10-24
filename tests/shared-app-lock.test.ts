@@ -11,12 +11,13 @@ describe('shared owner app privacy PIN',()=>{
     expect(parseAppLockAction({action:'verify',pin:'1234'})).toEqual({action:'verify',pin:'1234'});
     expect(parseAppLockAction({action:'change',pin:'1234',newPin:'2345'})).toEqual({action:'change',pin:'1234',newPin:'2345'});
     expect(parseAppLockAction({action:'disable',pin:'1234'})).toEqual({action:'disable',pin:'1234'});
+    expect(parseAppLockAction({action:'lock',unlockToken:'a'.repeat(43)})).toEqual({action:'lock',unlockToken:'a'.repeat(43)});
     expect(parseAppLockAction({action:'timeout',pin:'1234',idleMinutes:60})).toEqual({action:'timeout',pin:'1234',idleMinutes:60});
     for(const body of [
       {},[],{action:'verify',pin:'12345'},{action:'verify',pin:'abcd'},
       {action:'verify',pin:'1234',secret:true},{action:'timeout',pin:'1234',idleMinutes:0},
       {action:'configure',newPin:'1234',idleMinutes:10},{action:'change',pin:'1234',newPin:'12'},
-      {action:'disable',pin:12},{action:'unblock',pin:'1234'},
+      {action:'disable',pin:12},{action:'lock',unlockToken:'invalid'},{action:'unblock',pin:'1234'},
     ])expect(()=>parseAppLockAction(body)).toThrow(ApiError);
   });
 
@@ -26,6 +27,9 @@ describe('shared owner app privacy PIN',()=>{
     expect(sql).toContain('security definer');
     expect(sql).toContain('public.rheomiq_is_owner_aal2()');
     expect(sql).toContain('for update');
+    expect(sql).toContain('myfinhub_app_lock_tickets');
+    expect(sql).toContain("p_action='validate'");
+    expect(sql).toContain("p_action='revoke'");
     expect(sql).toContain("interval '30 seconds'");
     expect(sql).toContain("extensions.crypt");
     expect(sql).not.toMatch(/grant\s+select\s+on\s+(table\s+)?public\.myfinhub_app_lock\s+to\s+authenticated/i);
@@ -45,6 +49,10 @@ describe('shared owner app privacy PIN',()=>{
     expect(api).toContain("accessTokenAal(session.accessToken)!=='aal2'");
     expect(api).toContain('assertMutationSessionOrigin(req,session)');
     expect(api).toContain('readJsonBody(req,512)');
+    expect(api).toContain('revokeUnlockTicket');
+    expect(read('server/auth.ts')).toContain('requiresAppUnlock(req)');
+    expect(read('src/lib/api.ts')).toContain('getAppUnlockToken');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('clearAppUnlockToken');
     expect(api).toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(api).not.toContain('SUPABASE_SECRET_KEY');
     expect(vercel.rewrites).toContainEqual({source:'/api/auth/app-lock',destination:'/api/auth/session?__myfinhub_route=app-lock'});
