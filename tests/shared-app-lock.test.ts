@@ -37,8 +37,10 @@ describe('shared owner app privacy PIN',()=>{
     expect(source).toContain('signInWithPassword(input.email,input.password)');
     expect(source).toContain('challengeTotp(temporaryAccess,factor.id)');
     expect(source).toContain('verifyTotp(temporaryAccess,factor.id,challenge.id,input.code)');
-    expect(source).toContain('revokeSession(verifiedAccess)');
-    expect(source).toContain('revokeSession(temporaryAccess)');
+    expect(source).toContain('revokeTemporaryRecoverySession(verifiedAccess)');
+    expect(source).toContain('revokeTemporaryRecoverySession(temporaryAccess)');
+    expect(source).toContain('/auth/v1/logout?scope=local');
+    expect(source).not.toContain('revokeSession(verifiedAccess)');
     expect(sql).toContain('public.myfinhub_app_lock_recover');
     expect(sql).toContain("entry->>'method'='password'");
     expect(sql).toContain("entry->>'method'='totp'");
