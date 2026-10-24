@@ -115,7 +115,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     setBusy(true);setMessage('');setShake(false);
     try{
       const result=shared?await updateSharedAppLock({action:'verify',pin:candidate}):await bridge!.verifyAppPin(candidate);
-      setLockState(result);setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
+      setLockState({...result,supported:true,failedAttempts:0});setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
       if(result.ok){
         setSuccess(true);
         window.setTimeout(()=>{setPin('');setSuccess(false);setEverUnlocked(true);setPhase('unlocked')},190);
@@ -159,7 +159,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
             {Array.from({length:PIN_LENGTH},(_,index)=><span key={index} className={index<pin.length?'is-filled':''}><i/></span>)}
           </button>
           <div className="desktop-app-lock-feedback" aria-live="polite">
-            {success?<span className="is-good">Ξεκλειδώθηκε</span>:retrySeconds>0?<span>Νέα προσπάθεια σε {retrySeconds} δευτ.</span>:busy?<span>Έλεγχος PIN…</span>:message?<span className="is-error">{message}</span>:<span>Το PIN μένει μόνο σε αυτή τη συσκευή</span>}
+            {success?<span className="is-good">Ξεκλειδώθηκε</span>:retrySeconds>0?<span>Νέα προσπάθεια σε {retrySeconds} δευτ.</span>:busy?<span>Έλεγχος PIN…</span>:message?<span className="is-error">{message}</span>:<span>Το PIN επαληθεύεται στον λογαριασμό σου</span>}
           </div>
         </form>
         <small><ShieldCheck size={14}/> Κλείδωμα μετά από {lockState.idleMinutes} {lockState.idleMinutes===1?'λεπτό':'λεπτά'} αδράνειας.</small>
