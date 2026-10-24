@@ -12,6 +12,7 @@ describe('shared owner app privacy PIN',()=>{
     expect(parseAppLockAction({action:'change',pin:'1234',newPin:'2345'})).toEqual({action:'change',pin:'1234',newPin:'2345'});
     expect(parseAppLockAction({action:'disable',pin:'1234'})).toEqual({action:'disable',pin:'1234'});
     expect(parseAppLockAction({action:'lock',unlockToken:'a'.repeat(43)})).toEqual({action:'lock',unlockToken:'a'.repeat(43)});
+    expect(parseAppLockAction({action:'touch',unlockToken:'a'.repeat(43)})).toEqual({action:'touch',unlockToken:'a'.repeat(43)});
     expect(parseAppLockAction({action:'timeout',pin:'1234',idleMinutes:60})).toEqual({action:'timeout',pin:'1234',idleMinutes:60});
     for(const body of [
       {},[],{action:'verify',pin:'12345'},{action:'verify',pin:'abcd'},
@@ -30,6 +31,7 @@ describe('shared owner app privacy PIN',()=>{
     expect(sql).toContain('myfinhub_app_lock_tickets');
     expect(sql).toContain("p_action='validate'");
     expect(sql).toContain("p_action='revoke'");
+    expect(sql).toContain("p_action='touch'");
     expect(sql).toContain("interval '30 seconds'");
     expect(sql).toContain("extensions.crypt");
     expect(sql).not.toMatch(/grant\s+select\s+on\s+(table\s+)?public\.myfinhub_app_lock\s+to\s+authenticated/i);
@@ -44,12 +46,13 @@ describe('shared owner app privacy PIN',()=>{
     const gate=read('src/components/DesktopAppLockGate.tsx');
     const settings=read('src/components/AccountSecuritySettings.tsx');
     const entry=read('src/main.tsx');
-    expect(api).toContain('requireSession(req,res)');
+    expect(api).toContain('requireSession(req,res,{allowBearer:true})');
     expect(api).toContain('isOwner(session.accessToken)');
     expect(api).toContain("accessTokenAal(session.accessToken)!=='aal2'");
     expect(api).toContain('assertMutationSessionOrigin(req,session)');
     expect(api).toContain('readJsonBody(req,512)');
-    expect(api).toContain('revokeUnlockTicket');
+    expect(api).toContain('updateUnlockTicket');
+    expect(api).toContain("action==='touch'");
     expect(read('server/auth.ts')).toContain('requiresAppUnlock(req)');
     expect(read('src/lib/api.ts')).toContain('getAppUnlockToken');
     expect(read('src/components/DesktopAppLockGate.tsx')).toContain('clearAppUnlockToken');
