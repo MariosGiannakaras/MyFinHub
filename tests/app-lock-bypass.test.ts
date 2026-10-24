@@ -17,13 +17,14 @@ describe('app lock server-side bypass prevention',()=>{
   it('covers all financial and owner-device handlers even through Vercel route rewrite markers',()=>{
     for(const path of ['/api/data','/api/data?revision=1','/api/import','/api/history',
       '/api/backup','/api/card-secrets','/api/account-metadata','/api/auth/devices',
-      '/api/auth/account','/api/android-update','/api/auth/session?__myfinhub_route=devices',
+      '/api/auth/account','/api/auth/session?__myfinhub_route=devices',
       '/api/auth/session?__myfinhub_route=account']){
       expect(requiresAppUnlock(request(path)),path).toBe(true);
     }
     expect(requiresAppUnlock({url:'/api/auth/session',headers:{}})).toBe(false);
     expect(requiresAppUnlock({url:'/api/auth/app-lock',headers:{}})).toBe(false);
     expect(requiresAppUnlock({url:'/api/auth/logout',headers:{}})).toBe(false);
+    expect(requiresAppUnlock({url:'/api/android-update',headers:{}})).toBe(false);
     expect(requiresAppUnlock({url:'/api/auth/session',query:{__myfinhub_route:'devices'},headers:{}})).toBe(true);
   });
 
