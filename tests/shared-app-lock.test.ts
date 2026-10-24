@@ -39,8 +39,8 @@ describe('shared owner app privacy PIN',()=>{
     expect(sql).toContain('delete from public.myfinhub_app_lock_tickets where user_id=v_uid and session_id=v_session');
     expect((sql.match(/create or replace function public.myfinhub_app_lock_action/g)||[])).toHaveLength(1);
     expect((sql.match(/create or replace function public.myfinhub_app_lock_ticket/g)||[])).toHaveLength(1);
-    expect((sql.match(/as \\$\\$/g)||[])).toHaveLength(4);
-    expect((sql.match(/\\$\\$;/g)||[])).toHaveLength(4);
+    expect(sql.split('as $$').length-1).toBe(4);
+    expect(sql.split('$$;').length-1).toBe(4);
     expect(sql).toContain("interval '30 seconds'");
     expect(sql).toContain("extensions.crypt");
     expect(sql).not.toMatch(/grant\s+select\s+on\s+(table\s+)?public\.myfinhub_app_lock\s+to\s+authenticated/i);
