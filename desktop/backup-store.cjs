@@ -59,7 +59,6 @@ function createDesktopBackupStore({ userData, documents }) {
   const configPath = path.join(userData, CONFIG_NAME);
   const defaultFolder = path.join(documents, 'MyFinHub', 'Backups');
   let busy = false;
-  let lastFailureAt = null;
   function config() {
     if (!fs.existsSync(configPath)) return { folder: defaultFolder };
     const value = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -72,7 +71,7 @@ function createDesktopBackupStore({ userData, documents }) {
     assertDirectory(target);
     const filename = path.join(target, INDEX_NAME);
     if (!fs.existsSync(filename)) {
-      atomicWrite(filename, JSON.stringify({ version: 1, backups: [] }) + '\n');
+      atomicWrite(filename, JSON.stringify({ version: 1, backups: [], lastFailureAt: null }) + '\n');
     }
     if (!fs.statSync(filename).isFile() || fs.lstatSync(filename).isSymbolicLink()) throw new Error('Μη έγκυρο αρχείο καταλόγου backup.');
     const value = JSON.parse(fs.readFileSync(filename, 'utf8'));
@@ -104,7 +103,7 @@ function createDesktopBackupStore({ userData, documents }) {
       try { checkedEntry(entry); valid = true; } catch { /* preserve failed entry */ }
       return { name: entry.name, createdAt: entry.createdAt, revision: entry.revision, bytes: entry.size, valid };
     });
-    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups, lastValidBackupAt: backups.find(item => item.valid)?.createdAt ?? null, lastFailureAt };
+    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups, lastValidBackupAt: backups.find(item => item.valid)?.createdAt ?? null, lastFailureAt: typeof index.lastFailureAt === 'string' ? index.lastFailureAt : null };
   }
   function save(snapshot) {
     if (busy) throw new Error('Άλλο backup βρίσκεται σε εξέλιξη.');
@@ -123,7 +122,7 @@ function createDesktopBackupStore({ userData, documents }) {
       // Preserve at least the newest verified backup. Retention affects only our own filenames.
       const now = Date.now();
       const keep = index.backups.filter((item, i) => i === 0 || (i < MAX_FILES && Date.parse(item.createdAt) >= now - MAX_AGE));
-      atomicWrite(path.join(folder(), INDEX_NAME), JSON.stringify({ version: 1, backups: keep }, null, 2) + '\n');
+      atomicWrite(path.join(folder(), INDEX_NAME), JSON.stringify({ version: 1, backups: keep, lastFailureAt: null }, null, 2) + '\n');
       const removed = index.backups.filter(item => !keep.includes(item));
       for (const old of removed) {
         if (!VALID_NAME.test(old.name)) continue;
@@ -132,10 +131,9 @@ function createDesktopBackupStore({ userData, documents }) {
           if (fs.lstatSync(candidate).isFile() && !fs.lstatSync(candidate).isSymbolicLink()) fs.unlinkSync(candidate);
         } catch { /* never report retention cleanup as successful delete */ }
       }
-      lastFailureAt = null;
       return { name, revision: snapshot.revision, createdAt, verified: true };
     } catch (error) {
-      lastFailureAt = new Date().toISOString();
+      reportFailure();
       throw error;
     } finally { busy = false; }
   }
@@ -164,7 +162,12 @@ function createDesktopBackupStore({ userData, documents }) {
     return status();
   }
   // Used when the authenticated /api/data read fails before a local file write.
-  function reportFailure() { lastFailureAt = new Date().toISOString(); }
+  function reportFailure() {
+    try {
+      const index = readIndex();
+      atomicWrite(path.join(folder(), INDEX_NAME), JSON.stringify({ ...index, lastFailureAt: new Date().toISOString() }, null, 2) + '\n');
+    } catch { /* never hide the original failure when the backup directory is unwritable */ }
+  }
   return { initialize, status, save, restoreCandidate, setFolder, folder, reportFailure };
 }
 module.exports = { createDesktopBackupStore, validateSnapshot };
