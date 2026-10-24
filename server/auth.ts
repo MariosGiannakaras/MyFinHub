@@ -165,11 +165,11 @@ export function accessTokenAal(accessToken: string) {
 
 async function finalizeSession(req: any, accessToken: string, user: AuthUser, source: SessionSource): Promise<SessionContext> {
   if (accessTokenAal(accessToken) === 'aal2') await ensureDeviceSessionAccess(req, accessToken, user.id);
-  // Per-tab browser memory ticket: a valid cookie session alone is not enough
-  // to read finance data when the owner has configured the shared PIN.
-  // Native bearer stays on the pre-existing owner+AAL2+device policy until
-  // the separate Android client explicitly implements a compatible contract.
-  if (source === 'cookie' && accessTokenAal(accessToken) === 'aal2' && requiresAppUnlock(req)) await assertAppUnlock(req, accessToken);
+  // Finance access is locked for BOTH cookie and explicit native bearer sessions.
+  // A caller must not bypass PIN by re-presenting an HttpOnly cookie JWT as bearer.
+  // Android clients must integrate the same session-bound ticket BEFORE shared PIN
+  // can be activated in production; no spoofable UA/platform-header exception.
+  if (accessTokenAal(accessToken) === 'aal2' && requiresAppUnlock(req)) await assertAppUnlock(req, accessToken);
   return { accessToken, user, source };
 }
 
