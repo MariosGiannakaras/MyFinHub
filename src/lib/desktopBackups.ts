@@ -18,7 +18,7 @@ export interface LocalBackupStatus {
 export interface DesktopBackupBridge {
   getBackupStatus: () => Promise<LocalBackupStatus>;
   reportBackupFailure?: () => Promise<boolean>;
-  saveLocalBackup: (snapshot:{ data:FinanceData; revision:string }) => Promise<{ name:string; revision:string; createdAt:string; verified:boolean }>;
+  saveLocalBackup: () => Promise<{ name:string; revision:string; createdAt:string; verified:boolean }>;
   getRestoreCandidate: (name:string) => Promise<FinanceData>;
   chooseBackupFolder: () => Promise<LocalBackupStatus>;
   openBackupFolder: () => Promise<boolean>;
