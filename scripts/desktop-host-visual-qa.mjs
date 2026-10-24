@@ -51,6 +51,15 @@ try{
   await waitFor("function(){return document.querySelector('.desktop-app-lock-screen')?.getAttribute('data-phase')==='locked'&&document.activeElement?.getAttribute('aria-label')==='4ψήφιο PIN εφαρμογής'}",'desktop lock focused state');
   assert(await c.call("function(){const card=document.querySelector('.desktop-app-lock-card');const r=card?.getBoundingClientRect();return Boolean(r&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight)}"),'lock card is contained at native main-window size');
   await shot('desktop-app-lock-locked-1440x930');
+  await c.call("function(){[...document.querySelectorAll('.desktop-app-lock-card button')].find(el=>el.textContent?.includes('Ξέχασα το PIN'))?.click();return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.desktop-app-lock-recovery input[type=email]')&&document.querySelector('.desktop-app-lock-recovery input[autocomplete=one-time-code]'))}","PIN fresh authentication recovery");
+  await shot('desktop-app-lock-recovery-1440x930');
+  await viewport(375,812);await noHorizontalOverflow('PIN recovery mobile 375x812');
+  await shot('desktop-app-lock-recovery-mobile-375x812');
+  await c.call("function(){[...document.querySelectorAll('.desktop-app-lock-recovery button')].find(el=>el.textContent?.includes('Πίσω στο ξεκλείδωμα'))?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.desktop-app-lock-recovery')&&Boolean(document.querySelector('.desktop-app-lock-input'))}","PIN recovery exit");
+  await viewport(1440,930);
+
   await setInput('.desktop-app-lock-input','0000');
   await waitFor("function(){return (document.querySelector('.desktop-app-lock-feedback')?.textContent||'').includes('Το PIN δεν είναι σωστό')}","wrong PIN feedback");
   await shot('desktop-app-lock-invalid-pin-1440x930');
