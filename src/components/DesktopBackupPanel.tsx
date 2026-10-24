@@ -97,7 +97,7 @@ export function DesktopBackupPanel({
         <div><span>Διατήρηση</span><b>Έως 30 ημέρες / 45 αρχεία</b></div>
         <div><span>Έλεγχος εγκυρότητας</span><b>SHA-256 σε κάθε αντίγραφο</b></div>
       </div>
-      <div className="desktop-backup-controls">
+      <div className="settings-data-action-grid desktop-backup-controls">
         <Button type="button" variant="secondary" disabled={busy} onClick={() => void action('folder', bridge.chooseBackupFolder)}>
           <FolderOpen size={16} aria-hidden="true"/> {operation === 'folder' ? 'Επιλογή φακέλου…' : 'Αλλαγή φακέλου'}
         </Button>
@@ -110,7 +110,7 @@ export function DesktopBackupPanel({
       </div>
       <p className="desktop-backup-note">Για άμεσο αντίγραφο, πάτησε το <strong>«Backup & λήψη»</strong> παραπάνω. Η αλλαγή φακέλου δεν μετακινεί τα παλιά αντίγραφα.</p>
       {status?.backups.length ? (
-        <div className="desktop-backup-list">
+        <div className="settings-data-action-copy desktop-backup-list">
           <strong>Ιστορικό τοπικών αντιγράφων ({status.backups.length})</strong>
           <div className="settings-app-list">
           {status.backups.map(item => (
