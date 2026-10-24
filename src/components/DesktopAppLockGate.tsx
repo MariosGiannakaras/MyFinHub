@@ -174,6 +174,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       // must be verified by the regular backend ticket-granting flow.
       setRecovering(false);setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
       setLockState({...result,supported:true,failedAttempts:0});
+      setBlockedUntil(0);setTick(Date.now());
       setMessage('Το PIN άλλαξε. Πληκτρολόγησε το νέο PIN για να ξεκλειδώσεις.');
     }catch(error){
       setMessage(error instanceof ApiError&&error.status===429?'Πολλές προσπάθειες επαλήθευσης. Δοκίμασε αργότερα.':'Δεν ολοκληρώθηκε η ανάκτηση. Έλεγξε password, TOTP και νέα στοιχεία.');
