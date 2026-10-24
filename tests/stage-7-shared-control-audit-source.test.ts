@@ -18,7 +18,8 @@ describe('Stage 7 shared-control and compatibility cleanup audit',()=>{
   it('moves generic account-security controls onto shared text and action primitives',()=>{
     expect(security).toContain("from './AppTextInput'");
     expect(security).toContain("from './Button'");
-    expect(security.match(/<AppTextInput\b/g)).toHaveLength(6);
+    expect(security.match(/<AppTextInput\b/g)).toHaveLength(7);
+    expect(security).toContain('aria-label="Τρέχον 4ψήφιο PIN"');
     expect(security.match(/<Button\b/g)).toHaveLength(5);
     expect(security).not.toMatch(/<input\b/);
     expect(security).not.toMatch(/<button\b/);

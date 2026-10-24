@@ -99,7 +99,7 @@ describe('account security settings',()=>{
     expect(settings).toContain('account-security-current-email');
     expect(settings).toContain('Κλείδωμα μετά από αδράνεια');
     expect(settings).toContain('setAppLockTimeout');
-    expect(settings).not.toContain('Τρέχον PIN');
+    expect(settings).toContain('Τρέχον PIN');
     expect(settingsStyles).toContain('.account-security-password-grid{display:grid;grid-template-columns:repeat(2');
     expect(settingsStyles).toContain('.account-security-idle-select .owned-input');
     expect(settings).toContain('autoComplete="current-password"');

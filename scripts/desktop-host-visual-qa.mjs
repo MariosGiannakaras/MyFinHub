@@ -51,6 +51,15 @@ try{
   await waitFor("function(){return document.querySelector('.desktop-app-lock-screen')?.getAttribute('data-phase')==='locked'&&document.activeElement?.getAttribute('aria-label')==='4ψήφιο PIN εφαρμογής'}",'desktop lock focused state');
   assert(await c.call("function(){const card=document.querySelector('.desktop-app-lock-card');const r=card?.getBoundingClientRect();return Boolean(r&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight)}"),'lock card is contained at native main-window size');
   await shot('desktop-app-lock-locked-1440x930');
+  await c.call("function(){[...document.querySelectorAll('.desktop-app-lock-card button')].find(el=>el.textContent?.includes('Ξέχασα το PIN'))?.click();return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.desktop-app-lock-recovery input[type=email]')&&document.querySelector('.desktop-app-lock-recovery input[autocomplete=one-time-code]'))}","PIN fresh authentication recovery");
+  await shot('desktop-app-lock-recovery-1440x930');
+  await viewport(375,812);await noHorizontalOverflow('PIN recovery mobile 375x812');
+  await shot('desktop-app-lock-recovery-mobile-375x812');
+  await c.call("function(){[...document.querySelectorAll('.desktop-app-lock-recovery button')].find(el=>el.textContent?.includes('Πίσω στο ξεκλείδωμα'))?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.desktop-app-lock-recovery')&&Boolean(document.querySelector('.desktop-app-lock-input'))}","PIN recovery exit");
+  await viewport(1440,930);
+
   await setInput('.desktop-app-lock-input','0000');
   await waitFor("function(){return (document.querySelector('.desktop-app-lock-feedback')?.textContent||'').includes('Το PIN δεν είναι σωστό')}","wrong PIN feedback");
   await shot('desktop-app-lock-invalid-pin-1440x930');
@@ -58,6 +67,23 @@ try{
   await waitFor("function(){return (document.querySelector('.desktop-app-lock-feedback')?.textContent||'').includes('Νέα προσπάθεια σε')}","rate-limited PIN feedback");
   await viewport(1100,760);await sleep(120);await noHorizontalOverflow('desktop lock 1100x760');
   await shot('desktop-app-lock-rate-limited-1100x760');
+  // Same unlock gate must remain usable and legible in dark theme, touch-mobile
+  // geometry and OS reduced-motion preference—not just the desktop light screenshot.
+  await viewport(375,812);
+  // Apply the REAL semantic theme tokens, not only data-theme. A dark
+  // backdrop with a light card is an invalid dark-mode acceptance artifact.
+  const darkTheme=await c.call("async function(){const {applyThemePreference}=await import('/src/lib/theme.ts');applyThemePreference('dark');const root=document.documentElement;const card=document.querySelector('.desktop-app-lock-card');if(!card)return {reason:'no PIN card'};const token=getComputedStyle(root).getPropertyValue('--surface').trim();const match=/^#([a-f0-9]{6})$/i.exec(token);if(!match)return {reason:'missing semantic dark surface',token};const rgb=match[1].match(/.{2}/g).map(part=>parseInt(part,16));const style=getComputedStyle(card);const background=style.backgroundColor;const expected='rgb('+rgb.join(', ')+')';const ink=style.color;const channels=value=>(value.match(/[0-9.]+/g)||[]).slice(0,3).map(Number);const lum=value=>{const x=channels(value).map(n=>{const y=n/255;return y<=.04045?y/12.92:((y+.055)/1.055)**2.4});return x.length===3?.2126*x[0]+.7152*x[1]+.0722*x[2]:0};const contrast=(Math.max(lum(background),lum(ink))+.05)/(Math.min(lum(background),lum(ink))+.05);return {theme:root.dataset.theme,tokenMatchesCard:background===expected,darkSurface:rgb.every(n=>n<85),contrast}}");
+  assert(darkTheme.theme==='dark'&&darkTheme.tokenMatchesCard&&darkTheme.darkSurface&&darkTheme.contrast>=4.5,'real semantic dark PIN theme with accessible card/text contrast: '+JSON.stringify(darkTheme));
+  await sleep(140);
+  await noHorizontalOverflow('PIN dark mobile 375x812');
+  assert(await c.call("function(){const c=document.querySelector('.desktop-app-lock-card');const r=c?.getBoundingClientRect();return Boolean(r&&r.width>=260&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight)}"),'mobile PIN card remains contained');
+  await shot('desktop-app-lock-dark-mobile-375x812');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await sleep(90);
+  assert(await c.call("function(){const icon=document.querySelector('.desktop-app-lock-icon');return icon&&getComputedStyle(icon).animationName==='none'}"),'OS reduced-motion disables decorative PIN animation');
+  await shot('desktop-app-lock-reduced-motion-mobile-375x812');
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
+
 
   console.log('Desktop host QA: Update Panel available/downloading/ready/error states');
   const updateUrl=status=>{const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('state','settings-tabs');url.searchParams.set('desktop-update',status);url.searchParams.set('visual','1');return url.href};

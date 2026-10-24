@@ -8,6 +8,7 @@ import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { endCurrentDeviceSession } from './deviceSessionRegistry.js';
 import { handleDeviceSessionsRequest } from './deviceSessionsHandler.js';
+import { handleAppLockRequest } from './appLockHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
@@ -161,6 +162,7 @@ app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
 // Keep the local/Desktop route surface aligned with Vercel's compatibility rewrites; the web deployment reuses existing entrypoints to stay inside the 12-function production budget.
 app.all('/api/auth/account', (req, res) => void handleAccountSecurityRequest(req, res));
 app.all('/api/auth/devices', (req, res) => void handleDeviceSessionsRequest(req, res));
+app.all('/api/auth/app-lock', (req, res) => void handleAppLockRequest(req, res));
 
 app.get('/api/data', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
