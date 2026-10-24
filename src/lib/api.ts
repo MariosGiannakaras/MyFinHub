@@ -84,7 +84,14 @@ export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {
   try {
     const headers=new Headers(init.headers);
     const token=getAppUnlockToken();
-    if(token)headers.set('x-myfinhub-app-unlock',token);
+    // Never attach a per-session finance capability to an unrelated origin.
+    if(token&&typeof window!=='undefined'){
+      const address=input instanceof Request?input.url:input instanceof URL?input.href:input;
+      const destination=new URL(String(address),window.location.origin);
+      if(destination.origin===window.location.origin&&destination.pathname.startsWith('/api/')){
+        headers.set('x-myfinhub-app-unlock',token);
+      }
+    }
     return await fetch(input, {
       credentials: 'same-origin',
       ...init,
