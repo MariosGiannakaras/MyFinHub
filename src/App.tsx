@@ -11,6 +11,7 @@ import { PeriodControl } from './components/PeriodControl';
 
 import type { QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
+import { useDesktopAutoBackup } from './hooks/useDesktopAutoBackup';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
@@ -73,6 +74,7 @@ type SpecialQuickContext = DistributiveOmit<Exclude<QuickActionContext, { mode: 
 
 function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogout: () => void }) {
   const finance = useFinance();
+  useDesktopAutoBackup(finance.saveState);
   const today = useLocalDate();
   const initialRoute = routeFromLocation();
   const [page, setPage] = useState<PageId>(initialRoute.page);
