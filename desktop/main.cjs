@@ -684,7 +684,7 @@ function registerIpcHandlers() {
       method: 'GET', credentials: 'include', cache: 'no-store',
       headers: { accept: 'application/json', ...(unlockToken ? { 'x-myfinhub-app-unlock': unlockToken } : {}) },
     });
-    if (!response.ok) throw new Error('Απαιτείται ενεργή σύνδεση ιδιοκτήτη με TOTP.');
+    if (!response.ok) throw new Error('Η πρόσβαση στο backup απαιτεί σύνδεση ιδιοκτήτη, TOTP και ξεκλείδωμα PIN όταν είναι ενεργό.');
     const snapshot = await response.json();
     if (!snapshot || typeof snapshot !== 'object' || !snapshot.data ||
         typeof snapshot.revision !== 'string') throw new Error('Αποτυχία επαλήθευσης δεδομένων backup.');
