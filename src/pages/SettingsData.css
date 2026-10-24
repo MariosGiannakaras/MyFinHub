@@ -48,3 +48,5 @@
   .desktop-backup-entry button{width:100%;min-height:44px;justify-content:center}
   .desktop-backup-path{text-align:left}
 }
+
+.settings-data-tab>.logic-note.is-error{color:var(--danger,#b42318);border-color:currentColor}
