@@ -1,5 +1,5 @@
-import type { FinanceData } from '../types';
-import { getAppUnlockToken } from './appUnlockToken';
+import type { FinanceData } from '../types.js';
+import { getAppUnlockToken } from './appUnlockToken.js';
 
 interface LocalBackupItem {
   name: string;
@@ -38,7 +38,7 @@ let cachedNative:NativeBackupBridge|undefined;
 let cachedAdapter:DesktopBackupBridge|undefined;
 export function desktopBackupBridge():DesktopBackupBridge | undefined {
   if (typeof window === 'undefined') return undefined;
-  const native = window.myFinHubDesktop as unknown as NativeBackupBridge | undefined;
+  const native = (window as Window & {myFinHubDesktop?:NativeBackupBridge}).myFinHubDesktop;
   if (!native || typeof native.getBackupStatus !== 'function' || typeof native.saveLocalBackup !== 'function') return undefined;
   if (native !== cachedNative) {
     cachedNative = native;
