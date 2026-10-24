@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { desktopBackupBridge, type LocalBackupStatus } from '../src/lib/desktopBackups';
-import { clearAppUnlockToken, setAppUnlockToken } from '../src/lib/appUnlockToken';
-import type { FinanceData } from '../src/types';
+import { desktopBackupBridge, type LocalBackupStatus } from '../src/lib/desktopBackups.js';
+import { clearAppUnlockToken, setAppUnlockToken } from '../src/lib/appUnlockToken.js';
+import type { FinanceData } from '../src/types.js';
 
 afterEach(() => {
   clearAppUnlockToken();
