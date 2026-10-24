@@ -18,7 +18,7 @@ CREATE SCHEMA auth;
 CREATE SCHEMA private;
 CREATE SCHEMA extensions;
 CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
-GRANT USAGE ON SCHEMA auth,private,public TO authenticated;
+GRANT USAGE ON SCHEMA auth,private,public,extensions TO authenticated;
 CREATE TABLE auth.users(id uuid PRIMARY KEY);
 INSERT INTO auth.users VALUES ('11111111-1111-4111-8111-111111111111');
 CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE
