@@ -1,6 +1,7 @@
 import { handleAccountSecurityRequest } from '../../server/accountSecurityHandler.js';
 import { accessTokenAal, clearSessionCookies, getTotpFactors, requireSession } from '../../server/auth.js';
 import { handleDeviceSessionsRequest } from '../../server/deviceSessionsHandler.js';
+import { handleAppLockRequest } from '../../server/appLockHandler.js';
 import { ApiError, handleApi, methodNotAllowed, sendJson, strictQueryValue } from '../../server/http.js';
 import { isOwner } from '../../server/storage.js';
 
@@ -12,6 +13,10 @@ export default async function handler(req: any, res: any) {
   const marker = routeMarker(req);
   if (marker === 'account') {
     await handleAccountSecurityRequest(req, res);
+    return;
+  }
+  if (marker === 'app-lock') {
+    await handleAppLockRequest(req, res);
     return;
   }
   if (marker === 'devices') {
