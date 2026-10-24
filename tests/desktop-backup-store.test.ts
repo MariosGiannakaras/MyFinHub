@@ -9,9 +9,10 @@ const { createDesktopBackupStore } = require('../desktop/backup-store.cjs') as {
   createDesktopBackupStore: (paths: { userData: string; documents: string }) => {
     initialize: () => unknown;
     save: (snapshot: { data: unknown; revision: string }) => { verified: boolean; name: string };
-    status: () => { folder:string; backups: Array<{ valid: boolean; revision: string; name: string }>; lastValidBackupAt: string | null };
+    status: () => { folder:string; backups: Array<{ valid: boolean; revision: string; name: string }>; lastValidBackupAt: string | null; lastFailureAt: string | null };
     restoreCandidate: (name: string) => unknown;
     setFolder: (path: string) => unknown;
+    reportFailure: () => void;
   };
 };
 
@@ -53,6 +54,18 @@ describe('desktop automatic backup store', () => {
     expect(store.status().backups[0].valid).toBe(false);
     expect(store.status().lastValidBackupAt).toBeNull();
     expect(() => store.restoreCandidate(receipt.name)).toThrow();
+  });
+
+  it('records a failed attempt across restarts and clears it only after verified success', () => {
+    const { root, store } = setup();
+    store.initialize();
+    store.reportFailure();
+    const failedAt = store.status().lastFailureAt;
+    expect(failedAt).toMatch(/^20\\d\\d-/);
+    const restarted = createDesktopBackupStore({ userData: path.join(root, 'private'), documents: path.join(root, 'documents') });
+    expect(restarted.status().lastFailureAt).toBe(failedAt);
+    restarted.save({ data, revision: '465' });
+    expect(restarted.status().lastFailureAt).toBeNull();
   });
 
   it('rejects unsafe names, invalid revisions and malformed finance data', () => {
