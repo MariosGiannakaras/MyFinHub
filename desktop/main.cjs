@@ -671,13 +671,18 @@ function registerIpcHandlers() {
   // Never trust a renderer claim to be logged in. Check server-side owner+AAL2
   // authorization for every local-finance-file operation. Chromium sends the
   // existing HttpOnly session cookies; no token is transferred to JavaScript.
-  const readAuthorizedFinanceBackup = async () => {
+  const readAuthorizedFinanceBackup = async unlockToken => {
+    // Backend verifies the ephemeral ticket against the owner session.
+    // A renderer-provided value cannot bypass the PIN or finance RLS.
+    if (typeof unlockToken !== 'string' || (unlockToken && !/^[a-zA-Z0-9_-]{43}$/.test(unlockToken))) {
+      throw new Error('Μη έγκυρο αναγνωριστικό ξεκλειδώματος PIN.');
+    }
     if (!mainWindow || mainWindow.isDestroyed()) throw new Error('Desktop session unavailable.');
     const origin = new URL(mainWindow.webContents.getURL());
     if (origin.protocol !== 'http:' || origin.hostname !== LOOPBACK) throw new Error('Untrusted desktop origin.');
     const response = await mainWindow.webContents.session.fetch(new URL('/api/data', origin).href, {
       method: 'GET', credentials: 'include', cache: 'no-store',
-      headers: { accept: 'application/json' },
+      headers: { accept: 'application/json', ...(unlockToken ? { 'x-myfinhub-app-unlock': unlockToken } : {}) },
     });
     if (!response.ok) throw new Error('Απαιτείται ενεργή σύνδεση ιδιοκτήτη με TOTP.');
     const snapshot = await response.json();
@@ -685,31 +690,31 @@ function registerIpcHandlers() {
         typeof snapshot.revision !== 'string') throw new Error('Αποτυχία επαλήθευσης δεδομένων backup.');
     return snapshot;
   };
-  const requireBackupAccess = async event => {
+  const requireBackupAccess = async (event, unlockToken) => {
     assertBackupSender(event);
-    return readAuthorizedFinanceBackup();
+    return readAuthorizedFinanceBackup(unlockToken);
   };
-  ipcMain.handle('myfinhub:backup-report-failure', async event => {
-    await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-report-failure', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
     desktopBackupStore.reportFailure();
     return true;
   });
-  ipcMain.handle('myfinhub:backup-status', async event => {
-    await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-status', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
     return desktopBackupStore.status();
   });
-  ipcMain.handle('myfinhub:backup-save', async event => {
-    const snapshot = await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-save', async (event, unlockToken) => {
+    const snapshot = await requireBackupAccess(event, unlockToken);
     // Authoritative fetch in main: reject forged/stale renderer-provided finance
     // payloads and use the same owner+AAL2 backend as all other finance reads.
     return desktopBackupStore.save({ data: snapshot.data, revision: snapshot.revision });
   });
-  ipcMain.handle('myfinhub:backup-restore-candidate', async (event, name) => {
-    await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-restore-candidate', async (event, name, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
     return desktopBackupStore.restoreCandidate(name);
   });
-  ipcMain.handle('myfinhub:backup-choose-folder', async event => {
-    await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-choose-folder', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
     const picked = await dialog.showOpenDialog(mainWindow, {
       title: 'Επιλογή φακέλου αντιγράφων MyFinHub',
       defaultPath: desktopBackupStore.folder(),
@@ -717,11 +722,11 @@ function registerIpcHandlers() {
     });
     if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
     // Recheck after the native dialog: session can expire while it is open.
-    await requireBackupAccess(event);
+    await requireBackupAccess(event, unlockToken);
     return desktopBackupStore.setFolder(picked.filePaths[0]);
   });
-  ipcMain.handle('myfinhub:backup-open-folder', async event => {
-    await requireBackupAccess(event);
+  ipcMain.handle('myfinhub:backup-open-folder', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
     desktopBackupStore.initialize();
     const error = await shell.openPath(desktopBackupStore.folder());
     if (error) throw new Error('Ο φάκελος backup δεν άνοιξε.');
