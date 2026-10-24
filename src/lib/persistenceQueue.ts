@@ -1,5 +1,27 @@
 type RemoteRevisionAction = 'ignore' | 'reload' | 'conflict';
 
+/**
+ * A database snapshot fetched before an optimistic finance write, cursor move,
+ * import or newer reload must never replace newer state even after the write
+ * queue becomes idle. This is checked after each asynchronous fetch as well
+ * as at the initial refresh request boundary.
+ */
+export function canApplyFinanceReload(
+  requestMutationEpoch:number,
+  currentMutationEpoch:number,
+  requestId:number,
+  currentRequestId:number,
+  hasQueuedWork:boolean,
+  exclusiveOperation:boolean,
+  saveState:string,
+):boolean{
+  return requestMutationEpoch===currentMutationEpoch
+    && requestId===currentRequestId
+    && !hasQueuedWork
+    && !exclusiveOperation
+    && saveState==='loading';
+}
+
 export function shouldWarnBeforeUnload(hasWork:boolean,lastSaveFailed:boolean){
   return hasWork||lastSaveFailed;
 }

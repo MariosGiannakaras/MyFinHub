@@ -21,6 +21,6 @@ describe('Web/Windows release candidate version synchronization',()=>{
   it('keeps the linked root dependency snapshot current and the Windows tag derived from the desktop package',()=>{
     expect(desktopLock.packages['..'].devDependencies.vitest).toBe(root.devDependencies.vitest);
     expect(desktop.devDependencies.rheomiq).toBe('file:..');
-    expect(readFileSync('.github/workflows/desktop-windows.yml','utf8')).toContain('myfinhub-v$version');
+    expect(readFileSync('.github/workflows/desktop-publish-release.yml','utf8')).toContain('myfinhub-v$version');
   });
 });

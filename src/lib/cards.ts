@@ -105,7 +105,7 @@ export function archiveCardRecord(card:PaymentCard,now=new Date().toISOString())
 export function creditEventsForCard(data:FinanceData,cardId:string){
   const legacyOwnerId=legacyCreditOwnerId(data);
   return (data.state.events??[]).filter((event:FinanceEvent)=>{
-    if(event.kind!=='card_purchase'&&event.kind!=='card_payment')return false;
+    if(event.kind!=='card_purchase'&&event.kind!=='card_payment'&&!(event.kind==='expense'&&event.funding?.some(part=>part.kind==='credit')))return false;
     if(event.cardId)return event.cardId===cardId;
     return legacyOwnerId===cardId;
   });
@@ -115,6 +115,8 @@ export function creditDebtForCard(data:FinanceData,cardId:string,asOf:string){
   return Math.max(0,creditEventsForCard(data,cardId).reduce((sum,event)=>{
     if(event.date>asOf)return sum;
     if(event.kind==='card_purchase')return sum+Number(event.amount||0);
+    if(event.kind==='expense'&&event.funding)
+      return sum+event.funding.filter(part=>part.kind==='credit').reduce((credit,part)=>credit+Number(part.amount||0),0);
     if(event.kind==='card_payment')return sum-Number(event.amount||0);
     return sum;
   },0));
@@ -138,7 +140,7 @@ export function withCardProfileDeleted(data:FinanceData,card:PaymentCard,deleted
   if(!cards.some(item=>item.id===card.id))return data;
   if(card.kind==='credit'&&card.active!==false)throw new Error('CREDIT_CARD_MUST_BE_ARCHIVED');
   if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,asOf))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
-  const linkedEvents=(data.state.events??[]).filter(event=>event.cardId===card.id&&(event.kind==='card_purchase'||event.kind==='card_payment'));
+  const linkedEvents=(data.state.events??[]).filter(event=>event.cardId===card.id&&(event.kind==='card_purchase'||event.kind==='card_payment'||(event.kind==='expense'&&Boolean(event.funding))));
   if(card.kind!=='credit'&&linkedEvents.length)throw new Error('NON_CREDIT_CARD_HAS_FINANCE_HISTORY');
   const deletedCards=card.kind==='credit'
     ? [...(data.state.deletedCards??[]).filter(item=>item.id!==card.id),{id:card.id,kind:'credit' as const,createdAt:card.createdAt,deletedAt}]

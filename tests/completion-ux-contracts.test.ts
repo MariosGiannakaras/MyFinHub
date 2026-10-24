@@ -52,15 +52,15 @@ describe('completion UX contracts',()=>{
     expect(fidelity).toContain('.dashboard-approved .approved-account-chart{min-width:0}');
   });
 
-  it('uses the existing bounded transaction page slice on mobile',()=>{
+  it('keeps bounded progressive transaction rows on mobile and desktop',()=>{
     const source=read('src/pages/TransactionsPage.tsx');
     expect(source).toContain('className="mobile-transaction-list"');
-    expect(source).toContain('{pageRows.map(r=>');
-    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{pageRows\.map\(r=>/);
+    expect(source).toContain('{visibleRows.map(r=>');
+    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{visibleRows\.map\(r=>/);
     expect(source).not.toContain('aria-label={`Κινήσεις για ${month}`}>{rows.map');
-    expect(source).toContain('className="mobile-transaction-pagination"');
-    expect(source).toContain('setQuery(e.target.value);setPage(1)');
-    expect(source).toContain('setSortDirection(value);setPage(1)');
+    expect(source).toContain('className="mobile-transaction-progress"');
+    expect(source).toContain('setQuery(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)');
+    expect(source).toContain('setSortDirection(value);setRenderLimit(LEDGER_INITIAL_ROWS)');
   });
 
   it('renders lending history as semantic cards on phones instead of a squeezed table',()=>{
@@ -184,7 +184,10 @@ describe('completion UX contracts',()=>{
 
   it('keeps authentication password reveal touch-safe',()=>{
     const motion=read('src/styles/interaction-motion-states.css');
-    expect(motion).toContain('.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px');
+    expect(motion).toContain('@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}');
+    expect(motion).not.toContain('rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(');
+    expect(motion).toContain('.login-password-toggle:active:not(:disabled){transform:none}');
+    expect(motion).toContain('.login-password-toggle{width:46px;height:46px;min-width:46px;min-height:46px');
   });
 
 
@@ -195,14 +198,15 @@ describe('completion UX contracts',()=>{
     expect(quick).toContain('max-height:94dvh');
     expect(coordination).toContain('.quick-modal{max-height:96dvh}');
     expect(receipts).toContain('height:min(820px,94dvh)');
-    expect(receipts).toContain('.receipt-inbox{height:96dvh;width:98vw');
+    expect(receipts).toContain('.receipt-inbox{height:96dvh;width:calc(100vw - 20px);max-width:calc(100vw - 20px)');
   });
 
 
   it('keeps the Receipt launch inside the Quick Entry footer on phone and small tablet widths',()=>{
     const receipts=read('src/styles/receipt-inbox.css');
-    expect(receipts).toContain('@media(max-width:820px)');
-    expect(receipts).toContain('.quick-modal>footer .receipt-quick-launch{position:static');
+    const launcher=read('src/styles/receipt-launch.css');
+    expect(launcher).toContain('@media(max-width:820px)');
+    expect(launcher).toContain('.quick-modal>footer .receipt-quick-launch{position:static');
     expect(receipts).not.toContain('@media(max-width:820px){.receipt-inbox{height:96dvh;width:98vw;border-radius:20px}.receipt-inbox-layout{grid-template-columns:1fr;overflow:auto}.receipt-draft-list{max-height:220px;border-right:0;border-bottom:1px solid #dce5f0}.receipt-review-pane{overflow:visible}.receipt-capture-actions{flex-wrap:wrap}.receipt-capture-actions>small{width:100%;margin-left:0}.receipt-preview{grid-template-columns:140px 1fr}.receipt-proposal dl{grid-template-columns:1fr}.receipt-quick-launch{right:16px;bottom:18px}');
   });
 

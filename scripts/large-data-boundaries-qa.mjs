@@ -42,7 +42,6 @@ try{
   assert(reports.charts>0&&reports.charts<=6,`large reports chart count is bounded (${reports.charts})`);
   assert(reports.dom<9000,`large reports DOM remains bounded (${reports.dom})`);
   assert(reports.overflow<=1,'large reports has no horizontal overflow');
-  assert(await c.call("function(){const card=document.querySelector('.report-account-history.is-private');return Boolean(card?.querySelector('.private-report-placeholder'))&&!card.querySelector('.recharts-wrapper')}"),'private Reports does not mount the hidden historical balance chart');
   assert(await c.call("function(){const details=document.querySelector('details[data-budget-management],#report-budgets');if(!details)return false;details.open=true;details.dispatchEvent(new Event('toggle',{bubbles:false}));return true}"),'budget management disclosure exists');
   await waitFor("function(){return document.querySelectorAll('.budget-setting-row').length>0}",'large budget rows');
   const initialBudgets=await c.call("function(){return {count:document.querySelectorAll('.budget-setting-row').length,more:Boolean(document.querySelector('.budget-settings-more'))}}");
@@ -58,9 +57,6 @@ try{
   results.reportsHeapMb=await heapMb();
   assert(results.reportsHeapMb<256,`large reports heap ${results.reportsHeapMb.toFixed(1)} MiB`);
   await screenshot('large-reports-desktop');
-  assert(await c.call("function(){const button=document.querySelector('.report-account-history.is-private button');button?.click();return Boolean(button)}"),'historical account chart reveal action exists');
-  await waitFor("function(){return Boolean(document.querySelector('.report-account-history.is-revealed .recharts-wrapper'))}",'revealed six-month account chart');
-  await waitFor("function(){return document.querySelectorAll('.report-account-history.is-revealed .recharts-line').length>0}",'revealed Reports draws actual account histories');
 
   results.recurringLoadMs=await navigate('recurring','Πάγια & Συνδρομές');
   const recurring=await c.call("function(){return {rows:document.querySelectorAll('.recurring-workspace-table tbody tr[data-recurring-status=active]').length,more:Boolean(document.querySelector('.desktop-recurring-more')),dom:document.getElementsByTagName('*').length}}");

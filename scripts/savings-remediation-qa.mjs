@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-savings-remediation-qa';
@@ -8,7 +8,9 @@ const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB
 const chrome=configured||execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for Savings remediation QA.');
 const port=9294;
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/myfinhub-savings-remediation-qa-chrome','--no-sandbox','--disable-gpu','about:blank'],{stdio:'ignore'});
+const profile='/tmp/myfinhub-savings-remediation-qa-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:6,retryDelay:150});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(120)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
@@ -23,6 +25,18 @@ try{
   const waitFor=async(fn,label)=>{for(let i=0;i<120;i++){if(await c.call(fn))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings heading');
   const state=()=>c.call("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));const route=document.querySelector('.savings-route-target');const routeValues=[...route?.querySelectorAll('em')||[]].map(node=>(node.textContent||'').replace(/\\s+/g,' ').trim());const goal=[...document.querySelectorAll('.savings-goal-row.personal')].find(row=>(row.textContent||'').includes('Ταμείο ασφαλείας'));return {period:(label?.textContent||'').trim(),heading:(document.querySelector('.savings-month-card h2')?.textContent||'').trim(),routeValues,goalBalance:(goal?.querySelector(':scope > strong')?.textContent||'').replace(/\\s+/g,' ').trim(),goalProgress:(goal?.querySelector('.savings-goal-progress b')?.textContent||'').trim()}}");
+  // The selected reporting-month label updates synchronously; route balances
+  // and goals can settle in a later render. Wait for the *actual finance values*
+  // instead of guessing a fixed 350ms paint delay under concurrent QA load.
+  const waitForSavingsSnapshot=async(predicate,label)=>{
+    let last;
+    for(let attempt=0;attempt<120;attempt++){
+      last=await state();
+      if(predicate(last))return last;
+      await sleep(100);
+    }
+    throw new Error(`Savings QA values did not settle: ${label} (last=${JSON.stringify(last)})`);
+  };
   const clickPeriod=async direction=>{const label=direction==='previous'?'Προηγούμενος μήνας':'Επόμενος μήνας';const ok=await c.call("function(label){const button=[...document.querySelectorAll('.period-control button[aria-label]')].find(node=>(node.getAttribute('aria-label')||'').startsWith(label));if(!button||button.disabled)return false;button.click();return true}",[label]);assert(ok,`missing enabled ${label} control`)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
 
@@ -30,6 +44,40 @@ try{
   const august=await state();
   assert(august.period.includes('Αύγουστος 2026')&&august.heading==='Αυτός ο μήνας','current Savings state identifies August as the current reporting month');
   assert(august.routeValues.length===2&&august.goalBalance&&august.goalProgress,'current Savings route and personal-goal snapshot are rendered');
+
+  console.log('Savings remediation QA: advisory goal forecast does not post money');
+  const realBefore=await state();
+  const openedProjection=await c.call("function(){const button=[...document.querySelectorAll('.savings-desktop-target .savings-goal-row.personal button')].find(node=>(node.textContent||'').includes('Προβολή στόχου'));button?.click();return Boolean(button)}");
+  assert(openedProjection,'actual personal savings goal offers optional projection');
+  await waitFor("function(){return Boolean(document.querySelector('.savings-desktop-target [data-savings-goal-projection]'))}",'desktop goal advisory panel');
+  const advisory=await c.call("function(){const el=document.querySelector('.savings-desktop-target [data-savings-goal-projection]');return el?.textContent||''}");
+  assert(advisory.includes('Κοινό πραγματικό υπόλοιπο')&&advisory.includes('Καμία μεταφορά')&&advisory.includes('γνωστές κινήσεις'),'goal projection distinguishes shared real balance, hypothetical funding and bounded assumptions');
+  // The projection row starts below the desktop fold. Capture the actual
+  // advisory metrics/scenarios rather than only the surrounding Savings hero.
+  const framedDesktop=await c.call("function(){const node=document.querySelector('.savings-desktop-target [data-savings-goal-projection]');if(!node)return false;node.scrollIntoView({block:'center',behavior:'instant'});const box=node.getBoundingClientRect();return box.width>240&&box.height>150}");
+  assert(framedDesktop,'desktop projection is present and can be brought into the viewport');
+  await sleep(150);
+  await screenshot('savings-goal-projection-desktop');
+  const enteredScenario=await c.call("function(){const input=document.querySelector('.savings-desktop-target [data-savings-goal-projection] input[aria-label=\"Υποθετική μηνιαία αποταμίευση\"]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'50');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  assert(enteredScenario,'what-if monthly contribution uses shared finance money input');
+  await sleep(70);
+  const stillReal=await state();
+  assert(JSON.stringify(realBefore)===JSON.stringify(stillReal),'editable hypothetical contribution does not post finance events or change realized account balances');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
+  const framedMobile=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]');if(!node)return false;node.scrollIntoView({block:'start',behavior:'instant'});window.scrollBy(0,-100);return node.getBoundingClientRect().width>0}");
+  assert(framedMobile,'mobile goal advisory header can be framed below the fixed toolbar');
+  await sleep(170);
+  const mobileProjection=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]');const r=node?.getBoundingClientRect();return {exists:Boolean(node),width:r?.width||0,left:r?.left??-1,right:r?.right??9999,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,panels:node?.querySelectorAll('.savings-projection-scenario').length??0}}");
+  await screenshot('savings-goal-projection-mobile');
+  const scenarioFramed=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection] .savings-projection-scenarios');if(!node||node.querySelectorAll('.savings-projection-scenario').length<2)return false;node.scrollIntoView({block:'center',behavior:'instant'});const box=node.getBoundingClientRect();return box.width>0&&box.height>40&&box.top<innerHeight-70&&box.bottom>65}");
+  assert(scenarioFramed,'mobile hypothetical scenarios visible in viewport before evidence capture');
+  await sleep(120);
+  await screenshot('savings-goal-projection-mobile-scenarios');
+  assert(mobileProjection.exists&&mobileProjection.overflow<=1&&mobileProjection.left>=-1&&mobileProjection.right<=376,'goal projection mobile has no clipping or horizontal overflow');
+  await c.call("function(){[...document.querySelectorAll('.savings-mobile-legacy [data-savings-goal-projection] button')].find(el=>(el.textContent||'').includes('Κλείσιμο'))?.click();return true}");
+  await waitFor("function(){return !document.querySelector('[data-savings-goal-projection]')}",'projection closes without a ledger mutation');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  assert(JSON.stringify(realBefore)===JSON.stringify(await state()),'closed goal projection has no realized-money side effects');
 
   console.log('Savings remediation QA: future-dated saving does not affect current realized progress');
   const baselineUrl=new URL(baseUrl);baselineUrl.searchParams.set('page','savings');baselineUrl.searchParams.set('state','budget-rules');
@@ -50,8 +98,12 @@ try{
 
   await clickPeriod('previous');
   await waitFor("function(){return [...document.querySelectorAll('.period-control>span')].some(node=>(node.textContent||'').includes('Ιούλιος 2026'))}",'July reporting period');
-  await sleep(350);
-  const july=await state();
+  const july=await waitForSavingsSnapshot(snapshot=>
+    snapshot.heading.includes('Ιούλιος 2026')
+    &&JSON.stringify(snapshot.routeValues)!==JSON.stringify(august.routeValues)
+    &&snapshot.goalBalance!==august.goalBalance
+    &&snapshot.goalProgress!==august.goalProgress,
+    'historical July balances and goal progress');
   assert(july.heading.includes('Ιούλιος 2026'),'historical Savings heading uses the selected month label');
   assert(JSON.stringify(july.routeValues)!==JSON.stringify(august.routeValues),'historical Savings route balances change with the selected period end');
   assert(july.goalBalance!==august.goalBalance&&july.goalProgress!==august.goalProgress,'historical personal-goal balance and progress use the selected period end');
@@ -59,8 +111,12 @@ try{
 
   await clickPeriod('next');
   await waitFor("function(){return [...document.querySelectorAll('.period-control>span')].some(node=>(node.textContent||'').includes('Αύγουστος 2026'))}",'August reporting period restored');
-  await sleep(350);
-  const restored=await state();
+  const restored=await waitForSavingsSnapshot(snapshot=>
+    snapshot.heading==='Αυτός ο μήνας'
+    &&JSON.stringify(snapshot.routeValues)===JSON.stringify(august.routeValues)
+    &&snapshot.goalBalance===august.goalBalance
+    &&snapshot.goalProgress===august.goalProgress,
+    'August balances and goal progress restored after historical browsing');
   assert(restored.heading==='Αυτός ο μήνας'&&JSON.stringify(restored.routeValues)===JSON.stringify(august.routeValues)&&restored.goalBalance===august.goalBalance&&restored.goalProgress===august.goalProgress,'Savings current-period balances and goal progress restore after historical browsing');
   await screenshot('savings-selected-period-august-restored');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);

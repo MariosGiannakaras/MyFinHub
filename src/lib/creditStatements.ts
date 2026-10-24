@@ -1,4 +1,12 @@
 import type { CreditStatementRecord, CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard, StatementBoundaryRule } from '../types.js';
+/** The statement liability is the credit-funded share, not full purchase price. */
+export function creditPurchaseAmount(event:FinanceEvent){
+  if(event.kind==='card_purchase')return Number(event.amount||0);
+  if(event.kind==='expense'&&event.funding)return Math.max(0,-Number(event.creditDelta||0));
+  return 0;
+}
+const isCreditPurchase=(event:FinanceEvent)=>creditPurchaseAmount(event)>.005;
+
 type CreditStatementCycle={
   id:string;
   cardId:string;
@@ -61,12 +69,12 @@ export function statementDueDateForClose(closeDate:string,dueDay:number){
 export function groupCardPurchasesByStatement(events:FinanceEvent[],cardId:string,closingDay:number,boundary:StatementBoundaryRule):CreditStatementCycle[]{
   const groups=new Map<string,CreditStatementCycle>();
   for(const event of events){
-    if(event.kind!=='card_purchase'||event.cardId!==cardId||!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
+    if(!isCreditPurchase(event)||event.cardId!==cardId||!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
     const closeDate=statementCloseDateForPurchase(event.date,closingDay,boundary);
     const id=creditStatementId(cardId,closeDate);
     const group=groups.get(id)??{id,cardId,openDate:statementOpenDateForClose(closeDate,closingDay,boundary),closeDate,purchaseIds:[],purchaseTotal:0};
     group.purchaseIds.push(event.id);
-    group.purchaseTotal+=event.amount;
+    group.purchaseTotal+=creditPurchaseAmount(event);
     groups.set(id,group);
   }
   return [...groups.values()].map(group=>({...group,purchaseIds:[...group.purchaseIds],purchaseTotal:roundMoney(group.purchaseTotal)})).sort((a,b)=>b.closeDate.localeCompare(a.closeDate));
@@ -90,10 +98,10 @@ export function prepareCreditStatementEvent(data:FinanceData,event:FinanceEvent,
   const statements=[...(data.state.creditStatements??[])];
   if(event.statementId){
     const statement=statements.find(item=>item.id===event.statementId);
-    if(!statement||event.cardId!==statement.cardId||(event.kind!=='card_purchase'&&event.kind!=='card_payment'))return {event:{...event,statementId:undefined},statements};
+    if(!statement||event.cardId!==statement.cardId||(!isCreditPurchase(event)&&event.kind!=='card_payment'))return {event:{...event,statementId:undefined},statements};
     return {event,statements};
   }
-  if(event.kind!=='card_purchase'||!event.cardId)return {event,statements};
+  if(!isCreditPurchase(event)||!event.cardId)return {event,statements};
   const card=(data.state.cards??[]).find(item=>item.id===event.cardId&&item.kind==='credit');
   if(!card)return {event,statements};
   const record=statementRecordForPurchase(card,event.date,now);if(!record)return {event,statements};
@@ -107,7 +115,7 @@ function creditStatementRecords(data:FinanceData,cardId?:string){
 }
 
 export function creditStatementEvents(data:FinanceData,statementId:string){
-  return (data.state.events??[]).filter(event=>event.statementId===statementId&&(event.kind==='card_purchase'||event.kind==='card_payment')).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
+  return (data.state.events??[]).filter(event=>event.statementId===statementId&&(isCreditPurchase(event)||event.kind==='card_payment')).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
 }
 
 function creditStatementStatus(record:CreditStatementRecord,remaining:number,asOf:string):CreditStatementStatus{
@@ -121,9 +129,9 @@ export function creditStatementView(data:FinanceData,record:CreditStatementRecor
   // Statement views are an as-of snapshot. Later repayments cannot settle an
   // earlier snapshot, just as creditDebtForCard excludes future-dated events.
   const events=creditStatementEvents(data,record.id).filter(event=>event.date<=asOf);
-  const purchases=events.filter(event=>event.kind==='card_purchase');
+  const purchases=events.filter(isCreditPurchase);
   const payments=events.filter(event=>event.kind==='card_payment');
-  const purchaseTotal=roundMoney(purchases.reduce((sum,event)=>sum+Number(event.amount||0),0));
+  const purchaseTotal=roundMoney(purchases.reduce((sum,event)=>sum+creditPurchaseAmount(event),0));
   const paymentTotal=roundMoney(payments.reduce((sum,event)=>sum+Number(event.amount||0),0));
   const remaining=roundMoney(Math.max(0,purchaseTotal-paymentTotal));
   return {...record,purchaseIds:purchases.map(event=>event.id),paymentIds:payments.map(event=>event.id),purchaseTotal,paymentTotal,remaining,status:creditStatementStatus(record,remaining,asOf)};
@@ -143,5 +151,5 @@ export function recommendedPayableStatement(data:FinanceData,cardId:string,asOf:
 }
 
 export function unlinkedCreditStatementEvents(data:FinanceData,cardId:string){
-  return (data.state.events??[]).filter(event=>event.cardId===cardId&&(event.kind==='card_purchase'||event.kind==='card_payment')&&!event.statementId);
+  return (data.state.events??[]).filter(event=>event.cardId===cardId&&(isCreditPurchase(event)||event.kind==='card_payment')&&!event.statementId);
 }

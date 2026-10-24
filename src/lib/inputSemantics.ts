@@ -1,6 +1,8 @@
 import type { EventKind, FinanceSettings, Loan, RecurringItem, SplitPart } from '../types.js';
 import { isValidDateOnly } from './dateOnly.js';
+import { defaultCategory } from './categories.js';
 import { isSafeMoneyValue } from './money.js';
+import { recurringVariableAmountError } from './recurringVariable.js';
 
 type RecurringCadenceDraft=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
 
@@ -8,12 +10,12 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
   if (kind === 'income') {
     return {
       accountId: settings.defaultIncomeAccount || fallbackAccount,
-      category: settings.incomeCategories[0] || 'Άλλο',
+      category: defaultCategory(settings,'income'),
     };
   }
   return {
     accountId: settings.defaultExpenseAccount || fallbackAccount,
-    category: settings.expenseCategories[0] || 'Άλλο',
+    category: defaultCategory(settings,'expense'),
   };
 }
 
@@ -44,6 +46,8 @@ export function recurringDraftError(item: RecurringItem) {
   const cadence=item as RecurringCadenceDraft;
   if (!item.name.trim()) return 'Συμπλήρωσε όνομα.';
   if (!isSafeMoneyValue(item.amount) || item.amount <= 0) return 'Το ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
+  const amountError=recurringVariableAmountError(item);
+  if(amountError)return amountError;
   if (item.day !== undefined && item.day !== null && (!Number.isInteger(item.day) || item.day < 1 || item.day > 31)) return 'Η ημέρα πρέπει να είναι ακέραιος από 1 έως 31.';
   const interval=Number(cadence.recurrenceInterval??1);
   if(!Number.isInteger(interval)||interval<1||interval>120)return 'Η συχνότητα επανάληψης πρέπει να είναι ακέραιος από 1 έως 120.';

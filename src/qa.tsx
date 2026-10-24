@@ -1,3 +1,4 @@
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import { StrictMode, Suspense, lazy, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
@@ -13,6 +14,7 @@ import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { SaveProgressBar } from './components/SaveProgressBar';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
@@ -23,19 +25,20 @@ import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
+import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { SavingsPage } from './pages/SavingsPage';
-import { CardsPage } from './pages/CardsPage';
-import { CreditCardPage } from './pages/CreditCardPage';
-import { LoansPage } from './pages/LoansPage';
-import { LendingPage } from './pages/LendingPage';
-import { RecurringPage } from './pages/RecurringPage';
-import { PlanningPage } from './pages/PlanningPage';
-import { AttentionPage } from './pages/AttentionPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { SettingsPage } from './pages/SettingsPage';
+const TransactionsPage=lazy(()=>import('./pages/TransactionsPage').then(module=>({default:module.TransactionsPage})));
+const SavingsPage=lazy(()=>import('./pages/SavingsPage').then(module=>({default:module.SavingsPage})));
+const CardsPage=lazy(()=>import('./pages/CardsPage').then(module=>({default:module.CardsPage})));
+const CreditCardPage=lazy(()=>import('./pages/CreditCardPage').then(module=>({default:module.CreditCardPage})));
+const LoansPage=lazy(()=>import('./pages/LoansPage').then(module=>({default:module.LoansPage})));
+const LendingPage=lazy(()=>import('./pages/LendingPage').then(module=>({default:module.LendingPage})));
+const RecurringPage=lazy(()=>import('./pages/RecurringPage').then(module=>({default:module.RecurringPage})));
+const PlanningPage=lazy(()=>import('./pages/PlanningPage').then(module=>({default:module.PlanningPage})));
+const AttentionPage=lazy(()=>import('./pages/AttentionPage').then(module=>({default:module.AttentionPage})));
+const ReportsPage=lazy(()=>import('./pages/ReportsPage').then(module=>({default:module.ReportsPage})));
+const SettingsPage=lazy(()=>import('./pages/SettingsPage').then(module=>({default:module.SettingsPage})));
 import { NotFoundPage } from './pages/NotFoundPage';
 import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, SavingsGoal, ScheduledTransaction, TextSizePreference } from './types';
 import './styles.css';
@@ -59,38 +62,126 @@ if(QA_SESSION_SIGNAL_SCREEN){
 }
 
 const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
+// QA-only: exercise the actual finance hook without Production APIs.
+const QA_HISTORY_HOOK_PROBE=new URLSearchParams(location.search).get('history-test')==='1';
 if(QA_PERSISTENCE_PROBE_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
-  const backend=qaFinanceData();
-  let mode:'success'|'offline'|'pending'='success';
+  let backend=qaFinanceData();
+  let mode:'success'|'offline'|'pending'|'held'|'conflict'='success';
+  const heldResponses:Array<()=>void>=[];
+  const heldReadResponses:Array<(fail:boolean)=>void>=[];
+  let holdNextRead=false;
   let revision=1;
   let putCount=0;
+  let historyMoveCount=0;
+  let rejectNextHistoryMove=false;
+  let rejectHistoryAfterSteps=0;
+  type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
+  const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
+  let cursorIndex=0;
+  let nextPointId=1;
   const control=globalThis as typeof globalThis & {
-    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending')=>void;
+    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending'|'held'|'conflict')=>void;
+    __myfinhubQaReleaseSave?:()=>boolean;
     __myfinhubQaPersistencePutCount?:()=>number;
+    __myfinhubQaHoldNextRead?:()=>boolean;
+    __myfinhubQaReleaseRead?:(fail?:boolean)=>boolean;
+    __myfinhubQaHeldReadCount?:()=>number;
+    __myfinhubQaHistoryMoveCount?:()=>number;
+    __myfinhubQaRejectNextHistoryMove?:()=>boolean;
+    __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
+  control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
   control.__myfinhubQaPersistencePutCount=()=>putCount;
-  const history=()=>({
+  control.__myfinhubQaHoldNextRead=()=>{holdNextRead=true;return true};
+  control.__myfinhubQaReleaseRead=(fail=false)=>{const release=heldReadResponses.shift();if(!release)return false;release(fail);return true};
+  control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
+  control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
+  control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
+  control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
+  const history=()=>QA_HISTORY_HOOK_PROBE?({
+    available:true,generation:String(revision),financeRevision:String(revision),
+    currentPointId:snapshots[cursorIndex]!.id,
+    canUndo:cursorIndex>0,canRedo:cursorIndex<snapshots.length-1,
+    undoDepth:cursorIndex,redoDepth:snapshots.length-cursorIndex-1,
+    points:[...snapshots].reverse().map(point=>({
+      id:point.id,parentId:point.parentId,label:point.label,
+      createdAt:'2026-08-17T12:00:00.000Z',
+      current:point.id===snapshots[cursorIndex]!.id,
+    })),
+  }):({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
     canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
     points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
   });
+  const savedReceipt=(payload?:{state?:FinanceData['state'];historyLabel?:string})=>{
+    if(QA_HISTORY_HOOK_PROBE&&payload?.state){
+      const previous=snapshots[cursorIndex]!;
+      snapshots.splice(cursorIndex+1); // A successful new write invalidates redo descendants.
+      snapshots.push({id:String(++nextPointId),parentId:previous.id,
+        state:structuredClone(payload.state),label:payload.historyLabel??'QA finance edit'});
+      cursorIndex=snapshots.length-1;
+      backend={...backend,state:structuredClone(payload.state)};
+    }
+    revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
   globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
     if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
-      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      const response=new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      if(holdNextRead){
+        holdNextRead=false;
+        return await new Promise<Response>((resolve,reject)=>heldReadResponses.push(fail=>{
+          if(fail)reject(new TypeError('Synthetic stale finance GET failure'));
+          else resolve(response);
+        }));
+      }
+      return response;
+    }
+    if(url.pathname==='/api/import'&&init?.method==='POST'){
+      backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      if(QA_HISTORY_HOOK_PROBE){
+        snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
+          state:structuredClone(backend.state),label:'QA import baseline'});
+        cursorIndex=0; // Fixture reset, not Production import Undo semantics.
+      }
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
       return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
     }
+    if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST'){
+      historyMoveCount+=1;
+      const headers=new Headers(init.headers);
+      const request=JSON.parse(String(init.body||'{}')) as {action?:string};
+      const valid=headers.get('if-match')===String(revision)
+        &&headers.get('x-rheomiq-history-generation')===String(revision);
+      const destination=request.action==='undo'?cursorIndex-1:request.action==='redo'?cursorIndex+1:-1;
+      const forcedFailure=rejectHistoryAfterSteps>0&&--rejectHistoryAfterSteps===0;
+      if(rejectNextHistoryMove||forcedFailure||!valid||destination<0||destination>=snapshots.length){
+        rejectNextHistoryMove=false;
+        return new Response(JSON.stringify({code:'HISTORY_CURSOR_CONFLICT',error:'Synthetic rejected history move'}),
+          {status:409,headers:{'content-type':'application/json'}});
+      }
+      cursorIndex=destination;
+      backend={...backend,state:structuredClone(snapshots[cursorIndex]!.state)};
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),
+        filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:03.000Z',history:history()}),
+        {status:200,headers:{'content-type':'application/json'}});
+    }
     if(url.pathname==='/api/data'&&init?.method==='PUT'){
       putCount+=1;
+      const payload=QA_HISTORY_HOOK_PROBE
+        ?JSON.parse(String(init.body||'{}')) as {state?:FinanceData['state'];historyLabel?:string}
+        :undefined;
       if(mode==='offline')throw new TypeError('Synthetic offline finance save');
       if(mode==='pending')return await new Promise<Response>(()=>{});
-      revision+=1;
-      return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}});
+      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt(payload))));
+      if(mode==='conflict')return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'QA write conflict'}),{status:409,headers:{'content-type':'application/json'}});
+      return savedReceipt(payload);
     }
     return originalFetch(input,init);
   };
@@ -308,6 +399,32 @@ function buildQaData(params:URLSearchParams){
       ];
     }
   }
+  if(params.get('state')==='budget-enhanced'){
+    // Isolated deterministic owner-free budget fixture. No real finance data.
+    const stamp='2026-08-17T12:00:00.000Z';
+    const tree=next.state.settings.expenseCategoryTree??next.state.settings.expenseCategories.map(name=>({name,subcategories:[]}));
+    next.state.settings.expenseCategoryTree=tree.some(item=>item.name==='Τρόφιμα')
+      ?tree.map(item=>item.name==='Τρόφιμα'?{...item,subcategories:[...new Set([...item.subcategories,'Σούπερ μάρκετ'])]}:item)
+      :[...tree,{name:'Τρόφιμα',subcategories:['Σούπερ μάρκετ']}];
+    next.seed.transactions=[];
+    next.state.customTransactions=[];
+    next.state.overrides={};
+    next.state.deleted=[];
+    next.seed.recurring=[];
+    next.state.recurringCustom=[];
+    next.state.events=[
+      {...createEvent({kind:'expense',date:'2026-07-09',amount:20,note:'QA July grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'},
+      {...createEvent({kind:'expense',date:'2026-08-10',amount:20,note:'QA actual grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'}
+    ];
+    next.state.scheduled=[{id:'qa-known-due',kind:'expense',status:'pending',dueDate:'2026-08-20',
+      amount:30,note:'QA grocery scheduled',accountId:'piraeus-payroll',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',createdAt:stamp,updatedAt:stamp}];
+    next.state.budgets=[{id:'qa-july-subcategory',month:'2026-07',scope:'subcategory',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
+      alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
+  }
   return next;
 }
 
@@ -315,9 +432,16 @@ function QaWorkspace(){
   const params=new URLSearchParams(location.search);
   const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
-  const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
-  const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+  // QA-only graph and stack state to exercise the actual lazy HistoryDialog.
+  // Never use this synthetic stack as proof of database Undo/Redo semantics.
+  const historyCursorFixture=params.get('state')==='history-cursor';
+  const [undoStack,setUndoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [redoStack,setRedoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>historyCursorFixture?[
+    {id:'qa-redo-point',parentId:'qa-current-point',kind:'change',label:'Διόρθωση κατηγορίας · '+('Μεγάλη συνθετική περιγραφή ελέγχου · ').repeat(6),at:'2026-08-17T14:10:00.000Z',current:false},
+    {id:'qa-current-point',parentId:'qa-previous-point',kind:'change',label:'Τρέχουσα επιβεβαιωμένη κατάσταση · 123,45 €',at:'2026-08-17T13:00:00.000Z',current:true},
+    {id:'qa-previous-point',parentId:null,kind:'change',label:'Προηγούμενη καταχώριση · 100,00 €',at:'2026-08-17T12:00:00.000Z',current:false},
+  ]:params.get('state')==='large'
     ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
@@ -326,6 +450,8 @@ function QaWorkspace(){
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
   const [commandFocusKey,setCommandFocusKey]=useState(0);
+  const [dashboardAccountId,setDashboardAccountId]=useState<string|null>(null);
+  const [dashboardAccountFocusKey,setDashboardAccountFocusKey]=useState(0);
   const [commandCardId,setCommandCardId]=useState<string|null>(null);
   const [commandCardKey,setCommandCardKey]=useState(0);
   const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
@@ -348,6 +474,8 @@ function QaWorkspace(){
   const [month,setMonth]=useState('2026-08');
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const today='2026-08-17';
+  // Dashboard's account filter expires after leaving the Transactions route.
+  useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
 
   useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
@@ -358,7 +486,18 @@ function QaWorkspace(){
   const redo=()=>{const next=redoStack[0];if(!next)return;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');setData(next)};
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};
   const importData=(incoming:FinanceData)=>{setUndoStack(stack=>[...stack.slice(-19),data]);setRedoStack([]);setData(incoming)};
-  const addEvent=(event:FinanceEvent)=>update(current=>{const events=current.state.events??[];const exists=events.some(existing=>existing.id===event.id);const nextEvent=exists?event:applyTransactionRules(current,event);return {...current,state:{...current.state,events:exists?events.map(existing=>existing.id===event.id?nextEvent:existing):[...events,nextEvent]}}});
+  const addEvent=(event:FinanceEvent)=>update(current=>{
+    const events=current.state.events??[],exists=events.some(existing=>existing.id===event.id);
+    const ruledEvent=exists?event:applyTransactionRules(current,event);
+    const prepared=prepareCreditStatementEvent(current,ruledEvent);
+    return {...current,state:{...current.state,creditStatements:prepared.statements,
+      events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
+  });
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    await transactionReceipt();
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    update(current=>withConfirmedLendingPlan(current,draft,true));
+  };
   const addEventDurably=async(event:FinanceEvent)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
@@ -367,8 +506,17 @@ function QaWorkspace(){
     });
     addEvent(event);
   };
-  const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
-  const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
+  const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση μεταφοράς απέτυχε.');
+    if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
+      (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
+    });
+    const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
+    update(current=>replaceLinkedTransferWithFee(current,principal,fee));
+  };
+  const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id&&e.feeForEventId!==id)}}));
+  const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(event?.feeForEventId??id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
   const transactionReceipt=async()=>{
     const params=new URLSearchParams(location.search);
     if(params.get('transaction-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση συναλλαγής απέτυχε.');
@@ -383,7 +531,7 @@ function QaWorkspace(){
   const openSpecial=(context:SpecialQuickContext)=>{setEditing(null);setQuickContext({...context,token:quickToken()} as QuickActionContext);setQuickOpen(true)};
   const openCommand=()=>{if(quickOpen)return;setCommandOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>update(current=>{const seeded=current.seed.recurring.some(seed=>seed.id===item.id);if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};return {...current,state:{...current.state,recurringCustom:[...(current.state.recurringCustom??[]).filter(r=>r.id!==item.id),item]}}});
-  const withLoan=(current:FinanceData,loan:Loan)=>{if(current.seed.loans.some(item=>item.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};return {...current,state:{...current.state,customLoans:[...(current.state.customLoans??[]).filter(item=>item.id!==loan.id),loan]}}};
+  const withLoan=(current:FinanceData,nextLoan:Loan)=>{const loan=preserveLoanLegacyBaseline(current,nextLoan);if(current.seed.loans.some(item=>item.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};return {...current,state:{...current.state,customLoans:[...(current.state.customLoans??[]).filter(item=>item.id!==loan.id),loan]}}};
   const upsertLoan=(loan:Loan)=>update(current=>withLoan(current,loan));
   const createSelfLoan=(loan:Loan,event:FinanceEvent)=>update(current=>{const next=withLoan(current,loan);return {...next,state:{...next.state,events:[...(next.state.events??[]).filter(existing=>existing.id!==event.id),event]}}});
   const upsertBank=(bank:CardBank)=>update(current=>({...current,state:{...current.state,cardBanks:[...(current.state.cardBanks??[]).filter(item=>item.id!==bank.id),bank]}}));
@@ -432,8 +580,9 @@ function QaWorkspace(){
   };
   const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
+  const focusRecurringPayment=(id:string)=>{setCommandRecurringId(id);setCommandRecurringKey(k=>k+1);setPage('recurring')};
   const handleAttention=(item:AttentionItem)=>{
-    if(item.action==='pay_recurring'&&item.recurringId){openSpecial({mode:'recurring',recurringId:item.recurringId,amount:item.amount,accountId:item.accountId});return}
+    if((item.action==='pay_recurring'||item.action==='open_recurring')&&item.recurringId){focusRecurringPayment(item.recurringId);return}
     if(item.action==='pay_loan'&&item.loanId){openSpecial({mode:'loan',loanId:item.loanId,amount:item.amount,accountId:item.accountId});return}
     if(item.action==='pay_credit'&&item.cardId){openSpecial({mode:'credit',action:'payment',cardId:item.cardId,statementId:item.statementId,amount:item.amount});return}
     if(item.action==='collect_lending'&&item.person){openSpecial({mode:'lending',action:'repay',person:item.person,amount:item.amount,accountId:data.state.settings.defaultIncomeAccount});return}
@@ -455,7 +604,7 @@ function QaWorkspace(){
     if(action.type==='lending_person_focus'){
       setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);setPage('lending');return;
     }
-    if(action.type==='recurring_focus'){setCommandRecurringId(action.recurringId);setCommandRecurringKey(key=>key+1);setPage('recurring');return}
+    if(action.type==='recurring_focus'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='transaction_focus'){
       setCommandFocusKey(key=>key+1);
       setMonth(action.date.slice(0,7));
@@ -484,33 +633,33 @@ function QaWorkspace(){
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
-    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='recurring_payment'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);setPage('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId})}
   };
   const content=page==='dashboard'
-    ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={(accountId)=>{setDashboardAccountId(accountId??null);setDashboardAccountFocusKey(key=>key+1);setPage('transactions')}} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} dashboardAccountId={dashboardAccountId} dashboardAccountFocusKey={dashboardAccountFocusKey} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEventDurably} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     :page==='cards'?<CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     :page==='loans'?<LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
-    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
-    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
+    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
     :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
-      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
+      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }
@@ -523,14 +672,23 @@ function QaPersistenceProbe(){
   const finance=useFinance();
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
   const budget=finance.data.state.settings.monthlyBudget??0;
-  return <main className="boot-screen" data-persistence-probe="ready">
+  return <><SaveProgressBar saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount}/><main className="boot-screen" data-persistence-probe="ready">
     <h1>Persistence QA probe</h1>
     <output data-persistence-state={finance.saveState}>{finance.saveState}</output>
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
+    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
+    {QA_HISTORY_HOOK_PROBE?<section aria-label="Synthetic history hook">
+      <output data-persistence-undo-depth={finance.undoDepth}>{finance.undoDepth}</output>
+      <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>
+      <button type="button" data-persistence-undo disabled={!finance.canUndo} onClick={()=>{void finance.undo()}}>QA Undo</button>
+      <button type="button" data-persistence-redo disabled={!finance.canRedo} onClick={()=>{void finance.redo()}}>QA Redo</button>
+      <button type="button" data-persistence-jump-first disabled={!finance.canUndo} onClick={()=>{const target=finance.changeHistory.at(-1)?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to earliest stored point</button>
+      <button type="button" data-persistence-jump-last disabled={!finance.canRedo} onClick={()=>{const target=finance.changeHistory[0]?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to latest stored point</button>
+    </section>:null}
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
-  </main>;
+  </main></>;
 }
 
 function QaSessionSignalProbe(){
@@ -556,7 +714,7 @@ function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
       :screen==='mfa-enroll-error'
         ?'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.'
         :'';
-    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;
+    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async(_code)=>{document.documentElement.dataset.qaMfaVerifyCount=String(Number(document.documentElement.dataset.qaMfaVerifyCount||'0')+1);return false}} onLogout={async()=>{}}/>;
   }
   return null;
 }

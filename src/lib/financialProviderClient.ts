@@ -1,5 +1,6 @@
 import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders';
 import { apiRequest } from './api.js';
+import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 import { providerAssetUrlAllowed } from './providerAssetUrl';
 
@@ -105,6 +106,7 @@ export type FinancialProviderWriteInput={
 };
 
 async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
+  return trackDatabaseWrite(async()=>{
   const response=await apiRequest('/api/account-metadata?resource=financial-providers',{
     method,
     credentials:'same-origin',
@@ -115,6 +117,7 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
   if(refreshCatalog)await refreshFinancialProviders(true);
   return payload?.provider as FinancialProvider;
+  });
 }
 export function saveFinancialProvider(input:FinancialProviderWriteInput,refreshCatalog=true){return writeFinancialProvider(input,'POST',refreshCatalog)}
 export function updateFinancialProvider(input:FinancialProviderWriteInput,refreshCatalog=true){return writeFinancialProvider(input,'PATCH',refreshCatalog)}
@@ -127,6 +130,7 @@ export async function uploadFinancialProviderAsset(input:{
   makePrimary?:boolean;
   refreshCatalog?:boolean;
 }){
+  return trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({
     resource:'financial-provider-assets',
     providerId:input.providerId,
@@ -145,6 +149,7 @@ export async function uploadFinancialProviderAsset(input:{
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
   return payload?.asset as FinancialProviderAsset;
+  });
 }
 
 export async function setFinancialProviderAssetBinding(input:{
@@ -154,6 +159,7 @@ export async function setFinancialProviderAssetBinding(input:{
   assetKey:string|null;
   refreshCatalog?:boolean;
 }){
+  return trackDatabaseWrite(async()=>{
   const response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
     method:'PUT',
     credentials:'same-origin',
@@ -163,4 +169,5 @@ export async function setFinancialProviderAssetBinding(input:{
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
+  });
 }

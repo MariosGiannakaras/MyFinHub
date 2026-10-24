@@ -90,6 +90,7 @@ try {
   await c.send('Page.enable');
   await c.send('Runtime.enable');
   await c.send('Network.enable');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
 
   const externalRequests = [];
   const baseOrigin = new URL(baseUrl).origin;
@@ -215,15 +216,99 @@ try {
   monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
   assert(!scanError, `local OCR failed: ${scanError}`);
-  const reviewValues = await c.call("function(){return {merchant:document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]')?.value||'',date:document.querySelector('input[aria-label=\"Διόρθωση ημερομηνίας απόδειξης\"]')?.value||'',total:document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value||'',currency:document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')?.value||''}}");
+  const reviewValues = await c.call("function(){return {merchant:document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]')?.value||'',date:document.querySelector('input[aria-label=\"Διόρθωση ημερομηνίας απόδειξης\"]')?.value||'',total:document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value||'',currencyPicker:document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')!==null}}");
   assert(/MY\s*MARKET/i.test(reviewValues.merchant), `merchant proposal missing: ${JSON.stringify(reviewValues)}`);
   assert(/22.*Αυγ.*2026/i.test(reviewValues.date), `date proposal missing: ${JSON.stringify(reviewValues)}`);
   assert(Number(reviewValues.total)===24.5, `total proposal missing: ${JSON.stringify(reviewValues)}`);
   const persistedOcrProposal=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
   assert(persistedOcrProposal?.currency==='EUR', `stored OCR currency proposal missing: ${JSON.stringify(persistedOcrProposal)}`);
-  assert(/^EUR(?:\s|·|$)/.test(reviewValues.currency), `visible EUR currency label missing: ${JSON.stringify(reviewValues)}`);
+  assert(!reviewValues.currencyPicker, `EUR-only receipt review must not expose a currency dropdown: ${JSON.stringify(reviewValues)}`);
   assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
+
   await screenshot('receipt-local-ocr-proposal');
+
+  console.log('Receipt OCR QA: owner-reviewed item cents, invalid guard and persistent local correction');
+  const addReviewItem=async expected=>{
+    const clicked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-proposal button')].find(node=>(node.textContent||'').trim()==='Προσθήκη γραμμής');button?.click();return Boolean(button&&!button.disabled)}");
+    assert(clicked,'owner can add a local OCR line without posting a transaction');
+    await waitFor("function(count){return document.querySelectorAll('.receipt-item-row').length===count}",'receipt item count',[expected]);
+  };
+  const editReviewField=async(label,value)=>{
+    const updated=await c.call("function(label,value){const input=[...document.querySelectorAll('input[aria-label]')].find(node=>node.getAttribute('aria-label')===label);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);
+    assert(updated,`receipt item editor input exists: ${label}`);
+    await waitFor("function(label,value){return [...document.querySelectorAll('input[aria-label]')].some(node=>node.getAttribute('aria-label')===label&&node.value===value)}",'edited receipt item field',[label,value]);
+  };
+  await addReviewItem(1);
+  await editReviewField('Διόρθωση περιγραφής γραμμής 1','QA τοπικό προϊόν 1');
+  await editReviewField('Διόρθωση ποσού γραμμής 1','20.25');
+  await addReviewItem(2);
+  await editReviewField('Διόρθωση περιγραφής γραμμής 2','QA τοπικό προϊόν 2');
+  await editReviewField('Διόρθωση ποσού γραμμής 2','4.251');
+  await waitFor("function(){const save=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));return Boolean(save?.disabled&&document.querySelector('#receipt-review-items-error'))}",'sub-cent receipt item save guard');
+  assert((await receiptCount())===1,'invalid OCR item edit never deletes its local receipt');
+  await editReviewField('Διόρθωση ποσού γραμμής 2','4.25');
+  await waitFor("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}",'precisely balanced 20.25+4.25 EUR receipt items');
+  const itemInputs=await c.call("function(){return {items:document.querySelectorAll('.receipt-item-row').length,categorySelectors:document.querySelectorAll('.receipt-item-category [aria-label^=\"Κατηγορία γραμμής\"]').length,balanced:(document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}}");
+  assert(itemInputs.items===2&&itemInputs.categorySelectors===2&&itemInputs.balanced,`OCR item review must expose live taxonomy and exactly reconciled EUR cents: ${JSON.stringify(itemInputs)}`);
+  await c.call("function(){document.querySelector('.receipt-items-review')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(120);
+  await screenshot('receipt-local-reviewed-items-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await sleep(160);
+  await c.call("function(){document.querySelector('.receipt-items-review')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(120);
+  const itemMobile=await c.call("function(){const parent=document.querySelector('.receipt-inbox'),rows=[...document.querySelectorAll('.receipt-item-row')],rect=parent?.getBoundingClientRect();return {rows:rows.length,cssWidth:innerWidth,visualWidth:visualViewport?.width??null,overlap:rows.some(row=>{const r=row.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>376)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,modal:rect?{left:rect.left,right:rect.right}:null}}");
+  assert(itemMobile.rows===2&&!itemMobile.overlap&&itemMobile.overflow<=1&&itemMobile.modal?.left>=-1&&itemMobile.modal?.right<=376,`375px item editor remains contained: ${JSON.stringify(itemMobile)}`);
+  await screenshot('receipt-local-reviewed-items-mobile');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  const persistItemsClicked=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));b?.click();return Boolean(b&&!b.disabled)}");
+  assert(persistItemsClicked,'valid reviewed OCR lines can be saved independently of finance');
+  await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'reviewed OCR line local save receipt');
+  const localLines=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').getAll();req.onsuccess=()=>{const p=req.result[0]?.proposal;db.close();resolve({count:p?.items?.length??0,sum:p?.items?.reduce((n,x)=>n+Math.round(x.amount*100),0),balanced:p?.itemsBalanced})};req.onerror=()=>reject(req.error)};request.onerror=()=>reject(request.error)})}`);
+  assert(localLines.count===2&&localLines.sum===2450&&localLines.balanced===true,`exact 2450 cents stored only as owner-reviewed local proposal: ${JSON.stringify(localLines)}`);
+  console.log('Receipt OCR QA: reviewed categories open one canonical split, without posting money');
+  for(let i=0;i<2;i++){
+    const opened=await c.call("function(index){const input=document.querySelector('input[role=combobox][aria-label=\"Κατηγορία γραμμής '+(index+1)+'\"]');if(!input||input.disabled)return false;input.click();return true}",[i]);
+    assert(opened,`shared category combobox exists on receipt item ${i+1}`);
+    await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=option][data-option-level=category]:not(:disabled)'))}",'full live taxonomy popover');
+    const chosen=await c.call("function(){const option=document.querySelector('.owned-select-popover [role=option][data-option-level=category]:not(:disabled)');if(!option)return null;const label=(option.textContent||'').trim();option.click();return label}");
+    assert(chosen,`at least one actual expense taxonomy category is offered for item ${i+1}`);
+    await waitFor("function(index,label){const input=document.querySelector('input[role=combobox][aria-label=\"Κατηγορία γραμμής '+(index+1)+'\"]');return Boolean(input?.value===label&&input.getAttribute('aria-expanded')==='false')}",'owner-selected category from real popover',[i,chosen]);
+  }
+  const possibleExisting=await c.call("function(){const c=document.querySelector('.receipt-existing-confirm input');if(!c)return false;c.click();return true}");
+  if(possibleExisting)await waitFor("function(){return document.querySelector('.receipt-existing-confirm input')?.checked===true}",'explicit duplicate review confirmation');
+  await waitFor("function(){const node=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση ως επιμερισμένη δαπάνη'));return Boolean(node&&!node.disabled)}",'owner-reviewed split becomes available');
+  await screenshot('receipt-reviewed-split-ready-desktop');
+  const handoff=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση ως επιμερισμένη δαπάνη'));if(!button||button.disabled)return false;button.click();return true}");
+  assert(handoff,'owner explicitly chose reviewed receipt split');
+  await waitFor("function(){const dialog=document.querySelector('.quick-modal:not(.contextual-quick-modal)');return Boolean(dialog&&!document.querySelector('.receipt-inbox')&&dialog.querySelector('.generic-kind-grid [aria-pressed=\"true\"]')?.textContent?.includes('Σύνθετη αγορά'))}",'existing canonical split Quick Entry handoff');
+  const prefill=await c.call("function(){const m=document.querySelector('.quick-modal:not(.contextual-quick-modal)');return {parts:m?.querySelectorAll('.split-line-taxonomy').length??0,amounts:[...(m?.querySelectorAll('input[aria-label^=\"Ποσό μέρους\"]')||[])].map(x=>x.value),notes:[...(m?.querySelectorAll('input[aria-label^=\"Περιγραφή μέρους\"]')||[])].map(x=>x.value)}}");
+  assert(prefill.parts===2&&prefill.amounts.join(',')==='20.25,4.25'&&prefill.notes[0]==='QA τοπικό προϊόν 1',`verified receipt split prefill: ${JSON.stringify(prefill)}`);
+  assert((await receiptCount())===1,'split handoff alone preserves local receipt until durable save');
+  // A transitioning modal can be partially transparent in a screenshot even
+  // after the DOM and form fields exist; await the real stable painted state.
+  await waitFor("function(){const m=document.querySelector('.quick-modal:not(.contextual-quick-modal)');if(!m)return false;return Number.parseFloat(getComputedStyle(m).opacity)>=0.99}",'settled canonical split modal opacity');
+  await sleep(350);
+  await screenshot('receipt-reviewed-split-quick-entry');
+  const cancelled=await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(n=>(n.textContent||'').trim()==='Ακύρωση');b?.click();return Boolean(b)}");
+  assert(cancelled,'split Quick Entry cancellation available');
+  await waitFor("function(){return !document.querySelector('.quick-modal:not(.contextual-quick-modal)')}",'cancelled split Quick Entry closes');
+  assert((await receiptCount())===1,'cancelled split never deletes the receipt');
+  await openReceiptInbox();
+  await waitFor("function(){return document.querySelectorAll('.receipt-item-row').length===2}",'receipt remains editable after split cancellation');
+
+
+  console.log('Receipt OCR QA: foreign OCR cannot be applied without explicit corrected EUR amount');
+  const changedCurrency=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readwrite');const store=tx.objectStore('receipts');const all=store.getAll();all.onsuccess=()=>{const row=all.result[0];if(!row?.proposal){db.close();resolve(false);return}store.put({...row,proposal:{...row.proposal,currency:'USD',itemsCurrency:'USD'},updatedAt:new Date(Date.now()+1000).toISOString()})};tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(changedCurrency,'synthetic local foreign currency OCR fixture updated without finance write');
+  await c.call("function(){document.querySelector('.receipt-inbox-header .icon-button')?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.receipt-inbox')}",'receipt closes before foreign rehydrate');
+  await openReceiptInbox();
+  await waitFor("function(){return Boolean(document.querySelector('.receipt-currency-warning'))}",'foreign OCR guard warning');
+  const foreignBlocked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(button?.disabled)&&!document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')}");
+  assert(foreignBlocked,'foreign source requires explicit EUR correction and never offers currency selector');
+  assert((await c.call("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('άλλο νόμισμα')}")),'foreign OCR lines are never silently denominated in EUR');
+  await screenshot('receipt-foreign-currency-safety');
 
   console.log('Receipt OCR QA: user corrections persist locally and reviewed proposal owns the Quick Entry prefill');
   const reviewEdited=await c.call("function(){const set=(input,value)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))};const merchant=document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]');const amount=document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]');if(!merchant||!amount)return false;set(merchant,'QA CORRECTED MARKET');set(amount,'31.75');return true}");
@@ -233,6 +318,7 @@ try {
   assert(saveCorrections,'save OCR corrections action exists');
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'local OCR correction persistence');
   const persistedReview=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(persistedReview?.currency==='EUR','explicit EUR amount correction normalizes previously foreign OCR proposal');
   assert(persistedReview?.merchant==='QA CORRECTED MARKET'&&Number(persistedReview?.total)===31.75,`corrected OCR proposal not persisted locally: ${JSON.stringify(persistedReview)}`);
   await screenshot('receipt-local-ocr-reviewed');
 
@@ -244,11 +330,42 @@ try {
   assert(quickValues.some((value) => value==='QA CORRECTED MARKET'), `corrected merchant not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => value === '2026-08-22' || /22\s+Αυγ\s+2026/i.test(value)), `date not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => Number(value) === 31.75), `corrected amount not prefilled: ${JSON.stringify(quickValues)}`);
-  const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) .save-button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
+  const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
   assert(submitClicked, 'normal Quick Entry submit exists');
   await waitFor("function(){return !document.querySelector('.quick-modal')}", 'normal transaction submit');
   await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after transaction');
   assert((await receiptCount()) === 0, 'receipt draft deleted only after normal submit');
+  console.log('Receipt OCR QA: owner reviews existing-purchase association without another finance save');
+  const seededDuplicate=await c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readwrite');const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),x=>x.charCodeAt(0));const image=new Blob([bytes],{type:'image/png'}),now=new Date().toISOString();tx.objectStore('receipts').put({id:'qa-reviewed-existing',capturedAt:now,updatedAt:now,status:'ready',image,mimeType:'image/png',bytes:image.size,width:1,height:1,proposal:{merchant:'QA CORRECTED MARKET',date:'2026-08-22',total:31.75,currency:'EUR'}});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};open.onerror=()=>reject(open.error)})}`);
+  assert(seededDuplicate,'private synthetic already-posted receipt fixture saved to IndexedDB only');
+  await openReceiptInbox();
+  await waitFor("function(){return Boolean(document.querySelector('.receipt-existing-matches li button'))}",'posted purchase candidate appears for exact cents and date');
+  const duplicateGuard=await c.call("function(){const actions=[...document.querySelectorAll('.receipt-review-actions button')],entry=actions.find(x=>(x.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')),manual=actions.find(x=>(x.textContent||'').includes('Χειροκίνητη καταχώριση'));return Boolean(entry?.disabled&&manual?.disabled)}");
+  assert(duplicateGuard,'potential duplicate cannot go directly to Quick Entry without owner review');
+  const matchClicked=await c.call("function(){const button=document.querySelector('.receipt-existing-matches li button');if(!button||button.disabled)return false;button.click();return true}");
+  assert(matchClicked,'explicit owner association action is enabled');
+  await waitFor("function(){return Boolean([...document.querySelectorAll('.receipt-existing-matches button')].find(x=>(x.textContent||'').includes('Κατάργηση συσχέτισης')))}",'local purchase association visible');
+  const linked=await c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').get('qa-reviewed-existing');req.onsuccess=()=>{db.close();resolve(req.result?.proposal?.matchedPurchase??null)};req.onerror=()=>reject(req.error)};open.onerror=()=>reject(open.error)})}`);
+  assert(linked?.source==='event'&&typeof linked.sourceId==='string'&&linked.sourceId.length>0,`confirmed purchase link must persist source-scoped only: ${JSON.stringify(linked)}`);
+  const linkedEntryBlocked=await c.call("function(){return [...document.querySelectorAll('.receipt-review-actions button')].some(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&b.disabled)}");
+  assert(linkedEntryBlocked,'already-associated receipt cannot post an accidental duplicate');
+  await c.call("function(){document.querySelector('.receipt-existing-matches[role=status]')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(220);
+  await screenshot('receipt-existing-purchase-associated');
+  const unlink=await c.call("function(){const b=[...document.querySelectorAll('.receipt-existing-matches button')].find(x=>(x.textContent||'').includes('Κατάργηση συσχέτισης'));if(!b||b.disabled)return false;b.click();return true}");
+  assert(unlink,'owner may remove local-only linkage without changing ledger history');
+  await waitFor("function(){return ![...document.querySelectorAll('.receipt-existing-matches button')].some(b=>(b.textContent||'').includes('Κατάργηση συσχέτισης'))}",'local purchase association removed');
+  assert((await receiptCount())===1,'unlink preserves local receipt for owner review');
+  await c.call("function(){document.querySelector('.receipt-existing-matches li')?.scrollIntoView({block:'center',behavior:'instant'});return true}");
+  await sleep(220);
+  await screenshot('receipt-existing-purchase-unlinked');
+  const deleteSynthetic=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(x=>(x.textContent||'').trim()==='Διαγραφή');if(!b||b.disabled)return false;b.click();return true}");
+  assert(deleteSynthetic,'owner can explicitly remove the synthetic reviewed receipt');
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'synthetic receipt removal confirmation');
+  await c.call("function(){const b=[...document.querySelectorAll('[role=alertdialog] button')].find(x=>(x.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}");
+  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'reviewed receipt deletion completes');
+  assert((await receiptCount())===0,'local receipt deleted only after explicit confirmation');
+
 
   console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -260,6 +377,7 @@ try {
   assert(!launcherGeometry.overlap,`mobile receipt launcher overlaps primary footer actions: ${JSON.stringify(launcherGeometry)}`);
   assert(launcherGeometry.receipt.left>=launcherGeometry.footer.left-1&&launcherGeometry.receipt.right<=launcherGeometry.footer.right+1,'mobile receipt launcher stays within footer bounds');
   assert(launcherGeometry.receipt.height>=40,'mobile receipt launcher is touch-safe');
+  await sleep(350);
   await screenshot('receipt-local-mobile-quick-entry');
   const mobileReceiptOpened=await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");
   assert(mobileReceiptOpened,'mobile receipt launcher opens inbox');
@@ -267,6 +385,59 @@ try {
   const overflow = await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
   assert(overflow <= 1, `mobile receipt inbox horizontal overflow ${overflow}px`);
   await screenshot('receipt-local-mobile-empty');
+
+
+  console.log('C2 QA: owner-managed merchant identity and explicit Quick Entry adoption');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  const settingsUrl=new URL(baseUrl);settingsUrl.searchParams.set('page','settings');
+  await c.send('Page.navigate',{url:settingsUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist button'))}",'owner Settings tabs');
+  const openedRules=await c.call("function(){const b=[...document.querySelectorAll('.settings-tablist button')].find(x=>(x.textContent||'').trim()==='Κανόνες');b?.click();return Boolean(b)}");
+  assert(openedRules,'Settings Rules tab accepts explicit identity management');
+  await waitFor("function(){return Boolean(document.querySelector('.counterparty-directory input[aria-label=\"Όνομα αντισυμβαλλομένου\"]'))}",'counterparty directory shared text editor');
+  const editName=async text=>c.call("function(value){const input=document.querySelector('.counterparty-directory input[aria-label=\"Όνομα αντισυμβαλλομένου\"]');if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[text]);
+  assert(await editName('QA MERCHANT STORE'),'owner can enter a private merchant name');
+  const createIdentity=await c.call("function(){const b=[...document.querySelectorAll('.counterparty-directory-actions button')].find(x=>(x.textContent||'').trim()==='Προσθήκη ταυτότητας');if(!b||b.disabled)return false;b.click();return true}");
+  assert(createIdentity,'Settings uses revisioned identity create action');
+  await waitFor("function(){return [...document.querySelectorAll('.counterparty-directory-list li')].some(x=>(x.textContent||'').includes('QA MERCHANT STORE'))}",'durably acknowledged local QA identity');
+  const rename=await c.call("function(){const row=[...document.querySelectorAll('.counterparty-directory-list li')].find(x=>(x.textContent||'').includes('QA MERCHANT STORE'));const b=row?.querySelector('button');b?.click();return Boolean(b)}");
+  assert(rename,'owner can edit a stable identity in place');
+  assert(await editName('QA RENAMED MERCHANT'),'owner can supply a new display name without rewriting event notes');
+  const renamed=await c.call("function(){const b=[...document.querySelectorAll('.counterparty-directory-actions button')].find(x=>(x.textContent||'').trim()==='Αποθήκευση ονόματος');if(!b||b.disabled)return false;b.click();return true}");
+  assert(renamed,'existing identity rename action is explicit');
+  await waitFor("function(){return [...document.querySelectorAll('.counterparty-directory-list li')].some(x=>(x.textContent||'').includes('QA RENAMED MERCHANT'))}",'owner-renamed identity visible');
+  await c.call("function(){document.querySelector('.counterparty-directory')?.scrollIntoView({block:'start',behavior:'instant'});return true}");
+  await sleep(250);
+  await screenshot('counterparty-owner-directory-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await c.call("function(){document.querySelector('.counterparty-directory')?.scrollIntoView({block:'start',behavior:'instant'});return true}");
+  await sleep(240);
+  const c2Geometry=await c.call("function(){const element=document.querySelector('.counterparty-directory');const r=element?.getBoundingClientRect();return {left:r?.left,right:r?.right,width:r?.width,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}}");
+  assert(c2Geometry.left>=-1&&c2Geometry.right<=376&&c2Geometry.overflow<=1,'375px counterparty directory contained: '+JSON.stringify(c2Geometry));
+  await screenshot('counterparty-owner-directory-mobile');
+  const theme=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");
+  assert(theme==='dark','owner directory supports real Dark theme');
+  await screenshot('counterparty-owner-directory-dark-mobile');
+  await c.call("async function(){localStorage.setItem('myfinhub.theme','light');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('light');return true}");
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  const quickOpened=await c.call("function(){const visible=x=>Boolean(x&&x.getClientRects().length);const b=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);b?.click();return Boolean(b)}");
+  assert(quickOpened,'Quick Entry opens without implicit merchant selection');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal) input[aria-label=\"Ρητή επιλογή αντισυμβαλλομένου\"]'))}",'lazy owner merchant selector on generic expense');
+  const initialIdentity=await c.call("function(){return document.querySelector('input[aria-label=\"Ρητή επιλογή αντισυμβαλλομένου\"]')?.value}");
+  assert(initialIdentity==='Χωρίς συσχέτιση','new expense does not auto-associate a merchant');
+  const noteTyped=await c.call("function(){const input=document.querySelector('.quick-modal input[placeholder=\"Σύντομη περιγραφή μόνο αν χρειάζεται\"]');if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'QA RENAMED MERCHANT');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  assert(noteTyped,'merchant-name note remains an ordinary owner-editable description');
+  await waitFor("function(){return (document.querySelector('.quick-modal')?.textContent||'').includes('Δεν επιλέγεται αυτόματα')}",'exact owner name only yields non-binding advisory');
+  assert((await c.call("function(){return document.querySelector('input[aria-label=\"Ρητή επιλογή αντισυμβαλλομένου\"]')?.value}"))==='Χωρίς συσχέτιση','advisory never changes identity selection');
+  const pickerOpened=await c.call("function(){const input=document.querySelector('input[aria-label=\"Ρητή επιλογή αντισυμβαλλομένου\"]');input?.click();return Boolean(input)}");
+  assert(pickerOpened,'owner can open shared identity selection listbox');
+  await waitFor("function(){return [...document.querySelectorAll('.owned-select-popover [role=option]')].some(x=>(x.textContent||'').trim()==='QA RENAMED MERCHANT')}",'renamed stable merchant selectable');
+  const chosen=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(x=>(x.textContent||'').trim()==='QA RENAMED MERCHANT');if(!option)return false;option.click();return true}");
+  assert(chosen,'owner explicitly selects a pre-existing stable merchant ID');
+  await waitFor("function(){return document.querySelector('input[aria-label=\"Ρητή επιλογή αντισυμβαλλομένου\"]')?.value==='QA RENAMED MERCHANT'}",'selected merchant label shown without finance auto-post');
+  await screenshot('counterparty-owner-quick-entry-selected');
+  assert((await receiptCount())===0,'owner identity selection did not create or delete receipt data');
+  console.log('C2 QA: owner directory, renamed identity, mobile/dark geometry and opt-in Quick Entry passed.');
 
   console.log('Receipt local OCR rendered QA passed.');
 } finally {

@@ -9,10 +9,14 @@ describe('Settings Data source contract',()=>{
   it('preserves the canonical backup and import safety semantics',()=>{
     expect(settings).toContain('MAX_FINANCE_DOCUMENT_BYTES');
     expect(settings).toContain('await onBackup()');
-    expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
+    expect(settings).toContain('const snapshot = await loadData()');
+    expect(settings).toContain('downloadJson(snapshot.data)');
+    expect(settings).toContain('const receipt = await bridge.saveLocalBackup()');
+    expect(settings).not.toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('tone="destructive"');
-    expect(settings).toContain('δημιουργηθεί αυτόματο αντίγραφο ασφαλείας');
+    expect(settings).toContain('δημιουργεί αυτόματα backup των προηγούμενων δεδομένων');
+    expect(settings).toContain('Δεν αναιρείται με Undo.');
     expect(settings).toContain('type="file" accept="application/json,.json" hidden');
   });
 
@@ -40,9 +44,12 @@ describe('Settings Data source contract',()=>{
     expect(css).not.toMatch(/\.settings-data[^\{]*input\s*\{/s);
   });
 
-  it('downloads the latest auto-saved Settings draft after the serialized backup completes',()=>{
+  it('downloads only a fresh, database-acknowledged document after serialized backup completes',()=>{
     expect(settings).toContain('await onBackup()');
-    expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
+    expect(settings).toMatch(/await onBackup\(\);[\s\S]*?const snapshot = await loadData\(\);[\s\S]*?downloadJson\(snapshot\.data\)/);
+    expect(settings).toContain('if (!receipt.verified) throw new Error');
+    expect(settings).toContain('η τοπική αποθήκευση Windows απέτυχε');
+    expect(settings).not.toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
   });
 
 });

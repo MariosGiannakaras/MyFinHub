@@ -18,7 +18,8 @@ describe('category budget and rule integration source contracts',()=>{
   it('applies rules only to newly submitted events and keeps existing edits explicit',()=>{
     expect(app).toMatch(/const ruledEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
     expect(app).toContain('prepareCreditStatementEvent(current,ruledEvent)');
-    expect(qa).toMatch(/const nextEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
+    expect(qa).toMatch(/const ruledEvent\s*=\s*exists\s*\?\s*event\s*:\s*applyTransactionRules\(current,\s*event\)/);
+    expect(qa).toContain('prepareCreditStatementEvent(current,ruledEvent)');
     expect(app).toContain('const completeScheduled');
     expect(app).toContain('applyTransactionRules(current,event)');
   });
@@ -55,6 +56,10 @@ describe('category budget and rule integration source contracts',()=>{
     expect(reports).toContain('budgetMonth={month}');
     expect(reports).toContain('asOf={asOf} budgetMonth={month}');
     expect(budgetEditor).toContain('budgetProgress(data,month,asOf)');
+    expect(reports).toContain('const budgetRows=useMemo(()=>budgetProgress(data,month,asOf),[data,month,asOf])');
+    expect(reports).toContain('budgetRows={budgetRows}');
+    expect(budgetEditor).toContain('budgetRows?:ReturnType<typeof budgetProgress>');
+    expect(budgetEditor).toContain('const budgets=budgetRows??budgetProgress(data,month,asOf)');
     expect(reports).toContain('onUpsertBudget={onUpsertBudget}');
     expect(reports).toContain('data-budget-overview');
     expect(reports).toContain('Πρόβλεψη τέλους μήνα');

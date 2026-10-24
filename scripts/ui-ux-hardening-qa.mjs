@@ -61,7 +61,9 @@ try{
   await navigate({screen:'mfa',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'MFA error is announced');await screenshot('mobile-mfa-invalid');
   await c.send('Network.setBlockedURLs',{urls:['*/api/auth/session*']});
   await c.send('Page.navigate',{url:new URL('/',baseUrl).href});
-  await waitFor("function(){const screen=document.querySelector('.boot-screen');return Boolean(screen&&screen.textContent.includes('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας')&&screen.querySelector('button'))}",'actual app auth unavailable state');
+  // A failed session probe must NOT mount financial content just to show the
+  // old auth error page. The app-lock bootstrap owns this fail-closed error.
+  await waitFor("function(){const screen=document.querySelector('.desktop-app-lock-screen[data-phase=error] .desktop-app-lock-card[role=alert]');return Boolean(screen&&screen.textContent.includes('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας')&&screen.querySelector('button')&&document.querySelector('.desktop-app-lock-preview')&&!document.querySelector('.desktop-app-lock-underlay')&&!document.querySelector('[data-desktop-lock-probe=protected]'))}",'actual app auth unavailable state');
   await noOverflow('auth unavailable 375');await screenshot('mobile-auth-unavailable');
   await c.send('Network.setBlockedURLs',{urls:[]});
 
@@ -80,7 +82,7 @@ try{
   await screenshot('mobile-card-vault-cleanup-retry');
   await viewport(1440,1000);
   await navigate({page:'dashboard',save:'loading'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.loading'))"),'loading persistence state');await screenshot('desktop-persistence-loading');
-  await navigate({page:'dashboard',save:'saving'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.saving'))"),'saving persistence state');await screenshot('desktop-persistence-saving');
+  await navigate({page:'dashboard',save:'saving'},PAGE_HEADINGS.dashboard);await waitFor("function(){return document.querySelector('[data-save-progress=saving]')!==null}",'receipt-backed top progress pending');assert(await c.eval("(()=>{const bar=document.querySelector('[data-save-progress=saving]');if(!bar)return false;const rect=bar.getBoundingClientRect();const progress=bar.querySelector('[role=progressbar]');return rect.top===0&&rect.height>=3&&rect.height<=6&&progress?.getAttribute('aria-valuenow')===null&&!document.querySelector('.persistence-toast.saving')})()"),'saving state is a noncompleted top-edge bar without duplicate toast');await screenshot('desktop-persistence-saving');
   await navigate({page:'dashboard'},PAGE_HEADINGS.dashboard);await clickText('[data-qa-crash]','QA render failure');await waitFor("function(){return Boolean(document.querySelector('.workspace-error'))}",'page error boundary');assert(await c.eval("!document.querySelector('.workspace-error')?.textContent.includes('synthetic-render-failure')"),'error boundary hides raw exception');await screenshot('desktop-page-error-recovery');
 
   console.log('UI/UX QA: tooltip semantics, hover, touch behavior');

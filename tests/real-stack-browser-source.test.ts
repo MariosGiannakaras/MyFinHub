@@ -1,13 +1,24 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { transformSync } from 'esbuild';
 
 const source=readFileSync('scripts/real-stack-browser-e2e.ts','utf8');
 
 describe('actual-browser real-stack source contract',()=>{
+  it('parses the entire real-stack browser runner before expensive container/browser startup',()=>{
+    expect(()=>transformSync(source,{
+      sourcefile:'scripts/real-stack-browser-e2e.ts',
+      loader:'ts',
+      format:'esm',
+      target:'es2022'
+    })).not.toThrow();
+  });
+
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain("document.querySelector('#login-title')");
     expect(source).toContain("document.querySelector('#mfa-title')");
+    expect(source).not.toContain("clickText('.login-submit','Επαλήθευση')");
     expect(source).toContain('[data-global-quick-entry]');
     expect(source).toContain("querySelectorAll('label')");
     expect(source).toContain("wrapper?.querySelector('input,textarea,select')");
@@ -33,6 +44,10 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Saving','saving_cash_offset']");
     expect(source).toContain("['Real Browser Quick Refund','refund']");
     expect(source).toContain("['Real Browser Quick Reconciliation','reconciliation']");
+    expect(source).toContain("setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45')");
+    expect(source).toContain('unconfirmed reconciliation must fail closed');
+    expect(source).toContain('Real owner review checkbox could not be confirmed.');
+    expect(source).not.toContain("setByLabel('Πραγματικό υπόλοιπο'");
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
@@ -96,6 +111,8 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Recurring');
     expect(source).toContain('Real Browser Temp Cash');
     expect(source).toContain('stage data-management-backup-import');
+    expect(source).toContain('Import boundary must disable unsafe history Undo.');
+    expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('400 /api/import');
     expect(source).toContain('Imported QA Cash');

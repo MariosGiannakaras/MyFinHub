@@ -132,6 +132,11 @@ describe('Savings page action hierarchy',()=>{
     expect(remediationQa).toContain("historical Savings route balances change with the selected period end");
     expect(remediationQa).toContain("historical personal-goal balance and progress use the selected period end");
     expect(remediationQa).toContain("Savings current-period balances and goal progress restore after historical browsing");
+    expect(remediationQa).toContain('waitForSavingsSnapshot');
+    expect(remediationQa).toContain("snapshot.goalBalance===august.goalBalance");
+    expect(remediationQa).toContain("snapshot.goalProgress===august.goalProgress");
+    expect(remediationQa).toContain('Savings QA values did not settle');
+    expect(remediationQa).not.toContain('const restored=await state();');
   });
 
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{

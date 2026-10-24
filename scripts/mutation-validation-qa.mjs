@@ -110,11 +110,11 @@ try{
 
   console.log('Mutation validation QA: Card secure details');
   await navigate('cards');
-  await clickSelector('button[aria-label^="Ασφαλή στοιχεία"]','secure card details action');
-  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))}",'Card details editor');
-  await setAria('Λήξη κάρτας','13/31');
-  await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
-  await assertAlert('.app-card-details-dialog','Card secret invalid draft');
+  await clickSelector('button[aria-label^="Επεξεργασία κάρτας"]','secure card details action');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'Card details editor');
+  await setAria('Λήξη κάρτας','1');
+  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  await assertAlert('.app-card-details-inline','Card secret invalid draft');
 
   console.log('Mutation validation QA: Credit purchase');
   await navigate('credit');

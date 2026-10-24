@@ -133,10 +133,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
-    await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+    // A headless Chromium CDP endpoint can become ready before its first tab
+    // finishes navigating under CI runner pressure. Never skip login or MFA:
+    // diagnose the first paint, then allow one real navigation retry.
+    try{
+      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+    }catch(error){
+      const state=await c.call("function(){return {ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
+      console.warn('[real-browser] initial login paint unavailable; bounded navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
+      try{await shot('login-bootstrap-first-paint')}catch{}
+      await c.send('Page.reload',{ignoreCache:true});
+      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
+    }
     await setSelector('#login-email',email);await setSelector('#login-password',password);await clickText('.login-submit','Σύνδεση');
     await waitFor("function(){return document.querySelector('#mfa-title')?.textContent==='Επαλήθευση'}",'MFA challenge');
-    await setSelector('#mfa-code',await nextTotp());await clickText('.login-submit','Επαλήθευση');
+    // The owner-approved TOTP auto-check starts on the sixth digit, no submit button.
+    await setSelector('#mfa-code',await nextTotp());
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγ')}",'transactions workspace');
 
     console.log('[real-browser] stage modern-create-reload');
@@ -154,7 +166,18 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Local Real Stack QA')});
     await addQuickIntent('Αποταμίευση','Real Browser Quick Saving','saving_cash_offset','7.30',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
     await addQuickIntent('Επιστροφή','Real Browser Quick Refund','refund','8.40');
-    await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');await setByLabel('Πραγματικό υπόλοιπο','123.45')});
+    await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{
+      await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');
+      await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45');
+      // Verify that the real browser cannot persist a correction silently.
+      const review=await c!.call<boolean>("function(){const modal=document.querySelector('.quick-modal');if(!modal)return false;const candidates=[...modal.querySelectorAll('[aria-label]')].some(node=>node.getAttribute('aria-label')==='Κινήσεις προς σύγκριση');return Boolean(candidates&&modal.querySelector('.reconcile-preview')?.textContent?.includes('Υπολογισμένο υπόλοιπο στις')&&modal.querySelector('input[type=checkbox]'))}");
+      assert(review,'Reconciliation must compare dated canonical movements and require owner review.');
+      await clickText('.quick-modal footer button','Καταχώριση');
+      await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Επιβεβαίωσε')}",'unconfirmed reconciliation must fail closed');
+      assert(Boolean(await c!.call("function(){return Boolean(document.querySelector('.quick-modal'))}")),'Unconfirmed bank correction unexpectedly closed the real editor.');
+      const confirmed=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
+      assert(confirmed,'Real owner review checkbox could not be confirmed.');
+    });
     await addQuickIntent('Σύνθετη αγορά','Real Browser Quick Split','split',null,async()=>{await setByLabel('Περιγραφή μέρους 1','Real Browser Part A');await setByLabel('Ποσό μέρους 1','3.25');await setByLabel('Περιγραφή μέρους 2','Real Browser Part B');await setByLabel('Ποσό μέρους 2','4.75')});
     const quickIntentMatrix=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after Quick Entry intent matrix');
@@ -202,6 +225,16 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit reload after payment');
     await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
     await shot('credit-payment-persisted');
+
+    console.log('[real-browser] stage reports-credit-drillthrough');
+    await clickText('.sidebar nav button','Αναφορές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports after credit payment');
+    await waitFor("function(){return [...document.querySelectorAll('.report-activity-list>div')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'credit purchase shown in recent Reports');
+    const openedCredit=await c.call<boolean>("function(){const row=[...document.querySelectorAll('.report-activity-list>div')].find(node=>(node.textContent||'').includes('Real Browser Credit Purchase'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Στην πιστωτική'));button?.click();return Boolean(button)}");
+    assert(openedCredit,'Credit purchase must link to the Credit workspace, not hidden Transactions.');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit domain from report');
+    await waitFor("function(){return [...document.querySelectorAll('.credit-purchases-table tbody tr')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'correct credit card and original purchase in drilldown');
+    await shot('reports-credit-drillthrough');
 
     console.log('[real-browser] stage savings-goal-transfer-reload');
     await clickText('.sidebar nav button','Αποταμίευση');
@@ -265,6 +298,33 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const openInactive=await c.call<boolean>("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!(root instanceof HTMLDetailsElement))return false;root.open=true;return true}");assert(openInactive,'Inactive recurring history is unavailable.');
     await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
     await shot('recurring-domain-persisted');
+
+    console.log('[real-browser] stage recurring-pay-edit-linked-reload');
+    const resumeRecurring=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-recurring-status=paused]')].find(item=>(item.textContent||'').includes('Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Ενεργοποίηση\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(resumeRecurring,'Paused recurring must be restorable before recording a real payment.');
+    await waitRecurringStatus('Real Browser Recurring','active');
+    await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'active recurring after restore');
+    const ownPay=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Πληρωμή\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(ownPay,'Real recurring payment must originate from its dedicated page.');
+    await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'real recurring contextual payment');
+    await clickText('.contextual-quick-modal button','Επιβεβαίωση πληρωμής');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const row=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');return Boolean(row&&(payload.data?.state?.events||[]).some(event=>event.recurringId===row.id&&event.kind==='expense'&&event.note==='Πληρωμή: Real Browser Recurring'))}",'persisted genuine linked recurring payment');
+    await clickText('.sidebar nav button','Συναλλαγές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions owns linked edit');
+    await search('Πληρωμή: Real Browser Recurring');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Πληρωμή: Real Browser Recurring'))}",'linked recurring transaction visible');
+    const editPaidRecurring=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Πληρωμή: Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(editPaidRecurring,'Linked recurring transaction is editable in Transactions.');
+    await waitFor("function(){return Boolean(document.querySelector('[data-linked-recurring-payment]'))}",'recurring provenance disclosure');
+    assert(await c.call<boolean>("function(){return !document.querySelector('.generic-kind-grid')&&Boolean(document.querySelector('[data-linked-recurring-payment]'))}"),'linked recurring payment cannot silently change economic kind');
+    await setByLabel('Ποσό','21.45');
+    await setByLabel('Σχόλιο','Real Browser Recurring Payment Edited');
+    await clickText('.quick-modal button','Εφαρμογή αλλαγών');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const recurring=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');const events=(payload.data?.state?.events||[]).filter(event=>event.recurringId===recurring?.id&&event.kind==='expense');return Boolean(recurring&&events.length===1&&events[0].note==='Real Browser Recurring Payment Edited'&&Math.abs(events[0].amount-21.45)<0.001)}",'edited linked recurring payment keeps exact owner ID and no duplicate');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'reload after linked recurring edit');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const recurring=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');return Boolean(recurring&&(payload.data?.state?.events||[]).some(event=>event.recurringId===recurring.id&&event.note==='Real Browser Recurring Payment Edited'))}",'linked payment survives real DB reload');
+    await shot('recurring-payment-linked-edit-persisted');
 
     console.log('[real-browser] stage planning-create-complete-reload');
     await clickText('.sidebar nav button','Προγραμματισμός');
@@ -366,11 +426,11 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await setByLabel('Όνομα κάρτας','Real Browser Lifecycle Card');
     const selectDesign=await c.call<boolean>("function(){const option=[...document.querySelectorAll('.card-create-modal .design-option')].find(node=>node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}");assert(selectDesign,'Card design option is unavailable.');
     await clickText('.card-create-modal button','Προσθήκη κάρτας');
-    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
-    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
+    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
+    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
     // A new card is durably staged without secrets first. Do not reload merely
     // because its empty profile appeared; wait for vault + final finance receipt.
-    await waitFor("function(){return !document.querySelector('.app-card-details-dialog')}",'new card details closed after final durable save');
+    await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'new card details closed after final durable save');
     await waitCardState('Real Browser Lifecycle Card',true,true,'4242');
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'cards reload after create');
     await waitFor("function(){return [...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('Real Browser Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created card after reload');
@@ -458,6 +518,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     console.log('[real-browser] stage data-management-backup-import');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace');
     await clickText('.settings-tablist button','Δεδομένα');await waitFor("function(){return Boolean(document.querySelector('.settings-data-tab'))}",'settings data tab');
+    assert(await c.call<boolean>("function(){const g=document.querySelector('.settings-import-guide');const summary=g?.querySelector('summary');if(!summary)return false;summary.click();return g.open&&g.textContent.includes('schemaVersion')&&g.textContent.includes('Card Vault')&&g.textContent.includes('δεν αναιρείται με Undo/Redo')}"),'Import guide should expose JSON structure and irreversible contract.');
     await installDownloadObserver();
     await clickText('.settings-data-action-button','Backup & λήψη');
     await waitFor("function(){return (document.querySelector('.logic-note[role=status]')?.textContent||'').includes('αντίγραφο ασφαλείας δημιουργήθηκε')}",'backup success feedback');
@@ -483,7 +544,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await clickText('.sidebar nav button','Dashboard');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('λογαριασμοί')}",'dashboard after import');
     await waitFor("function(){return document.body.textContent.includes('Imported QA Cash')}",'imported account name after reload');
     const historyButton=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");assert(historyButton,'Change History action is missing.');
-    await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν εντάσσεται αυτόματα στο Undo/Redo'))}",'import history point');
+    await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν αναιρείται μέσω Undo/Redo'))}",'import history point');
+    assert(await c.call<boolean>("function(){const b=[...document.querySelectorAll('button[aria-label]')].find(n=>n.getAttribute('aria-label')==='Αναίρεση τελευταίας αλλαγής');return Boolean(b&&b.disabled)}"),'Import boundary must disable unsafe history Undo.');
     await shot('data-management-import-history-persisted');
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));

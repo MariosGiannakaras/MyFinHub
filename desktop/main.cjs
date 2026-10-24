@@ -11,6 +11,7 @@ const {
   publicDiagnostic,
   startupError,
 } = require('./startup-diagnostics.cjs');
+const { createDesktopBackupStore } = require('./backup-store.cjs');
 
 const PRODUCT_NAME = 'MyFinHub';
 const APP_ID = 'app.myfinhub.desktop';
@@ -29,6 +30,7 @@ const UPDATE_HOSTS = new Set(['github.com', 'api.github.com', 'objects.githubuse
 
 let mainWindow = null;
 let setupWindow = null;
+let desktopBackupStore = null;
 let backend = null;
 let quitting = false;
 let updateTimer = null;
@@ -660,6 +662,76 @@ function registerIpcHandlers() {
   ipcMain.handle('myfinhub:check-updates', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return checkForUpdates(true); });
   ipcMain.handle('myfinhub:download-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return downloadUpdate(); });
   ipcMain.handle('myfinhub:install-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return installDownloadedUpdate(); });
+  // The renderer has no Node filesystem or privileged database credentials.
+  // Backup snapshots are fetched by main from authenticated server GET /api/data.
+  const assertBackupSender = event => {
+    if (!isMainSender(event) || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Unauthorized backup IPC sender.');
+    if (!desktopBackupStore) throw new Error('Το τοπικό backup δεν είναι διαθέσιμο.');
+  };
+  // Never trust a renderer claim to be logged in. Check server-side owner+AAL2
+  // authorization for every local-finance-file operation. Chromium sends the
+  // existing HttpOnly session cookies; no token is transferred to JavaScript.
+  const readAuthorizedFinanceBackup = async unlockToken => {
+    // Backend verifies the ephemeral ticket against the owner session.
+    // A renderer-provided value cannot bypass the PIN or finance RLS.
+    if (typeof unlockToken !== 'string' || (unlockToken && !/^[a-zA-Z0-9_-]{43}$/.test(unlockToken))) {
+      throw new Error('Μη έγκυρο αναγνωριστικό ξεκλειδώματος PIN.');
+    }
+    if (!mainWindow || mainWindow.isDestroyed()) throw new Error('Desktop session unavailable.');
+    const origin = new URL(mainWindow.webContents.getURL());
+    if (origin.protocol !== 'http:' || origin.hostname !== LOOPBACK) throw new Error('Untrusted desktop origin.');
+    const response = await mainWindow.webContents.session.fetch(new URL('/api/data', origin).href, {
+      method: 'GET', credentials: 'include', cache: 'no-store',
+      headers: { accept: 'application/json', ...(unlockToken ? { 'x-myfinhub-app-unlock': unlockToken } : {}) },
+    });
+    if (!response.ok) throw new Error('Η πρόσβαση στο backup απαιτεί σύνδεση ιδιοκτήτη, TOTP και ξεκλείδωμα PIN όταν είναι ενεργό.');
+    const snapshot = await response.json();
+    if (!snapshot || typeof snapshot !== 'object' || !snapshot.data ||
+        typeof snapshot.revision !== 'string') throw new Error('Αποτυχία επαλήθευσης δεδομένων backup.');
+    return snapshot;
+  };
+  const requireBackupAccess = async (event, unlockToken) => {
+    assertBackupSender(event);
+    return readAuthorizedFinanceBackup(unlockToken);
+  };
+  ipcMain.handle('myfinhub:backup-report-failure', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
+    desktopBackupStore.reportFailure();
+    return true;
+  });
+  ipcMain.handle('myfinhub:backup-status', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
+    return desktopBackupStore.status();
+  });
+  ipcMain.handle('myfinhub:backup-save', async (event, unlockToken) => {
+    const snapshot = await requireBackupAccess(event, unlockToken);
+    // Authoritative fetch in main: reject forged/stale renderer-provided finance
+    // payloads and use the same owner+AAL2 backend as all other finance reads.
+    return desktopBackupStore.save({ data: snapshot.data, revision: snapshot.revision });
+  });
+  ipcMain.handle('myfinhub:backup-restore-candidate', async (event, name, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
+    return desktopBackupStore.restoreCandidate(name);
+  });
+  ipcMain.handle('myfinhub:backup-choose-folder', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
+    const picked = await dialog.showOpenDialog(mainWindow, {
+      title: 'Επιλογή φακέλου αντιγράφων MyFinHub',
+      defaultPath: desktopBackupStore.folder(),
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
+    // Recheck after the native dialog: session can expire while it is open.
+    await requireBackupAccess(event, unlockToken);
+    return desktopBackupStore.setFolder(picked.filePaths[0]);
+  });
+  ipcMain.handle('myfinhub:backup-open-folder', async (event, unlockToken) => {
+    await requireBackupAccess(event, unlockToken);
+    desktopBackupStore.initialize();
+    const error = await shell.openPath(desktopBackupStore.folder());
+    if (error) throw new Error('Ο φάκελος backup δεν άνοιξε.');
+    return true;
+  });
   ipcMain.handle('myfinhub:get-setup-state', event => {
     if (!isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
     return savedSetupState();
@@ -730,6 +802,14 @@ async function launch() {
     app.setAppUserModelId(APP_ID);
     configureSessionPermissions();
     registerIpcHandlers();
+    desktopBackupStore = createDesktopBackupStore({
+      userData: app.getPath('userData'),
+      documents: app.getPath('documents'),
+    });
+    // Idempotent local backup catalog initialized during first installed launch.
+    // No Supabase admin key or cloud DB provision is used by the installer.
+    try { desktopBackupStore.initialize(); }
+    catch (error) { console.error('Desktop backup initialization failed:', error instanceof Error ? error.message : String(error)); }
     migrateLegacyDesktopConfig();
     applyPendingProvision();
     if (!runtimeConfigExists()) { createSetupWindow(); return; }

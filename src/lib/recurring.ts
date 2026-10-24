@@ -26,6 +26,12 @@ export function recurringAccountError(availableAccountIds:string[],accountId:str
   return null;
 }
 
+/** A corrected real payment keeps its owner-proven recurring identity.
+ * Never derive this identity from equal names, dates or amounts. */
+export function preserveRecurringPaymentLink(next:FinanceEvent,previous?:FinanceEvent|null){
+  if(previous?.recurringId&&previous.kind==='expense'&&next.kind==='expense')next.recurringId=previous.recurringId;
+  return next;
+}
 export function recurringPayments(data:FinanceData,itemId:string):FinanceEvent[]{
   return (data.state.events??[]).filter(event=>event.recurringId===itemId).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
 }

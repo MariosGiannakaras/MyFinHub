@@ -57,10 +57,16 @@ const releasePending=[
   "20261009190000_allow_recurring_service_asset_storage_owner_read.sql",
   "20261010013500_atomic_card_vault_cleanup.sql",
   "20261010145500_guard_pending_card_secret_cleanup_intent.sql",
+  "20261019110000_protect_irreversible_history_boundaries.sql",
+  "20261021091500_add_lending_writeoff_event_kind.sql",
+  "20261021211500_allow_noncash_writeoff_health.sql",
+  "20261022213500_expand_budget_scope_to_subcategories.sql",
+  "20261024150000_add_device_details_and_nicknames.sql",
+  "20261024160000_shared_owner_app_lock.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
-  it('keeps every production-applied migration represented by the exact applied version/name',()=>{
+  it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
   });
@@ -73,6 +79,10 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261009190000_allow_recurring_service_asset_storage_owner_read.sql');
     expect(releasePending).toContain('20261010013500_atomic_card_vault_cleanup.sql');
     expect(releasePending).toContain('20261010145500_guard_pending_card_secret_cleanup_intent.sql');
+    expect(releasePending).toContain('20261019110000_protect_irreversible_history_boundaries.sql');
+    expect(releasePending).toContain('20261022213500_expand_budget_scope_to_subcategories.sql');
+    expect(releasePending).toContain('20261024150000_add_device_details_and_nicknames.sql');
+    expect(releasePending).toContain('20261024160000_shared_owner_app_lock.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

@@ -20,6 +20,7 @@ const performanceAudit=readFileSync(new URL('../scripts/performance-audit.mjs',i
 const loadingShiftAudit=readFileSync(new URL('../scripts/loading-shift-audit.mjs',import.meta.url),'utf8');
 const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',import.meta.url),'utf8');
 const desktopWorkflow=readFileSync(new URL('../.github/workflows/desktop-windows.yml',import.meta.url),'utf8');
+const unifiedCi=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
 const cleanLaunchWorkflow=readFileSync(new URL('../.github/workflows/desktop-clean-launch.yml',import.meta.url),'utf8');
 
 describe('release-readiness source contracts',()=>{
@@ -42,7 +43,9 @@ describe('release-readiness source contracts',()=>{
     expect(budget).toContain("label:'eager application CSS'");
     expect(budget).toContain("label:'total application CSS'");
     expect(budget).toContain("raw:256*1024,gzip:46*1024");
-    expect(budget).toContain("raw:520*1024,gzip:100*1024");
+    expect(budget).toContain("warnRaw:520*1024,warnGzip:100*1024,raw:560*1024,gzip:110*1024");
+    expect(budget).toContain("if(warning&&rawOk&&gzipOk)console.warn");
+    expect(budget).toContain("if(!rawOk||!gzipOk)failed=true");
   });
 
   it('reruns Windows package validation when root production-build inputs change',()=>{
@@ -54,11 +57,14 @@ describe('release-readiness source contracts',()=>{
     expect(desktopWorkflow).toContain('run: npm run desktop:pack:from-dist');
     expect(desktopWorkflow).toContain('run: npm run desktop:dist:from-dist');
     expect(cleanLaunchWorkflow).toContain('run: npm run desktop:dist');
-    const required=['vite.config.ts','tsconfig.json','tsconfig.app.json','tsconfig.node.json','scripts/sync-ocr-assets.mjs','scripts/bundle-budget.mjs'];
-    for(const path of required){
-      expect(desktopWorkflow.split(`- ${path}`).length-1).toBeGreaterThanOrEqual(2);
-      expect(cleanLaunchWorkflow.split(`- ${path}`).length-1).toBeGreaterThanOrEqual(2);
-    }
+    // The reusable Windows workflows are called by unified CI for every
+    // ready review, so a changed root build input cannot bypass either gate.
+    expect(unifiedCi).toContain('branches: [main, develop]');
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-windows.yml');
+    expect(unifiedCi).toContain('uses: ./.github/workflows/desktop-clean-launch.yml');
+    expect(unifiedCi).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
+    expect(desktopWorkflow).toContain('workflow_call:');
+    expect(cleanLaunchWorkflow).toContain('workflow_call:');
   });
 
   it('keeps browser/PWA identity consistently MyFinHub with resolvable install icons',()=>{

@@ -23,7 +23,6 @@ const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-review.yml', 'utf8');
 const finalVisualWorkflow = readFileSync('.github/workflows/final-visual-qa.yml', 'utf8');
-const finalVisualTrigger = readFileSync('.audit/run-final-visual-review', 'utf8');
 const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
 const refreshRouteQa = readFileSync('scripts/refresh-route-qa.mjs', 'utf8');
 const sessionRuntimeQa = readFileSync('scripts/session-runtime-qa.mjs', 'utf8');
@@ -38,6 +37,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).not.toContain('DevToolsActivePort');
     expect(coordinator).toContain('trimDiagnostics');
     expect(coordinator).toContain('Primary Chromium preflight passed');
+    expect(coordinator).toContain('const startupDeadline=Date.now()+40_000');
+    expect(coordinator).toContain('while(Date.now()<startupDeadline)');
+    expect(coordinator).toContain("DBUS_SESSION_BUS_ADDRESS:''");
+    expect(coordinator).toContain('`/tmp/myfinhub-primary-browser-preflight-${process.pid}-${attempt}`');
   });
 
   it('retries only recognized bootstrap failures on primary before any fallback', () => {
@@ -50,6 +53,8 @@ describe('rendered browser QA reliability contract', () => {
 
   it('keeps the shared primitive adoption suite in the rendered merge gate',()=>{
     expect(coordinator).toContain("scripts/primitives-adoption-qa.mjs");
+    expect(coordinator).toContain("scripts/desktop-backup-rendered-qa.mjs");
+    expect(coordinator).toContain("'scripts/completion-functional-crud-qa.mjs',\n  'scripts/large-data-boundaries-qa.mjs'");
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
   });
 
@@ -87,14 +92,19 @@ describe('rendered browser QA reliability contract', () => {
     expect(finalScreenshots).toContain("process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1'");
     expect(finalScreenshots).toContain('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
   });
-  it('runs persistent Final Visual QA once from the canonical develop squash-merge marker',()=>{
-    expect(finalVisualWorkflow).toContain('push:');
-    expect(finalVisualWorkflow).toContain('branches: [develop]');
-    expect(finalVisualWorkflow).toContain("- '.audit/run-final-visual-review'");
-    expect(finalVisualWorkflow).toContain("github.event_name == 'push'");
-    expect(finalVisualWorkflow).toContain("TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}");
-    expect(finalVisualWorkflow).toContain("EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}");
-    expect(finalVisualTrigger).toContain('issue-476 post-squash canonical-develop final visual release inspection');
+  it('requires exactly 216 read-only final screenshots as opt-in CI artifacts, not a git commit',()=>{
+    expect(finalVisualWorkflow).toContain('workflow_call:');
+    expect(finalVisualWorkflow).not.toContain('workflow_dispatch:');
+    expect(finalVisualWorkflow).toContain('permissions:\n  contents: read');
+    expect(finalVisualWorkflow).toContain('MYFINHUB_FINAL_SCREENSHOTS=1');
+    expect(finalVisualWorkflow).toContain('npm run qa:final-screenshots');
+    expect(finalVisualWorkflow).toContain('if [ "$COUNT" -ne 216 ]');
+    expect(finalVisualWorkflow).toContain('actions/upload-artifact@');
+    expect(finalVisualWorkflow).not.toContain('git push');
+    expect(finalVisualWorkflow).not.toContain('contents: write');
+    expect(ci).toContain('uses: ./.github/workflows/final-visual-qa.yml');
+    expect(ci).toContain("contains(github.event.pull_request.labels.*.name, 'final-visual-qa')");
+    expect(finalVisualWorkflow).not.toContain("- '.audit/run-final-visual-review'");
   });
   it('records the in-place refresh transition atomically before the transient skeleton can disappear',()=>{
     expect(refreshRouteQa).toContain("const key='__MYFINHUB_REFRESH_ROUTE_QA__'");
@@ -113,17 +123,13 @@ describe('rendered browser QA reliability contract', () => {
     expect(sessionRuntimeQa).toContain("rheomiq:mfa-required");
     expect(sessionRuntimeQa).toContain("rheomiq:auth-expired");
   });
-  it('parallelizes functional suites while isolating strict latency measurement from browser contention',()=>{
+  it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");
     expect(coordinator).toContain('const activePorts=new Set()');
     expect(coordinator).toContain('await acquirePort(port)');
     expect(coordinator).toContain('releasePort(port)');
-    expect(coordinator).toContain("const latencySuite=scripts.find(item=>item.key==='large-data-boundaries')");
-    expect(coordinator).toContain("if(!latencySuite)throw new Error('Required large-data performance QA suite is missing.')");
-    expect(coordinator).toContain('const parallelScripts=scripts.filter(item=>item!==latencySuite)');
     expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)}');
-    expect(coordinator).toContain('await runRenderedItem(latencySuite)');
-    expect(largeData).toContain("large-state route readiness stays under 5s");
+    expect(coordinator).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
   });
 
   it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
@@ -149,6 +155,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(qaWorkspace).toContain("screen==='desktop-lock'");
     expect(desktopHostVisual).toContain("/desktop/setup.html");
     expect(desktopHostVisual).toContain('desktop-app-lock-invalid-pin-1440x930');
+    expect(desktopHostVisual).toContain("applyThemePreference('dark')");
+    expect(desktopHostVisual).toContain('darkTheme.tokenMatchesCard');
+    expect(desktopHostVisual).toContain('darkTheme.contrast>=4.5');
+    expect(desktopHostVisual).not.toContain("document.documentElement.dataset.theme='dark'");
     expect(desktopHostVisual).toContain('desktop-update-downloading-1100x760');
     expect(desktopHostVisual).toContain('desktop-startup-recovery-min-620x650');
     expect(desktopHostVisual).toContain('BACKEND_STARTUP_TIMEOUT');
@@ -221,7 +231,9 @@ describe('rendered browser QA reliability contract', () => {
 
   it('keeps server-vault save/reveal/update/reload/delete in rendered QA',()=>{
     expect(coordinator).toContain("scripts/card-vault-runtime-qa.mjs");
-    expect(cardVaultRuntime).toContain('Card Vault runtime QA: invalid input stays local and does not write');
+    expect(cardVaultRuntime).toContain('Card Vault runtime QA: incomplete expiry stays local');
+    expect(cardVaultRuntime).toContain('incomplete expiry must not reach PUT');
+    expect(cardVaultRuntime).toContain('.app-card-details-inline');
     expect(cardVaultRuntime).toContain("url.searchParams.set('card-vault','ready')");
     expect(qaWorkspace).toContain("params.get('card-vault')==='ready'");
     expect(qaWorkspace).toContain("vaultRef:'qa-debit-card'");

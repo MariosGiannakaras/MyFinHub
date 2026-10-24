@@ -1,118 +1,247 @@
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewDecision } from './domain.js';
+import { categoryKey, categoryPath } from './categories.js';
+import { moneyToCents, centsToMoney } from './money.js';
+import { pendingScheduled } from './scheduled.js';
+import { activeRecurringItems, nextRecurringDate } from './recurring.js';
 import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
 type BudgetStatus = 'ok' | 'near' | 'exceeded';
+type BudgetScope = MonthlyBudget['scope'];
 
 interface BudgetProgress {
   id: string;
   month: string;
-  scope: 'category' | 'overall';
+  scope: BudgetScope;
   category?: string;
+  subcategory?: string;
+  carryover: boolean;
+  carried: number;
+  baseLimit: number;
   limit: number;
   used: number;
   rawUsed: number;
   remaining: number;
+  projectedDue: number;
+  projectedUsed: number;
+  projectedRemaining: number;
   ratio: number;
   alertThreshold: number;
   status: BudgetStatus;
+  projectedStatus: BudgetStatus;
+}
+
+interface BudgetCommitment {
+  id: string;
+  date: string;
+  category: string;
+  subcategory?: string;
+  amount: number;
+  source: 'scheduled' | 'recurring';
 }
 
 const DEFAULT_ALERT_THRESHOLD = .8;
+const normalize = (value?:string) => categoryKey(value??'');
+const pair = (cat?:string,sub?:string) => `${normalize(cat)}\u001f${normalize(sub)}`;
+const cents=(amount:number)=>moneyToCents(amount);
+const money=(value:number)=>centsToMoney(value);
+const spendMonth=(date:string,month:string,asOf?:string)=>date.startsWith(month+'-')&&(!asOf||month!==asOf.slice(0,7)||date<=asOf);
+const prevMonth=(month:string)=>{
+  const [year,m]=month.split('-').map(Number);
+  return new Date(Date.UTC(year,m-2,1)).toISOString().slice(0,7);
+};
 
-function cleanCategory(value: string | undefined) {
-  const clean = value?.trim();
-  return clean || null;
+function add(target:Map<string,number>,key:string,amount:number){
+  if(!key||!Number.isFinite(amount)||Math.abs(amount)<.000001)return;
+  target.set(key,(target.get(key)??0)+cents(amount));
 }
 
-function add(target: Map<string, number>, category: string | undefined, value: number) {
-  const key = cleanCategory(category);
-  if (!key || !Number.isFinite(value) || Math.abs(value) <= .000001) return;
-  target.set(key, (target.get(key) ?? 0) + value);
-}
-
-function addSplitParts(target:Map<string,number>,parts:SplitPart[]|undefined){
-  for(const part of parts??[]){
-    const kind=part.kind??'expense';
-    if(kind==='expense')add(target,part.category,Math.abs(Number(part.amount||0)));
-    if(kind==='refund')add(target,part.category,-Math.abs(Number(part.amount||0)));
-  }
-}
-
-/** Net categorized spending for one month. Canonical flow-impact expense values
- * already encode refunds as negative expense. Transfers/savings/reconciliation/
- * income do not consume category budgets. Split portions are handled directly so
- * each categorized portion is included exactly once, including reviewed legacy
- * transactions that were confirmed as semantic splits.
- */
-export function categoryBudgetSpending(data: FinanceData, month: string, asOf?: string) {
-  const totals = new Map<string, number>();
-  for (const transaction of effectiveLegacyTransactions(data)) {
-    if (!transaction.date.startsWith(`${month}-`) || (asOf&&month===asOf.slice(0,7)&&transaction.date>asOf)) continue;
-    const decision=reviewDecision(data,transaction.id);
-    if(decision?.status==='confirmed'&&decision.semanticKind==='split'){
-      addSplitParts(totals,decision.parts);
-      continue;
+/** Two views from the SAME posting rows. Never add category+subcategory views
+ * together: a split is allocated by its actual parts exactly once. */
+function spending(data:FinanceData,month:string,asOf?:string){
+  const categories=new Map<string,number>(),subcategories=new Map<string,number>();
+  const categoryNames=new Map<string,string>(),subcategoryNames=new Map<string,string>();
+  const addExpense=(category:string|undefined,subcategory:string|undefined,amount:number)=>{
+    if(!category?.trim())return;
+    categoryNames.set(normalize(category),category.trim());
+    add(categories,normalize(category),amount);
+    if(subcategory?.trim()){
+      subcategoryNames.set(pair(category,subcategory),categoryPath(category,subcategory));
+      add(subcategories,pair(category,subcategory),amount);
     }
-    const impact = flowImpactLegacy(data, transaction);
-    if (impact.expense) add(totals, transaction.category, impact.expense);
-  }
-  for (const event of data.state.events ?? []) {
-    if (!event.date.startsWith(`${month}-`) || (asOf&&month===asOf.slice(0,7)&&event.date>asOf)) continue;
-    if (event.parts?.length) {
-      addSplitParts(totals,event.parts);
-      continue;
+  };
+  const parts=(values:SplitPart[]|undefined)=>{
+    for(const part of values??[]){
+      const kind=part.kind??'expense';
+      if(kind==='expense')addExpense(part.category,part.subcategory,Math.abs(Number(part.amount||0)));
+      if(kind==='refund')addExpense(part.category,part.subcategory,-Math.abs(Number(part.amount||0)));
     }
-    const impact = flowImpactEvent(event);
-    if (impact.expense) add(totals, event.category, impact.expense);
+  };
+  for(const tx of effectiveLegacyTransactions(data)){
+    if(!spendMonth(tx.date,month,asOf))continue;
+    const decision=reviewDecision(data,tx.id);
+    if(decision?.status==='confirmed'&&decision.semanticKind==='split'){parts(decision.parts);continue;}
+    const impact=flowImpactLegacy(data,tx);
+    if(impact.expense)addExpense(decision?.category||tx.category,tx.subcategory,impact.expense);
   }
-  return totals;
+  for(const event of data.state.events??[]){
+    if(!spendMonth(event.date,month,asOf))continue;
+    if(event.parts?.length){parts(event.parts);continue;}
+    const impact=flowImpactEvent(event);
+    if(impact.expense)addExpense(event.category,event.subcategory,impact.expense);
+  }
+  return {categories,subcategories,categoryNames,subcategoryNames};
 }
 
-function monthlyBudgets(data: FinanceData, month: string) {
-  return (data.state.budgets ?? [])
-    .filter((budget) => budget.month === month && budget.amount > 0)
-    .slice()
-    .sort((a, b) => a.scope.localeCompare(b.scope) || (a.category ?? '').localeCompare(b.category ?? '', 'el') || a.id.localeCompare(b.id));
+export function categoryBudgetSpending(data:FinanceData,month:string,asOf?:string){
+  const allocations=spending(data,month,asOf);
+  const result=new Map<string,number>();
+  // The actual posting (including a confirmed legacy split part) owns the
+  // display label; the budget rollups use normalized identity/aliases.
+  for(const [key,value] of allocations.categories)
+    result.set(allocations.categoryNames.get(key)??key,money(value));
+  return result;
 }
 
-export function budgetProgress(data: FinanceData, month: string, asOf?: string): BudgetProgress[] {
-  const spending = categoryBudgetSpending(data, month, asOf);
-  const categorizedTotal = [...spending.values()].reduce((sum, value) => sum + value, 0);
-  return monthlyBudgets(data, month).map((budget) => {
-    const rawUsed = budget.scope === 'overall' ? categorizedTotal : (spending.get(budget.category ?? '') ?? 0);
-    const used = Math.max(0, rawUsed);
-    const limit = Math.max(0, Number(budget.amount || 0));
-    const ratio = limit > 0 ? used / limit : 0;
-    const alertThreshold = Math.min(.99, Math.max(.5, Number(budget.alertThreshold ?? DEFAULT_ALERT_THRESHOLD)));
-    const status: BudgetStatus = ratio > 1 ? 'exceeded' : ratio >= alertThreshold ? 'near' : 'ok';
-    return {
-      id: budget.id,
-      month: budget.month,
-      scope: budget.scope,
-      category: budget.category,
-      limit,
-      used,
-      rawUsed,
-      remaining: limit - used,
-      ratio,
-      alertThreshold,
-      status,
-    };
+export function subcategoryBudgetSpending(data:FinanceData,month:string,asOf?:string){
+  const allocations=spending(data,month,asOf);
+  const result=new Map<string,number>();
+  for(const [key,value] of allocations.subcategories)
+    result.set(allocations.subcategoryNames.get(key)??key.replace('\u001f',' › '),money(value));
+  return result;
+}
+
+function identities(data:FinanceData,budget:MonthlyBudget){
+  const records=data.state.settings.categoryIdentities??{};
+  const category=budget.categoryIdentityId?records[budget.categoryIdentityId]:undefined;
+  const subcategory=budget.subcategoryIdentityId?records[budget.subcategoryIdentityId]:undefined;
+  const cats=new Set([budget.category,category?.label,...(category?.aliases??[])].filter((v):v is string=>Boolean(v)).map(normalize));
+  const subs=new Set([budget.subcategory,subcategory?.label,...(subcategory?.aliases??[])].filter((v):v is string=>Boolean(v)).map(normalize));
+  return {cats,subs};
+}
+
+function matchingBudget(data:FinanceData,a:MonthlyBudget,b:MonthlyBudget){
+  if(a.scope!==b.scope)return false;
+  if(a.scope==='overall')return true;
+  if(a.categoryIdentityId&&b.categoryIdentityId)return a.categoryIdentityId===b.categoryIdentityId&&
+    (a.scope!=='subcategory'||a.subcategoryIdentityId===b.subcategoryIdentityId);
+  const aa=identities(data,a),bb=identities(data,b);
+  if(![...aa.cats].some(name=>bb.cats.has(name)))return false;
+  return a.scope!=='subcategory'||[...aa.subs].some(name=>bb.subs.has(name));
+}
+
+function useBudget(data:FinanceData,budget:MonthlyBudget,allocation:ReturnType<typeof spending>){
+  if(budget.scope==='overall')return [...allocation.categories.values()].reduce((a,b)=>a+b,0);
+  const {cats,subs}=identities(data,budget);
+  if(budget.scope==='category')return [...allocation.categories].reduce((n,[key,value])=>n+(cats.has(key)?value:0),0);
+  return [...allocation.subcategories].reduce((n,[key,value])=>{
+    const [cat,sub]=key.split('\u001f');
+    return n+(cats.has(cat)&&subs.has(sub)?value:0);
+  },0);
+}
+
+function monthlyBudgets(data:FinanceData,month:string){
+  return (data.state.budgets??[]).filter(b=>b.month===month&&b.amount>0)
+    .slice().sort((a,b)=>a.scope.localeCompare(b.scope)||(a.category??'').localeCompare(b.category??'','el')||a.id.localeCompare(b.id));
+}
+
+/** Explicit, known but NOT booked obligations. Never conflate independent
+ * Scheduled and Recurring facts by same-looking date/name/amount: no canonical
+ * link between these separate source rows is available. Variable recurring
+ * amounts are advisory estimates, not known exact due commitments. */
+export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:string):BudgetCommitment[]{
+  const end=`${month}-${new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).getUTCDate()}`;
+  if(end<=asOf)return [];
+  const result:BudgetCommitment[]=[];
+  const scheduled=pendingScheduled(data).filter(item=>item.kind==='expense'&&item.dueDate>asOf&&item.dueDate<=end&&
+    item.dueDate.startsWith(month+'-')&&!item.completedEventId&&item.category&&Number(item.amount)>0);
+  for(const item of scheduled)result.push({id:item.id,date:item.dueDate,category:item.category!,subcategory:item.subcategory,
+    amount:Number(item.amount),source:'scheduled'});
+  // A budget can target a later month than the next occurrence after asOf.
+  // Resolve the target month with the one canonical Recurring cadence engine.
+  const monthStart=`${month}-01`;
+  const targetAsOf=monthStart>asOf?monthStart:asOf;
+  for(const item of activeRecurringItems(data)){
+    if(item.amountMode==='variable'||!item.category||Number(item.amount)<=0)continue;
+    const nextDate=nextRecurringDate(data,item,targetAsOf);
+    if(!nextDate||!nextDate.startsWith(month+'-')||nextDate<=asOf)continue;
+    if((data.state.events??[]).some(e=>e.recurringId===item.id&&e.date.slice(0,7)===month))continue;
+    result.push({id:item.id,date:nextDate,category:item.category,subcategory:item.subcategory,
+      amount:Number(item.amount),source:'recurring'});
+  }
+  return result;
+}
+
+/** On status-only surfaces, skip unrendered future commitments. Reports and
+ * budget editors retain the full default, nonposting projection contract. */
+export function budgetProgress(data:FinanceData,month:string,asOf?:string,includeProjectedDue=true):BudgetProgress[]{
+  const selected=monthlyBudgets(data,month);
+  if(!selected.length)return [];
+  const previousSpending=new Map<string,ReturnType<typeof spending>>();
+  const spent=(m:string,cutoff?:string)=>{
+    const key=`${m}:${cutoff??''}`;
+    const cached=previousSpending.get(key);
+    if(cached)return cached;
+    const s=spending(data,m,cutoff);previousSpending.set(key,s);return s;
+  };
+  const previousCarry=(budget:MonthlyBudget,depth:number):number=>{
+    if(!budget.carryover||depth>24)return 0;
+    const previousMonth=prevMonth(budget.month);
+    const parent=monthlyBudgets(data,previousMonth).find(b=>matchingBudget(data,budget,b));
+    if(!parent)return 0;
+    const before=cents(parent.amount)+previousCarry(parent,depth+1);
+    const used=Math.max(0,useBudget(data,parent,spent(previousMonth)));
+    return Math.max(0,before-used);
+  };
+  const actual=spent(month,asOf);
+  const commitments=asOf&&includeProjectedDue?budgetProjectedCommitments(data,month,asOf):[];
+  return selected.map(budget=>{
+    const usedCents=useBudget(data,budget,actual);
+    const carriedCents=previousCarry(budget,0);
+    const baseCents=cents(budget.amount),limitCents=baseCents+carriedCents;
+    const used=Math.max(0,usedCents);
+    const future=commitments.reduce((sum,obligation)=>{
+      const fake:MonthlyBudget={...budget};
+      const sources={
+        categories:new Map([[normalize(obligation.category),cents(obligation.amount)]]),
+        subcategories:new Map(obligation.subcategory?[[pair(obligation.category,obligation.subcategory),cents(obligation.amount)]]:[]),
+        categoryNames:new Map<string,string>(),
+        subcategoryNames:new Map<string,string>()
+      };
+      return sum+useBudget(data,fake,sources);
+    },0);
+    const threshold=Math.min(.99,Math.max(.5,Number(budget.alertThreshold??DEFAULT_ALERT_THRESHOLD)));
+    const ratio=limitCents>0?used/limitCents:0,projectedUsed=Math.max(0,usedCents+future);
+    const projectedRatio=limitCents>0?projectedUsed/limitCents:0;
+    const status=(r:number):BudgetStatus=>r>1?'exceeded':r>=threshold?'near':'ok';
+    return {id:budget.id,month,scope:budget.scope,category:budget.category,subcategory:budget.subcategory,
+      carryover:Boolean(budget.carryover),carried:money(carriedCents),baseLimit:money(baseCents),limit:money(limitCents),
+      used:money(used),rawUsed:money(usedCents),remaining:money(limitCents-used),
+      projectedDue:money(future),projectedUsed:money(projectedUsed),projectedRemaining:money(limitCents-projectedUsed),
+      ratio,alertThreshold:threshold,status:status(ratio),projectedStatus:status(projectedRatio)};
   });
 }
 
-
-export function normalizeBudget(input: MonthlyBudget): MonthlyBudget {
-  const amount = Number(input.amount);
-  if (!/^\d{4}-\d{2}$/.test(input.month)) throw new Error('Διάλεξε έγκυρο μήνα για το budget.');
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Το όριο budget πρέπει να είναι μεγαλύτερο από μηδέν.');
-  const category = input.scope === 'category' ? input.category?.trim() : undefined;
-  if (input.scope === 'category' && !category) throw new Error('Διάλεξε κατηγορία για το συγκεκριμένο budget.');
-  const alertThreshold = Math.min(.99, Math.max(.5, Number(input.alertThreshold ?? DEFAULT_ALERT_THRESHOLD)));
-  return { ...input, amount, category, alertThreshold };
+export function normalizeBudget(input:MonthlyBudget):MonthlyBudget{
+  const amount=Number(input.amount);
+  if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(input.month))throw new Error('Διάλεξε έγκυρο μήνα για το budget.');
+  if(!Number.isFinite(amount)||amount<=0||!Number.isSafeInteger(cents(amount))||Math.abs(amount*100-cents(amount))>1e-6)
+    throw new Error('Το όριο budget πρέπει να είναι θετικό ποσό σε ακριβή λεπτά ευρώ.');
+  const category=input.scope==='overall'?undefined:input.category?.trim();
+  const subcategory=input.scope==='subcategory'?input.subcategory?.trim():undefined;
+  if(input.scope!=='category'&&input.scope!=='subcategory'&&input.scope!=='overall')
+    throw new Error('Διάλεξε έγκυρο τύπο προϋπολογισμού.');
+  if(input.scope!=='overall'&&!category)throw new Error('Διάλεξε κατηγορία για το συγκεκριμένο budget.');
+  if(input.scope==='subcategory'&&!subcategory)throw new Error('Διάλεξε υποκατηγορία για το όριο.');
+  const alertThreshold=Math.min(.99,Math.max(.5,Number(input.alertThreshold??DEFAULT_ALERT_THRESHOLD)));
+  return {...input,amount:money(cents(amount)),category,subcategory,
+    categoryIdentityId:input.scope==='overall'?undefined:input.categoryIdentityId,
+    subcategoryIdentityId:input.scope==='subcategory'?input.subcategoryIdentityId:undefined,
+    carryover:input.carryover===true,alertThreshold};
 }
 
-export function budgetStableId(month: string, scope: 'category' | 'overall', category?: string) {
-  const suffix = scope === 'overall' ? 'overall' : encodeURIComponent((category ?? '').trim().toLocaleLowerCase('el-GR'));
+export function budgetStableId(month:string,scope:BudgetScope,category?:string,subcategory?:string,categoryId?:string,subcategoryId?:string){
+  const suffix=scope==='overall'?'overall':scope==='subcategory'
+    ?`sub:${encodeURIComponent(categoryId||normalize(category))}:${encodeURIComponent(subcategoryId||normalize(subcategory))}`
+    :encodeURIComponent(normalize(category));
   return `budget:${month}:${suffix}`;
 }

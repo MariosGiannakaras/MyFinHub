@@ -1,4 +1,5 @@
 import { apiRequest } from './api.js';
+import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { assertValidIban, isValidIban } from './iban';
 import { notifyAuthExpired } from './authExpiry';
 import { userErrorMessage } from './userMessage';
@@ -71,6 +72,7 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
     return record;
   }
+  return trackDatabaseWrite(async()=>{
   const response=await apiRequest('/api/account-metadata',{
     method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
     body:JSON.stringify({accountId,iban:normalized}),
@@ -84,4 +86,5 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
   if(!record||record.accountId!==accountId)throw new Error('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');
   publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
   return record;
+  });
 }

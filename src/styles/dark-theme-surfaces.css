@@ -94,11 +94,7 @@ html[data-theme="dark"] .transactions-approved-filters .searchbox,
 html[data-theme="dark"] .transactions-approved-filters .owned-select-shell,
 html[data-theme="dark"] .transactions-approved-date,
 html[data-theme="dark"] .transactions-approved-filter-button,
-html[data-theme="dark"] .transactions-page-size .owned-select-shell{
-  background:var(--control-bg)!important;
-  border-color:var(--control-border)!important;
-  color:var(--ink)!important;
-}
+
 html[data-theme="dark"] .transactions-approved-filters .searchbox input,
 html[data-theme="dark"] .transactions-approved-date .owned-input{color:var(--ink)!important}
 html[data-theme="dark"] .transactions-approved-date>span{color:var(--muted)!important}
@@ -126,9 +122,9 @@ html[data-theme="dark"] .transactions-ledger-footer{
   background:var(--surface-inset)!important;
   color:var(--text-secondary)!important;
 }
-html[data-theme="dark"] .transactions-pagination button{color:var(--text-secondary)!important}
-html[data-theme="dark"] .transactions-pagination button:hover:not(:disabled){background:var(--surface-hover)!important}
-html[data-theme="dark"] .transactions-pagination button.active{background:var(--surface-selected)!important;color:var(--accent)!important}
+
+
+
 html[data-theme="dark"] .transactions-detail-head{border-color:var(--chart-grid)!important}
 html[data-theme="dark"] .transactions-detail-head strong,
 html[data-theme="dark"] .transactions-detail-hero b{color:var(--ink)!important}
