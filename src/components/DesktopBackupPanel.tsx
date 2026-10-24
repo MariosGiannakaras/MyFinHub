@@ -84,7 +84,7 @@ export function DesktopBackupPanel({
         </div>
         <HardDriveDownload size={20} aria-hidden="true" />
       </div>
-      <div className={`desktop-backup-health${statusAttention ? ' is-warning' : ''}`} role="status" aria-live="polite">
+      <div className={`logic-note compact desktop-backup-health${statusAttention ? ' is-error' : ''}`} role="status" aria-live="polite">
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div>
           <strong>{stateText}</strong>
@@ -112,6 +112,7 @@ export function DesktopBackupPanel({
       {status?.backups.length ? (
         <div className="desktop-backup-list">
           <strong>Ιστορικό τοπικών αντιγράφων ({status.backups.length})</strong>
+          <div className="settings-app-list">
           {status.backups.map(item => (
             <div className="desktop-backup-entry" key={item.name}>
               <div>
@@ -123,16 +124,17 @@ export function DesktopBackupPanel({
               )}>{operation === 'restore' ? 'Έλεγχος…' : 'Επαναφορά'}</Button>
             </div>
           ))}
+          </div>
         </div>
       ) : status ? <p className="desktop-backup-empty">Δεν υπάρχουν τοπικά αντίγραφα στον επιλεγμένο φάκελο. Θα δημιουργηθεί το πρώτο όταν είναι δυνατή η ανάγνωση της βάσης με ενεργή σύνδεση.</p> : null}
       <p className="desktop-backup-note">Τα αρχεία περιλαμβάνουν οικονομικά δεδομένα εφαρμογής και αποθηκεύονται τοπικά χωρίς πρόσθετη κρυπτογράφηση. Δεν περιλαμβάνουν μυστικά Card Vault, PIN, αρχεία Supabase Storage ή πλήρες αντίγραφο PostgreSQL. <strong>Η επαναφορά αντικαθιστά τα τρέχοντα οικονομικά δεδομένα</strong> μόνο μετά από νέα επιβεβαίωση και έλεγχο TOTP.</p>
       {failed && status?.lastFailureAt ? (
-        <p role="alert" className="desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>Τελευταία αποτυχημένη προσπάθεια: {dateLabel(status.lastFailureAt)}. Θα επανελεγχθεί όσο το MyFinHub είναι ανοιχτό και συνδεδεμένο.</p>
+        <p role="alert" className="logic-note compact is-error desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>Τελευταία αποτυχημένη προσπάθεια: {dateLabel(status.lastFailureAt)}. Θα επανελεγχθεί όσο το MyFinHub είναι ανοιχτό και συνδεδεμένο.</p>
       ) : null}
       {overdue && !failed ? (
-        <p role="alert" className="desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>Πέρασαν πάνω από 36 ώρες από το τελευταίο επαληθευμένο backup. Έλεγξε τη σύνδεση, τον φάκελο και τη διαθέσιμη χωρητικότητα.</p>
+        <p role="alert" className="logic-note compact is-error desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>Πέρασαν πάνω από 36 ώρες από το τελευταίο επαληθευμένο backup. Έλεγξε τη σύνδεση, τον φάκελο και τη διαθέσιμη χωρητικότητα.</p>
       ) : null}
-      {error ? <p role="alert" className="desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>{error}</p> : null}
+      {error ? <p role="alert" className="logic-note compact is-error desktop-backup-error"><TriangleAlert size={16} aria-hidden="true"/>{error}</p> : null}
     </Surface>
   );
 }
