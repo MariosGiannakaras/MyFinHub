@@ -211,3 +211,53 @@ end
 $$;
 revoke all on function public.myfinhub_app_lock_ticket(text,text) from public, anon;
 grant execute on function public.myfinhub_app_lock_ticket(text,text) to authenticated;
+
+
+-- A lost PIN can be reset ONLY after a new password + TOTP verification.
+-- The independent GoTrue session must contain FRESH timestamps for BOTH
+-- methods in its signed amr claim; a pre-existing AAL2 cookie or refreshed JWT
+-- with old authentication-method timestamps is never recovery authority.
+create or replace function public.myfinhub_app_lock_recover(p_new_pin text)
+returns jsonb
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_amr jsonb := coalesce((select auth.jwt())->'amr','[]'::jsonb);
+  v_now bigint := floor(extract(epoch from clock_timestamp()))::bigint;
+  v_password_recent boolean;
+  v_totp_recent boolean;
+  v_idle integer;
+begin
+  if v_uid is null or not (select public.rheomiq_is_owner() and public.rheomiq_has_aal2()) then
+    raise exception using errcode='42501',message='APP_LOCK_RECOVERY_FORBIDDEN';
+  end if;
+  if p_new_pin is null or p_new_pin !~ '^[0-9]{4}$' then
+    raise exception using errcode='22023',message='APP_LOCK_INVALID_PIN';
+  end if;
+  -- Independent, short proof window on both factors, not simply JWT iat.
+  select
+    coalesce(bool_or(entry->>'method'='password'
+      and (entry->>'timestamp')::bigint between v_now-120 and v_now+30),false),
+    coalesce(bool_or(entry->>'method'='totp'
+      and (entry->>'timestamp')::bigint between v_now-120 and v_now+30),false)
+    into v_password_recent,v_totp_recent
+  from jsonb_array_elements(v_amr) entry;
+  if not (v_password_recent and v_totp_recent) then
+    raise exception using errcode='42501',message='APP_LOCK_RECOVERY_REAUTH_REQUIRED';
+  end if;
+  select idle_minutes into v_idle from public.myfinhub_app_lock
+    where user_id=v_uid for update;
+  if not found then
+    raise exception using errcode='22023',message='APP_LOCK_NOT_CONFIGURED';
+  end if;
+  update public.myfinhub_app_lock set
+    pin_hash=extensions.crypt(p_new_pin,extensions.gen_salt('bf',12)),
+    failed_attempts=0,blocked_until=null,updated_at=now()
+  where user_id=v_uid;
+  delete from public.myfinhub_app_lock_tickets where user_id=v_uid;
+  return jsonb_build_object('ok',true,'enabled',true,'idleMinutes',v_idle,'retryAfterMs',0);
+end
+$$;
+revoke all on function public.myfinhub_app_lock_recover(text) from public,anon;
+grant execute on function public.myfinhub_app_lock_recover(text) to authenticated;
