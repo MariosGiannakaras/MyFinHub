@@ -140,6 +140,19 @@ export async function changeAccountPassword(currentPassword:string,newPassword:s
   }));
 }
 
+export interface SharedAppLockState {ok:boolean;enabled:boolean;idleMinutes:number;retryAfterMs:number;error?:string}
+export type SharedAppLockAction='configure'|'verify'|'change'|'timeout'|'disable';
+export async function getSharedAppLockState():Promise<SharedAppLockState>{
+  return json(await apiRequest('/api/auth/app-lock',{cache:'no-store'}));
+}
+export async function updateSharedAppLock(value:{action:SharedAppLockAction;pin?:string;newPin?:string;idleMinutes?:number}):Promise<SharedAppLockState>{
+  return json(await apiRequest('/api/auth/app-lock',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify(value),
+  }));
+}
+
 export async function getConnectedDevices():Promise<ConnectedDevicesEnvelope>{
   return json(await apiRequest('/api/auth/devices',{cache:'no-store'}));
 }
