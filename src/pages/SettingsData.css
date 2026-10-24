@@ -31,12 +31,23 @@
 
 .desktop-backup-panel{display:grid;gap:14px;min-width:0;padding:18px}
 .desktop-backup-panel .panel-head{margin:0}
+.desktop-backup-health{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);background:var(--surface-soft);border-radius:10px;padding:12px;min-width:0}
+.desktop-backup-health>svg{flex-shrink:0;color:var(--blue);margin-top:2px}
+.desktop-backup-health.is-warning{border-color:var(--danger,#b42318)}
+.desktop-backup-health.is-warning>svg{color:var(--danger,#b42318)}
+.desktop-backup-health>div{display:grid;gap:4px;min-width:0}
+.desktop-backup-health strong{font-size:var(--ux-body-size);line-height:1.35}
+.desktop-backup-health small{color:var(--muted);font-size:var(--ux-small-size);line-height:1.45}
+.desktop-backup-facts{min-width:0}
+.desktop-backup-facts>div{min-width:0;align-items:start}
+.desktop-backup-facts b{max-width:65%;overflow-wrap:anywhere;text-align:right;font-weight:650}
+
 .desktop-backup-path{overflow-wrap:anywhere;text-align:right}
 .desktop-backup-controls{display:flex;gap:8px;flex-wrap:wrap}
 .desktop-backup-list{display:grid;gap:10px;min-width:0}
 .desktop-backup-list>strong{font-size:var(--ux-body-size)}
 .desktop-backup-entry{display:flex;align-items:center;justify-content:space-between;min-width:0;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px}
-.desktop-backup-entry>div{display:grid;min-width:0;gap:4px}
+.desktop-backup-entry>div{display:grid;min-width:0;gap:4px;flex:1}
 .desktop-backup-entry span{display:flex;align-items:center;gap:6px;font-size:var(--ux-small-size);font-weight:650;overflow-wrap:anywhere}
 .desktop-backup-entry small,.desktop-backup-empty,.desktop-backup-note{color:var(--muted);font-size:var(--ux-small-size);line-height:1.5}
 .desktop-backup-empty,.desktop-backup-note{margin:0}
@@ -46,6 +57,8 @@
   .desktop-backup-controls>*{width:100%;min-height:44px;justify-content:center}
   .desktop-backup-entry{align-items:stretch;flex-direction:column}
   .desktop-backup-entry button{width:100%;min-height:44px;justify-content:center}
+  .desktop-backup-facts>div{align-items:stretch;flex-direction:column;gap:4px}
+  .desktop-backup-facts b{max-width:100%;text-align:left}
   .desktop-backup-path{text-align:left}
 }
 
