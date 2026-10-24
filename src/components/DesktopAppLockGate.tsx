@@ -6,7 +6,7 @@ import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 
 type AppLockState={supported:boolean;enabled:boolean;idleMinutes:number;failedAttempts:number;retryAfterMs:number};
-type VerifyResult=AppLockState&{ok:boolean};
+type VerifyResult=AppLockState&{ok:boolean;unlockToken?:string};
 type AppLockBridge={
   getAppLockState:()=>Promise<AppLockState>;
   verifyAppPin:(pin:string)=>Promise<VerifyResult>;
@@ -157,19 +157,20 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     <div className="desktop-app-lock-screen" data-phase={phase}>
       {phase==='checking'?<section className="desktop-app-lock-card is-loading" aria-live="polite"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>Έλεγχος ασφαλούς κλειδώματος…</span><i className="desktop-app-lock-loader"/></section>:null}
       {phase==='error'?<section className="desktop-app-lock-card" role="alert"><div className="desktop-app-lock-icon"><ShieldCheck/></div><h1>Το κλείδωμα δεν είναι διαθέσιμο</h1><p>{message||'Το MyFinHub δεν μπορεί να επαληθεύσει την ασφαλή αποθήκευση της συσκευής.'}</p><Button type="button" variant="secondary" onClick={()=>location.reload()}>Δοκιμή ξανά</Button></section>:null}
-      {phase==='locked'?<section className={`desktop-app-lock-card ${shake?'is-shaking':''} ${success?'is-success':''}`} aria-labelledby="app-lock-title">
+      {phase==='locked'?<section className={`desktop-app-lock-card ${shake?'is-shaking':''} ${success?'is-success':''} ${message?'is-error':''}`} aria-labelledby="app-lock-title" data-entered-digits={pin.length}>
         <div className="desktop-app-lock-icon">{success?<Check/>:<LockKeyhole/>}</div>
         <span className="eyebrow">MYFINHUB LOCK</span>
         <h1 id="app-lock-title">Καλώς ήρθες ξανά</h1>
-        <p>Βάλε το 4ψήφιο PIN για να συνεχίσεις.</p>
-        <form onSubmit={event=>{event.preventDefault();void unlock(pin)}}>
-          <AppTextInput ref={inputRef} className="desktop-app-lock-input" aria-label="4ψήφιο PIN εφαρμογής" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={pin} disabled={busy||retrySeconds>0||success} onChange={event=>setPin(digits(event.target.value))}/>
-          <button type="button" className="desktop-app-lock-digits" aria-label="Εισαγωγή PIN" onClick={()=>inputRef.current?.focus()} disabled={retrySeconds>0||success}>
+        <p>Η πρόσβαση στο MyFinHub είναι κλειδωμένη. Πληκτρολόγησε το 4ψήφιο PIN σου.</p>
+        <form aria-busy={busy} onSubmit={event=>{event.preventDefault();void unlock(pin)}}>
+          <AppTextInput ref={inputRef} className="desktop-app-lock-input" aria-label="4ψήφιο PIN εφαρμογής" aria-describedby="app-lock-feedback" invalid={Boolean(message)} type="password" inputMode="numeric" autoComplete="off" autoFocus={false} maxLength={PIN_LENGTH} value={pin} disabled={busy||retrySeconds>0||success} onKeyDown={event=>{if(event.key==='Escape'){setPin('');setMessage('')}}} onChange={event=>{setPin(digits(event.target.value));if(message)setMessage('')}}/>
+          <button type="button" className="desktop-app-lock-digits" aria-label="Εισαγωγή PIN" aria-describedby="app-lock-feedback" onClick={()=>inputRef.current?.focus()} disabled={retrySeconds>0||success}>
             {Array.from({length:PIN_LENGTH},(_,index)=><span key={index} className={index<pin.length?'is-filled':''}><i/></span>)}
           </button>
-          <div className="desktop-app-lock-feedback" aria-live="polite">
+          <div className="desktop-app-lock-feedback" id="app-lock-feedback" role={message?'alert':'status'} aria-live={message?'assertive':'polite'}>
             {success?<span className="is-good">Ξεκλειδώθηκε</span>:retrySeconds>0?<span>Νέα προσπάθεια σε {retrySeconds} δευτ.</span>:busy?<span>Έλεγχος PIN…</span>:message?<span className="is-error">{message}</span>:<span>Το PIN επαληθεύεται στον λογαριασμό σου</span>}
           </div>
+          {pin.length>0&&!busy&&!success?<button type="button" className="desktop-app-lock-clear" onClick={()=>{setPin('');setMessage('');inputRef.current?.focus()}}>Καθαρισμός PIN</button>:null}
         </form>
         <small><ShieldCheck size={14}/> Κλείδωμα μετά από {lockState.idleMinutes} {lockState.idleMinutes===1?'λεπτό':'λεπτά'} αδράνειας.</small>
       </section>:null}
