@@ -37,7 +37,14 @@ describe('Desktop backup auth and privilege separation',()=>{
     expect(preload).not.toContain('saveLocalBackup: (snapshot)');
     expect(hook).toContain('await bridge.saveLocalBackup()');
     expect(ui).toContain('const receipt = await bridge.saveLocalBackup()');
-    expect(main).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
-    expect(main).not.toContain('SUPABASE_DB_PASSWORD');
+    // Desktop bootstrap has older explicit admin-key rejection guards; they
+    // must remain. Constrain this regression to the new finance-backup IPC.
+    const start=main.indexOf('const readAuthorizedFinanceBackup');
+    const end=main.indexOf("ipcMain.handle('myfinhub:get-setup-state'", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const backupBoundary=main.slice(start,end);
+    expect(backupBoundary).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(backupBoundary).not.toContain('SUPABASE_DB_PASSWORD');
   });
 });
