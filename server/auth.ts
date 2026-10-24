@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ensureDeviceSessionAccess } from './deviceSessionRegistry.js';
+import { assertAppUnlock, requiresAppUnlock } from './appUnlockAccess.js';
 import { ApiError, assertSameOrigin, requestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
@@ -164,6 +165,11 @@ export function accessTokenAal(accessToken: string) {
 
 async function finalizeSession(req: any, accessToken: string, user: AuthUser, source: SessionSource): Promise<SessionContext> {
   if (accessTokenAal(accessToken) === 'aal2') await ensureDeviceSessionAccess(req, accessToken, user.id);
+  // Per-tab browser memory ticket: a valid cookie session alone is not enough
+  // to read finance data when the owner has configured the shared PIN.
+  // Native bearer stays on the pre-existing owner+AAL2+device policy until
+  // the separate Android client explicitly implements a compatible contract.
+  if (source === 'cookie' && accessTokenAal(accessToken) === 'aal2' && requiresAppUnlock(req)) await assertAppUnlock(req, accessToken);
   return { accessToken, user, source };
 }
 
