@@ -48,7 +48,7 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('await onBackup()');
     expect(settings).toMatch(/await onBackup\(\);[\s\S]*?const snapshot = await loadData\(\);[\s\S]*?downloadJson\(snapshot\.data\)/);
     expect(settings).toContain('if (!receipt.verified) throw new Error');
-    expect(settings).toContain('το τοπικό Windows backup απέτυχε');
+    expect(settings).toContain('η τοπική αποθήκευση Windows απέτυχε');
     expect(settings).not.toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
   });
 
