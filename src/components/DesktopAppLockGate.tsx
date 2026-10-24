@@ -1,6 +1,6 @@
 import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ApiError, getSession } from '../lib/api';
+import { ApiError, getSession, getSharedAppLockState, updateSharedAppLock } from '../lib/api';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 
@@ -16,9 +16,10 @@ const digits=(value:string)=>value.replace(/\D/g,'').slice(0,PIN_LENGTH);
 
 export function DesktopAppLockGate({children}:{children:ReactNode}){
   const bridge=typeof window==='undefined'?undefined:(window as unknown as {myFinHubDesktop?:AppLockBridge}).myFinHubDesktop;
-  const[phase,setPhase]=useState<Phase>(bridge?'checking':'unlocked');
+  const[phase,setPhase]=useState<Phase>('checking');
+  const[shared,setShared]=useState(false);
   const[lockState,setLockState]=useState<AppLockState>({supported:Boolean(bridge),enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});
-  const[everUnlocked,setEverUnlocked]=useState(!bridge);
+  const[everUnlocked,setEverUnlocked]=useState(false);
   const[pin,setPin]=useState('');
   const[message,setMessage]=useState('');
   const[busy,setBusy]=useState(false);
@@ -37,43 +38,40 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   },[]);
 
   useEffect(()=>{
-    if(!bridge){setPhase('unlocked');setEverUnlocked(true);return;}
     let alive=true;
     const inspect=async()=>{
       setPhase('checking');setMessage('');
       try{
-        const state=await bridge.getAppLockState();
+        const session=await getSession();
         if(!alive)return;
-        setLockState(state);
-        if(!state.supported||!state.enabled){setPhase('unlocked');setEverUnlocked(true);return;}
-        setBlockedUntil(Date.now()+Math.max(0,state.retryAfterMs));
-        try{
-          const session=await getSession();
-          if(!alive)return;
-          if(session.authenticated)enterLockedState(state);
-          else{setPhase('unlocked');setEverUnlocked(true)}
-        }catch(error){
-          if(!alive)return;
-          if(error instanceof ApiError&&error.status===401){setPhase('unlocked');setEverUnlocked(true)}
-          else{setMessage('Δεν ήταν δυνατός ο ασφαλής έλεγχος της συνεδρίας. Το τοπικό κλείδωμα παραμένει ενεργό.');enterLockedState(state)}
+        if(!session.authenticated){setPhase('unlocked');setEverUnlocked(true);return;}
+        const global=await getSharedAppLockState();
+        if(!alive)return;
+        if(global.enabled){
+          setShared(true);
+          const state={supported:true,enabled:true,idleMinutes:global.idleMinutes,failedAttempts:0,retryAfterMs:global.retryAfterMs};
+          enterLockedState(state);
+          return;
         }
-      }catch{
+        if(!bridge){setLockState({supported:true,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});setPhase('unlocked');setEverUnlocked(true);return;}
+        const legacy=await bridge.getAppLockState();
         if(!alive)return;
-        setMessage('Δεν ήταν δυνατή η ανάγνωση του ασφαλούς PIN από τα Windows.');setPhase('error');
+        setShared(false);setLockState(legacy);
+        if(legacy.supported&&legacy.enabled)enterLockedState(legacy);
+        else{setPhase('unlocked');setEverUnlocked(true)}
+      }catch(error){
+        if(!alive)return;
+        if(error instanceof ApiError&&error.status===401){setPhase('unlocked');setEverUnlocked(true);return;}
+        setMessage('Δεν ήταν δυνατός ο ασφαλής έλεγχος PIN. Δεν εμφανίζονται οικονομικά δεδομένα.');setPhase('error');
       }
     };
     void inspect();
-    const lockNow=async()=>{
-      try{
-        const state=await bridge.getAppLockState();
-        if(!alive||!state.supported||!state.enabled)return;
-        enterLockedState(state);
-      }catch{if(alive){setMessage('Δεν ήταν δυνατή η ενεργοποίηση του τοπικού κλειδώματος.');setPhase('error')}}
-    };
+    const lockNow=()=>{if(alive&&lockState.enabled)enterLockedState(lockState)};
     const lockStateChanged=(event:Event)=>{
       const state=(event as CustomEvent<AppLockState>).detail;
       if(!alive||!state)return;
       setLockState(state);
+      if(state.enabled)setShared(true);
     };
     window.addEventListener('myfinhub:app-lock-now',lockNow);
     window.addEventListener('myfinhub:app-lock-state-changed',lockStateChanged);
@@ -93,24 +91,28 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   },[phase,retrySeconds]);
 
   useEffect(()=>{
-    if(!bridge||phase!=='unlocked'||!lockState.enabled||!everUnlocked)return;
+    if(phase!=='unlocked'||!lockState.enabled||!everUnlocked)return;
     const delay=Math.max(1,lockState.idleMinutes)*60_000;
     let timer=0;
     const schedule=()=>{
       window.clearTimeout(timer);
+      lastActivity=Date.now();
       timer=window.setTimeout(()=>enterLockedState(lockState),delay);
     };
     const events:Array<keyof WindowEventMap>=['pointerdown','pointermove','keydown','touchstart','wheel'];
+    const resume=()=>{if(document.visibilityState==='visible'&&Date.now()-lastActivity>=delay)enterLockedState(lockState)};
+    let lastActivity=Date.now();
     for(const name of events)window.addEventListener(name,schedule,{passive:true});
+    document.addEventListener('visibilitychange',resume);
     schedule();
-    return()=>{window.clearTimeout(timer);for(const name of events)window.removeEventListener(name,schedule)};
+    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);for(const name of events)window.removeEventListener(name,schedule)};
   },[bridge,phase,lockState,everUnlocked,enterLockedState]);
 
   const unlock=useCallback(async(candidate:string)=>{
-    if(!bridge||busy||retrySeconds>0||candidate.length!==PIN_LENGTH)return;
+    if((!bridge&&!shared)||busy||retrySeconds>0||candidate.length!==PIN_LENGTH)return;
     setBusy(true);setMessage('');setShake(false);
     try{
-      const result=await bridge.verifyAppPin(candidate);
+      const result=shared?await updateSharedAppLock({action:'verify',pin:candidate}):await bridge!.verifyAppPin(candidate);
       setLockState(result);setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
       if(result.ok){
         setSuccess(true);
@@ -124,7 +126,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       setPin('');setShake(true);window.setTimeout(()=>setShake(false),420);
       setMessage('Η επαλήθευση PIN δεν ολοκληρώθηκε.');
     }finally{setBusy(false)}
-  },[bridge,busy,retrySeconds]);
+  },[bridge,shared,busy,retrySeconds]);
 
   useEffect(()=>{
     if(pin.length!==PIN_LENGTH||busy||retrySeconds>0||phase!=='locked')return;
@@ -132,8 +134,9 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     return()=>window.clearTimeout(timer);
   },[pin,busy,retrySeconds,phase,unlock]);
 
-  const underlay=everUnlocked
-    ? <div className={phase==='locked'?'desktop-app-lock-underlay is-obscured':'desktop-app-lock-underlay'} aria-hidden={phase==='locked'?true:undefined}>{children}</div>
+  // Unmount the financial workspace when locked; a blurred, mounted DOM is not a privacy boundary.
+  const underlay=phase==='unlocked'
+    ? <div className="desktop-app-lock-underlay">{children}</div>
     : <div className="desktop-app-lock-preview" aria-hidden="true"><div/><div/><div/></div>;
 
   if(phase==='unlocked')return <>{underlay}</>;
