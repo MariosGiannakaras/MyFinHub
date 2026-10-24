@@ -193,11 +193,11 @@ begin
   end if;
   if p_action='touch' then
     update public.myfinhub_app_lock_tickets ticket
-      set expires_at=clock_timestamp()+make_interval(mins=>lock.idle_minutes)
-      from public.myfinhub_app_lock lock
+      set expires_at=clock_timestamp()+make_interval(mins=>pin_state.idle_minutes)
+      from public.myfinhub_app_lock pin_state
       where ticket.user_id=v_uid and ticket.session_id=v_session
         and ticket.token_hash=p_token_hash and ticket.expires_at>clock_timestamp()
-        and lock.user_id=v_uid;
+        and pin_state.user_id=v_uid;
     return found;
   end if;
   if p_action='revoke' then
