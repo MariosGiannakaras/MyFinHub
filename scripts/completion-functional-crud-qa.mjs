@@ -125,13 +125,26 @@ try{
   // save line have settled. Shortcut availability is a durable receipt, not
   // merely the optimistic presence of a transaction in the ledger.
   await waitFor("function(){const redo=document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]');return Boolean(redo&&!redo.disabled)}",'server-acknowledged undo activates Redo');
+  // DialogShell keeps aria-modal during its exit animation. The global
+  // shortcut authority intentionally blocks shortcuts until that dialog is gone.
+  // An enabled Redo button alone is NOT proof that the modal has exited.
+  const awaitShortcutSurface=()=>waitFor(
+    "function(){return ![...document.querySelectorAll('[aria-modal=true]')].some(node=>node.getClientRects().length>0)}",
+    'confirmation has fully dismissed before global keyboard shortcut'
+  );
+  const sendAppShortcut=async key=>{
+    const result=await c.call("function(key){const modal=[...document.querySelectorAll('[aria-modal=true]')].filter(el=>el.getClientRects().length>0).length;const active=document.activeElement;const event=new KeyboardEvent('keydown',{key,ctrlKey:true,bubbles:true,cancelable:true});window.dispatchEvent(event);return {consumed:event.defaultPrevented,modal,focus:active?.id||active?.tagName||'none',redoDisabled:[...document.querySelectorAll('button')].find(button=>button.getAttribute('aria-label')==='Επαναφορά τελευταίας αναιρεμένης αλλαγής')?.disabled}}",[key]);
+    assert(result.consumed,`Ctrl+${key.toUpperCase()} reaches the shared shortcut handler after modal dismissal: ${JSON.stringify(result)}`);
+  };
   const focusForShortcut=()=>c.call("function(){const workspace=document.querySelector('#main-workspace');workspace?.focus();return document.activeElement===workspace}");
+  await awaitShortcutSurface();
   assert(await focusForShortcut(),'Redo shortcut starts outside editable controls');
-  await c.call("function(){dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  await sendAppShortcut('y');
   await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Y redo reapplies modern delete');
   await waitFor("function(){const undo=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return Boolean(undo&&!undo.disabled)}",'server-acknowledged redo reactivates Undo');
+  await awaitShortcutSurface();
   assert(await focusForShortcut(),'Undo shortcut starts outside editable controls');
-  await c.call("function(){dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  await sendAppShortcut('z');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Z undo restores modern event again');
   await waitFor("function(){const redo=document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]');return Boolean(redo&&!redo.disabled)}",'second undo persists through confirmed history cursor');
 
