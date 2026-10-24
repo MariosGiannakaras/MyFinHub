@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { ApiError, requestHeader } from './http.js';
 import { fetchUpstream } from './upstream.js';
 
-const protectedPaths = new Set(['/api/data','/api/import','/api/history','/api/backup','/api/card-secrets','/api/account-metadata']);
+const protectedPaths = new Set(['/api/data','/api/import','/api/history','/api/backup','/api/card-secrets','/api/account-metadata','/api/auth/devices','/api/auth/account','/api/android-update']);
 
 export function requiresAppUnlock(req:any) {
   try {
