@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseAppLockAction } from '../server/appLockHandler.js';
+import { parseAppLockAction, parseAppLockRecovery } from '../server/appLockHandler.js';
 import { ApiError } from '../server/http.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -22,6 +22,32 @@ describe('shared owner app privacy PIN',()=>{
     ])expect(()=>parseAppLockAction(body)).toThrow(ApiError);
   });
 
+  it('requires fresh password AND fresh TOTP for PIN recovery rather than ambient AAL2',()=>{
+    expect(parseAppLockRecovery({action:'recover',email:'Owner@Example.com',password:'correct-horse-battery-staple',code:'123456',newPin:'4321'})).toEqual({
+      action:'recover',email:'owner@example.com',password:'correct-horse-battery-staple',code:'123456',newPin:'4321',
+    });
+    for(const bad of [
+      {action:'recover',email:'owner@example.com',password:'short',code:'123456',newPin:'1234'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'12345',newPin:'1234'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'123456',newPin:'abc4'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'123456',newPin:'1234',admin:true},
+    ])expect(()=>parseAppLockRecovery(bad)).toThrow(ApiError);
+    const source=read('server/appLockHandler.ts');
+    const sql=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
+    expect(source).toContain('signInWithPassword(input.email,input.password)');
+    expect(source).toContain('challengeTotp(temporaryAccess,factor.id)');
+    expect(source).toContain('verifyTotp(temporaryAccess,factor.id,challenge.id,input.code)');
+    expect(source).toContain('revokeSession(verifiedAccess)');
+    expect(source).toContain('revokeSession(temporaryAccess)');
+    expect(sql).toContain('public.myfinhub_app_lock_recover');
+    expect(sql).toContain("entry->>'method'='password'");
+    expect(sql).toContain("entry->>'method'='totp'");
+    expect(sql).toContain('between v_now-120 and v_now+30');
+    expect(sql).toContain('v_password_recent and v_totp_recent');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('Ξέχασα το PIN');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('recoveryNewPin!==recoveryConfirmPin');
+  });
+
   it('keeps a non-queryable verifier and a strictly owner/AAL2 scoped RPC',()=>{
     const sql=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
     expect(sql).toContain('revoke all on public.myfinhub_app_lock from public, anon, authenticated');
@@ -39,8 +65,8 @@ describe('shared owner app privacy PIN',()=>{
     expect(sql).toContain('delete from public.myfinhub_app_lock_tickets where user_id=v_uid and session_id=v_session');
     expect((sql.match(/create or replace function public.myfinhub_app_lock_action/g)||[])).toHaveLength(1);
     expect((sql.match(/create or replace function public.myfinhub_app_lock_ticket/g)||[])).toHaveLength(1);
-    expect(sql.split('as $$').length-1).toBe(4);
-    expect(sql.split('$$;').length-1).toBe(4);
+    expect(sql.split('as $').length-1).toBe(5);
+    expect(sql.split('$;').length-1).toBe(5);
     expect(sql).toContain("interval '30 seconds'");
     expect(sql).toContain("extensions.crypt");
     expect(sql).not.toMatch(/grant\s+select\s+on\s+(table\s+)?public\.myfinhub_app_lock\s+to\s+authenticated/i);
@@ -59,7 +85,7 @@ describe('shared owner app privacy PIN',()=>{
     expect(api).toContain('isOwner(session.accessToken)');
     expect(api).toContain("accessTokenAal(session.accessToken)!=='aal2'");
     expect(api).toContain('assertMutationSessionOrigin(req,session)');
-    expect(api).toContain('readJsonBody(req,512)');
+    expect(api).toContain('readJsonBody(req,2048)');
     expect(api).toContain('updateUnlockTicket');
     expect(api).toContain("action==='touch'");
     expect(read('server/auth.ts')).toContain('requiresAppUnlock(req)');
