@@ -14,7 +14,7 @@ describe('Desktop backup auth and privilege separation',()=>{
     expect(main).toContain("mainWindow.webContents.session.fetch");
     expect(main).toContain("credentials: 'include'");
     expect(main).toContain("if (!response.ok) throw new Error('Η πρόσβαση στο backup απαιτεί σύνδεση ιδιοκτήτη, TOTP και ξεκλείδωμα PIN όταν είναι ενεργό.')");
-    expect(main).toContain('const snapshot = await requireBackupAccess(event)');
+    expect(main).toContain('const snapshot = await requireBackupAccess(event, unlockToken)');
     expect(main).toContain('desktopBackupStore.save({ data: snapshot.data, revision: snapshot.revision })');
     expect(main).not.toContain('desktopBackupStore.save(snapshot)');
   });
