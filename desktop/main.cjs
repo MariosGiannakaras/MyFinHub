@@ -11,6 +11,7 @@ const {
   publicDiagnostic,
   startupError,
 } = require('./startup-diagnostics.cjs');
+const { createDesktopBackupStore } = require('./backup-store.cjs');
 
 const PRODUCT_NAME = 'MyFinHub';
 const APP_ID = 'app.myfinhub.desktop';
@@ -29,6 +30,7 @@ const UPDATE_HOSTS = new Set(['github.com', 'api.github.com', 'objects.githubuse
 
 let mainWindow = null;
 let setupWindow = null;
+let desktopBackupStore = null;
 let backend = null;
 let quitting = false;
 let updateTimer = null;
@@ -660,6 +662,41 @@ function registerIpcHandlers() {
   ipcMain.handle('myfinhub:check-updates', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return checkForUpdates(true); });
   ipcMain.handle('myfinhub:download-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return downloadUpdate(); });
   ipcMain.handle('myfinhub:install-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return installDownloadedUpdate(); });
+  // The renderer has no Node filesystem or privileged database credentials.
+  // Snapshots are submitted only after an authenticated server GET /api/data.
+  const assertBackupSender = event => {
+    if (!isMainSender(event) || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Unauthorized backup IPC sender.');
+    if (!desktopBackupStore) throw new Error('Το τοπικό backup δεν είναι διαθέσιμο.');
+  };
+  ipcMain.handle('myfinhub:backup-status', event => {
+    assertBackupSender(event);
+    return desktopBackupStore.status();
+  });
+  ipcMain.handle('myfinhub:backup-save', (event, snapshot) => {
+    assertBackupSender(event);
+    return desktopBackupStore.save(snapshot);
+  });
+  ipcMain.handle('myfinhub:backup-restore-candidate', (event, name) => {
+    assertBackupSender(event);
+    return desktopBackupStore.restoreCandidate(name);
+  });
+  ipcMain.handle('myfinhub:backup-choose-folder', async event => {
+    assertBackupSender(event);
+    const picked = await dialog.showOpenDialog(mainWindow, {
+      title: 'Επιλογή φακέλου αντιγράφων MyFinHub',
+      defaultPath: desktopBackupStore.folder(),
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
+    return desktopBackupStore.setFolder(picked.filePaths[0]);
+  });
+  ipcMain.handle('myfinhub:backup-open-folder', async event => {
+    assertBackupSender(event);
+    desktopBackupStore.initialize();
+    const error = await shell.openPath(desktopBackupStore.folder());
+    if (error) throw new Error('Ο φάκελος backup δεν άνοιξε.');
+    return true;
+  });
   ipcMain.handle('myfinhub:get-setup-state', event => {
     if (!isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
     return savedSetupState();
@@ -730,6 +767,14 @@ async function launch() {
     app.setAppUserModelId(APP_ID);
     configureSessionPermissions();
     registerIpcHandlers();
+    desktopBackupStore = createDesktopBackupStore({
+      userData: app.getPath('userData'),
+      documents: app.getPath('documents'),
+    });
+    // Idempotent local backup catalog initialized during first installed launch.
+    // No Supabase admin key or cloud DB provision is used by the installer.
+    try { desktopBackupStore.initialize(); }
+    catch (error) { console.error('Desktop backup initialization failed:', error instanceof Error ? error.message : String(error)); }
     migrateLegacyDesktopConfig();
     applyPendingProvision();
     if (!runtimeConfigExists()) { createSetupWindow(); return; }
