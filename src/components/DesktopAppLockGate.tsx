@@ -78,9 +78,11 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       setLockState(state);
       if(state.enabled)setShared(true);
     };
+    const authenticated=()=>{if(alive)void inspect()};
     window.addEventListener('myfinhub:app-lock-now',lockNow);
     window.addEventListener('myfinhub:app-lock-state-changed',lockStateChanged);
-    return()=>{alive=false;window.removeEventListener('myfinhub:app-lock-now',lockNow);window.removeEventListener('myfinhub:app-lock-state-changed',lockStateChanged)};
+    window.addEventListener('myfinhub:auth-completed',authenticated);
+    return()=>{alive=false;window.removeEventListener('myfinhub:app-lock-now',lockNow);window.removeEventListener('myfinhub:app-lock-state-changed',lockStateChanged);window.removeEventListener('myfinhub:auth-completed',authenticated)};
   },[bridge,enterLockedState]);
 
   useEffect(()=>{
