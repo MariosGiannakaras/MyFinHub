@@ -59,6 +59,7 @@ function createDesktopBackupStore({ userData, documents }) {
   const configPath = path.join(userData, CONFIG_NAME);
   const defaultFolder = path.join(documents, 'MyFinHub', 'Backups');
   let busy = false;
+  let lastFailureAt = null;
   function config() {
     if (!fs.existsSync(configPath)) return { folder: defaultFolder };
     const value = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -103,7 +104,7 @@ function createDesktopBackupStore({ userData, documents }) {
       try { checkedEntry(entry); valid = true; } catch { /* preserve failed entry */ }
       return { name: entry.name, createdAt: entry.createdAt, revision: entry.revision, bytes: entry.size, valid };
     });
-    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups, lastValidBackupAt: backups.find(item => item.valid)?.createdAt ?? null };
+    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups, lastValidBackupAt: backups.find(item => item.valid)?.createdAt ?? null, lastFailureAt };
   }
   function save(snapshot) {
     if (busy) throw new Error('Άλλο backup βρίσκεται σε εξέλιξη.');
@@ -131,7 +132,11 @@ function createDesktopBackupStore({ userData, documents }) {
           if (fs.lstatSync(candidate).isFile() && !fs.lstatSync(candidate).isSymbolicLink()) fs.unlinkSync(candidate);
         } catch { /* never report retention cleanup as successful delete */ }
       }
+      lastFailureAt = null;
       return { name, revision: snapshot.revision, createdAt, verified: true };
+    } catch (error) {
+      lastFailureAt = new Date().toISOString();
+      throw error;
     } finally { busy = false; }
   }
   function restoreCandidate(name) {
@@ -158,6 +163,8 @@ function createDesktopBackupStore({ userData, documents }) {
     }
     return status();
   }
-  return { initialize, status, save, restoreCandidate, setFolder, folder };
+  // Used when the authenticated /api/data read fails before a local file write.
+  function reportFailure() { lastFailureAt = new Date().toISOString(); }
+  return { initialize, status, save, restoreCandidate, setFolder, folder, reportFailure };
 }
 module.exports = { createDesktopBackupStore, validateSnapshot };
