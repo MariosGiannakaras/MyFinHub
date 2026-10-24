@@ -12,10 +12,12 @@ export interface LocalBackupStatus {
   intervalHours: number;
   retentionDays: number;
   lastValidBackupAt: string | null;
+  lastFailureAt: string | null;
   backups: LocalBackupItem[];
 }
 export interface DesktopBackupBridge {
   getBackupStatus: () => Promise<LocalBackupStatus>;
+  reportBackupFailure?: () => Promise<boolean>;
   saveLocalBackup: (snapshot:{ data:FinanceData; revision:string }) => Promise<{ name:string; revision:string; createdAt:string; verified:boolean }>;
   getRestoreCandidate: (name:string) => Promise<FinanceData>;
   chooseBackupFolder: () => Promise<LocalBackupStatus>;
