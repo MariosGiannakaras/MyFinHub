@@ -257,7 +257,7 @@ export function SettingsPage({
           if (!receipt.verified) throw new Error('Local checksum missing.');
           setBackupRefreshToken(value => value + 1);
         } catch {
-          setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.'); 
+          setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.');
           return;
         }
       }
