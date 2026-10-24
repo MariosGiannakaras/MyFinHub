@@ -1,6 +1,7 @@
 import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ApiError, getSession, getSharedAppLockState, updateSharedAppLock } from '../lib/api';
+import { setAppUnlockToken, clearAppUnlockToken } from '../lib/appUnlockToken';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 
@@ -33,6 +34,8 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   const retrySeconds=useMemo(()=>Math.max(0,Math.ceil((blockedUntil-tick)/1000)),[blockedUntil,tick]);
 
   const enterLockedState=useCallback((state?:AppLockState)=>{
+    const stale=clearAppUnlockToken();
+    if(stale)void updateSharedAppLock({action:'lock',unlockToken:stale}).catch(()=>{});
     if(state)setLockState(state);
     setPin('');setMessage('');setSuccess(false);setShake(false);
     setBlockedUntil(Date.now()+Math.max(0,state?.retryAfterMs??0));
@@ -105,9 +108,11 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     const resume=()=>{if(document.visibilityState==='visible'&&Date.now()-lastActivity>=delay)enterLockedState(lockState)};
     let lastActivity=Date.now();
     for(const name of events)window.addEventListener(name,schedule,{passive:true});
+    const pageHidden=()=>enterLockedState(lockState);
     document.addEventListener('visibilitychange',resume);
+    window.addEventListener('pagehide',pageHidden);
     schedule();
-    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);for(const name of events)window.removeEventListener(name,schedule)};
+    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);window.removeEventListener('pagehide',pageHidden);for(const name of events)window.removeEventListener(name,schedule)};
   },[bridge,phase,lockState,everUnlocked,enterLockedState]);
 
   const unlock=useCallback(async(candidate:string)=>{
@@ -117,6 +122,10 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       const result=shared?await updateSharedAppLock({action:'verify',pin:candidate}):await bridge!.verifyAppPin(candidate);
       setLockState({...result,supported:true,failedAttempts:0});setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
       if(result.ok){
+        if(shared){
+          if(!result.unlockToken||!(/^[a-zA-Z0-9_-]{43}$/.test(result.unlockToken)))throw new Error('INVALID_APP_UNLOCK_RECEIPT');
+          setAppUnlockToken(result.unlockToken);
+        }
         setSuccess(true);
         window.setTimeout(()=>{setPin('');setSuccess(false);setEverUnlocked(true);setPhase('unlocked')},190);
         return;
