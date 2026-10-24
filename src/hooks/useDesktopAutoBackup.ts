@@ -28,8 +28,9 @@ export function useDesktopAutoBackup(saveState: SaveState) {
         if (disposed || saveStateRef.current !== 'saved') return;
         await bridge.saveLocalBackup({ data: snapshot.data, revision: snapshot.revision });
       } catch {
-        // Reattempt on the next scheduled check. Settings displays actual verified files;
-        // a failed attempt must not be reported as a successful backup.
+        // Do not expose auth/network exception contents in local files or UI.
+        // A failed attempt remains failed and is retried on the next scheduled check.
+        if (!disposed) void bridge.reportBackupFailure?.().catch(() => undefined);
       } finally { busy = false; }
     };
     void run();
