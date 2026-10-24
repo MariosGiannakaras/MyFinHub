@@ -30,6 +30,11 @@ export interface ConnectedDevice {
   sessionId:string;
   platform:'windows'|'android'|'web'|'unknown';
   label:string;
+  defaultLabel?:string;
+  nickname?:string|null;
+  systemName?:string|null;
+  browserName?:string|null;
+  deviceType?:'desktop'|'phone'|'tablet'|'unknown'|null;
   appVersion:string|null;
   firstSeenAt:string;
   lastSeenAt:string;
@@ -137,6 +142,14 @@ export async function changeAccountPassword(currentPassword:string,newPassword:s
 
 export async function getConnectedDevices():Promise<ConnectedDevicesEnvelope>{
   return json(await apiRequest('/api/auth/devices',{cache:'no-store'}));
+}
+
+export async function renameConnectedDevice(sessionId:string,nickname:string):Promise<ConnectedDevicesEnvelope>{
+  return json(await apiRequest('/api/auth/devices',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'rename',sessionId,nickname}),
+  }));
 }
 
 export async function revokeConnectedDevice(sessionId:string):Promise<ConnectedDevicesEnvelope>{
