@@ -46,6 +46,8 @@ jobs:
       - run: npm run hygiene
       - run: npm run check
       - run: npm run check --prefix api
+      - name: Local PostgreSQL shared PIN and RLS smoke (no Supabase cloud)
+        run: bash scripts/app-lock-local-postgres-smoke.sh
       - name: Rendered frontend QA
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         run: |
