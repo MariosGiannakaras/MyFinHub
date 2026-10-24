@@ -255,7 +255,7 @@ export function SettingsPage({
       const bridge = desktopBackupBridge();
       if (bridge) {
         try {
-          const receipt = await bridge.saveLocalBackup({ data: snapshot.data, revision: snapshot.revision });
+          const receipt = await bridge.saveLocalBackup();
           if (!receipt.verified) throw new Error('Local checksum missing.');
           setBackupRefreshToken(value => value + 1);
         } catch {
