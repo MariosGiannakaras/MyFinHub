@@ -30,6 +30,12 @@ function injectNativeBackupFixture(){
     backups:mode==='empty'?[]:[good,invalid],lastValidBackupAt:mode==='empty'?null:good.createdAt,
     lastFailureAt:mode==='failure'?'2026-10-24T12:30:00.000Z':null};
   Object.defineProperty(window,'myFinHubDesktop',{configurable:false,writable:false,value:{
+    getInfo:async()=>({productName:'MyFinHub',version:'1.6.0',packaged:true}),
+    getUpdateState:async()=>({supported:true,currentVersion:'1.6.0',status:'up-to-date',availableVersion:null,progress:100,message:'Ενημερωμένη'}),
+    checkForUpdates:async()=>({supported:true,currentVersion:'1.6.0',status:'up-to-date',availableVersion:null,progress:100,message:'Ενημερωμένη'}),
+    downloadUpdate:async()=>({supported:false,currentVersion:'1.6.0',status:'unsupported',availableVersion:null,progress:0,message:''}),
+    installUpdate:async()=>({supported:false,currentVersion:'1.6.0',status:'unsupported',availableVersion:null,progress:0,message:''}),
+    onUpdateState:()=>()=>{},
     getBackupStatus:async()=>status,saveLocalBackup:async()=>({name:good.name,createdAt:good.createdAt,revision:'465',verified:true}),
     reportBackupFailure:async()=>true,chooseBackupFolder:async()=>status,openBackupFolder:async()=>true,
     getRestoreCandidate:async()=>({app:'RheomIQ',schemaVersion:3,updatedAt:good.createdAt,seed:{},state:{}})
@@ -48,12 +54,12 @@ try{
       await c.send('Emulation.setDeviceMetricsOverride',{width:viewport.width,height:viewport.height,mobile:viewport.width<680,deviceScaleFactor:1});
       const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('backup-ui-state',mode);
       await c.send('Page.navigate',{url:url.href});
-      await wait("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Settings tabs');
+      await wait("function(expected){return new URLSearchParams(location.search).get('backup-ui-state')===expected&&Boolean(document.querySelector('.settings-tablist'))}",'Settings tabs on correct state',[mode]);
       const clicked=await c.call("function(){const button=[...document.querySelectorAll('.settings-tablist button')].find(el=>(el.textContent||'').trim()==='Δεδομένα');if(!button)return false;button.click();return true}");
       assert(clicked,'Data tab must be clickable');
       await wait("function(){return Boolean(document.querySelector('.settings-data-tab .desktop-backup-panel .desktop-backup-controls'))}",'native backup panel');
       await wait("function(){return !document.querySelector('.desktop-backup-path')?.textContent?.includes('Έλεγχος')}",'native status');
-      const result=await c.call("function(){const panel=document.querySelector('.desktop-backup-panel');const buttons=[...panel.querySelectorAll('button')];const rows=[...panel.querySelectorAll('.desktop-backup-entry')];const status=panel.textContent||'';const overflow=Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth;return {overflow,rows:rows.length,invalid:rows.filter(row=>row.textContent.includes('Αποτυχία επαλήθευσης')).length,disabledRestore:rows.filter(row=>row.textContent.includes('Αποτυχία επαλήθευσης')&&row.querySelector('button')?.disabled).length,missingTouch:buttons.filter(el=>{const r=el.getBoundingClientRect();return r.width<40||r.height<40}).map(el=>el.textContent?.trim()),hasFolder:status.includes('MyFinHub')&&status.includes('Backups'),hasFailure:status.includes('προσπάθεια αυτόματου backup απέτυχε')};}");
+      const result=await c.call("function(){const panel=document.querySelector('.desktop-backup-panel');const buttons=[...panel.querySelectorAll('button')];const rows=[...panel.querySelectorAll('.desktop-backup-entry')];const status=panel.textContent||'';const overflow=Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth;return {overflow,rows:rows.length,invalid:rows.filter(row=>row.textContent.includes('Μη έγκυρο αρχείο')).length,disabledRestore:rows.filter(row=>row.textContent.includes('Μη έγκυρο αρχείο')&&row.querySelector('button')?.disabled).length,missingTouch:buttons.filter(el=>{const r=el.getBoundingClientRect();return r.width<40||r.height<40}).map(el=>el.textContent?.trim()),hasFolder:status.includes('MyFinHub')&&status.includes('Backups'),hasFailure:status.includes('Τελευταία αποτυχημένη προσπάθεια')};}");
       assert(result.overflow<=1,viewport.name+'/'+mode+': overflow '+result.overflow+'px');
       assert(result.hasFolder,viewport.name+'/'+mode+': folder not visible');
       assert(result.rows===(mode==='empty'?0:2),viewport.name+'/'+mode+': wrong backup count');
@@ -65,7 +71,7 @@ try{
       const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:dims.width,height:dims.height,scale:1}});
       writeFileSync(evidenceDir+'/desktop-backup-'+mode+'-'+viewport.name+'.png',Buffer.from(shot.data,'base64'));
       if(mode==='populated'&&viewport.name==='desktop'){
-        const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Checksum OK'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
+        const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Επαληθευμένο (SHA-256)'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
         assert(opened,'valid restore action enabled');
         await wait("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'destructive restore confirmation');
         const text=await c.call("function(){return document.querySelector('[role=alertdialog]')?.textContent||''}");
