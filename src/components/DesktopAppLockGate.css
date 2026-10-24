@@ -43,3 +43,54 @@
 @keyframes app-lock-spin{to{transform:rotate(360deg)}}
 @media(max-width:520px){.desktop-app-lock-screen{padding:14px}.desktop-app-lock-card{width:min(94vw,350px);padding:24px 18px 20px;border-radius:23px}.desktop-app-lock-digits{gap:9px}.desktop-app-lock-digits>span{width:42px;height:49px;border-radius:14px}}
 @media(prefers-reduced-motion:reduce){.desktop-app-lock-screen,.desktop-app-lock-card,.desktop-app-lock-icon,.desktop-app-lock-digits>span i,.desktop-app-lock-loader,.desktop-app-lock-underlay{animation:none!important;transition:none!important}}
+
+/* Shared Web/Windows privacy gate: restrained finance UI, responsive and two-theme. */
+.desktop-app-lock-screen{background:color-mix(in srgb,var(--canvas) 78%,transparent);color:var(--ink);isolation:isolate}
+.desktop-app-lock-screen::before{background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--blue) 14%,transparent),transparent 65%)}
+.desktop-app-lock-card{border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 24px 68px rgba(12,35,72,.12),0 1px 3px rgba(12,35,72,.04);max-height:min(96dvh,840px);overflow-y:auto;scrollbar-width:thin}
+.desktop-app-lock-card .desktop-app-lock-icon{border:1px solid color-mix(in srgb,var(--blue) 18%,var(--line));background:color-mix(in srgb,var(--blue) 9%,var(--surface));box-shadow:none}
+.desktop-app-lock-card .eyebrow{font-weight:780;letter-spacing:.12em}
+.desktop-app-lock-card p{color:var(--text-secondary);text-wrap:pretty}
+.desktop-app-lock-preview{background:var(--canvas-gradient);pointer-events:none}
+.desktop-app-lock-preview>div{background:linear-gradient(130deg,var(--surface),var(--surface-inset));border:1px solid var(--line);box-shadow:none}
+.desktop-app-lock-preview>div:nth-child(3){background:radial-gradient(circle at 20% 10%,color-mix(in srgb,var(--blue) 8%,transparent),transparent 60%),var(--surface)}
+.desktop-app-lock-digits{position:relative}
+.desktop-app-lock-digits>span{background:var(--control-bg);border:1px solid var(--line);box-shadow:0 2px 7px rgba(18,43,78,.035),inset 0 1px 0 color-mix(in srgb,var(--surface) 80%,transparent);transform:none}
+.desktop-app-lock-digits>span i{background:var(--muted-2);opacity:.85}
+.desktop-app-lock-card form:focus-within .desktop-app-lock-digits>span{border-color:color-mix(in srgb,var(--blue) 34%,var(--line))}
+.desktop-app-lock-card form:focus-within .desktop-app-lock-digits{border-radius:16px;outline:2px solid color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:1px}
+.desktop-app-lock-digits:hover:not(:disabled)>span{border-color:color-mix(in srgb,var(--blue) 48%,var(--line));background:var(--surface-inset)}
+.desktop-app-lock-digits:active:not(:disabled)>span{transform:scale(.975)}
+.desktop-app-lock-digits>span.is-filled{background:color-mix(in srgb,var(--blue) 8%,var(--surface));border-color:color-mix(in srgb,var(--blue) 54%,var(--line));box-shadow:inset 0 1px 0 var(--surface)}
+.desktop-app-lock-digits>span.is-filled i{background:var(--blue);opacity:1}
+.desktop-app-lock-card.is-error .desktop-app-lock-digits>span{border-color:color-mix(in srgb,#b42318 45%,var(--line))}
+.desktop-app-lock-card.is-success .desktop-app-lock-digits>span{border-color:color-mix(in srgb,#118e5b 58%,var(--line));background:color-mix(in srgb,#118e5b 9%,var(--surface))}
+.desktop-app-lock-card form[aria-busy="true"] .desktop-app-lock-digits>span.is-filled i{animation:app-lock-verifying 1s ease-in-out infinite alternate}
+.desktop-app-lock-feedback{min-height:29px;color:var(--text-secondary);text-align:center}
+.desktop-app-lock-feedback .is-error{color:var(--danger,#b42318);font-weight:670}
+.desktop-app-lock-feedback .is-good{font-weight:730}
+.desktop-app-lock-clear{background:transparent!important;border:0!important;box-shadow:none!important;color:var(--blue)!important;font-size:.77rem;font-weight:690;cursor:pointer;min-height:36px;justify-self:center;padding:4px 10px;border-radius:8px;transition:background .18s ease,color .18s ease}
+.desktop-app-lock-clear:hover{background:color-mix(in srgb,var(--blue) 8%,transparent)!important}
+.desktop-app-lock-clear:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.desktop-app-lock-card>small{color:var(--muted);align-self:stretch;justify-content:center}
+@keyframes app-lock-verifying{from{opacity:.55;transform:scale(.76)}to{opacity:1;transform:scale(1)}}
+html[data-theme="dark"] .desktop-app-lock-screen{background:rgba(8,16,31,.82)}
+html[data-theme="dark"] .desktop-app-lock-card{box-shadow:0 28px 75px rgba(0,0,0,.3);border-color:var(--line)}
+html[data-theme="dark"] .desktop-app-lock-digits>span{box-shadow:none}
+html[data-theme="dark"] .desktop-app-lock-card.is-error .desktop-app-lock-feedback .is-error{color:#ff9994}
+@media(max-width:520px){
+  .desktop-app-lock-screen{padding:clamp(8px,3vw,16px)}
+  .desktop-app-lock-card{max-height:calc(100dvh - 24px);gap:10px;padding:clamp(17px,4.5vw,24px)}
+  .desktop-app-lock-card h1{font-size:1.35rem}
+  .desktop-app-lock-card .desktop-app-lock-digits>span{width:clamp(38px,11.5vw,44px);height:clamp(46px,13vw,52px)}
+  .desktop-app-lock-clear{min-height:44px}
+}
+@media(max-height:560px){
+  .desktop-app-lock-screen{align-items:start;overflow-y:auto}
+  .desktop-app-lock-card{max-height:none;min-height:0;margin:auto}
+  .desktop-app-lock-card .desktop-app-lock-icon{width:42px;height:42px;border-radius:14px}
+  .desktop-app-lock-card form{margin-top:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .desktop-app-lock-digits>span,.desktop-app-lock-clear,.desktop-app-lock-card form[aria-busy="true"] .desktop-app-lock-digits>span.is-filled i{transition:none!important;animation:none!important}
+}
