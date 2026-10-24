@@ -377,9 +377,11 @@ describe('completion UX contracts',()=>{
     expect(command).toContain('.quick-modal input:not([type="hidden"])');
     expect(command).toContain("clickAria('Γρήγορη προσθήκη')");
     expect(command).not.toContain("clickAria('Άνοιγμα γρήγορης καταχώρισης');await waitFor");
-    expect(functional).toContain("key:'y',ctrlKey:true");
+    expect(functional).toContain("new KeyboardEvent('keydown',{key,ctrlKey:true,bubbles:true,cancelable:true})");
+    expect(functional).toContain('consumed:event.defaultPrevented');
+    expect(functional).toContain("await sendAppShortcut('y')");
     expect(functional).toContain('Ctrl+Y redo reapplies modern delete');
-    expect(functional).toContain("key:'z',ctrlKey:true");
+    expect(functional).toContain("await sendAppShortcut('z')");
     expect(functional).toContain('Ctrl+Z undo restores modern event again');
   });
 
