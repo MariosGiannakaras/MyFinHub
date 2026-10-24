@@ -67,7 +67,9 @@ export async function handleAppLockRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
     if(method!=='GET'&&method!=='POST')return methodNotAllowed(res,['GET','POST']);
-    const session=await requireSession(req,res);
+    // Explicitly reviewed native bearer path: owner + AAL2 + active device only.
+    // No bearer-to-cookie fallback and no public CORS relaxation.
+    const session=await requireSession(req,res,{allowBearer:true});
     if(!(await isOwner(session.accessToken))){
       clearSessionCookiesIfCookie(req,res,session);
       throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
