@@ -30,6 +30,10 @@
 @media(max-width:680px){.settings-import-guide-fields>div{grid-template-columns:minmax(0,1fr)}.settings-import-guide-content{padding:0 12px 12px}.settings-import-guide>summary{padding:12px}}
 
 /* Desktop backups adopt shared Surface, logic-note and settings-app-list primitives. */
-.desktop-backup-panel{display:grid;gap:12px}
+.desktop-backup-panel{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.desktop-backup-panel>*{min-width:0}
+.desktop-backup-health>div{display:grid;gap:4px;min-width:0}
+.desktop-backup-entry>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:720px){.desktop-backup-list .settings-app-list>.desktop-backup-entry{flex-direction:column;align-items:stretch;gap:10px}.desktop-backup-entry button{width:100%;min-height:44px}}
 
 .settings-data-tab>.logic-note.is-error{color:var(--error);border-color:currentColor}
