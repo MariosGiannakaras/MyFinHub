@@ -9,6 +9,9 @@ import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
+import { DesktopBackupPanel } from '../components/DesktopBackupPanel';
+import { loadData } from '../lib/api';
+import { desktopBackupBridge } from '../lib/desktopBackups';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { Surface } from '../components/Surface';
@@ -150,6 +153,7 @@ export function SettingsPage({
   const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [pendingOwnerTaxonomy, setPendingOwnerTaxonomy] = useState(false);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
@@ -243,7 +247,20 @@ export function SettingsPage({
     setBusy(true);
     try {
       await onBackup();
-      downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}});
+      // Download the acknowledged database document, not optimistic in-memory drafts.
+      const snapshot = await loadData();
+      downloadJson(snapshot.data);
+      const bridge = desktopBackupBridge();
+      if (bridge) {
+        try {
+          const receipt = await bridge.saveLocalBackup({ data: snapshot.data, revision: snapshot.revision });
+          if (!receipt.verified) throw new Error('Local checksum missing.');
+          setBackupRefreshToken(value => value + 1);
+        } catch {
+          setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.'); 
+          return;
+        }
+      }
       setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
       setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
@@ -331,6 +348,9 @@ export function SettingsPage({
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>
             </div>
+            <DesktopBackupPanel refreshToken={backupRefreshToken} onPrepareRestore={(snapshot) => {
+              requestImport(new File([JSON.stringify(snapshot)], 'MyFinHub-local-backup.json', { type: 'application/json' }));
+            }}/>
 
             <details className="settings-import-guide">
               <summary>Οδηγίες χρήσης και δομή αρχείου JSON</summary>
