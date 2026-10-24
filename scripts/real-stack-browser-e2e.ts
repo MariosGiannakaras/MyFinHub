@@ -226,6 +226,16 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
     await shot('credit-payment-persisted');
 
+    console.log('[real-browser] stage reports-credit-drillthrough');
+    await clickText('.sidebar nav button','Αναφορές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports after credit payment');
+    await waitFor("function(){return [...document.querySelectorAll('.report-activity-list>div')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'credit purchase shown in recent Reports');
+    const openedCredit=await c.call<boolean>("function(){const row=[...document.querySelectorAll('.report-activity-list>div')].find(node=>(node.textContent||'').includes('Real Browser Credit Purchase'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Στην πιστωτική'));button?.click();return Boolean(button)}");
+    assert(openedCredit,'Credit purchase must link to the Credit workspace, not hidden Transactions.');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit domain from report');
+    await waitFor("function(){return [...document.querySelectorAll('.credit-purchases-table tbody tr')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'correct credit card and original purchase in drilldown');
+    await shot('reports-credit-drillthrough');
+
     console.log('[real-browser] stage savings-goal-transfer-reload');
     await clickText('.sidebar nav button','Αποταμίευση');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'savings workspace');
@@ -288,6 +298,33 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const openInactive=await c.call<boolean>("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!(root instanceof HTMLDetailsElement))return false;root.open=true;return true}");assert(openInactive,'Inactive recurring history is unavailable.');
     await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
     await shot('recurring-domain-persisted');
+
+    console.log('[real-browser] stage recurring-pay-edit-linked-reload');
+    const resumeRecurring=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-recurring-status=paused]')].find(item=>(item.textContent||'').includes('Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Ενεργοποίηση\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(resumeRecurring,'Paused recurring must be restorable before recording a real payment.');
+    await waitRecurringStatus('Real Browser Recurring','active');
+    await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'active recurring after restore');
+    const ownPay=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Πληρωμή\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(ownPay,'Real recurring payment must originate from its dedicated page.');
+    await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'real recurring contextual payment');
+    await clickText('.contextual-quick-modal button','Επιβεβαίωση πληρωμής');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const row=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');return Boolean(row&&(payload.data?.state?.events||[]).some(event=>event.recurringId===row.id&&event.kind==='expense'&&event.note==='Πληρωμή: Real Browser Recurring'))}",'persisted genuine linked recurring payment');
+    await clickText('.sidebar nav button','Συναλλαγές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions owns linked edit');
+    await search('Πληρωμή: Real Browser Recurring');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Πληρωμή: Real Browser Recurring'))}",'linked recurring transaction visible');
+    const editPaidRecurring=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Πληρωμή: Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(editPaidRecurring,'Linked recurring transaction is editable in Transactions.');
+    await waitFor("function(){return Boolean(document.querySelector('[data-linked-recurring-payment]'))}",'recurring provenance disclosure');
+    assert(await c.call<boolean>("function(){return !document.querySelector('.generic-kind-grid')&&Boolean(document.querySelector('[data-linked-recurring-payment]'))}"),'linked recurring payment cannot silently change economic kind');
+    await setByLabel('Ποσό','21.45');
+    await setByLabel('Σχόλιο','Real Browser Recurring Payment Edited');
+    await clickText('.quick-modal button','Εφαρμογή αλλαγών');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const recurring=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');const events=(payload.data?.state?.events||[]).filter(event=>event.recurringId===recurring?.id&&event.kind==='expense');return Boolean(recurring&&events.length===1&&events[0].note==='Real Browser Recurring Payment Edited'&&Math.abs(events[0].amount-21.45)<0.001)}",'edited linked recurring payment keeps exact owner ID and no duplicate');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'reload after linked recurring edit');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const recurring=(payload.data?.state?.recurringCustom||[]).find(item=>item.name==='Real Browser Recurring');return Boolean(recurring&&(payload.data?.state?.events||[]).some(event=>event.recurringId===recurring.id&&event.note==='Real Browser Recurring Payment Edited'))}",'linked payment survives real DB reload');
+    await shot('recurring-payment-linked-edit-persisted');
 
     console.log('[real-browser] stage planning-create-complete-reload');
     await clickText('.sidebar nav button','Προγραμματισμός');

@@ -580,8 +580,9 @@ function QaWorkspace(){
   };
   const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
+  const focusRecurringPayment=(id:string)=>{setCommandRecurringId(id);setCommandRecurringKey(k=>k+1);setPage('recurring')};
   const handleAttention=(item:AttentionItem)=>{
-    if(item.action==='pay_recurring'&&item.recurringId){openSpecial({mode:'recurring',recurringId:item.recurringId,amount:item.amount,accountId:item.accountId});return}
+    if((item.action==='pay_recurring'||item.action==='open_recurring')&&item.recurringId){focusRecurringPayment(item.recurringId);return}
     if(item.action==='pay_loan'&&item.loanId){openSpecial({mode:'loan',loanId:item.loanId,amount:item.amount,accountId:item.accountId});return}
     if(item.action==='pay_credit'&&item.cardId){openSpecial({mode:'credit',action:'payment',cardId:item.cardId,statementId:item.statementId,amount:item.amount});return}
     if(item.action==='collect_lending'&&item.person){openSpecial({mode:'lending',action:'repay',person:item.person,amount:item.amount,accountId:data.state.settings.defaultIncomeAccount});return}
@@ -603,7 +604,7 @@ function QaWorkspace(){
     if(action.type==='lending_person_focus'){
       setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);setPage('lending');return;
     }
-    if(action.type==='recurring_focus'){setCommandRecurringId(action.recurringId);setCommandRecurringKey(key=>key+1);setPage('recurring');return}
+    if(action.type==='recurring_focus'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='transaction_focus'){
       setCommandFocusKey(key=>key+1);
       setMonth(action.date.slice(0,7));
@@ -632,7 +633,7 @@ function QaWorkspace(){
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
-    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='recurring_payment'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);setPage('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId})}
   };
@@ -647,7 +648,7 @@ function QaWorkspace(){
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
-    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
+    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
     :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 

@@ -29,9 +29,9 @@ const comparisonTone=(label:string,value:number|null)=>value===null?'neutral':((
 const CATEGORY_COLORS=['#2f6fed','#ff5068','#7a5af8','#ffb648','#27bfa5','#f59e0b','#8b95ad'];
 const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
-type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number};
+type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number;destination?:'credit';cardId?:string};
 
-export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>}){
+export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onOpenCreditCard}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;onOpenCreditCard?:(cardId?:string)=>void}){
  useEffect(()=>{
    const url=new URL(location.href);
    if(url.searchParams.get('reportSection')!=='budgets')return;
@@ -126,12 +126,29 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
      const impact=flowImpactEvent(event);
      const amount=impact.income+impact.refund-impact.expense-impact.saving;
      if(Math.abs(amount)<=.005)continue;
-     rows.push({id:`event:${event.id}`,date:event.date,title:cleanNote(event.note)||eventKindLabel(event.kind),category:event.category||eventKindLabel(event.kind),subcategory:event.subcategory,amount});
+     rows.push({id:`event:${event.id}`,date:event.date,title:cleanNote(event.note)||eventKindLabel(event.kind),category:event.category||eventKindLabel(event.kind),subcategory:event.subcategory,amount,...(event.kind==='card_purchase'?{destination:'credit' as const,cardId:event.cardId}:{})});
    }
    return rows.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
  },[data,month,asOf]);
  const recentTransactions=activityRows.slice(0,5);
- const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
+ const openActivityTransaction=(row:ActivityRow)=>{
+    if(row.destination==='credit'){
+      if(onOpenCreditCard)onOpenCreditCard(row.cardId);
+      else location.hash='#/credit';
+      return;
+    }
+    const source=row.id.startsWith('legacy:')?'legacy':'event';
+    const id=row.id.slice(source.length+1);
+    if(!id)return;
+    const url=new URL(location.href);
+    url.searchParams.set('commandTx',id);
+    url.searchParams.set('commandSource',source);
+    url.searchParams.set('commandMonth',month);
+    url.hash='#/transactions';
+    history.pushState(history.state,'',url.toString());
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+  const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
  const periodEndDate=reportingPeriodEndDate(month,asOf);
  const periodBalances=useMemo(()=>accountBalances(data,periodEndDate),[data,periodEndDate]);
  const accountDistribution=useMemo(()=>accounts.map(account=>({id:account.id,name:accountDisplayName(data,account.id),balance:periodBalances[account.id]||0})).filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5),[accounts,data,periodBalances]);
@@ -185,13 +202,13 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
 
   <Button type="button" variant="secondary" className="report-mobile-disclosure" aria-expanded={mobileSupportExpanded} onClick={()=>setMobileSupportExpanded(value=>!value)}>{mobileSupportExpanded?'Λιγότερες αναλύσεις':'Περισσότερες αναλύσεις'}</Button>
   <section className={`report-support-grid report-support-grid-four ${mobileSupportExpanded?'':'mobile-collapsed'}`} id="report-support">
-   <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list" data-content-entrance="list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
+   <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list" data-content-entrance="list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small><Button type="button" variant="ghost" aria-label={row.destination==='credit'?`Άνοιγμα αγοράς ${row.title} στην πιστωτική`:`Προβολή συναλλαγής ${row.title} στην ημερομηνία ${row.date}`} onClick={()=>openActivityTransaction(row)}>{row.destination==='credit'?'Στην πιστωτική':'Άνοιγμα συναλλαγής'}</Button></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
 
    <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>{month===asOf.slice(0,7)?'Θετικά υπόλοιπα έως σήμερα.':'Θετικά υπόλοιπα στο τέλος της περιόδου.'}</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list" data-content-entrance="list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
 
    <article className="panel surface-raised report-counterparties"><div className="panel-head"><div><span>Μεγαλύτερες δαπάνες / έμποροι</span><small>Top 5 έμποροι / περιγραφές της περιόδου.</small></div></div>{counterparties.length?<div className="report-counterparty-list">{counterparties.map((row,index)=>{const [category,subcategory]=row.category.split(' › ');return <div key={`${row.title}-${row.category}`}><span className="report-counterparty-rank">{index+1}</span><FinanceIcon settings={data.state.settings} kind="expense" category={category} subcategory={subcategory} size={18}/><span><b>{row.title}</b><small>{row.category} · {row.count===1?'1 κίνηση':`${row.count} κινήσεις`}</small></span><strong>{money.format(row.amount)}<small>{percent(row.share,1)}</small></strong></div>})}</div>:<div className="empty-state">Δεν υπάρχουν καταγεγραμμένες χρεώσεις.</div>}</article>
 
-   <article className="panel surface-raised report-upcoming-card" id="report-obligations"><div className="panel-head"><div><span>Επερχόμενες υποχρεώσεις</span><small>Πάγια & δόσεις / μήνα, με τις επόμενες ημερομηνίες.</small></div><CalendarClock aria-hidden="true"/></div>{upcomingObligations.length?<div className="report-upcoming-list">{upcomingObligations.map(row=><div key={row.id}>{row.kind==='loan'?<Landmark size={17}/>:<FinanceIcon settings={data.state.settings} kind="expense" category={row.category} note={row.name} size={17}/>}<span><b>{row.name}</b><small>{row.date?shortDate(row.date):'Επόμενη δόση'} · {row.category}</small></span><strong>{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν επερχόμενες υποχρεώσεις.</div>}<div className="report-operations-grid report-credit-portfolio"><article className={`report-credit-portfolio-card ${creditPercent!==null&&creditPercent>1?'over-limit':''}`}><CreditCard size={16}/><div><span>Χρήση πιστωτικών</span><b>{creditPercent===null?'Χωρίς όριο':`${Math.round(creditPercent*100)}%`}</b><small>{money.format(snapshot.creditDebt)} οφειλή · {money.format(snapshot.creditAvailable)} διαθέσιμο</small></div></article></div>{snapshot.creditCardRows.length?<details className="credit-report-drilldown"><summary>Ανάλυση πιστωτικών καρτών</summary><div className="credit-report-list">{snapshot.creditCardRows.map(card=><div key={card.id}><span><b>{card.nickname}</b><small>{card.active?'Ενεργή':'Αρχειοθετημένη'}</small></span><span>Οφειλή <b>{money.format(card.debt)}</b></span><span>{card.limit>0?`Χρήση ${Math.round(card.usage*100)}% · Όριο ${money.format(card.limit)}`:'Χωρίς ενεργό όριο'}</span></div>)}</div></details>:null}</article>
+   <article className="panel surface-raised report-upcoming-card" id="report-obligations"><div className="panel-head"><div><span>Επερχόμενες υποχρεώσεις</span><small>Πάγια & δόσεις / μήνα, με τις επόμενες ημερομηνίες.</small></div><CalendarClock aria-hidden="true"/></div>{upcomingObligations.length?<div className="report-upcoming-list">{upcomingObligations.map(row=><div key={row.id}>{row.kind==='loan'?<Landmark size={17}/>:<FinanceIcon settings={data.state.settings} kind="expense" category={row.category} note={row.name} size={17}/>}<span><b>{row.name}</b><small>{row.date?shortDate(row.date):'Επόμενη δόση'} · {row.category}</small><a href={row.kind==='loan'?'#/loans':'#/recurring'} aria-label={`Άνοιγμα ${row.kind==='loan'?'δανείου':'παγίου'} ${row.name} στην αντίστοιχη οθόνη`}>Στην οθόνη {row.kind==='loan'?'Δάνεια':'Πάγια'}</a></span><strong>{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν επερχόμενες υποχρεώσεις.</div>}<div className="report-operations-grid report-credit-portfolio"><article className={`report-credit-portfolio-card ${creditPercent!==null&&creditPercent>1?'over-limit':''}`}><CreditCard size={16}/><div><span>Χρήση πιστωτικών</span><b>{creditPercent===null?'Χωρίς όριο':`${Math.round(creditPercent*100)}%`}</b><small>{money.format(snapshot.creditDebt)} οφειλή · {money.format(snapshot.creditAvailable)} διαθέσιμο</small></div></article></div>{snapshot.creditCardRows.length?<details className="credit-report-drilldown"><summary>Ανάλυση πιστωτικών καρτών</summary><div className="credit-report-list">{snapshot.creditCardRows.map(card=><div key={card.id}><span><b>{card.nickname}</b><small>{card.active?'Ενεργή':'Αρχειοθετημένη'}</small></span><span>Οφειλή <b>{money.format(card.debt)}</b></span><span>{card.limit>0?`Χρήση ${Math.round(card.usage*100)}% · Όριο ${money.format(card.limit)}`:'Χωρίς ενεργό όριο'}</span></div>)}</div></details>:null}</article>
   </section>
 
   <section className="report-lower-grid report-lower-grid-dense">

@@ -315,7 +315,7 @@ export function SettingsPage({
                 <div className="settings-data-action-copy">
                   <b>Δημιουργία αντιγράφου ασφαλείας</b>
                   <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
-                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν περιλαμβάνει μυστικά καρτών (PAN/CVV), ανεξάρτητα IBAN, αρχεία λογοτύπων, τοπικές αποδείξεις ή PIN των Windows. Φύλαξέ τα και διαχειρίσου τα ξεχωριστά.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</Button>
               </Surface>
@@ -326,7 +326,7 @@ export function SettingsPage({
                 <div className="settings-data-action-copy">
                   <b>Επαναφορά από JSON</b>
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
-                  <small>Έως 4 MB · αυτόματο backup πριν από την αντικατάσταση · χωρίς Undo της εισαγωγής.</small>
+                  <small>Έως 4 MB · αυτόματο backup πριν από την αντικατάσταση · χωρίς Undo της εισαγωγής. Η εισαγωγή δεν επαναφέρει μυστικά καρτών, IBAN, ανεβασμένα λογότυπα ή τοπικές αποδείξεις.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>

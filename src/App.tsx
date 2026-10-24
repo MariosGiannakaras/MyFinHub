@@ -300,8 +300,13 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
+  const focusRecurringPayment=(id:string)=>{
+    setCommandRecurringId(id);
+    setCommandRecurringKey(key=>key+1);
+    navigate('recurring');
+  };
   const handleAttention = (item: AttentionItem) => {
-    if (item.action === 'pay_recurring' && item.recurringId) { openSpecial({ mode: 'recurring', recurringId: item.recurringId, amount: item.amount, accountId: item.accountId }); return; }
+    if ((item.action === 'pay_recurring'||item.action === 'open_recurring') && item.recurringId) { focusRecurringPayment(item.recurringId); return; }
     if (item.action === 'pay_loan' && item.loanId) { openSpecial({ mode: 'loan', loanId: item.loanId, amount: item.amount, accountId: item.accountId }); return; }
     if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, statementId:item.statementId, amount: item.amount }); return; }
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
@@ -324,7 +329,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='lending_person_focus'){
       setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);navigate('lending');return;
     }
-    if(action.type==='recurring_focus'){setCommandRecurringId(action.recurringId);setCommandRecurringKey(key=>key+1);navigate('recurring');return}
+    if(action.type==='recurring_focus'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='transaction_focus'){
       setCommandFocusKey(key=>key+1);
       setMonth(action.date.slice(0,7));setMonthIsManual(true);
@@ -353,7 +358,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
-    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='recurring_payment'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);navigate('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId});}
   };
@@ -376,7 +381,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
+    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(value=>value+1)}navigate('credit')}}/>
     : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
