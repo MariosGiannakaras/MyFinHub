@@ -668,6 +668,11 @@ function registerIpcHandlers() {
     if (!isMainSender(event) || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Unauthorized backup IPC sender.');
     if (!desktopBackupStore) throw new Error('Το τοπικό backup δεν είναι διαθέσιμο.');
   };
+  ipcMain.handle('myfinhub:backup-report-failure', event => {
+    assertBackupSender(event);
+    desktopBackupStore.reportFailure();
+    return true;
+  });
   ipcMain.handle('myfinhub:backup-status', event => {
     assertBackupSender(event);
     return desktopBackupStore.status();
