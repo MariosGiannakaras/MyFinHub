@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { loadData } from '../lib/api';
 import { desktopBackupBridge } from '../lib/desktopBackups';
 import type { SaveState } from './useFinance';
 
@@ -24,9 +23,8 @@ export function useDesktopAutoBackup(saveState: SaveState) {
         if (disposed || saveStateRef.current !== 'saved') return;
         const last = status.lastValidBackupAt ? Date.parse(status.lastValidBackupAt) : 0;
         if (Number.isFinite(last) && Date.now() - last < DAILY_MS) return;
-        const snapshot = await loadData(); // Backend requires owner + AAL2 and returns server revision.
-        if (disposed || saveStateRef.current !== 'saved') return;
-        await bridge.saveLocalBackup({ data: snapshot.data, revision: snapshot.revision });
+        // Native main fetches the authoritative document through the owner+AAL2 backend.
+        await bridge.saveLocalBackup();
       } catch {
         // Do not expose auth/network exception contents in local files or UI.
         // A failed attempt remains failed and is retried on the next scheduled check.
