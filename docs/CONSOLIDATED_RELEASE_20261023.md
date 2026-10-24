@@ -7,7 +7,7 @@
 - The release candidate must retain both full develop and production main ancestry; its tree must differ from new develop only by deliberate v1.6.0 version metadata and release documentation. Never downgrade patched dependencies.
 - Production hard holds remain: verified current isolated-restorable PostgreSQL + required Storage/key checkpoint, **six** ordered migrations, Android client shared-PIN native bearer-ticket compatibility, and full exact-head production release validations. No main/deployment/DDL/tag/Android work is authorized before these gates.
 
-## 2026-10-24 authoritative next-release checkpoint — toward main, NOT DEPLOYED
+## Historical 2026-10-24 pre-integration checkpoint — superseded by latest snapshot above
 
 Owner explicitly requested proceeding toward `main` after Web/Windows PIN completion. This is approval to prepare and eventually promote **after** security, CI and recovery gates; it is not approval to bypass those gates.
 
@@ -26,7 +26,7 @@ Owner explicitly requested proceeding toward `main` after Web/Windows PIN comple
 - [Ready exact-head CI #40071928581](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40071928581) SUCCESS including rendered Chromium, Lighthouse, WebKit, Windows installer/clean launch/first run, CodeQL and Unified gate, plus independent exact-head Real Stack #40071752560 and CodeQL #40071752562 SUCCESS. Responsive screenshots directly inspected.
 - Merge reconciled **from the complete accepted develop Git tree**, reapplying only documented release-version metadata and historical README/status/changelog files. This prevents stale release branch package locks from downgrading patched `body-parser@2.4.0`, `electron@43.8.3`, `undici@7.30.1` and `node-gyp/undici@6.29.1`. Existing carefully bounded build-time advisory handling remains unchanged.
 - [ ] Verify `develop` postmerge full CI #40073640592 on its exact head, then run fresh release PR #605 Ready exact-head full required matrix/Real Stack, inspect rendered output and compare release-vs-develop exclusively to release metadata before authorizing Production.
-- No `main` merge, destructive DB action, production migration, authenticated live taxonomy 20/6 mutation, Windows upload, deployment or tag creation has occurred; **owner go/no-go** is required after verified current recovery point and migrations.
+- No `main` merge, destructive DB action, production migration, authenticated live taxonomy 20/6 mutation, Windows upload, deployment or tag creation has occurred. The owner already authorized progressing toward production; the remaining security, recovery and CI prerequisites must be completed first.
 
 ## Scope & branch reconciliation
 - Reviewed integration: `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382`; existing Production release: `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc`. The common ancestry diverged across old release commits. The candidate preserves both histories as parents while taking the fully reviewed implementation/security/CI sources from develop and historical v1.5.0 release notes/download links from main. No force-push. Old main-only one-shot v1.5.0 publisher is intentionally **not** revived because the published tag is immutable.
@@ -43,11 +43,13 @@ Owner explicitly requested proceeding toward `main` after Web/Windows PIN comple
 ## Mandatory last-mile production checklist — not complete
 - [ ] This release candidate's **Ready exact-head** full strict Chromium rendered, WebKit, CodeQL, Lighthouse and three Windows lifecycle gates/Unified required gate SUCCESS. Inspect fresh responsive output; do not accept historical branch runs as substitute.
 - [ ] **Restore/recovery checkpoint:** verify a recoverable current Production backup before migration. Read-only 2026-10-23 preflight: owner finance revision **465**, backup rows **50** (newest created **2026-10-22 22:33:50 UTC**), state update **2026-10-22 22:47:07 UTC** (after latest recorded backup); history points **39**, audit entries **468**, encrypted vault records **1**. A more recent verified recovery point is needed for exact latest state. Do not download secrets or replace/rotate Card Vault key.
-- [ ] Apply only following four additive, reviewed, version-controlled Supabase migrations **in exact order**, each requiring verification and a known recovery path before Production promotion:
+- [ ] Apply all **six** reviewed, version-controlled Supabase migrations **in exact order**, only after the current independently verified recovery point is available, with additive/RLS/PIN and client compatibility checks before Production promotion:
   1. `20261019110000_protect_irreversible_history_boundaries.sql` (append-only imported-history and finalized card-secret guards)
   2. `20261021091500_add_lending_writeoff_event_kind.sql` (expand noncash loan/receivable event-kind check)
   3. `20261021211500_allow_noncash_writeoff_health.sql` (update invoker health checks)
   4. `20261022213500_expand_budget_scope_to_subcategories.sql` (subcategory constraint and unique index).
+  5. `20261024150000_add_device_details_and_nicknames.sql` (device name metadata, constraints).
+  6. `20261024160000_shared_owner_app_lock.sql` (shared PIN verifier, session-bound unlock tickets and finance RLS; cannot enable until native Android bearer-client compatibility is validated).
 - [ ] Obtain exact live migration-list and schema integrity verification (owner/RLS/immutable events/history, revision) after DDL; preserve existing wallet/revision/audit. **Never use privileged SQL to apply the 20/6 category data.**
 - [ ] Deliberately merge the approved release PR to `main` (not a rebase/squash of old main history). Verify Vercel Production deployment matches the merged `main` SHA and event-driven Production Smoke SUCCESS for real `mgfinhub.vercel.app`, /api/health, 401 unauthenticated finance, security headers, 404, CSP/no-store/region, error scan and login/TOTP flows.
 - [ ] With an authenticated owner+AAL2 app session, apply approved category taxonomy 20/6 via ordinary optimistic revision + backup/history/audit and re-read saved state; only then close #601. Last read-only database state 18/6, do not falsely mark live activation complete.
