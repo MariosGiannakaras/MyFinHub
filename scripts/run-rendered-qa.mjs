@@ -38,6 +38,7 @@ const scripts=[
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
   {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
+  {path:'scripts/desktop-backup-rendered-qa.mjs',key:'desktop-backup-native',surface:'settings-desktop-backup',profiles:['/tmp/myfinhub-desktop-backup-qa-chrome']},
   {path:'scripts/provider-brand-management-qa.mjs',key:'provider-brand-management',surface:'settings-provider-branding',profiles:['/tmp/myfinhub-provider-brand-management-qa-chrome']},
   {path:'scripts/settings-rules-modal-qa.mjs',key:'settings-rules-modal',surface:'settings',profiles:['/tmp/myfinhub-settings-rules-modal-qa-chrome']},
   {path:'scripts/command-palette-qa.mjs',key:'command-palette',surface:'command-palette',profiles:['/tmp/myfinhub-command-palette-qa-chrome']},
@@ -78,15 +79,22 @@ function trimDiagnostics(text){const normalized=text.trim();if(!normalized)retur
 function resolvePrimaryBrowser(){if(process.env.MYFINHUB_QA_PRIMARY_BROWSER)return process.env.MYFINHUB_QA_PRIMARY_BROWSER;try{return execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim()}catch{return ''}}
 async function stopBrowser(child){if(!child||child.exitCode!==null)return;await new Promise(resolve=>{const timer=setTimeout(()=>{child.kill('SIGKILL');resolve()},2000);child.once('exit',()=>{clearTimeout(timer);resolve()});child.kill('SIGTERM')})}
 async function preflightBrowser(browser,attempt){
-  const profile=`/tmp/myfinhub-primary-browser-preflight-${process.pid}`;
+  // Fresh profile per attempt, so a stalled cold start cannot poison the retry.
+  const profile=`/tmp/myfinhub-primary-browser-preflight-${process.pid}-${attempt}`;
   const port=9300+attempt;
   cleanPaths([profile]);
   let diagnostics='',spawnError='';
-  const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+  // Ubuntu runner DBus may advertise an invalid session address. Headless
+  // Chromium's CDP endpoint does not need a desktop session bus.
+  const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:''}});
   const capture=stream=>stream?.on('data',chunk=>{diagnostics+=chunk.toString();if(diagnostics.length>12000)diagnostics=diagnostics.slice(-12000)});
   capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
   try{
-    for(let index=0;index<100;index+=1){
+    // Cold CI runners may spend the original 20s opening Chromium, before
+    // any app is loaded. This bounds ONLY browser-bootstrap readiness, never
+    // the actual rendered UI assertions or their performance thresholds.
+    const startupDeadline=Date.now()+40_000;
+    while(Date.now()<startupDeadline){
       if(spawnError)throw new Error(`Primary browser spawn failed: ${spawnError}`);
       if(child.exitCode!==null)throw new Error(`Primary browser exited before CDP became ready (exit ${child.exitCode}).\n${trimDiagnostics(diagnostics)}`);
       try{
@@ -95,7 +103,7 @@ async function preflightBrowser(browser,attempt){
       }catch{}
       await sleep(200);
     }
-    throw new Error(`Primary browser did not expose fixed CDP endpoint ${port} within 20s.\n${trimDiagnostics(diagnostics)}`);
+    throw new Error(`Primary browser did not expose fixed CDP endpoint ${port} within 40s.\n${trimDiagnostics(diagnostics)}`);
   }finally{await stopBrowser(child);await sleep(250);cleanPaths([profile])}
 }
 function runScript(path,useFallback,evidenceDir){return new Promise(resolve=>{let output='';const env={...process.env,MYFINHUB_QA_USE_FALLBACK:useFallback?'1':'0',MYFINHUB_UX_EVIDENCE_DIR:evidenceDir};const child=spawn(process.execPath,['scripts/qa-script-runner.mjs',path],{env,stdio:['ignore','pipe','pipe']});const forward=(stream,target)=>stream.on('data',chunk=>{const text=chunk.toString();output+=text;target.write(text)});forward(child.stdout,process.stdout);forward(child.stderr,process.stderr);child.on('error',error=>resolve({code:1,output:`${output}\n${error.stack||error.message}`}));child.on('close',code=>resolve({code:code??1,output}))})}
@@ -130,6 +138,9 @@ async function runRenderedItem(item){
 // competing browser start/render must not distort these latency measurements.
 // The <5s readiness and <2s mutation assertions remain completely unchanged.
 const resourceIsolatedSuites=new Set([
+  // Receipt-backed Undo/Redo keyboard paths require an uncontended browser.
+  // Assertions and operation deadlines stay strict and unchanged.
+  'scripts/completion-functional-crud-qa.mjs',
   'scripts/large-data-boundaries-qa.mjs',
   'scripts/transactions-scanability-qa.mjs',
 ]);

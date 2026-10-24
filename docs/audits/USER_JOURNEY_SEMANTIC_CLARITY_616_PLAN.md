@@ -1,12 +1,12 @@
 # Owner-approved semantic user-journey implementation — issue #616
 Branch `feat/616-semantic-user-journey-clarity`, base `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382`. The owner confirms Recurring is the only originating UI for **paying a recurring obligation**; generic Quick Entry still permits independent expenses sharing category/label. No inferred financial dedup. The other audited UX enhancements are accepted as directional improvements. Never change production main/DB/Android implicitly.
 ## 5 coherent implementation/acceptance groups
-- [x] 1. Preserve recurring-linked transaction edits and make dedicated Recurring payment origin explicit, tested (including Attention and global command returning to the Recurring owning page).
-- [x] 2. Explain actual/known-due/estimated flows and provide safe report/alert-to-source navigation.
-- [x] 3. Clarify local receipts, backup exclusions, import irreversibility and cross-store partial successes.
-- [x] 4. Explain dependency blockers for categories/accounts/cards without deleting/remapping finance history.
-- [x] 5. Clarify common-pool savings goals and rule/provenance, verify responsive/focus/dark/light/error states.
-**Implementations 5/5 completed**, accepted through fully green exact-head Ready CI #40071928581 + real-stack/CodeQL and protected squash merge PR #618 to `develop@c238a9d6537a0b8a4ddea3b6b22e42392c46f4c8`. Independently pending: postmerge develop CI #40073640592, release PR #605 reconciliation/release validation and production go/no-go. New plan has no explicit subitem denominator; do not invent one.
+- [ ] 1. Preserve recurring-linked transaction edits and make dedicated Recurring payment origin explicit, tested (including Attention and global command returning to the Recurring owning page).
+- [ ] 2. Explain actual/known-due/estimated flows and provide safe report/alert-to-source navigation.
+- [ ] 3. Clarify local receipts, backup exclusions, import irreversibility and cross-store partial successes.
+- [ ] 4. Explain dependency blockers for categories/accounts/cards without deleting/remapping finance history.
+- [ ] 5. Clarify common-pool savings goals and rule/provenance, verify responsive/focus/dark/light/error states.
+**Accepted Implementations 0/5** at source-batch checkpoint; counts advance only after real tests, rendered artifact review and protected integration. New plan has no explicit subitem denominator, so do not invent one.
 ## First coherent source slice, pending tests
 Files: QuickAdd + recurring helper/test, App command/Attention Recurring focus navigation, Settings Data, Receipt Inbox, Account deletion blockers, Savings pool warning, Reports transaction and upcoming source navigation. Paid Recurring from Attention or global search now navigates to the focused Recurring row; its dedicated Pay CTA owns the transaction. No new financial write path/schema; preserve privacy, owner+AAL2, revision/redo, card-vault and save-line semantics.
 ## Mandatory next actions
@@ -35,7 +35,3 @@ Roadmap #588 **Implementations 12/12 completed · Sub-implementations 24/24 comp
 - Coherent repair on Draft #618 changes only the two lock entries to patched **undici 6.29.1 / 7.30.1**, retaining existing node-gyp semver compatibility, dev/optional metadata and exact tarball SHA512 verified against multiple independent public lockfiles. Do not alter audit policy or relax checks. Lockfile is installed via actual `npm ci` in subsequent jobs; audit result remains pending until validated.
 - Reviewed real browser screenshot contact sheet for exact recurring domain focus & payment dialogs (Attention/Command), Settings backup mobile/dark desktop, Savings/Reports mobile, account editor focus, Quick Entry and reporting. No obvious overlap, clipping, obscured focus or misplaced cross-page payment in inspected frames; final accepted result still requires current exact-head full CI/screenshot verification.
 - Following *new draft source/CodeQL and real stack checks*, move Ready exactly once for full Windows installer+audit/lifecycle, rendered, WebKit, Lighthouse. Never merge failing/pending gates. Then accepted #616 group counters, protected develop merge+postmerge, release #605 integration with new exact release head and explicit production approval before main. `#616` acceptance still 0/5 until validated.
-
-## Protected-integration checkpoint (2026-10-24)
-- The original five source groups were implemented and accepted after direct review of the exact-head rendered evidence (desktop, tablet, mobile, light/dark, focus/history/error), independent Real Stack #40071752560 and CodeQL #40071752562 SUCCESS, and strict CI #40071928581 all required jobs SUCCESS. PR #618 was protected-squash-merged into develop `c238a9d6537a0b8a4ddea3b6b22e42392c46f4c8`.
-- **Implementations 5/5 completed**; no sub-implementation denominator was defined in this task. Postmerge full CI #40073640592 remains a separate check (pending at this checkpoint). Release #605 remains DRAFT pending exact-head reconciliation, validation and owner-controlled go/no-go. Taxonomy activation #617 remains separate. No production or Android changes.

@@ -61,7 +61,9 @@ try{
   await navigate({screen:'mfa',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'MFA error is announced');await screenshot('mobile-mfa-invalid');
   await c.send('Network.setBlockedURLs',{urls:['*/api/auth/session*']});
   await c.send('Page.navigate',{url:new URL('/',baseUrl).href});
-  await waitFor("function(){const screen=document.querySelector('.boot-screen');return Boolean(screen&&screen.textContent.includes('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας')&&screen.querySelector('button'))}",'actual app auth unavailable state');
+  // A failed session probe must NOT mount financial content just to show the
+  // old auth error page. The app-lock bootstrap owns this fail-closed error.
+  await waitFor("function(){const screen=document.querySelector('.desktop-app-lock-screen[data-phase=error] .desktop-app-lock-card[role=alert]');return Boolean(screen&&screen.textContent.includes('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας')&&screen.querySelector('button')&&document.querySelector('.desktop-app-lock-preview')&&!document.querySelector('.desktop-app-lock-underlay')&&!document.querySelector('[data-desktop-lock-probe=protected]'))}",'actual app auth unavailable state');
   await noOverflow('auth unavailable 375');await screenshot('mobile-auth-unavailable');
   await c.send('Network.setBlockedURLs',{urls:[]});
 

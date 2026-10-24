@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ensureDeviceSessionAccess } from './deviceSessionRegistry.js';
+import { assertAppUnlock, requiresAppUnlock } from './appUnlockAccess.js';
 import { ApiError, assertSameOrigin, requestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
@@ -164,6 +165,11 @@ export function accessTokenAal(accessToken: string) {
 
 async function finalizeSession(req: any, accessToken: string, user: AuthUser, source: SessionSource): Promise<SessionContext> {
   if (accessTokenAal(accessToken) === 'aal2') await ensureDeviceSessionAccess(req, accessToken, user.id);
+  // Finance access is locked for BOTH cookie and explicit native bearer sessions.
+  // A caller must not bypass PIN by re-presenting an HttpOnly cookie JWT as bearer.
+  // Android clients must integrate the same session-bound ticket BEFORE shared PIN
+  // can be activated in production; no spoofable UA/platform-header exception.
+  if (accessTokenAal(accessToken) === 'aal2' && requiresAppUnlock(req)) await assertAppUnlock(req, accessToken);
   return { accessToken, user, source };
 }
 

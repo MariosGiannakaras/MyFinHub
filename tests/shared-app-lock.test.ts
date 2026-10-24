@@ -1,0 +1,118 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { parseAppLockAction, parseAppLockRecovery } from '../server/appLockHandler.js';
+import { ApiError } from '../server/http.js';
+
+const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+
+describe('shared owner app privacy PIN',()=>{
+  it('rejects unbounded and extra fields while keeping the allowed idle intervals',()=>{
+    expect(parseAppLockAction({action:'configure',newPin:'1234',idleMinutes:5})).toEqual({action:'configure',newPin:'1234',idleMinutes:5});
+    expect(parseAppLockAction({action:'verify',pin:'1234'})).toEqual({action:'verify',pin:'1234'});
+    expect(parseAppLockAction({action:'change',pin:'1234',newPin:'2345'})).toEqual({action:'change',pin:'1234',newPin:'2345'});
+    expect(parseAppLockAction({action:'disable',pin:'1234'})).toEqual({action:'disable',pin:'1234'});
+    expect(parseAppLockAction({action:'lock',unlockToken:'a'.repeat(43)})).toEqual({action:'lock',unlockToken:'a'.repeat(43)});
+    expect(parseAppLockAction({action:'touch',unlockToken:'a'.repeat(43)})).toEqual({action:'touch',unlockToken:'a'.repeat(43)});
+    expect(parseAppLockAction({action:'timeout',pin:'1234',idleMinutes:60})).toEqual({action:'timeout',pin:'1234',idleMinutes:60});
+    for(const body of [
+      {},[],{action:'verify',pin:'12345'},{action:'verify',pin:'abcd'},
+      {action:'verify',pin:'1234',secret:true},{action:'timeout',pin:'1234',idleMinutes:0},
+      {action:'configure',newPin:'1234',idleMinutes:10},{action:'change',pin:'1234',newPin:'12'},
+      {action:'disable',pin:12},{action:'lock',unlockToken:'invalid'},{action:'unblock',pin:'1234'},
+    ])expect(()=>parseAppLockAction(body)).toThrow(ApiError);
+  });
+
+  it('requires fresh password AND fresh TOTP for PIN recovery rather than ambient AAL2',()=>{
+    expect(parseAppLockRecovery({action:'recover',email:'Owner@Example.com',password:'correct-horse-battery-staple',code:'123456',newPin:'4321'})).toEqual({
+      action:'recover',email:'owner@example.com',password:'correct-horse-battery-staple',code:'123456',newPin:'4321',
+    });
+    for(const bad of [
+      {action:'recover',email:'owner@example.com',password:'short',code:'123456',newPin:'1234'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'12345',newPin:'1234'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'123456',newPin:'abc4'},
+      {action:'recover',email:'owner@example.com',password:'long-enough',code:'123456',newPin:'1234',admin:true},
+    ])expect(()=>parseAppLockRecovery(bad)).toThrow(ApiError);
+    const source=read('server/appLockHandler.ts');
+    const sql=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
+    expect(source).toContain('signInWithPassword(input.email,input.password)');
+    expect(source).toContain('challengeTotp(temporaryAccess,factor.id)');
+    expect(source).toContain('verifyTotp(temporaryAccess,factor.id,challenge.id,input.code)');
+    expect(source).toContain('revokeTemporaryRecoverySession(verifiedAccess)');
+    expect(source).toContain('revokeTemporaryRecoverySession(temporaryAccess)');
+    expect(source).toContain('/auth/v1/logout?scope=local');
+    expect(sql).toContain('public.myfinhub_app_lock_recover');
+    expect(sql).toContain("entry->>'method'='password'");
+    expect(sql).toContain("entry->>'method'='totp'");
+    expect(sql).toContain('between v_now-120 and v_now+30');
+    expect(sql).toContain('v_password_recent and v_totp_recent');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('Ξέχασα το PIN');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('recoveryNewPin!==recoveryConfirmPin');
+  });
+
+  it('keeps a non-queryable verifier and a strictly owner/AAL2 scoped RPC',()=>{
+    const sql=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
+    expect(sql).toContain('revoke all on public.myfinhub_app_lock from public, anon, authenticated');
+    expect(sql).toContain('security definer');
+    expect(sql).toContain('public.rheomiq_is_owner_aal2()');
+    expect(sql).toContain('for update');
+    expect(sql).toContain('myfinhub_app_lock_tickets');
+    expect(sql).toContain("p_action='validate'");
+    expect(sql).toContain("p_action='revoke'");
+    expect(sql).toContain("p_action='touch'");
+    expect(sql).toContain('private.myfinhub_app_lock_session_unlocked');
+    expect(sql).toContain('create or replace function public.rheomiq_is_owner_aal2()');
+    expect(sql).toContain('and private.myfinhub_session_is_active()');
+    expect(sql).toContain('and private.myfinhub_app_lock_session_unlocked()');
+    expect(sql).toContain('delete from public.myfinhub_app_lock_tickets where user_id=v_uid and session_id=v_session');
+    expect((sql.match(/create or replace function public.myfinhub_app_lock_action/g)||[])).toHaveLength(1);
+    expect((sql.match(/create or replace function public.myfinhub_app_lock_ticket/g)||[])).toHaveLength(1);
+    expect(sql.split('as ' + String.fromCharCode(36,36)).length-1).toBe(5);
+    expect(sql.split(String.fromCharCode(36,36) + ';').length-1).toBe(5);
+    expect(sql).toContain("interval '30 seconds'");
+    expect(sql).toContain("extensions.crypt");
+    expect(sql).not.toMatch(/grant\s+select\s+on\s+(table\s+)?public\.myfinhub_app_lock\s+to\s+authenticated/i);
+    expect(sql).not.toContain('SUPABASE_SECRET_KEY');
+  });
+
+  it('exposes an authenticated, same-origin, bounded web and Windows PIN contract',()=>{
+    const api=read('server/appLockHandler.ts');
+    const vercel=JSON.parse(read('vercel.json')) as {rewrites:Array<{source:string;destination:string}>};
+    const route=read('api/auth/session.ts');
+    const main=read('server/index.ts');
+    const gate=read('src/components/DesktopAppLockGate.tsx');
+    const settings=read('src/components/AccountSecuritySettings.tsx');
+    const entry=read('src/main.tsx');
+    expect(api).toContain('requireSession(req,res,{allowBearer:true})');
+    expect(api).toContain('isOwner(session.accessToken)');
+    expect(api).toContain("accessTokenAal(session.accessToken)!=='aal2'");
+    expect(api).toContain('assertMutationSessionOrigin(req,session)');
+    expect(api).toContain('readJsonBody(req,2048)');
+    expect(api).toContain('updateUnlockTicket');
+    expect(api).toContain("action==='touch'");
+    expect(read('server/auth.ts')).toContain('requiresAppUnlock(req)');
+    expect(read('src/lib/api.ts')).toContain('getAppUnlockToken');
+    expect(read('src/components/DesktopAppLockGate.tsx')).toContain('clearAppUnlockToken');
+    expect(api).toContain('SUPABASE_PUBLISHABLE_KEY');
+    expect(api).not.toContain('SUPABASE_SECRET_KEY');
+    expect(vercel.rewrites).toContainEqual({source:'/api/auth/app-lock',destination:'/api/auth/session?__myfinhub_route=app-lock'});
+    expect(route).toContain("marker === 'app-lock'");
+    expect(main).toContain("app.all('/api/auth/app-lock'");
+    expect(entry).toContain("import('./components/DesktopAppLockGate.css')");
+    expect(entry).toContain("import('./components/DesktopAppLockGate')");
+    expect(entry).not.toContain("import { DesktopAppLockGate } from");
+    expect(gate).toContain('getSharedAppLockState');
+    expect(gate).toContain("action:'verify'");
+    expect(gate).toContain('Unmount the financial workspace');
+    expect(gate).toContain("'visibilitychange'");
+    expect(gate).toContain("verificationStage==='session'");
+    expect(gate).toContain('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας');
+    expect(gate).toContain('Δεν εμφανίζονται οικονομικά δεδομένα.');
+    const rendered=read('scripts/ui-ux-hardening-qa.mjs');
+    expect(rendered).toContain('.desktop-app-lock-screen[data-phase=error]');
+    expect(rendered).toContain("!document.querySelector('.desktop-app-lock-underlay')");
+    expect(rendered).toContain("document.querySelector('.desktop-app-lock-preview')");
+
+    expect(settings).toContain('getSharedAppLockState');
+    expect(settings).toContain('Τρέχον 4ψήφιο PIN');
+  });
+});

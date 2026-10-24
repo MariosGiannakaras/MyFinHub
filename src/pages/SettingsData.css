@@ -28,3 +28,8 @@
 .settings-import-guide code{overflow-wrap:anywhere}
 .settings-import-guide .settings-import-guide-warning{border-left:3px solid var(--blue);padding:10px 12px;background:var(--surface-inset);border-radius:6px}
 @media(max-width:680px){.settings-import-guide-fields>div{grid-template-columns:minmax(0,1fr)}.settings-import-guide-content{padding:0 12px 12px}.settings-import-guide>summary{padding:12px}}
+
+/* Native backup panel is a single accessible column at every viewport. */
+.desktop-backup-panel{display:flex;flex-direction:column;gap:12px}
+
+.settings-data-tab>.logic-note.is-error{color:var(--error);border-color:currentColor}

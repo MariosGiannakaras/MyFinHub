@@ -37,6 +37,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).not.toContain('DevToolsActivePort');
     expect(coordinator).toContain('trimDiagnostics');
     expect(coordinator).toContain('Primary Chromium preflight passed');
+    expect(coordinator).toContain('const startupDeadline=Date.now()+40_000');
+    expect(coordinator).toContain('while(Date.now()<startupDeadline)');
+    expect(coordinator).toContain("DBUS_SESSION_BUS_ADDRESS:''");
+    expect(coordinator).toContain('`/tmp/myfinhub-primary-browser-preflight-${process.pid}-${attempt}`');
   });
 
   it('retries only recognized bootstrap failures on primary before any fallback', () => {
@@ -49,6 +53,8 @@ describe('rendered browser QA reliability contract', () => {
 
   it('keeps the shared primitive adoption suite in the rendered merge gate',()=>{
     expect(coordinator).toContain("scripts/primitives-adoption-qa.mjs");
+    expect(coordinator).toContain("scripts/desktop-backup-rendered-qa.mjs");
+    expect(coordinator).toContain("'scripts/completion-functional-crud-qa.mjs',\n  'scripts/large-data-boundaries-qa.mjs'");
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
   });
 
@@ -149,6 +155,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(qaWorkspace).toContain("screen==='desktop-lock'");
     expect(desktopHostVisual).toContain("/desktop/setup.html");
     expect(desktopHostVisual).toContain('desktop-app-lock-invalid-pin-1440x930');
+    expect(desktopHostVisual).toContain("applyThemePreference('dark')");
+    expect(desktopHostVisual).toContain('darkTheme.tokenMatchesCard');
+    expect(desktopHostVisual).toContain('darkTheme.contrast>=4.5');
+    expect(desktopHostVisual).not.toContain("document.documentElement.dataset.theme='dark'");
     expect(desktopHostVisual).toContain('desktop-update-downloading-1100x760');
     expect(desktopHostVisual).toContain('desktop-startup-recovery-min-620x650');
     expect(desktopHostVisual).toContain('BACKEND_STARTUP_TIMEOUT');

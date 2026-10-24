@@ -8,13 +8,17 @@ type DeviceSessionRecord = {
   user_id: string;
   platform: 'windows' | 'android' | 'web' | 'unknown';
   device_label: string;
+  nickname?: string | null;
+  system_name?: string | null;
+  browser_name?: string | null;
+  device_type?: 'desktop' | 'phone' | 'tablet' | 'unknown' | null;
   app_version: string | null;
   first_seen_at: string;
   last_seen_at: string;
   revoked_at: string | null;
 };
 
-type ClientMetadata = Pick<DeviceSessionRecord, 'platform' | 'device_label' | 'app_version'>;
+type ClientMetadata = Pick<DeviceSessionRecord, 'platform' | 'device_label' | 'app_version' | 'system_name' | 'browser_name' | 'device_type'>;
 const TOUCH_INTERVAL_MS = 5 * 60_000;
 
 function config() {
@@ -34,10 +38,23 @@ function normalizePlatform(value: string): ClientMetadata['platform'] {
   return 'unknown';
 }
 
+function inferredClientDetails(rawAgent: string) {
+  const agent = rawAgent.toLowerCase();
+  const system = /windows nt/.test(agent) ? 'Windows' : /iphone|ipad|ipod/.test(agent) ? 'iOS / iPadOS'
+    : /android/.test(agent) ? 'Android' : /mac os x|macintosh/.test(agent) ? 'macOS'
+    : /cros/.test(agent) ? 'ChromeOS' : /linux/.test(agent) ? 'Linux' : 'Άγνωστο σύστημα';
+  const browser = /edg\/([\d.]+)/i.exec(rawAgent) || /firefox\/([\d.]+)/i.exec(rawAgent)
+    || /(?:chrome|crios)\/([\d.]+)/i.exec(rawAgent) || /version\/([\d.]+).*safari/i.exec(rawAgent);
+  const name = /edg\//i.test(rawAgent) ? 'Edge' : /firefox\//i.test(rawAgent) ? 'Firefox'
+    : /chrome\/|crios\//i.test(rawAgent) ? 'Chrome' : /safari\//i.test(rawAgent) ? 'Safari' : 'Άγνωστος browser';
+  const device_type = /ipad|tablet/i.test(rawAgent) ? 'tablet' : /mobile|iphone|android/i.test(rawAgent) ? 'phone' : 'desktop';
+  return {system_name: system, browser_name: browser ? `${name} ${browser[1].slice(0, 20)}` : name, device_type} as const;
+}
+
 function clientMetadata(req: any): ClientMetadata {
   if (process.env.RHEOMIQ_DESKTOP === '1') {
     const host = cleanText(os.hostname(), 72) || 'Windows PC';
-    return { platform: 'windows', device_label: `Windows · ${host}`, app_version: cleanText(process.env.MYFINHUB_APP_VERSION, 40) || null };
+    return { platform: 'windows', device_label: `Windows · ${host}`, app_version: cleanText(process.env.MYFINHUB_APP_VERSION, 40) || null, system_name: 'Windows', browser_name: 'MyFinHub Desktop', device_type: 'desktop' };
   }
   const platformHeader = cleanText(requestHeader(req, 'x-myfinhub-client-platform'), 24);
   const nameHeader = cleanText(requestHeader(req, 'x-myfinhub-device-name'), 96);
@@ -45,7 +62,7 @@ function clientMetadata(req: any): ClientMetadata {
   const userAgent = cleanText(requestHeader(req, 'user-agent'), 200).toLowerCase();
   const platform = platformHeader ? normalizePlatform(platformHeader) : userAgent.includes('android') ? 'android' : 'web';
   const fallback = platform === 'android' ? 'Android συσκευή' : platform === 'windows' ? 'Windows PC' : 'Web browser';
-  return { platform, device_label: nameHeader || fallback, app_version: versionHeader || null };
+  return { platform, device_label: nameHeader || fallback, app_version: versionHeader || null, ...inferredClientDetails(cleanText(requestHeader(req,'user-agent'),300)) };
 }
 
 export function accessTokenSessionId(accessToken: string) {
@@ -85,7 +102,7 @@ async function rest<T>(path: string, accessToken: string, init: RequestInit = {}
 }
 
 function rowPath(sessionId: string) {
-  return `myfinhub_device_sessions?session_id=eq.${encodeURIComponent(sessionId)}&select=session_id,user_id,platform,device_label,app_version,first_seen_at,last_seen_at,revoked_at`;
+  return `myfinhub_device_sessions?session_id=eq.${encodeURIComponent(sessionId)}&select=session_id,user_id,platform,device_label,nickname,system_name,browser_name,device_type,app_version,first_seen_at,last_seen_at,revoked_at`;
 }
 
 export async function ensureDeviceSessionAccess(req: any, accessToken: string, userId: string) {
@@ -123,7 +140,7 @@ export async function ensureDeviceSessionAccess(req: any, accessToken: string, u
     }
   }
   const lastSeen = Date.parse(existing.last_seen_at || '');
-  const metadataChanged = existing.platform !== metadata.platform || existing.device_label !== metadata.device_label || existing.app_version !== metadata.app_version;
+  const metadataChanged = existing.platform !== metadata.platform || existing.device_label !== metadata.device_label || existing.app_version !== metadata.app_version || existing.system_name !== metadata.system_name || existing.browser_name !== metadata.browser_name || existing.device_type !== metadata.device_type;
   if (metadataChanged || !Number.isFinite(lastSeen) || Date.now() - lastSeen >= TOUCH_INTERVAL_MS) {
     const updated = await rest<DeviceSessionRecord[]>(`${rowPath(sessionId)}&user_id=eq.${encodeURIComponent(userId)}`, accessToken, {
       method: 'PATCH',
@@ -138,10 +155,20 @@ export async function ensureDeviceSessionAccess(req: any, accessToken: string, u
 export async function listDeviceSessions(accessToken: string, userId: string) {
   const currentSessionId = accessTokenSessionId(accessToken);
   const rows = await rest<DeviceSessionRecord[]>(
-    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,app_version,first_seen_at,last_seen_at,revoked_at&order=last_seen_at.desc`,
+    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,nickname,system_name,browser_name,device_type,app_version,first_seen_at,last_seen_at,revoked_at&order=last_seen_at.desc`,
     accessToken,
   );
   return { currentSessionId, rows };
+}
+
+export async function renameDeviceSession(accessToken: string, userId: string, targetSessionId: string, nickname: string | null) {
+  const updated = await rest<DeviceSessionRecord[]>(
+    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&session_id=eq.${encodeURIComponent(targetSessionId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,nickname,system_name,browser_name,device_type,app_version,first_seen_at,last_seen_at,revoked_at`,
+    accessToken,
+    { method: 'PATCH', headers: { prefer: 'return=representation' }, body: JSON.stringify({ nickname }) },
+  );
+  if (!updated.length) throw new ApiError(404, 'DEVICE_SESSION_NOT_FOUND', 'Η συσκευή δεν είναι πλέον ενεργή.');
+  return updated[0];
 }
 
 export async function revokeDeviceSession(accessToken: string, userId: string, targetSessionId: string) {
@@ -150,7 +177,7 @@ export async function revokeDeviceSession(accessToken: string, userId: string, t
   if (targetSessionId === currentSessionId) throw new ApiError(400, 'CURRENT_DEVICE_REVOKE_UNSUPPORTED', 'Χρησιμοποίησε αποσύνδεση για την τρέχουσα συσκευή.');
   const now = new Date().toISOString();
   const updated = await rest<DeviceSessionRecord[]>(
-    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&session_id=eq.${encodeURIComponent(targetSessionId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,app_version,first_seen_at,last_seen_at,revoked_at`,
+    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&session_id=eq.${encodeURIComponent(targetSessionId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,nickname,system_name,browser_name,device_type,app_version,first_seen_at,last_seen_at,revoked_at`,
     accessToken,
     { method: 'PATCH', headers: { prefer: 'return=representation' }, body: JSON.stringify({ revoked_at: now }) },
   );
@@ -163,7 +190,7 @@ export async function revokeOtherDeviceSessions(accessToken: string, userId: str
   if (!currentSessionId) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   const now = new Date().toISOString();
   return rest<DeviceSessionRecord[]>(
-    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&session_id=neq.${encodeURIComponent(currentSessionId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,app_version,first_seen_at,last_seen_at,revoked_at`,
+    `myfinhub_device_sessions?user_id=eq.${encodeURIComponent(userId)}&session_id=neq.${encodeURIComponent(currentSessionId)}&revoked_at=is.null&select=session_id,user_id,platform,device_label,nickname,system_name,browser_name,device_type,app_version,first_seen_at,last_seen_at,revoked_at`,
     accessToken,
     { method: 'PATCH', headers: { prefer: 'return=representation' }, body: JSON.stringify({ revoked_at: now }) },
   );

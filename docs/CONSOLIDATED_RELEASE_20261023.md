@@ -1,5 +1,12 @@
 # MyFinHub — consolidated 1.6.0 release preparation (not deployed)
 
+## Latest integrated source snapshot — 2026-10-25
+
+- PIN + automatic Windows backups are **merged** to protected `develop@de005ac42e4e866954e6c3da0ec7f847a00cfe97`. Backup exact-head Ready CI #40134440300 passed all required checks (Chromium rendered, CodeQL, WebKit, Lighthouse, Windows 3 paths, Unified). Native backup UI screenshots desktop/tablet/mobile light/dark plus invalid/failure/restore were directly inspected. PIN code **Implementations 2/2 · Sub-implementations 9/9**; backup code **Implementations 4/4 · Sub-implementations 8/8**.
+- Develop postmerge push CI #40136806487 was still running when release integration began. Preserve the complete accepted develop source and newly packaged `desktop/backup-store.cjs`, then require fresh release exact-head validation; do not treat previous old release CI as applicable.
+- The release candidate must retain both full develop and production main ancestry; its tree must differ from new develop only by deliberate v1.6.0 version metadata and release documentation. Never downgrade patched dependencies.
+- Production hard holds remain: verified current isolated-restorable PostgreSQL + required Storage/key checkpoint, **six** ordered migrations, Android client shared-PIN native bearer-ticket compatibility, and full exact-head production release validations. No main/deployment/DDL/tag/Android work is authorized before these gates.
+
 ## 2026-10-24 authoritative next-release checkpoint — toward main, NOT DEPLOYED
 
 Owner explicitly requested proceeding toward `main` after Web/Windows PIN completion. This is approval to prepare and eventually promote **after** security, CI and recovery gates; it is not approval to bypass those gates.
