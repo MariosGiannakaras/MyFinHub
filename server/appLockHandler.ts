@@ -40,7 +40,7 @@ async function appLockRpc(accessToken:string, action:string, pin?:string, newPin
     if(response.status===401||response.status===403)return Promise.reject(new ApiError(403,'APP_LOCK_FORBIDDEN','Απαιτείται πλήρης πρόσβαση ιδιοκτήτη.'));
     throw new ApiError(503,'APP_LOCK_UNAVAILABLE','Η επαλήθευση PIN δεν είναι προσωρινά διαθέσιμη.',false);
   }
-  if(!data||typeof data!=='object'||typeof data.enabled!=='boolean'||typeof data.ok!=='boolean')throw new ApiError(503,'APP_LOCK_INVALID_RESPONSE','Μη έγκυρη απόκριση προστασίας PIN.',false);
+  if(!data||typeof data!=='object'||typeof (data as Record<string,unknown>).enabled!=='boolean'||typeof (data as Record<string,unknown>).ok!=='boolean')throw new ApiError(503,'APP_LOCK_INVALID_RESPONSE','Μη έγκυρη απόκριση προστασίας PIN.',false);
   return data as {ok:boolean;enabled:boolean;idleMinutes:number;retryAfterMs:number;error?:string};
 }
 
