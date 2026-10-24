@@ -149,7 +149,7 @@ export async function changeAccountPassword(currentPassword:string,newPassword:s
 }
 
 interface SharedAppLockState {ok:boolean;enabled:boolean;idleMinutes:number;retryAfterMs:number;error?:string;unlockToken?:string}
-type SharedAppLockAction='configure'|'verify'|'change'|'timeout'|'disable'|'lock';
+type SharedAppLockAction='configure'|'verify'|'change'|'timeout'|'disable'|'lock'|'touch';
 export async function getSharedAppLockState():Promise<SharedAppLockState>{
   return json(await apiRequest('/api/auth/app-lock',{cache:'no-store'}));
 }
