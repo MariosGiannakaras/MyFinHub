@@ -1,4 +1,4 @@
-import { Download, FileJson, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { FinancialProviderManagementSettings } from '../components/FinancialProviderManagementSettings';
@@ -152,6 +152,7 @@ export function SettingsPage({
   const activeTab=controlledTab??localTab;
   const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   const [message, setMessage] = useState('');
+  const [backupMessageIsError,setBackupMessageIsError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -179,7 +180,7 @@ export function SettingsPage({
     draftRef.current = normalized;
     setDraft(normalized);
     onSettings(normalized);
-    if (feedback) setMessage(feedback);
+    if (feedback) { setBackupMessageIsError(false); setMessage(feedback); }
   };
 
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
@@ -244,6 +245,7 @@ export function SettingsPage({
 
   const backup = async () => {
     if (busy) return;
+    setBackupMessageIsError(false);
     setBusy(true);
     try {
       await onBackup();
@@ -257,12 +259,15 @@ export function SettingsPage({
           if (!receipt.verified) throw new Error('Local checksum missing.');
           setBackupRefreshToken(value => value + 1);
         } catch {
+          setBackupMessageIsError(true);
+          setBackupRefreshToken(value => value + 1);
           setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.');
           return;
         }
       }
       setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
+      setBackupMessageIsError(true);
       setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
     } finally {
       setBusy(false);
@@ -377,7 +382,7 @@ export function SettingsPage({
                 <p className="settings-import-guide-warning">Η εισαγωγή αντικαθιστά (δεν συγχωνεύει) τα οικονομικά δεδομένα και δεν αναιρείται με Undo/Redo. Το ξεχωριστό κρυπτογραφημένο Card Vault (PAN/λήξη/CVV) δεν περιλαμβάνεται στο JSON backup. Τα δεδομένα προφίλ κάρτας δεν επαναφέρουν από μόνα τους αυτούς τους κωδικούς.</p>
               </div>
             </details>
-            {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
+            {message ? <div className={`logic-note compact${backupMessageIsError ? ' is-error' : ''}`} role={backupMessageIsError ? 'alert' : 'status'} aria-live="polite">{backupMessageIsError ? <TriangleAlert/> : <ShieldCheck/>}<span>{message}</span></div> : null}
           </div>
         ) : null}
       </div>
