@@ -61,7 +61,7 @@ describe('desktop automatic backup store', () => {
     store.initialize();
     store.reportFailure();
     const failedAt = store.status().lastFailureAt;
-    expect(failedAt).toMatch(/^20\\d\\d-/);
+    expect(failedAt).toMatch(/^20\d\d-/);
     const restarted = createDesktopBackupStore({ userData: path.join(root, 'private'), documents: path.join(root, 'documents') });
     expect(restarted.status().lastFailureAt).toBe(failedAt);
     restarted.save({ data, revision: '465' });
