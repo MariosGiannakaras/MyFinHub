@@ -153,6 +153,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(qaWorkspace).toContain("screen==='desktop-lock'");
     expect(desktopHostVisual).toContain("/desktop/setup.html");
     expect(desktopHostVisual).toContain('desktop-app-lock-invalid-pin-1440x930');
+    expect(desktopHostVisual).toContain("applyThemePreference('dark')");
+    expect(desktopHostVisual).toContain('darkTheme.tokenMatchesCard');
+    expect(desktopHostVisual).toContain('darkTheme.contrast>=4.5');
+    expect(desktopHostVisual).not.toContain("document.documentElement.dataset.theme='dark'");
     expect(desktopHostVisual).toContain('desktop-update-downloading-1100x760');
     expect(desktopHostVisual).toContain('desktop-startup-recovery-min-620x650');
     expect(desktopHostVisual).toContain('BACKEND_STARTUP_TIMEOUT');
