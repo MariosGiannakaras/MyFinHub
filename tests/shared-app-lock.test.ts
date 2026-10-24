@@ -97,7 +97,9 @@ describe('shared owner app privacy PIN',()=>{
     expect(vercel.rewrites).toContainEqual({source:'/api/auth/app-lock',destination:'/api/auth/session?__myfinhub_route=app-lock'});
     expect(route).toContain("marker === 'app-lock'");
     expect(main).toContain("app.all('/api/auth/app-lock'");
-    expect(entry).toContain("import './components/DesktopAppLockGate.css'");
+    expect(entry).toContain("import('./components/DesktopAppLockGate.css')");
+    expect(entry).toContain("import('./components/DesktopAppLockGate')");
+    expect(entry).not.toContain("import { DesktopAppLockGate } from");
     expect(gate).toContain('getSharedAppLockState');
     expect(gate).toContain("action:'verify'");
     expect(gate).toContain('Unmount the financial workspace');
