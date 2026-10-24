@@ -1,6 +1,10 @@
 # MyFinHub status
 
-## Consolidated v1.6.0 preparation — **NOT YET RELEASED** (2026-10-23)
+## Consolidated v1.6.0 preparation — **NOT YET RELEASED** (2026-10-24)
+
+> Current reconciliation checkpoint: owner-approved semantic user journeys #616 merged via [PR #618](https://github.com/MariosGiannakaras/MyFinHub/pull/618) into `develop@c238a9d6537a0b8a4ddea3b6b22e42392c46f4c8` after [Ready strict CI #40071928581](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40071928581), independent CodeQL #40071752562 and Real Stack #40071752560 all SUCCESS. Directly inspected responsive recurring/command, savings, reports, backup and transactions rendered evidence. **Develop postmerge full CI #40073640592 is pending**; v1.6.0 release-head checks must be rerun on this newly reconciled candidate. No main deployment, production migrations, public Windows distribution or live 20/6 taxonomy activation is authorized or completed.
+
+- **Implementations 5/5 completed for #616** (no explicit sub-implementation denominator); prior #588 **Implementations 12/12 · Sub-implementations 24/24 completed**; taxonomy source #601 **4/4 · 8/8**, production activation #617 remains unperformed.
 
 - **Current public production remains v1.5.0** at `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc` and [mgfinhub.vercel.app](https://mgfinhub.vercel.app). The v1.5.0 published Windows installer/tag/checksum are immutable and untouched.
 - **Release candidate** is the reconciled v1.6.0 branch reconciled with the reviewed finance source `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382` with both develop/main ancestry. Pending release PR complete required gates; **no Production promotion, database migration, new installer, tag, or Card Vault key change has occurred**.

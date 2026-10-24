@@ -372,7 +372,7 @@ export function ReceiptInbox({
   return <>
   <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
     <section ref={modalRef} className="receipt-inbox surface-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Μπορείς να τη σαρώσεις τώρα ή αργότερα και να κλείσεις την εφαρμογή μόλις επιβεβαιωθεί η αποθήκευση.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></IconButton></header>
+      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
         <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>

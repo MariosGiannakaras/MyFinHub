@@ -30,6 +30,7 @@ import {
   transferDraftError,
 } from '../lib/ledgerFoundations';
 import { preserveLoanPaymentLink } from '../lib/loans';
+import { preserveRecurringPaymentLink } from '../lib/recurring';
 import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
@@ -170,6 +171,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     }catch{return null}
   },[data,kind,accountId,date,actualBalance,statementMovement,initial]);
   const reconciliationBase=(id:string)=>id===accountId?(reconciliation?.expectedBalance??0):manualReconciliationPreview(data,id,date,{editingEventId:initial?.kind==='reconciliation'?initial.id:undefined}).expectedBalance;
+  const linkedRecurringPayment=Boolean(initial?.recurringId&&initial.kind==='expense');
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
   const lendingLike=['lending','repayment'].includes(kind);
   const mark=()=>setDirty(true);
@@ -193,6 +195,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const submit=async()=>{
     if(saving)return;
     try{
+      if(linkedRecurringPayment&&(kind!=='expense'||multiFundingOpen))throw new Error('Η πληρωμή είναι συνδεδεμένη με πάγιο. Διατήρησε τον τύπο και τον έναν λογαριασμό της. Για νέα πληρωμή χρησιμοποίησε τα Πάγια.');
       const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
       if(draftError) throw new Error(draftError);
       if(kind==='reconciliation'){
@@ -240,7 +243,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         event.counterpartyId=counterpartyId;
       }else delete event.counterpartyId;
       if(kind!=='split')event.subcategory=subcategory||undefined;
-      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial)}
+      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial)}
       setSaving(true);
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
@@ -264,8 +267,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   };
 
   return <><DialogShell open={open} busy={saving} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
-      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}><X/></IconButton></header>
-      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" inert={saving} role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
+      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Τις πληρωμές παγίων τις καταχωρίζεις στα «Πάγια», τις δόσεις στα «Δάνεια» και την πιστωτική στην οθόνη της. Εδώ καταγράφεις τις υπόλοιπες πραγματικές κινήσεις.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}><X/></IconButton></header>
+      {linkedRecurringPayment?<p className="logic-note compact" role="note" data-linked-recurring-payment>Επεξεργάζεσαι πραγματική πληρωμή παγίου. Η σύνδεσή της με το πάγιο διατηρείται. Νέα πληρωμή παγίου γίνεται μόνο από τη σελίδα «Πάγια».</p>:null}
+      {!linkedRecurringPayment&&genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" inert={saving} role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
       <div className="entry-body" inert={saving}>
         {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId&&quickAccounts.some(account=>account.id===preset.accountId))setAccountId(preset.accountId);mark()}}><FinanceIcon settings={data.state.settings} kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
@@ -276,7 +280,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<label className="quick-field" data-filled="true"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} aria-label="Κατηγορία ή υποκατηγορία κίνησης" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory);mark()}}/></label>:null}
           {kind==='transfer'?<><label className="quick-field" data-filled={filled(feeAmount)}><span>Προμήθεια μεταφοράς (€) · προαιρετική</span><MoneyInput value={feeAmount} onValueChange={value=>{setFeeAmount(value);mark()}}/></label>{feeAmount.trim()&&Number(feeAmount)>0?<label className="quick-field"><span>Κατηγορία προμήθειας</span><AppSelectInput value={feeCategory} onChange={e=>{setFeeCategory(e.target.value);mark()}}>{data.state.settings.expenseCategories.map(name=><option value={name} key={name}>{name}</option>)}</AppSelectInput></label>:null}<div className="logic-note compact wide" role="note">Η κύρια μεταφορά δεν είναι έξοδο. Μόνο η πραγματική προμήθεια καταχωρίζεται ως ξεχωριστή δαπάνη, συνδεδεμένη με τη μεταφορά και στην ίδια αποθήκευση.</div></>:null}
           {kind==='expense'?<div className="multi-funding-editor wide" data-multi-funding>
-            <label className="multi-funding-choice"><input type="checkbox" checked={multiFundingOpen} onChange={e=>{setMultiFundingOpen(e.target.checked);if(e.target.checked&&fundingRows.length<2)setFundingRows(freshFundingRows());mark()}}/><span>Πληρωμή από περισσότερες πηγές</span></label>
+            <label className="multi-funding-choice"><input type="checkbox" disabled={linkedRecurringPayment} checked={multiFundingOpen} onChange={e=>{setMultiFundingOpen(e.target.checked);if(e.target.checked&&fundingRows.length<2)setFundingRows(freshFundingRows());mark()}}/><span>Πληρωμή από περισσότερες πηγές</span></label>
             {multiFundingOpen?<><div className="split-head"><b>Πηγές χρηματοδότησης</b><span aria-live="polite">Άθροισμα: {money.format(fundingRows.reduce((sum,row)=>sum+(Number(row.amountText.replace(',','.'))||0),0))}</span></div>
             {fundingRows.map((row,index)=><div className="multi-funding-row" role="group" aria-label={`Πηγή πληρωμής ${index+1}`} key={row.id}>
               <AppSelectInput aria-label={`Λογαριασμός ή πιστωτική πηγής ${index+1}`} value={row.sourceKey} onChange={e=>{setFundingRows(rows=>rows.map(item=>item.id===row.id?{...item,sourceKey:e.target.value}:item));mark()}}>

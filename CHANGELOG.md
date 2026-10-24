@@ -16,6 +16,11 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 - Real database save-progress feedback and login six-digit automatic MFA verification, with audit and history consistency.
 - Preserved production CodeQL, Playwright WebKit, mobile Lighthouse and Windows packaging performance/security thresholds; corrected CI runner contention and performance fixture parity without weakening gates.
 
+#### Completed user-journey reconciliation (#616 / #618)
+- Recurring bill payment now originates only from its own Recurring page; Attention and Command Palette focus the exact bill, and editing a linked payment retains its recurring identity across reload without conflating independent expenses.
+- Reports and due-item shortcuts navigate to the originating transaction, credit card or obligation; clarified shared-pool savings goals, device-local receipts, data-backup exclusions and history-preserving account deletion blockers.
+- Updated root HTTP parser dependency to patched body-parser 2.4.0 and Windows packaging to patched Electron 43.8.3 plus undici 7.30.1/6.29.1, without weakening the existing security-audit policy or application access controls.
+
 #### Fixed (pre-release integration audit)
 - Reconciled Recurring subcategory identity on rename/move/retirement, and corrected target-month budget due projection without silently suppressing unrelated similarly named bills or claiming variable estimates are exact.
 - Preserved actual OCR receipt grand-total currency even when another line mentions EUR.

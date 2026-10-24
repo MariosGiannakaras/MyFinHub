@@ -121,10 +121,19 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'modern delete undo restores event');
   await shot('transactions-modern-event-delete-undo');
   console.log('Completion functional QA: global undo/redo keyboard shortcuts');
-  await c.call("function(){document.querySelector('#main-workspace')?.focus();dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  // A restored row can render before the server-confirmed history cursor and
+  // save line have settled. Shortcut availability is a durable receipt, not
+  // merely the optimistic presence of a transaction in the ledger.
+  await waitFor("function(){const redo=document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]');return Boolean(redo&&!redo.disabled)}",'server-acknowledged undo activates Redo');
+  const focusForShortcut=()=>c.call("function(){const workspace=document.querySelector('#main-workspace');workspace?.focus();return document.activeElement===workspace}");
+  assert(await focusForShortcut(),'Redo shortcut starts outside editable controls');
+  await c.call("function(){dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
   await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Y redo reapplies modern delete');
-  await c.call("function(){document.querySelector('#main-workspace')?.focus();dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  await waitFor("function(){const undo=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return Boolean(undo&&!undo.disabled)}",'server-acknowledged redo reactivates Undo');
+  assert(await focusForShortcut(),'Undo shortcut starts outside editable controls');
+  await c.call("function(){dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Z undo restores modern event again');
+  await waitFor("function(){const redo=document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]');return Boolean(redo&&!redo.disabled)}",'second undo persists through confirmed history cursor');
 
   console.log('Completion functional QA: Generic Quick Entry intents and validation');
   await setByLabel('Αναζήτηση συναλλαγών','');
