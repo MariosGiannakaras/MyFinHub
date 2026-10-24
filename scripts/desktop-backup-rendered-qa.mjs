@@ -59,6 +59,8 @@ try{
       assert(clicked,'Data tab must be clickable');
       await wait("function(){return Boolean(document.querySelector('.settings-data-tab .desktop-backup-panel .desktop-backup-controls'))}",'native backup panel');
       await wait("function(){return !document.querySelector('.desktop-backup-path')?.textContent?.includes('Έλεγχος')}",'native status');
+      const themeApplied=await c.call("async function(){localStorage.setItem('myfinhub.theme','light');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return document.documentElement.dataset.theme;}");
+      assert(themeApplied==='light','light theme must apply to native backup panel');
       const result=await c.call("function(){const panel=document.querySelector('.desktop-backup-panel');const buttons=[...panel.querySelectorAll('button')];const rows=[...panel.querySelectorAll('.desktop-backup-entry')];const status=panel.textContent||'';const overflow=Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth;return {overflow,rows:rows.length,invalid:rows.filter(row=>row.textContent.includes('Μη έγκυρο αρχείο')).length,disabledRestore:rows.filter(row=>row.textContent.includes('Μη έγκυρο αρχείο')&&row.querySelector('button')?.disabled).length,missingTouch:buttons.filter(el=>{const r=el.getBoundingClientRect();return r.width<40||r.height<40}).map(el=>el.textContent?.trim()),hasFolder:status.includes('MyFinHub')&&status.includes('Backups'),hasFailure:status.includes('Τελευταία αποτυχημένη προσπάθεια')};}");
       assert(result.overflow<=1,viewport.name+'/'+mode+': overflow '+result.overflow+'px');
       assert(result.hasFolder,viewport.name+'/'+mode+': folder not visible');
@@ -70,6 +72,13 @@ try{
       const dims=await c.call("function(){const root=document.documentElement;return {width:innerWidth,height:Math.min(2800,Math.ceil(Math.max(root.scrollHeight,document.body.scrollHeight)))}}");
       const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:dims.width,height:dims.height,scale:1}});
       writeFileSync(evidenceDir+'/desktop-backup-'+mode+'-'+viewport.name+'.png',Buffer.from(shot.data,'base64'));
+      if(mode==='populated'&&viewport.name!=='tablet'){
+        const dark=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme;}");
+        assert(dark==='dark','dark theme must apply to native backup panel');
+        const darkShot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:dims.width,height:dims.height,scale:1}});
+        writeFileSync(evidenceDir+'/desktop-backup-populated-dark-'+viewport.name+'.png',Buffer.from(darkShot.data,'base64'));
+        await c.call("async function(){localStorage.setItem('myfinhub.theme','light');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true;}");
+      }
       if(mode==='populated'&&viewport.name==='desktop'){
         const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Επαληθευμένο (SHA-256)'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
         assert(opened,'valid restore action enabled');
@@ -81,5 +90,5 @@ try{
       }
     }
   }
-  console.log('Desktop backup rendered QA passed: 9 responsive native panel states, corruption guard, failure UI and destructive restore confirmation.');
+  console.log('Desktop backup rendered QA passed: 9 responsive native panel states, 2 dark-theme states, corruption guard, failure UI and destructive restore confirmation.');
 }finally{c?.close();child.kill('SIGTERM')}
