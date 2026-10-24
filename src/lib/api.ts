@@ -140,8 +140,8 @@ export async function changeAccountPassword(currentPassword:string,newPassword:s
   }));
 }
 
-export interface SharedAppLockState {ok:boolean;enabled:boolean;idleMinutes:number;retryAfterMs:number;error?:string}
-export type SharedAppLockAction='configure'|'verify'|'change'|'timeout'|'disable';
+interface SharedAppLockState {ok:boolean;enabled:boolean;idleMinutes:number;retryAfterMs:number;error?:string}
+type SharedAppLockAction='configure'|'verify'|'change'|'timeout'|'disable';
 export async function getSharedAppLockState():Promise<SharedAppLockState>{
   return json(await apiRequest('/api/auth/app-lock',{cache:'no-store'}));
 }
