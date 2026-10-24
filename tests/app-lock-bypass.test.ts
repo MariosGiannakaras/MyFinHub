@@ -1,7 +1,6 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {createHash} from 'node:crypto';
 import {assertAppUnlock,requiresAppUnlock} from '../server/appUnlockAccess.js';
-import {ApiError} from '../server/http.js';
 
 const request=(path:string,token?:string)=>({
   url:path,
