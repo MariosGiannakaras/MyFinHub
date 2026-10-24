@@ -57,6 +57,18 @@
           if(url.origin===location.origin&&url.pathname==='/api/auth/session'){
             return new Response(JSON.stringify({authenticated:true,email:'owner@myfinhub.app'}),{status:200,headers:{'content-type':'application/json'}});
           }
+          if(url.origin===location.origin&&url.pathname==='/api/auth/app-lock'){
+            if(!init?.method||String(init.method).toUpperCase()==='GET'){
+              return new Response(JSON.stringify({ok:true,enabled:true,idleMinutes:5,retryAfterMs:0}),{status:200,headers:{'content-type':'application/json'}});
+            }
+            const body=JSON.parse(String(init.body||'{}'));
+            if(body.action==='verify'){
+              if(body.pin==='2468')return new Response(JSON.stringify({ok:true,enabled:true,idleMinutes:5,retryAfterMs:0,unlockToken:'a'.repeat(43)}),{status:200,headers:{'content-type':'application/json'}});
+              lockAttempts+=1;
+              return new Response(JSON.stringify({ok:false,enabled:true,idleMinutes:5,retryAfterMs:lockAttempts>=2?5000:0,error:'APP_LOCK_WRONG_PIN'}),{status:200,headers:{'content-type':'application/json'}});
+            }
+            return new Response(JSON.stringify({ok:true,enabled:body.action!=='disable',idleMinutes:body.idleMinutes||5,retryAfterMs:0}),{status:200,headers:{'content-type':'application/json'}});
+          }
           if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&(!init?.method||String(init.method).toUpperCase()==='GET')){
             return new Response(JSON.stringify({devices:deviceRows}),{status:200,headers:{'content-type':'application/json'}});
           }

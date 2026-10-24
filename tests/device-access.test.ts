@@ -18,10 +18,16 @@ describe('connected device access',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});
     expect(parseDeviceSessionAction({action:'revoke-others'})).toEqual({action:'revoke-others'});
+    expect(parseDeviceSessionAction({action:'rename',sessionId:id,nickname:'  My Laptop  '})).toEqual({action:'rename',sessionId:id,nickname:'My Laptop'});
+    expect(parseDeviceSessionAction({action:'rename',sessionId:id,nickname:'   '})).toEqual({action:'rename',sessionId:id,nickname:null});
     for(const value of [
       {action:'revoke',sessionId:'not-a-uuid'},
       {action:'revoke',sessionId:id,extra:true},
       {action:'revoke-others',sessionId:id},
+      {action:'rename',sessionId:id,nickname:12},
+      {action:'rename',sessionId:id,nickname:'a'.repeat(61)},
+      {action:'rename',sessionId:id,nickname:'name',admin:true},
+      {action:'rename',sessionId:id,nickname:'invalid\nline'},
       {action:'unknown'},
       [],
     ])expect(()=>parseDeviceSessionAction(value)).toThrow(ApiError);
@@ -100,6 +106,25 @@ describe('connected device access',()=>{
     expect(privateHelper).toContain('security definer');
     expect(privateHelper).toContain('and (select private.myfinhub_session_is_active())');
     expect(privateHelper).toContain('drop function if exists public.myfinhub_session_is_active()');
+  });
+
+  it('keeps optional nicknames separate from refreshed system/device metadata',()=>{
+    const migration=read('supabase/migrations/20261024150000_add_device_details_and_nicknames.sql');
+    const registry=read('server/deviceSessionRegistry.ts');
+    const handler=read('server/deviceSessionsHandler.ts');
+    const client=read('src/lib/api.ts');
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    expect(migration).toContain('add column if not exists nickname text');
+    expect(migration).toContain('grant update (nickname, system_name, browser_name, device_type)');
+    expect(migration).not.toMatch(/security\s+definer/i);
+    expect(registry).toContain('inferredClientDetails');
+    expect(registry).toContain('export async function renameDeviceSession');
+    expect(registry).toContain('body: JSON.stringify({ nickname })');
+    expect(handler).toContain("action.action==='rename'");
+    expect(handler).toContain('nickname: row.nickname ?? null');
+    expect(client).toContain('renameConnectedDevice');
+    expect(ui).toContain('Λεπτομέρειες συστήματος');
+    expect(ui).toContain('Μετονομασία');
   });
 
   it('uses only publishable-key plus user JWT and supports Android device metadata',()=>{

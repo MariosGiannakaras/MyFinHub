@@ -27,6 +27,10 @@
       "destination": "/api/auth/session?__myfinhub_route=account"
     },
     {
+      "source": "/api/auth/app-lock",
+      "destination": "/api/auth/session?__myfinhub_route=app-lock"
+    },
+    {
       "source": "/api/auth/devices",
       "destination": "/api/auth/session?__myfinhub_route=devices"
     },
