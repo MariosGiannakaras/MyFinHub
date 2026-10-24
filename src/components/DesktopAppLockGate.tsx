@@ -1,7 +1,7 @@
 import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ApiError, getSession, getSharedAppLockState, updateSharedAppLock } from '../lib/api';
-import { setAppUnlockToken, clearAppUnlockToken } from '../lib/appUnlockToken';
+import { setAppUnlockToken, getAppUnlockToken, clearAppUnlockToken } from '../lib/appUnlockToken';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 
@@ -99,10 +99,16 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     if(phase!=='unlocked'||!lockState.enabled||!everUnlocked)return;
     const delay=Math.max(1,lockState.idleMinutes)*60_000;
     let timer=0;
+    let lastRefreshAt=0;
     const schedule=()=>{
       window.clearTimeout(timer);
       lastActivity=Date.now();
       timer=window.setTimeout(()=>enterLockedState(lockState),delay);
+      const token=shared?getAppUnlockToken():'';
+      if(token&&Date.now()-lastRefreshAt>=15000){
+        lastRefreshAt=Date.now();
+        void updateSharedAppLock({action:'touch',unlockToken:token}).catch(()=>window.dispatchEvent(new Event('myfinhub:app-lock-now')));
+      }
     };
     const events:Array<keyof WindowEventMap>=['pointerdown','pointermove','keydown','touchstart','wheel'];
     const resume=()=>{if(document.visibilityState==='visible'&&Date.now()-lastActivity>=delay)enterLockedState(lockState)};
@@ -113,7 +119,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     window.addEventListener('pagehide',pageHidden);
     schedule();
     return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);window.removeEventListener('pagehide',pageHidden);for(const name of events)window.removeEventListener(name,schedule)};
-  },[bridge,phase,lockState,everUnlocked,enterLockedState]);
+  },[bridge,phase,lockState,shared,everUnlocked,enterLockedState]);
 
   const unlock=useCallback(async(candidate:string)=>{
     if((!bridge&&!shared)||busy||retrySeconds>0||candidate.length!==PIN_LENGTH)return;
