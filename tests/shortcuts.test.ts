@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { appShortcutFromEvent, isAppleShortcutPlatform, isEditableShortcutTarget, shortcutDisplay, shortcutMatches, shouldBlockAppShortcut, type ShortcutKeyEvent } from '../src/lib/shortcuts.js';
 
@@ -48,6 +49,17 @@ describe('app-wide keyboard shortcuts',()=>{
     expect(shouldBlockAppShortcut({editable:false,modalOpen:false,repeat:true,defaultPrevented:false})).toBe(true);
     expect(shouldBlockAppShortcut({editable:false,modalOpen:false,repeat:false,defaultPrevented:true})).toBe(true);
     expect(shouldBlockAppShortcut({editable:false,modalOpen:false,repeat:false,defaultPrevented:false})).toBe(false);
+  });
+
+  it('requires the full-Crud browser probe to await modal exit before firing the real keyboard contract',()=>{
+    const source=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+    expect(source).toContain("awaitShortcutSurface=()=>waitFor(");
+    expect(source).toContain("document.querySelectorAll('[aria-modal=true]')");
+    expect(source).toMatch(/await awaitShortcutSurface\(\);\s*assert\(await focusForShortcut\(\),.*?\);\s*await sendAppShortcut\('y'\)/s);
+    expect(source).toMatch(/await awaitShortcutSurface\(\);\s*assert\(await focusForShortcut\(\),.*?\);\s*await sendAppShortcut\('z'\)/s);
+    expect(source).toContain('consumed:event.defaultPrevented');
+    expect(source).toContain('Ctrl+Y redo reapplies modern delete');
+    expect(source).toContain('Ctrl+Z undo restores modern event again');
   });
 
   it('renders platform-appropriate hints for tooltips and Settings',()=>{
