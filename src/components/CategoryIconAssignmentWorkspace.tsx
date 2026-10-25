@@ -1,6 +1,7 @@
 import { Palette, RotateCcw, X } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { categoryTree } from '../lib/categories';
+import { inferredCategoryIcon } from '../lib/categoryIconInference';
 import { CATEGORY_ICON_PACKS, decodeCategoryIconValue, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
 import { categoryIconPackOptionCount, categoryIconPackPreviewKeys } from '../lib/categoryIconPackSupport';
 import {
@@ -27,6 +28,8 @@ import './CategoryIconAssignmentWorkspace.css';
 type Row={kind:CategoryKind;name:string;subcategories:string[]};
 type EditorTarget={kind:CategoryKind;category:string;subcategory?:string}|null;
 
+const BASIC_CATEGORY_ICON_KEYS=new Set(['coffee','dining','groceries','shopping','kiosk','tobacco','gift','fuel','car','home','receipt','health','pharmacy','travel','entertainment','subscription','clothing','cash','saving']);
+
 const COLOR_PRESETS=[
   '#2F6FED','#0F8A72','#25A244','#D28A0B','#D14C5A','#8B5CF6','#C45AA0','#52627D',
 ] as const;
@@ -43,6 +46,14 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
     ...categoryTree(settings,'expense').map(item=>({kind:'expense' as const,...item})),
     ...categoryTree(settings,'income').map(item=>({kind:'income' as const,...item})),
   ],[settings]);
+  // Existing user overrides are never silently rewritten. Offer a single deliberate
+  // reset of familiar categories to their established semantic artwork.
+  const resettableBasicRows=rows.filter(row=>row.kind==='expense'&&BASIC_CATEGORY_ICON_KEYS.has(inferredCategoryIcon(row.kind,row.name)??'')&&Boolean(explicitCategoryIconForPack(settings,row.kind,row.name,iconPack)));
+  const resetBasicIcons=()=>{
+    if(!resettableBasicRows.length)return;
+    const restored=resettableBasicRows.reduce((next,row)=>withCategoryIcon(next,row.kind,row.name,null),settings);
+    onChange(restored);
+  };
   const duplicateNames=useMemo(()=>{
     const counts=new Map<string,number>();
     for(const row of rows)counts.set(row.name,(counts.get(row.name)??0)+1);
@@ -92,6 +103,8 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
         </button>)}
       </div>
       <div className="category-icon-pack-status" role="status" aria-live="polite"><b>{CATEGORY_ICON_PACKS.find(item=>item.id===iconPack)?.label}</b><span>ενεργή οικογένεια · {`${categoryIconPackOptionCount(iconPack).toLocaleString('el-GR')} μοναδικά τοπικά SVG`} · οι επιλογές της αποθηκεύονται ανεξάρτητα από τις υπόλοιπες.</span></div>
+      <button type="button" className="category-icon-restore-basics" disabled={!resettableBasicRows.length} onClick={resetBasicIcons}><RotateCcw size={15} aria-hidden="true"/> Επαναφορά αρχικών βασικών εικονιδίων{resettableBasicRows.length?` · ${resettableBasicRows.length}`:''}</button>
+      <small className="category-icon-restore-note">Μόνο οι προσαρμοσμένες επιλογές βασικών κατηγοριών της τρέχουσας βιβλιοθήκης επανέρχονται στα καθιερωμένα εικονίδια. Οι υπόλοιπες επιλογές διατηρούνται.</small>
     </div>
 
     {editor?<section className="category-icon-selection-panel" aria-label={`Επιλογή εικονιδίου για ${editor.subcategory??editor.category}`} data-icon-selection-panel>

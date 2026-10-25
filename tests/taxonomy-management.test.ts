@@ -21,10 +21,10 @@ function fixture():FinanceData{
     seed:{
       accounts:[{id:'bank',name:'Bank',kind:'bank'}],months:['2026-07','2026-08','2026-09'],
       transactions:[{id:'legacy-food',date:'2026-01-01',type:'expense',accountId:'bank',amount:10,note:'Ιστορικό',category:'Φαγητό',subcategory:'Supermarket'}],
-      snapshots:[],recurring:[{id:'seed-rec',name:'Delivery',amount:20,day:5,accountId:'bank',category:'Φαγητό',active:true,status:'active'}],subscriptions:[],loans:[],lending:[],stats:{},
+      snapshots:[],recurring:[{id:'seed-rec',name:'Delivery',amount:20,day:5,accountId:'bank',category:'Φαγητό',subcategory:'Supermarket',active:true,status:'active'}],subscriptions:[],loans:[],lending:[],stats:{},
     },
     state:{
-      customTransactions:[],overrides:{},deleted:[],recurringCustom:[{id:'custom-rec',name:'Lunch',amount:30,day:8,accountId:'bank',category:'Φαγητό',active:true,status:'active'}],recurringOverrides:{},
+      customTransactions:[],overrides:{},deleted:[],recurringCustom:[{id:'custom-rec',name:'Lunch',amount:30,day:8,accountId:'bank',category:'Φαγητό',subcategory:'Supermarket',active:true,status:'active'}],recurringOverrides:{},
       loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],settings:s,
       events:[{id:'historic-event',date:'2026-01-02',kind:'expense',amount:5,note:'Παλιό',category:'Φαγητό',subcategory:'Supermarket',accountId:'bank',legs:[{accountId:'bank',amount:-5}],createdAt:'2026-01-02T00:00:00.000Z',updatedAt:'2026-01-02T00:00:00.000Z'}],
       scheduled:[
@@ -87,6 +87,9 @@ describe('direct taxonomy management',()=>{
     if(!market||!transport)throw new Error('missing taxonomy identity');
 
     const renamed=applyTaxonomyOperation(data,{type:'rename-subcategory',kind:'expense',identityId:market.id,label:'Σούπερ μάρκετ'},'2026-08-23');
+    expect(renamed.state.recurringOverrides?.['seed-rec']).toMatchObject({category:'Φαγητό',subcategory:'Σούπερ μάρκετ'});
+    expect(renamed.state.recurringCustom[0]).toMatchObject({category:'Φαγητό',subcategory:'Σούπερ μάρκετ'});
+    expect(renamed.seed.recurring[0].subcategory).toBe('Supermarket');
     expect(renamed.state.scheduled?.find(item=>item.id==='pending')?.subcategory).toBe('Σούπερ μάρκετ');
     expect(renamed.state.scheduled?.find(item=>item.id==='done')?.subcategory).toBe('Supermarket');
     expect(renamed.state.transactionRules?.[0].action.subcategory).toBe('Σούπερ μάρκετ');
@@ -95,6 +98,8 @@ describe('direct taxonomy management',()=>{
     const moved=applyTaxonomyOperation(renamed,{type:'move-subcategory',kind:'expense',identityId:market.id,targetCategoryId:transport.id},'2026-08-23');
     expect(resolveSubcategoryIdentity(moved.state.settings,'expense','Μετακινήσεις','Σούπερ μάρκετ')?.id).toBe(market.id);
     expect(resolveSubcategoryIdentity(moved.state.settings,'expense','Φαγητό','Supermarket')?.id).toBe(market.id);
+    expect(moved.state.recurringOverrides?.['seed-rec']).toMatchObject({category:'Μετακινήσεις',subcategory:'Σούπερ μάρκετ'});
+    expect(moved.state.recurringCustom[0]).toMatchObject({category:'Μετακινήσεις',subcategory:'Σούπερ μάρκετ'});
     expect(moved.state.scheduled?.find(item=>item.id==='pending')).toMatchObject({category:'Μετακινήσεις',subcategory:'Σούπερ μάρκετ'});
     expect(moved.state.transactionRules?.[0].action).toMatchObject({category:'Μετακινήσεις',subcategory:'Σούπερ μάρκετ'});
     expect(moved.state.events?.[0]).toMatchObject({category:'Φαγητό',subcategory:'Supermarket'});
@@ -121,10 +126,25 @@ describe('direct taxonomy management',()=>{
     expect(data.state.events?.[0].category).toBe('Φαγητό');
   });
 
+  it('blocks child-category retirement while seeded or custom recurring obligations still use it',()=>{
+    const data=fixture();
+    const market=resolveSubcategoryIdentity(data.state.settings,'expense','Φαγητό','Supermarket');
+    if(!market)throw new Error('missing market');
+    const operation={type:'retire-subcategory' as const,kind:'expense' as const,identityId:market.id};
+    expect(taxonomyRetirementDependencies(data,operation,'2026-08-23')
+      .filter(item=>item.kind==='recurring').map(item=>item.id).sort()).toEqual(['custom-rec','seed-rec']);
+    expect(()=>applyTaxonomyOperation(data,operation,'2026-08-23')).toThrow(/μπλοκάρεται/);
+    data.state.recurringOverrides={'seed-rec':{...data.seed.recurring[0],active:false,status:'stopped'}};
+    data.state.recurringCustom=data.state.recurringCustom.map(item=>({...item,active:false,status:'stopped' as const}));
+    expect(taxonomyRetirementDependencies(data,operation,'2026-08-23').filter(item=>item.kind==='recurring')).toEqual([]);
+  });
+
   it('retires a dependency-free subcategory from active pickers while preserving its historical identity',()=>{
     const data=fixture();
     const market=resolveSubcategoryIdentity(data.state.settings,'expense','Φαγητό','Supermarket');
     if(!market)throw new Error('missing market identity');
+    data.state.recurringOverrides={'seed-rec':{...data.seed.recurring[0],active:false,status:'stopped'}};
+    data.state.recurringCustom=data.state.recurringCustom.map(item=>({...item,active:false,status:'stopped' as const}));
     data.state.scheduled=(data.state.scheduled??[]).map(item=>item.id==='pending'?{...item,status:'cancelled' as const}:item);
     data.state.transactionRules=(data.state.transactionRules??[]).map(rule=>rule.id==='rule-food'?{...rule,enabled:false}:rule);
     expect(taxonomyRetirementDependencies(data,{type:'retire-subcategory',kind:'expense',identityId:market.id},'2026-08-23')).toEqual([]);

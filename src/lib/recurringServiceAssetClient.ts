@@ -1,4 +1,5 @@
 import { apiRequest } from './api.js';
+import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { publicAssetUrlAllowed } from './providerAssetUrl.js';
 
 export interface RecurringServiceAsset{
@@ -59,6 +60,7 @@ export async function refreshRecurringServiceAssets(force=false){
 }
 
 export async function uploadRecurringServiceAsset(input:{recurringId:string;file:File}){
+  return trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:input.recurringId,fileName:input.file.name});
   const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
     method:'PUT',
@@ -73,10 +75,12 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   const assets=[asset,...snapshot.assets.filter(item=>item.assetKey!==asset.assetKey)];
   publish({loaded:true,loading:false,assets,error:null});
   return asset;
+  });
 }
 
 export async function deleteRecurringServiceAsset(assetKey:string){
   if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey))throw new Error('Μη έγκυρη αναφορά λογοτύπου υπηρεσίας.');
+  return trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({resource:'recurring-service-assets',assetKey});
   const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
     method:'DELETE',
@@ -86,6 +90,7 @@ export async function deleteRecurringServiceAsset(assetKey:string){
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
   publish({...snapshot,assets:snapshot.assets.filter(item=>item.assetKey!==assetKey),error:null});
+  });
 }
 
 export function recurringServiceAssetByKey(assetKey:string|null|undefined){

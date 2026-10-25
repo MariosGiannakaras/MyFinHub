@@ -44,4 +44,9 @@ describe('operational reports',()=>{
  });
  it('uses explicit insufficient-history states instead of inventing a trend',()=>{const model=reportInsightModel(fixture(),'2026-08');expect(model.sufficientExpenseHistory).toBe(false);expect(model.expenseVsTrailingAverage).toBeNull();expect(model.savingsRate).not.toBeNull();expect(model.previousSavingsRate).toBeNull()});
  it('derives trailing comparisons, recurring burden and category momentum from recorded periods',()=>{const data=fixture();data.seed.transactions.push({id:'jul-income',date:'2026-07-01',type:'income',accountId:'piraeus-payroll',amount:800,note:'Salary',category:'Μισθός'},{id:'jul-fuel',date:'2026-07-02',type:'expense',accountId:'piraeus-payroll',amount:20,note:'Fuel',category:'Όχημα',subcategory:'Βενζίνη'});const model=reportInsightModel(data,'2026-08');expect(model.sufficientExpenseHistory).toBe(true);expect(model.trailingExpenseAverage).toBeCloseTo(20/3);expect(model.expenseVsTrailingAverage).toBeCloseTo(5);expect(model.recurringBurden).toBeCloseTo(.03);expect(model.topCategory).toMatchObject({name:'Όχημα › Βενζίνη',value:40,share:1,change:1});expect(categoryMomentum(data,'2026-08')[0]).toMatchObject({name:'Όχημα › Βενζίνη',value:40,previous:20,change:1})});
+  it('deducts a refund only once in subcategory totals',()=>{
+    const data=fixture();const refund=createEvent({kind:'refund',date:'2026-08-05',amount:10,note:'Fuel refund',category:'Όχημα',accountId:'piraeus-payroll'});
+    refund.subcategory='Βενζίνη';data.state.events=[refund];
+    expect(subcategoryTotals(data,'2026-08')).toContainEqual({name:'Όχημα › Βενζίνη',value:30});
+  });
 });

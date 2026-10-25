@@ -97,5 +97,63 @@ try{
   await c.call("function(){document.querySelector('[data-primary-credit-statement]')?.scrollIntoView({block:'start'});return true}");
   await shot(c,'credit-statement-future-payment-ignored');
 
-  c.close();console.log('Credit statement lifecycle rendered QA passed.');
+
+  console.log('Credit rate QA: rate modal, exact rate, advisory payment, duplicate and failed persistence');
+  await c.send('Page.navigate',{url:url.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-rates]'))}",'credit rate section');
+  assert(await c.call("function(){return (document.querySelector('[data-credit-rates]')?.textContent||'').includes('Άγνωστο — δεν έχει καταχωριστεί')}"),'unknown legacy rate stays unknown');
+  const beforeRows=await c.call("function(){return document.querySelectorAll('.credit-purchases-table tbody tr').length}");
+  const openRate=async()=>{const clicked=await c.call("function(){const b=[...document.querySelectorAll('[data-credit-rates] button')].find(x=>x.textContent.includes('Νέο επιτόκιο'));b?.click();return Boolean(b)}");assert(clicked,'new rate action exists');await waitFor("function(){return Boolean(document.querySelector('#credit-rate-dialog-title'))}",'credit rate modal');await waitFor("function(){const node=document.querySelector('.credit-dialog'),backdrop=node?.closest('.editor-backdrop');if(!node||!backdrop)return false;const panel=getComputedStyle(node),overlay=getComputedStyle(backdrop),rgba=panel.backgroundColor.match(/[\\d.]+/g)||[];const alpha=rgba.length===4?Number(rgba[3]):1;return Number(panel.opacity)>=.999&&Number(overlay.opacity)>=.999&&alpha>=.999}",'rate dialog entrance settled and opaque')};
+  const setRate=async value=>{const changed=await c.call("function(value){const node=document.querySelector('.credit-dialog input[data-autofocus=true]');if(!node)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));return true}",[value]);assert(changed,'editable annual nominal rate field')};
+  const submitRate=async()=>{const clicked=await c.call("function(){const b=[...document.querySelectorAll('.credit-dialog button')].find(x=>x.textContent.includes('Καταχώριση επιτοκίου'));b?.click();return Boolean(b)}");assert(clicked,'rate submit action exists')};
+  await openRate();
+  assert(await c.call("function(){return document.activeElement===document.querySelector('.credit-dialog input[data-autofocus=true]')}"),'rate modal autofocus');
+  await submitRate();
+  await waitFor("function(){return (document.querySelector('.credit-dialog .form-error')?.textContent||'').includes('Συμπλήρωσε')}",'empty nominal rate validation');
+  await setRate('15.125');
+  await waitFor("function(){return !document.querySelector('.credit-dialog .form-error')}",'corrected rate clears stale empty error');
+  await shot(c,'credit-rate-modal-desktop');
+  await submitRate();
+  await waitFor("function(){return !document.querySelector('#credit-rate-dialog-title')&&(document.querySelector('[data-credit-rates]')?.textContent||'').includes('15,125%')}",'durable synthetic rate readback');
+  const rateModel=await c.call("function(){const panel=document.querySelector('[data-credit-rates]');return {text:panel?.textContent||'',details:panel?.querySelector('details summary')?.textContent||'',history:panel?.querySelectorAll('details li').length,rows:document.querySelectorAll('.credit-purchases-table tbody tr').length}}");
+  assert(rateModel.details.includes('1')&&rateModel.history===1,'one effective-dated version after save');
+  assert(rateModel.rows===beforeRows,'rate change never posts or edits credit purchase events');
+  const setPayoff=await c.call("function(){const node=document.querySelector('[data-credit-rates] input[aria-label=\"Ποσό προσομοιωμένης μηνιαίας αποπληρωμής\"]');if(!node)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter.call(node,'50');node.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  assert(setPayoff,'optional payoff amount editable');
+  await waitFor("function(){return (document.querySelector('[data-credit-rates] [role=status]')?.textContent||'').includes('Ενδεικτική εξόφληση')}",'advisory payoff result');
+  assert((await c.call("function(){return document.querySelectorAll('.credit-purchases-table tbody tr').length}"))===beforeRows,'payoff simulation never posts ledger events');
+  await shot(c,'credit-rate-payoff-desktop');
+  await openRate();
+  await submitRate();
+  await waitFor("function(){return (document.querySelector('.credit-dialog .form-error')?.textContent||'').includes('Υπάρχει ήδη επιτόκιο')}",'duplicate effective-from date rejected');
+  assert((await c.call("function(){return document.querySelectorAll('[data-credit-rates] details li').length}"))===1,'duplicate date did not rewrite history');
+  await shot(c,'credit-rate-duplicate-validation-desktop');
+  await c.call("function(){document.querySelector('.credit-dialog button[aria-label=\"Κλείσιμο επιτοκίου\"]')?.click();return true}");
+
+  await c.send('Emulation.setDeviceMetricsOverride',{width:834,height:1112,deviceScaleFactor:1,mobile:false});
+  await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return true}");
+  await openRate();
+  const tabletRate=await c.call("function(){const modal=document.querySelector('.credit-dialog'),r=modal?.getBoundingClientRect();return {theme:document.documentElement.dataset.theme,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,left:r?.left,right:r?.right}}");
+  assert(tabletRate.theme==='dark'&&tabletRate.overflow<=1&&tabletRate.left>=0&&tabletRate.right<=834,'dark tablet rate modal contained in viewport');
+  await shot(c,'credit-rate-modal-dark-tablet');
+
+  const failureUrl=new URL(baseUrl);failureUrl.searchParams.set('page','credit');failureUrl.searchParams.set('card-profile-save-failure','1');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await c.send('Page.navigate',{url:failureUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-rates]'))}",'rate failure fixture');
+  // Each Page.navigate creates a new document; QA fixtures do not run the production theme bootstrap.
+  // Initialize the same opaque semantic surface tokens as the real app before inspecting a mobile sheet.
+  const mobileTheme=await c.call("async function(){const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('light');return {resolved:document.documentElement.dataset.theme,surface:getComputedStyle(document.documentElement).getPropertyValue('--surface-elevated').trim()}}");
+  assert(mobileTheme.resolved==='light'&&mobileTheme.surface==='#ffffff','mobile rate fixture initializes the real opaque light-theme surface');
+  await openRate();
+  await setRate('16.5');
+  await submitRate();
+  await waitFor("function(){return (document.querySelector('.credit-dialog .form-error')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'failed rate save retains actionable error');
+  const failedRate=await c.call("function(){const modal=document.querySelector('.credit-dialog'),r=modal?.getBoundingClientRect(),panel=document.querySelector('[data-credit-rates]');return {keptOpen:Boolean(modal),unchanged:(panel?.textContent||'').includes('Άγνωστο — δεν έχει καταχωριστεί'),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,left:r?.left,right:r?.right}}");
+  assert(failedRate.keptOpen&&failedRate.unchanged&&failedRate.overflow<=1&&failedRate.left>=0&&failedRate.right<=375,'failed mobile save preserves model and modal within viewport');
+  const mobilePaint=await c.call("function(){const panel=document.querySelector('.credit-dialog'),backdrop=panel?.closest('.editor-backdrop');if(!panel||!backdrop)return null;const style=getComputedStyle(panel),bStyle=getComputedStyle(backdrop),v=style.backgroundColor.match(/[\\d.]+/g)||[];return {panelOpacity:Number(style.opacity),backdropOpacity:Number(bStyle.opacity),background:style.backgroundColor,alpha:v.length===4?Number(v[3]):1,backgroundImage:style.backgroundImage}}");
+  assert(mobilePaint&&mobilePaint.panelOpacity>=.999&&mobilePaint.backdropOpacity>=.999&&mobilePaint.alpha>=.999,`mobile failure modal must be fully opaque after entrance, not a translucent view of the bank card: ${JSON.stringify(mobilePaint)}`);
+  await shot(c,'credit-rate-save-failure-mobile');
+
+  c.close();console.log('Credit statement and interest-rate lifecycle rendered QA passed.');
 }finally{child.kill('SIGTERM')}

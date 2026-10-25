@@ -13,3 +13,23 @@
   .settings-data-action-card{padding:14px}
   .settings-data-action-button{width:100%;min-height:44px;justify-content:center}
 }
+
+.settings-import-guide{border:1px solid var(--line);border-radius:12px;background:var(--surface-soft);min-width:0}
+.settings-import-guide>summary{cursor:pointer;padding:14px 16px;font-weight:750;min-height:44px;line-height:1.5}
+.settings-import-guide>summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.settings-import-guide-content{display:grid;gap:16px;padding:0 16px 16px}
+.settings-import-guide-content h3{margin:0 0 8px;font-size:var(--ux-body-size)}
+.settings-import-guide-content ol{margin:0;padding-left:23px;display:grid;gap:6px;color:var(--ink-2);font-size:var(--ux-small-size);line-height:1.5}
+.settings-import-guide-content p{margin:0;color:var(--ink-2);font-size:var(--ux-small-size);line-height:1.55}
+.settings-import-guide-fields{display:grid;gap:8px;margin:8px 0}
+.settings-import-guide-fields>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px 12px;padding:10px;border:1px solid var(--line);border-radius:9px;min-width:0}
+.settings-import-guide-fields dt{font-weight:700;overflow-wrap:anywhere}
+.settings-import-guide-fields dd{margin:0;color:var(--ink-2);overflow-wrap:anywhere;font-size:var(--ux-small-size);line-height:1.5}
+.settings-import-guide code{overflow-wrap:anywhere}
+.settings-import-guide .settings-import-guide-warning{border-left:3px solid var(--blue);padding:10px 12px;background:var(--surface-inset);border-radius:6px}
+@media(max-width:680px){.settings-import-guide-fields>div{grid-template-columns:minmax(0,1fr)}.settings-import-guide-content{padding:0 12px 12px}.settings-import-guide>summary{padding:12px}}
+
+/* Native backup panel is a single accessible column at every viewport. */
+.desktop-backup-panel{display:flex;flex-direction:column;gap:12px}
+
+.settings-data-tab>.logic-note.is-error{color:var(--error);border-color:currentColor}

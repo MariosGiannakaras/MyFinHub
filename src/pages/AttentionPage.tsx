@@ -30,7 +30,7 @@ import type { AttentionDecision, FinanceData, ReviewDecision } from '../types';
 import './AttentionCompletion.css';
 import { userErrorMessage } from '../lib/userMessage';
 
-const actionLabel=(item:AttentionItem)=>item.action==='complete_scheduled'?'Ολοκλήρωση':item.action==='pay_recurring'?'Πληρωμή παγίου':item.action==='pay_loan'?'Πληρωμή δόσης':item.action==='pay_credit'?'Πληρωμή κάρτας':item.action==='collect_lending'?'Καταγραφή επιστροφής':item.action==='open_budgets'?'Προβολή budgets':item.action==='open_forecast'?'Άνοιγμα πρόβλεψης':item.action==='categorize_transaction'?'Κατηγοριοποίηση':item.action==='review_duplicate'?'Έλεγχος':'Προβολή';
+const actionLabel=(item:AttentionItem)=>item.action==='complete_scheduled'?'Ολοκλήρωση':item.action==='pay_recurring'?'Άνοιγμα παγίου':item.action==='pay_loan'?'Πληρωμή δόσης':item.action==='pay_credit'?'Πληρωμή κάρτας':item.action==='collect_lending'?'Καταγραφή επιστροφής':item.action==='open_budgets'?'Προβολή budgets':item.action==='open_forecast'?'Άνοιγμα πρόβλεψης':item.action==='categorize_transaction'?'Κατηγοριοποίηση':item.action==='review_duplicate'?'Έλεγχος':'Προβολή';
 const severityLabel=(severity:AttentionItem['severity'])=>severity==='danger'?'Άμεση προσοχή':severity==='warning'?'Σύντομα':'Ενημέρωση';
 const kindLabel=(kind:AttentionItem['kind'])=>kind==='scheduled'?'Προγραμματισμένη':kind==='recurring'?'Πάγιο':kind==='recurring_expiry'?'Λήξη παγίου':kind==='loan'?'Δόση δανείου':kind==='credit'?'Πιστωτική':kind==='lending'?'Δανεικά / Οφειλές':kind==='forecast'?'Πρόβλεψη':kind==='budget'?'Budget':kind==='account_balance'?'Υπόλοιπο':kind==='duplicate'?'Αντιστοίχιση':'Συναλλαγή';
 const sourceLabel=(item:AttentionItem)=>item.kind==='scheduled'?'Προγραμματισμός':item.kind==='recurring'||item.kind==='recurring_expiry'?'Πάγια':item.kind==='loan'?'Δόσεις & Δάνεια':item.kind==='credit'?'Πιστωτική':item.kind==='lending'?'Δανεικά / Οφειλές':item.kind==='forecast'?'Πρόβλεψη 30 ημερών':item.kind==='budget'?'Προϋπολογισμοί':item.kind==='account_balance'?'Λογαριασμοί':'Συναλλαγές';
@@ -105,7 +105,7 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
   const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η αναβολή της υπενθύμισης «${item.title}» αποθηκεύεται.`:`Η απόκρυψη της ενημέρωσης «${item.title}» αποθηκεύεται.`)}catch(reason){setMessage(userErrorMessage(reason,'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.'))}};
   const activate=(item:AttentionItem)=>{
     if(item.action==='open_dashboard'){location.hash='#/dashboard';return}
-    if(item.action==='open_recurring'){location.hash='#/recurring';return}
+    if(item.action==='open_recurring'){onAction(item);return}
     if(item.action==='categorize_transaction'||item.action==='review_duplicate'){
       if(item.transactionId&&item.transactionSource){
         try{const url=new URL(location.href);url.searchParams.set('attentionTx',item.transactionId);url.searchParams.set('attentionSource',item.transactionSource);url.hash='#/transactions';history.pushState(history.state,'',url.toString());window.dispatchEvent(new PopStateEvent('popstate'));return}catch{}

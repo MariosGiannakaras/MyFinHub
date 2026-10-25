@@ -4,6 +4,32 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+### v1.6.0 consolidated release candidate — not shipped
+
+#### Added
+- Shared four-digit owner PIN privacy gate for Web and Windows, backed by owner+AAL2 session-bound unlock tickets, rate-limited server verifier, device revocation and inactivity lock. Native Android support remains a separate deployment compatibility prerequisite before activation.\n- Windows-installed first-run local backup catalog, verified SHA-256 finance snapshots from live owner+AAL2/PIN-authorized server reads, scheduled daily checks while the Desktop is open, retention/history, chosen local folder and explicit guarded restore confirmation; not a full PostgreSQL/Storage disaster-recovery dump.\n- Approved advanced finance work (#588): secure owner-reviewed reconciliation; itemized receipt OCR/matching; multi-source purchases and linked fees; merchant/beneficiary identities; 30/60/90-day cash-flow scenarios; variable recurring commitments; subcategory budgets with carryover and known-due projections; credit repayment estimates, editable actual loan payments, lending write-offs and savings-goal projections.
+- Owner-approved canonical 20 expense / 6 income taxonomy with aliases, recurring/purpose compatibility and non-destructive future budgeting. **Source only until an authenticated owner+AAL2 live finance-state save.**
+- Cross-session finance Undo/Redo/history guards for irreversible import and committed card-vault secret deletion; historical and RLS boundaries preserved.
+
+#### Changed
+- Dashboard three-account card responsive composition, account-filtered Transactions navigation, accessible chart metadata, receipt/loan/card interactions and source-aligned lazy route rendering.
+- Real database save-progress feedback and login six-digit automatic MFA verification, with audit and history consistency.
+- Preserved production CodeQL, Playwright WebKit, mobile Lighthouse and Windows packaging performance/security thresholds; corrected CI runner contention and performance fixture parity without weakening gates.
+
+#### Completed user-journey reconciliation (#616 / #618)
+- Recurring bill payment now originates only from its own Recurring page; Attention and Command Palette focus the exact bill, and editing a linked payment retains its recurring identity across reload without conflating independent expenses.
+- Reports and due-item shortcuts navigate to the originating transaction, credit card or obligation; clarified shared-pool savings goals, device-local receipts, data-backup exclusions and history-preserving account deletion blockers.
+- Updated root HTTP parser dependency to patched body-parser 2.4.0 and Windows packaging to patched Electron 43.8.3 plus undici 7.30.1/6.29.1, without weakening the existing security-audit policy or application access controls.
+
+#### Fixed (pre-release integration audit)
+- Reconciled Recurring subcategory identity on rename/move/retirement, and corrected target-month budget due projection without silently suppressing unrelated similarly named bills or claiming variable estimates are exact.
+- Preserved actual OCR receipt grand-total currency even when another line mentions EUR.
+- Reconstructed historical receivables only from exact reconciled import evidence, and rejected overflowing cumulative savings-goal scenarios instead of capping them to false financial totals.
+
+#### Release boundary
+- v1.5.0 remains the current published Web/Windows release until v1.6.0 release approval, ordered Production migrations, `main` promotion, deployed-SHA smoke and a **new immutable Windows tag and installer**. Do not reuse v1.5.0 binaries or replace previously published history.
+
+
 ## [1.5.0] - 2026-10-14
 
 ### Added

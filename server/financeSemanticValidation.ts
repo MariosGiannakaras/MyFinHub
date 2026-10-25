@@ -58,12 +58,43 @@ function validateSplitParts(parts:SplitPart[]|undefined,parentCents:number,conte
   if(total!==parentCents)invalid(`Split parts do not balance for ${context}.`);
 }
 
+function validateFundedExpense(event:FinanceEvent,amount:number){
+  const funding=event.funding;
+  if(!funding||event.kind!=='expense'||funding.length<2||funding.length>12)invalid(`Invalid funded purchase ${event.id}.`);
+  const seen=new Set<string>();
+  const legs:Array<[string,number]>=[];
+  let total=0,credit=0,firstAccount:string|undefined;
+  for(const part of funding){
+    const centsAmount=cents(part.amount,`funding amount for ${event.id}`);
+    if(centsAmount<=0||Math.abs(part.amount*100-centsAmount)>1e-6)invalid(`Invalid cent funding ${event.id}.`);
+    if(!part.sourceId||seen.has(`${part.kind}:${part.sourceId}`))invalid(`Duplicate or empty funding source ${event.id}.`);
+    seen.add(`${part.kind}:${part.sourceId}`);
+    if(part.kind==='credit'){
+      if(credit||!event.cardId||part.sourceId!==event.cardId)invalid(`Invalid funded card for ${event.id}.`);
+      credit=centsAmount;legs.push([CREDIT_ACCOUNT_ID,-centsAmount]);
+    }else if(part.kind==='account'){
+      if(part.sourceId===CREDIT_ACCOUNT_ID)invalid(`Invalid cash funding for ${event.id}.`);
+      firstAccount??=part.sourceId;
+      legs.push([part.sourceId,-centsAmount]);
+    }else invalid(`Invalid funding type for ${event.id}.`);
+    total+=centsAmount;
+    if(!Number.isSafeInteger(total))invalid(`Funding overflow for ${event.id}.`);
+  }
+  if(total!==amount||!firstAccount||event.accountId!==firstAccount||Boolean(event.cardId)!==Boolean(credit))
+    invalid(`Unbalanced multi-funded expense for ${event.id}.`);
+  assertLegs(event,legs);
+  return credit;
+}
+
 function validateEvent(event:FinanceEvent){
   const amount=requirePositiveAmount(event);
+  if(event.funding&&event.kind!=='expense')invalid(`Invalid funding kind for ${event.id}.`);
+  let fundedCredit=0;
   switch(event.kind){
     case 'expense':{
       if(!event.accountId)invalid(`Missing account for event ${event.id}.`);
-      assertLegs(event,[[event.accountId,-amount]]);
+      if(event.funding)fundedCredit=validateFundedExpense(event,amount);
+      else assertLegs(event,[[event.accountId,-amount]]);
       break;
     }
     case 'income':
@@ -89,6 +120,20 @@ function validateEvent(event:FinanceEvent){
       assertLegs(event,[[event.accountId,amount]]);
       break;
     }
+    case 'lending_writeoff':{
+      if(!event.person?.trim()||event.accountId||event.fromAccountId||event.toAccountId||event.legs.length)
+        invalid(`Invalid non-cash writeoff for event ${event.id}.`);
+      if(event.receivableDelta===undefined)
+        invalid(`Missing receivable delta for writeoff ${event.id}.`);
+      if(Math.abs(event.amount*100-amount)>1e-6||
+         Math.abs(event.receivableDelta*100+amount)>1e-6)
+        invalid(`Sub-cent writeoff amount or receivable delta for event ${event.id}.`);
+      if(event.cardId||event.statementId||event.loanId||event.recurringId||
+         event.feeForEventId||event.funding!==undefined||event.parts!==undefined||
+         event.savingSource||event.expectedReturnDate)
+        invalid(`Cross-domain metadata on noncash writeoff ${event.id}.`);
+      break;
+    }
     case 'card_purchase':
       assertLegs(event,[[CREDIT_ACCOUNT_ID,-amount]]);
       break;
@@ -112,12 +157,30 @@ function validateEvent(event:FinanceEvent){
   }
 
   validateOptionalDelta(event.savingAmount,event.kind==='saving_cash_offset'?amount:0,event,'savingAmount');
-  validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'?-amount:0,event,'receivableDelta');
-  validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:0,event,'creditDelta');
+  validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'||event.kind==='lending_writeoff'?-amount:0,event,'receivableDelta');
+  if(event.funding&&fundedCredit>0&&event.creditDelta===undefined)
+    invalid(`Missing funded credit delta for event ${event.id}.`);
+  validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:-fundedCredit,event,'creditDelta');
 }
 
+function validateLinkedFees(events:FinanceEvent[]){
+  const byId=new Map(events.map(event=>[event.id,event]));
+  const seen=new Set<string>();
+  for(const event of events){
+    if(!event.feeForEventId)continue;
+    if(event.kind!=='expense'||!event.accountId)invalid(`Invalid linked fee type for event ${event.id}.`);
+    if(seen.has(event.feeForEventId))invalid(`Duplicate linked fee for ${event.feeForEventId}.`);
+    seen.add(event.feeForEventId);
+    const principal=byId.get(event.feeForEventId);
+    if(!principal||!['transfer','withdrawal','card_payment'].includes(principal.kind))
+      invalid(`Missing or invalid linked fee principal for event ${event.id}.`);
+    if(principal.id===event.id||principal.date!==event.date||principal.fromAccountId!==event.accountId)
+      invalid(`Invalid linked fee account or date for event ${event.id}.`);
+  }
+}
 export function validateFinanceStateSemantics(state:FinanceData['state']){
   for(const event of state.events??[])validateEvent(event);
+  validateLinkedFees(state.events??[]);
 }
 
 function accountIds(data:FinanceData){
@@ -176,8 +239,37 @@ function validateRuleAccounts(data:FinanceData,ids:Set<string>){
   for(const [index,rule] of (data.state.transactionRules??[]).entries())requireAccount(ids,rule.match.accountId,`state.transactionRules[${index}].match.accountId`);
 }
 
+function validateWriteoffOutstanding(data:FinanceData){
+  const writeoffs=(data.state.events??[]).filter(event=>event.kind==='lending_writeoff');
+  for(const item of writeoffs){
+    const person=item.person?.trim();
+    if(!person)invalid(`Writeoff requires person for event ${item.id}.`);
+    const opening=(data.seed.lending??[]).filter(row=>row.person?.trim()===person)
+      .reduce((sum,row)=>sum+cents(row.outstanding,`legacy outstanding ${person}`),0);
+    const delta=(data.state.events??[]).filter(event=>event.person?.trim()===person&&event.date<=item.date)
+      .reduce((sum,event)=>sum+cents(event.receivableDelta??0,`receivable delta ${event.id}`),0);
+    if(!Number.isSafeInteger(opening+delta)||opening+delta<0)
+      invalid(`Writeoff exceeds as-of outstanding for ${item.id}.`);
+  }
+  // A previously confirmed writeoff must not allow a later dated repayment
+  // to silently push this person's receivable negative.
+  const people=new Set(writeoffs.map(event=>event.person?.trim()).filter((name):name is string=>Boolean(name)));
+  for(const person of people){
+    let running=(data.seed.lending??[]).filter(row=>row.person?.trim()===person)
+      .reduce((sum,row)=>sum+cents(row.outstanding,`legacy opening ${person}`),0);
+    const events=(data.state.events??[]).filter(event=>event.person?.trim()===person)
+      .sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    for(const event of events){
+      running+=cents(event.receivableDelta??0,`receivable delta ${event.id}`);
+      if(!Number.isSafeInteger(running)||running<0)
+        invalid(`Writeoff/repayment exceeds outstanding for ${event.id}.`);
+    }
+  }
+}
+
 export function validateCompleteFinanceSemantics(data:FinanceData){
   validateFinanceStateSemantics(data.state);
+  validateWriteoffOutstanding(data);
   const ids=accountIds(data);
   validateSettingsAccounts(data,ids);
   validateRecurringAccounts(data,ids);

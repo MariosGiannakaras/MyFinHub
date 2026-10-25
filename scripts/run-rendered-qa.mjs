@@ -16,6 +16,7 @@ const scripts=[
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
   {path:'scripts/ui-ux-runtime-qa.mjs',key:'ui-runtime',surface:'runtime',profiles:['/tmp/myfinhub-ui-runtime-qa-chrome']},
+  {path:'scripts/save-progress-qa.mjs',key:'save-progress',surface:'persistence',profiles:['/tmp/myfinhub-save-progress-qa-chrome']},
   {path:'scripts/ui-ux-credit-overlimit-qa.mjs',key:'credit-overlimit',surface:'credit',profiles:['/tmp/myfinhub-credit-overlimit-qa-chrome']},
   {path:'scripts/cards-remediation-qa.mjs',key:'cards-remediation',surface:'cards',profiles:['/tmp/myfinhub-cards-remediation-qa-chrome']},
   {path:'scripts/credit-stack-remediation-qa.mjs',key:'credit-stack-remediation',surface:'credit',profiles:['/tmp/myfinhub-credit-stack-remediation-qa-chrome']},
@@ -37,6 +38,7 @@ const scripts=[
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
   {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
+  {path:'scripts/desktop-backup-rendered-qa.mjs',key:'desktop-backup-native',surface:'settings-desktop-backup',profiles:['/tmp/myfinhub-desktop-backup-qa-chrome']},
   {path:'scripts/provider-brand-management-qa.mjs',key:'provider-brand-management',surface:'settings-provider-branding',profiles:['/tmp/myfinhub-provider-brand-management-qa-chrome']},
   {path:'scripts/settings-rules-modal-qa.mjs',key:'settings-rules-modal',surface:'settings',profiles:['/tmp/myfinhub-settings-rules-modal-qa-chrome']},
   {path:'scripts/command-palette-qa.mjs',key:'command-palette',surface:'command-palette',profiles:['/tmp/myfinhub-command-palette-qa-chrome']},
@@ -77,15 +79,22 @@ function trimDiagnostics(text){const normalized=text.trim();if(!normalized)retur
 function resolvePrimaryBrowser(){if(process.env.MYFINHUB_QA_PRIMARY_BROWSER)return process.env.MYFINHUB_QA_PRIMARY_BROWSER;try{return execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim()}catch{return ''}}
 async function stopBrowser(child){if(!child||child.exitCode!==null)return;await new Promise(resolve=>{const timer=setTimeout(()=>{child.kill('SIGKILL');resolve()},2000);child.once('exit',()=>{clearTimeout(timer);resolve()});child.kill('SIGTERM')})}
 async function preflightBrowser(browser,attempt){
-  const profile=`/tmp/myfinhub-primary-browser-preflight-${process.pid}`;
+  // Fresh profile per attempt, so a stalled cold start cannot poison the retry.
+  const profile=`/tmp/myfinhub-primary-browser-preflight-${process.pid}-${attempt}`;
   const port=9300+attempt;
   cleanPaths([profile]);
   let diagnostics='',spawnError='';
-  const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+  // Ubuntu runner DBus may advertise an invalid session address. Headless
+  // Chromium's CDP endpoint does not need a desktop session bus.
+  const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:''}});
   const capture=stream=>stream?.on('data',chunk=>{diagnostics+=chunk.toString();if(diagnostics.length>12000)diagnostics=diagnostics.slice(-12000)});
   capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
   try{
-    for(let index=0;index<100;index+=1){
+    // Cold CI runners may spend the original 20s opening Chromium, before
+    // any app is loaded. This bounds ONLY browser-bootstrap readiness, never
+    // the actual rendered UI assertions or their performance thresholds.
+    const startupDeadline=Date.now()+40_000;
+    while(Date.now()<startupDeadline){
       if(spawnError)throw new Error(`Primary browser spawn failed: ${spawnError}`);
       if(child.exitCode!==null)throw new Error(`Primary browser exited before CDP became ready (exit ${child.exitCode}).\n${trimDiagnostics(diagnostics)}`);
       try{
@@ -94,7 +103,7 @@ async function preflightBrowser(browser,attempt){
       }catch{}
       await sleep(200);
     }
-    throw new Error(`Primary browser did not expose fixed CDP endpoint ${port} within 20s.\n${trimDiagnostics(diagnostics)}`);
+    throw new Error(`Primary browser did not expose fixed CDP endpoint ${port} within 40s.\n${trimDiagnostics(diagnostics)}`);
   }finally{await stopBrowser(child);await sleep(250);cleanPaths([profile])}
 }
 function runScript(path,useFallback,evidenceDir){return new Promise(resolve=>{let output='';const env={...process.env,MYFINHUB_QA_USE_FALLBACK:useFallback?'1':'0',MYFINHUB_UX_EVIDENCE_DIR:evidenceDir};const child=spawn(process.execPath,['scripts/qa-script-runner.mjs',path],{env,stdio:['ignore','pipe','pipe']});const forward=(stream,target)=>stream.on('data',chunk=>{const text=chunk.toString();output+=text;target.write(text)});forward(child.stdout,process.stdout);forward(child.stderr,process.stderr);child.on('error',error=>resolve({code:1,output:`${output}\n${error.stack||error.message}`}));child.on('close',code=>resolve({code:code??1,output}))})}
@@ -114,18 +123,31 @@ async function runRenderedItem(item){
     let result=await runScript(item.path,false,evidenceDir);
     if(result.code!==0&&isBrowserBootstrapFailure(result.output)){primaryBootstrapRetries+=1;console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once with primary Chromium.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,false,evidenceDir)}
     if(result.code!==0&&isBrowserBootstrapFailure(result.output)&&!requirePrimary&&hasDistinctFallback){fallbackActivations+=1;console.warn(`FALLBACK ACTIVATED for ${item.path}: primary Chromium failed twice to expose CDP; retrying once with ${fallbackBrowser}.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,true,evidenceDir)}
-    await sleep(350);cleanPaths(item.profiles);if(result.code!==0)throw new Error(`Rendered QA suite failed: ${item.path} (exit ${result.code})`);
+    await sleep(350);cleanPaths(item.profiles);
+    if(result.code!==0){
+      // A failed visual assertion must still retain generated evidence for
+      // direct human inspection; no threshold or assertion is softened.
+      if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
+      throw new Error(`Rendered QA suite failed: ${item.path} (exit ${result.code})`);
+    }
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
-// Latency-budget QA must measure the app, not CPU contention from unrelated browser suites.
-// Retain the identical <5s route budget and all assertions, but run this performance
-// suite after concurrent functional QA (every suite is still executed exactly once).
-const latencySuite=scripts.find(item=>item.key==='large-data-boundaries');
-if(!latencySuite)throw new Error('Required large-data performance QA suite is missing.');
-const parallelScripts=scripts.filter(item=>item!==latencySuite);
+// Preserve strict browser wall-clock gates under representative, uncontended
+// conditions. Other Chromium suites still exercise functional/responsive flows;
+// competing browser start/render must not distort these latency measurements.
+// The <5s readiness and <2s mutation assertions remain completely unchanged.
+const resourceIsolatedSuites=new Set([
+  // Receipt-backed Undo/Redo keyboard paths require an uncontended browser.
+  // Assertions and operation deadlines stay strict and unchanged.
+  'scripts/completion-functional-crud-qa.mjs',
+  'scripts/large-data-boundaries-qa.mjs',
+  'scripts/transactions-scanability-qa.mjs',
+]);
+const parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path));
+const isolatedScripts=scripts.filter(item=>resourceIsolatedSuites.has(item.path));
 let cursor=0;
 async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
 await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
-await runRenderedItem(latencySuite);
+for(const item of isolatedScripts)await runRenderedItem(item);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);

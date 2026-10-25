@@ -6,13 +6,33 @@ type ReceiptFieldConfidence = {
   ocr?: number;
 };
 
+type ReceiptItemProposal = {
+  id: string;
+  description: string;
+  amount: number;
+  confidence: number;
+  category?: string;
+  subcategory?: string;
+};
+
 export type ReceiptProposal = {
   merchant?: string;
   date?: string;
   total?: number;
   currency?: string;
   category?: string;
+  subcategory?: string;
   accountId?: string;
+  /** Untrusted, locally detected item suggestions; not posted financial events. */
+  items?: ReceiptItemProposal[];
+  /** Currency printed on the original OCR item lines, even after EUR total correction. */
+  itemsCurrency?: string;
+  /** Whether OCR item cents sum to the explicit grand total; never an auto-save approval. */
+  itemsBalanced?: boolean;
+  /** Local owner-selected handoff only; not a posted finance event. */
+  reviewedSplit?: boolean;
+  /** Owner-reviewed local-only association to an existing posted purchase. */
+  matchedPurchase?: {source:'event'|'legacy';sourceId:string};
   confidence?: ReceiptFieldConfidence;
 };
 

@@ -1,4 +1,4 @@
-import { Download, FileJson, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { FinancialProviderManagementSettings } from '../components/FinancialProviderManagementSettings';
@@ -9,12 +9,18 @@ import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
+import { DesktopBackupPanel } from '../components/DesktopBackupPanel';
+import { loadData } from '../lib/api';
+import { desktopBackupBridge } from '../lib/desktopBackups';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
+import { CounterpartyDirectorySettings } from '../components/CounterpartyDirectorySettings';
+import { withCounterparty } from '../lib/counterparties';
 import { categoryTree } from '../lib/categories';
+import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE, prepareApprovedOwnerTaxonomy } from '../lib/ownerApprovedTaxonomy';
 import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
@@ -146,8 +152,11 @@ export function SettingsPage({
   const activeTab=controlledTab??localTab;
   const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   const [message, setMessage] = useState('');
+  const [backupMessageIsError,setBackupMessageIsError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [pendingOwnerTaxonomy, setPendingOwnerTaxonomy] = useState(false);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
   const draftRef = useRef(draft);
 
@@ -171,7 +180,7 @@ export function SettingsPage({
     draftRef.current = normalized;
     setDraft(normalized);
     onSettings(normalized);
-    if (feedback) setMessage(feedback);
+    if (feedback) { setBackupMessageIsError(false); setMessage(feedback); }
   };
 
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
@@ -186,6 +195,20 @@ export function SettingsPage({
         ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
         : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
     );
+  };
+
+  const ownerTaxonomyApplied=JSON.stringify(categoryTree(data.state.settings,'expense'))===JSON.stringify(OWNER_EXPENSE_TREE)
+    &&JSON.stringify(categoryTree(data.state.settings,'income'))===JSON.stringify(OWNER_INCOME_TREE);
+  const confirmOwnerTaxonomy=async()=>{
+    if(busy)return;
+    setBusy(true);
+    setMessage('');
+    try{
+      await onFinanceDurably(current=>prepareApprovedOwnerTaxonomy(current,asOf));
+      setPendingOwnerTaxonomy(false);
+    }catch(reason){
+      setMessage(userErrorMessage(reason,'Η εφαρμογή των κατηγοριών δεν αποθηκεύτηκε. Τα προηγούμενα δεδομένα παραμένουν ανέπαφα.'));
+    }finally{setBusy(false)}
   };
 
   const requestImport = (file?: File) => {
@@ -222,12 +245,29 @@ export function SettingsPage({
 
   const backup = async () => {
     if (busy) return;
+    setBackupMessageIsError(false);
     setBusy(true);
     try {
       await onBackup();
-      downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}});
+      // Download the acknowledged database document, not optimistic in-memory drafts.
+      const snapshot = await loadData();
+      downloadJson(snapshot.data);
+      const bridge = desktopBackupBridge();
+      if (bridge) {
+        try {
+          const receipt = await bridge.saveLocalBackup();
+          if (!receipt.verified) throw new Error('Local checksum missing.');
+          setBackupRefreshToken(value => value + 1);
+        } catch {
+          setBackupMessageIsError(true);
+          setBackupRefreshToken(value => value + 1);
+          setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.');
+          return;
+        }
+      }
       setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
+      setBackupMessageIsError(true);
       setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
     } finally {
       setBusy(false);
@@ -271,6 +311,7 @@ export function SettingsPage({
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">
+            {!ownerTaxonomyApplied?<Surface as="section" variant="flat" className="panel settings-owner-taxonomy"><div className="panel-head"><div><b>Εγκεκριμένη προσωπική ταξινόμηση</b><small>20 κατηγορίες εξόδων · 6 κατηγορίες εσόδων. Αλλαγή με ιστορικό και προστασία συγκρούσεων, χωρίς επανεγγραφή συναλλαγών.</small></div><Button type="button" variant="secondary" disabled={busy} onClick={()=>setPendingOwnerTaxonomy(true)}>Εφαρμογή εγκεκριμένης λίστας</Button></div></Surface>:null}
             <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="taxonomy" />
           </div>
         ) : null}
@@ -284,6 +325,7 @@ export function SettingsPage({
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
             <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
+            <CounterpartyDirectorySettings data={data} onSave={record=>onFinanceDurably(current=>withCounterparty(current,record))}/>
           </div>
         ) : null}
 
@@ -295,7 +337,7 @@ export function SettingsPage({
                 <div className="settings-data-action-copy">
                   <b>Δημιουργία αντιγράφου ασφαλείας</b>
                   <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
-                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν περιλαμβάνει μυστικά καρτών (PAN/CVV), ανεξάρτητα IBAN, αρχεία λογοτύπων, τοπικές αποδείξεις ή PIN των Windows. Φύλαξέ τα και διαχειρίσου τα ξεχωριστά.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</Button>
               </Surface>
@@ -306,21 +348,58 @@ export function SettingsPage({
                 <div className="settings-data-action-copy">
                   <b>Επαναφορά από JSON</b>
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
-                  <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
+                  <small>Έως 4 MB · αυτόματο backup πριν από την αντικατάσταση · χωρίς Undo της εισαγωγής. Η εισαγωγή δεν επαναφέρει μυστικά καρτών, IBAN, ανεβασμένα λογότυπα ή τοπικές αποδείξεις.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>
             </div>
+            <DesktopBackupPanel refreshToken={backupRefreshToken} onPrepareRestore={(snapshot) => {
+              requestImport(new File([JSON.stringify(snapshot)], 'MyFinHub-local-backup.json', { type: 'application/json' }));
+            }}/>
 
-            {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
+            <details className="settings-import-guide">
+              <summary>Οδηγίες χρήσης και δομή αρχείου JSON</summary>
+              <div className="settings-import-guide-content">
+                <section aria-labelledby="settings-import-instructions">
+                  <h3 id="settings-import-instructions">Πώς γίνεται η εισαγωγή</h3>
+                  <ol>
+                    <li>Δημιούργησε πρώτα αντίγραφο από το «Backup & λήψη».</li>
+                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε πλήρες backup MyFinHub έως 4 MB.</li>
+                    <li>Έλεγξε την προειδοποίηση και επιβεβαίωσε. Η βάση επαληθεύει τη δομή και δημιουργεί αυτόματα backup των προηγούμενων δεδομένων πριν από την αντικατάσταση.</li>
+                    <li>Έλεγξε τα στοιχεία μετά την εισαγωγή. Για επιστροφή στα προηγούμενα δεδομένα χρειάζεται ξεχωριστή επαναφορά backup, όχι Undo.</li>
+                  </ol>
+                </section>
+                <section aria-labelledby="settings-import-structure">
+                  <h3 id="settings-import-structure">Δομή JSON MyFinHub</h3>
+                  <p>Το αρχείο είναι πλήρες JSON της εφαρμογής, όχι CSV ή απλή λίστα συναλλαγών. Τα κύρια πεδία του είναι:</p>
+                  <dl className="settings-import-guide-fields">
+                    <div><dt><code>app</code>, <code>schemaVersion</code>, <code>updatedAt</code></dt><dd>Ταυτότητα εφαρμογής, συμβατή έκδοση και ημερομηνία.</dd></div>
+                    <div><dt><code>seed</code></dt><dd>Βασικά δεδομένα: <code>accounts</code>, <code>months</code>, <code>transactions</code>, <code>snapshots</code>, <code>recurring</code>, <code>subscriptions</code>, <code>loans</code>, <code>lending</code>, <code>stats</code>.</dd></div>
+                    <div><dt><code>state</code></dt><dd>Τρέχουσα κατάσταση: <code>settings</code>, <code>events</code>, <code>cards</code>, <code>budgets</code>, <code>scheduled</code>, <code>transactionRules</code> και τροποποιημένες εγγραφές.</dd></div>
+                  </dl>
+                  <p>Χρησιμοποίησε το εξαγόμενο backup ως πρότυπο. Ένα χειροποίητο JSON με μόνο αυτά τα πεδία δεν αρκεί: ελέγχονται και τα απαιτούμενα επιμέρους πεδία και οι οικονομικές συσχετίσεις.</p>
+                </section>
+                <p className="settings-import-guide-warning">Η εισαγωγή αντικαθιστά (δεν συγχωνεύει) τα οικονομικά δεδομένα και δεν αναιρείται με Undo/Redo. Το ξεχωριστό κρυπτογραφημένο Card Vault (PAN/λήξη/CVV) δεν περιλαμβάνεται στο JSON backup. Τα δεδομένα προφίλ κάρτας δεν επαναφέρουν από μόνα τους αυτούς τους κωδικούς.</p>
+              </div>
+            </details>
+            {message ? <div className={`logic-note compact${backupMessageIsError ? ' is-error' : ''}`} role={backupMessageIsError ? 'alert' : 'status'} aria-live="polite">{backupMessageIsError ? <TriangleAlert/> : <ShieldCheck/>}<span>{message}</span></div> : null}
           </div>
         ) : null}
       </div>
 
       <ConfirmDialog
+        open={pendingOwnerTaxonomy}
+        title="Εφαρμογή εγκεκριμένης ταξινομίας;"
+        description="Θα οριστούν οι 20 κατηγορίες εξόδων και οι 6 εσόδων με την εγκεκριμένη σειρά και τις υποκατηγορίες τους. Οι υπάρχουσες ταυτότητες, οι συνδεδεμένες εγγραφές και το οικονομικό ιστορικό προστατεύονται. Αν υπάρχουν μη επιλύσιμες εξαρτήσεις, η ενημέρωση θα απορριφθεί ολόκληρη."
+        confirmLabel="Εφαρμογή"
+        busy={busy}
+        onConfirm={()=>void confirmOwnerTaxonomy()}
+        onCancel={()=>{if(!busy)setPendingOwnerTaxonomy(false)}}
+      />
+      <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"
-        description="Η εισαγωγή θα αντικαταστήσει τα τρέχοντα δεδομένα μόνο αφού δημιουργηθεί αυτόματο αντίγραφο ασφαλείας. Η υπάρχουσα διαδικασία ελέγχου και εισαγωγής παραμένει η ίδια."
+        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Οι κωδικοί Card Vault είναι ξεχωριστοί και δεν εισάγονται από το JSON. Συνέχεια;"
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}

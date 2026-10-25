@@ -23,7 +23,9 @@ describe('Stage 2 settings shared Button adoption batch 10',()=>{
     expect(budgetRules).toContain("from './Button'");
     expect(budgetRules).toContain("from './IconButton'");
     expect(budgetRules.match(/<Button/g)).toHaveLength(2);
-    expect(budgetRules.match(/<IconButton/g)).toHaveLength(1);
+    expect(budgetRules.match(/<IconButton/g)).toHaveLength(2);
+    expect(budgetRules).toContain('aria-label={`Επεξεργασία προϋπολογισμού');
+    expect(budgetRules).toContain('onClick={()=>editBudget(row.id)}');
     expect(budgetRules).toContain('<Button type="button" variant="primary" disabled={busy} onClick={()=>void saveBudget()}>');
     expect(budgetRules).toContain('aria-label={`Διαγραφή προϋπολογισμού');
     expect(budgetRules).not.toContain('onUpsertRule');

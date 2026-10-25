@@ -10,10 +10,14 @@ describe('visual evidence provenance',()=>{
     expect(store).not.toContain("const sourceSha=(process.env.GITHUB_SHA||gitValue('rev-parse','HEAD')||'local').trim()");
   });
 
-  it('refuses to persist screenshots when the branch advanced during capture',()=>{
-    expect(workflow).toContain('EXPECTED_HEAD_SHA:');
-    expect(workflow).toContain('github.event.pull_request.head.sha');
-    expect(workflow).toContain('if [ "$REMOTE_SHA" != "$EXPECTED_HEAD_SHA" ]');
-    expect(workflow).toContain('refusing stale evidence commit');
+  it('keeps final screenshots bound to the actual workflow SHA without mutating Git history',()=>{
+    expect(workflow).toContain('workflow_call:');
+    expect(workflow).toContain('actions/checkout@');
+    expect(workflow).toContain('myfinhub-final-screenshots-${{ github.sha }}');
+    expect(workflow).toContain('if [ "$COUNT" -ne 216 ]');
+    expect(workflow).toContain('actions/upload-artifact@');
+    expect(workflow).not.toContain('git push');
+    expect(workflow).not.toContain('git commit');
+    expect(workflow).not.toContain('contents: write');
   });
 });

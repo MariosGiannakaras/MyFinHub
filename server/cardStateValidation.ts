@@ -56,14 +56,15 @@ export function validateCardStateExtensions(state:FinanceData['state']){
 
   for(const event of state.events??[]){
     if(event.cardId!==undefined&&!text(event.cardId,200))invalid();
-    if(event.cardId!==undefined&&event.kind!=='card_purchase'&&event.kind!=='card_payment')invalid();
+    const fundedExpense=event.kind==='expense'&&event.funding?.some(part=>part.kind==='credit'&&part.sourceId===event.cardId);
+    if(event.cardId!==undefined&&event.kind!=='card_purchase'&&event.kind!=='card_payment'&&!fundedExpense)invalid();
     if(event.cardId!==undefined){
       const card=cardsById.get(event.cardId);
       if(card&&card.kind!=='credit')invalid();
       if(!card&&!deletedCardIds.has(event.cardId))invalid();
     }
     if(event.statementId!==undefined){
-      if(!text(event.statementId,300)||(event.kind!=='card_purchase'&&event.kind!=='card_payment')||!event.cardId)invalid();
+      if(!text(event.statementId,300)||(event.kind!=='card_purchase'&&event.kind!=='card_payment'&&!fundedExpense)||!event.cardId)invalid();
       const statement=statementsById.get(event.statementId);if(!statement||statement.cardId!==event.cardId)invalid();
     }
   }

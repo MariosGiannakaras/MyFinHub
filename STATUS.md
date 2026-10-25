@@ -1,5 +1,24 @@
 # MyFinHub status
 
+## Integrated PIN + Windows backup release-source checkpoint — 2026-10-25 (NOT DEPLOYED)
+
+- Protected `develop@de005ac42e4e866954e6c3da0ec7f847a00cfe97` contains merged PIN [#622](https://github.com/MariosGiannakaras/MyFinHub/pull/622) and verified Windows backup [#620](https://github.com/MariosGiannakaras/MyFinHub/pull/620). Feature #621 **Implementations 2/2 · Sub-implementations 9/9**; backup #619 **Implementations 4/4 · Sub-implementations 8/8** completed. Backup exact-head required CI [#40134440300](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40134440300) SUCCESS, and native Desktop/tablet/mobile Light/Dark screenshot artifact directly inspected. Postmerge `develop` CI [#40136806487](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40136806487) running when this release candidate was reconciled; confirm its exact final result before review/promotion.
+- The prepared v1.6.0 release branch preserves the full accepted `develop` source and production ancestry with version-only package metadata. New **six** pending ordered migrations include device nicknames and shared owner app PIN RLS. **Do not deploy** until an independently verified full current recoverable Production PostgreSQL/Storage checkpoint and Android client shared-PIN bearer ticket compatibility are established, followed by exact-head release CI and postrelease smoke. Older v1.5.0 binaries/links remain published; no release or production migration occurred during this source preparation.
+
+## Consolidated v1.6.0 preparation — **NOT YET RELEASED** (2026-10-24)
+
+> Current reconciliation checkpoint: owner-approved semantic user journeys #616 merged via [PR #618](https://github.com/MariosGiannakaras/MyFinHub/pull/618) into `develop@c238a9d6537a0b8a4ddea3b6b22e42392c46f4c8` after [Ready strict CI #40071928581](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40071928581), independent CodeQL #40071752562 and Real Stack #40071752560 all SUCCESS. Directly inspected responsive recurring/command, savings, reports, backup and transactions rendered evidence. **Develop postmerge full CI #40073640592 is pending**; v1.6.0 release-head checks must be rerun on this newly reconciled candidate. No main deployment, production migrations, public Windows distribution or live 20/6 taxonomy activation is authorized or completed.
+
+- **Implementations 5/5 completed for #616** (no explicit sub-implementation denominator); prior #588 **Implementations 12/12 · Sub-implementations 24/24 completed**; taxonomy source #601 **4/4 · 8/8**, production activation #617 remains unperformed.
+
+- **Current public production remains v1.5.0** at `main@5343f0eddaee2641269d3b68b1763ab3cb51cfdc` and [mgfinhub.vercel.app](https://mgfinhub.vercel.app). The v1.5.0 published Windows installer/tag/checksum are immutable and untouched.
+- **Release candidate** is the reconciled v1.6.0 branch reconciled with the reviewed finance source `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382` with both develop/main ancestry. Pending release PR complete required gates; **no Production promotion, database migration, new installer, tag, or Card Vault key change has occurred**.
+- Completed #588 advanced finance roadmap **12/12 implementations · 24/24 sub-implementations**, code-level taxonomy #601 **4/4 · 8/8**; actual database still 18/6 and requires owner-AAL2 post-release activation. Four additive migrations are pending with backup/health checks before any write; details in `docs/CONSOLIDATED_RELEASE_20261023.md`.
+- Source check: audited #614 [full Unified required CI #40012917908 attempt 2](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40012917908) **SUCCESS**; code merged to `develop@a177b92fdbecacf09dee093a04bd7c3b4bdeb382`. Its postmerge CI #40015926377 is an independent gate. This reconciled v1.6.0 release head must pass its own new full exact-head CI and rendered inspection before any promotion.
+
+---
+
+
 ## Current production — v1.5.0 Web + Windows stable
 
 - **Release source:** `main@0b4e20560908d2378e88ab8746d0bfd9a00e7e01`; Git tree `abcedfc2a65fd4b667a1a636bb2946625dcf9cdc` byte-identical to tested PR #564 head `83aaf59e`, merged via GitHub's mandatory squash policy.

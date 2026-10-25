@@ -41,6 +41,28 @@ try{
   assert(before.editProfile===1&&before.editDetails===1,'only the active top card exposes profile and secure-details editing');
   assert(before.overflow<=1,'multi-card Credit desktop has no document overflow');
   await shot('credit-stack-pre-drag');
+
+  const hoverCredit=async()=>{
+    const rect=await c.call("function(){const r=document.querySelector('#myfinhub-card-stack .stack-card.top [data-tilt]')?.getBoundingClientRect();return r?{x:r.left,y:r.top,w:r.width,h:r.height}:null}");
+    assert(rect&&rect.w>100&&rect.h>100,'credit card pointer tilt has visible geometry');
+    await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
+    await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x+rect.w*.24,y:rect.y+rect.h*.3});
+    await sleep(240);
+    return c.call("function(){return document.querySelector('#myfinhub-card-stack .stack-card.top [data-tilt]')?.style.transform||''}");
+  };
+  const creditTilt=await hoverCredit();
+  assert(/rotateY\(-?\d+(?:\.\d+)?deg\)/.test(creditTilt)&&!creditTilt.includes('rotateY(0deg)'),`credit card follows real mouse hover: ${creditTilt}`);
+  await shot('credit-stack-mouse-tilt');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
+  await sleep(240);
+  const creditRest=await c.call("function(){return document.querySelector('#myfinhub-card-stack .stack-card.top [data-tilt]')?.style.transform||''}");
+  assert(creditRest==='perspective(1000px) rotateY(0deg) rotateX(0deg)',`credit card returns to rest on pointer exit: ${creditRest}`);
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await navigate('credit-stack');
+  const reducedTilt=await hoverCredit();
+  assert(!reducedTilt||reducedTilt==='perspective(1000px) rotateY(0deg) rotateX(0deg)',`credit OS reduced motion suppresses tilt: ${reducedTilt}`);
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
+  await navigate('credit-stack');
   const start=await pointer(-92,90);
   const mid=await state();
   assert(mid.topId===before.topId&&mid.tops[0]<before.tops[0]-35,'front card follows vertical drag before release');

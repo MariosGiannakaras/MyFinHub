@@ -1,24 +1,7 @@
 name: Cross-engine smoke
 
 on:
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'assets/branding/myfinhub/**'
-      - 'index.html'
-      - 'qa.html'
-      - 'payment-flow-qa.html'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - 'tsconfig.app.json'
-      - 'tsconfig.node.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'scripts/webkit-smoke.mjs'
-      - '.github/workflows/cross-engine-smoke.yml'
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -32,11 +15,13 @@ jobs:
   webkit-smoke:
     name: WebKit compatibility smoke
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    # Pin the known Playwright-compatible LTS image: ubuntu-latest is migrating
+    # to 26.04, whose transient Azure apt mirror stalls in install --with-deps.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -70,7 +55,7 @@ jobs:
           node scripts/webkit-smoke.mjs
       - name: Upload WebKit smoke evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: myfinhub-webkit-${{ github.sha }}
           path: /tmp/myfinhub-webkit-smoke/*.png

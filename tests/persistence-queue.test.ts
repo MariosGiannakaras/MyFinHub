@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LatestValueQueue, SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
+import { LatestValueQueue, SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
 
 function deferred() {
   let resolve!: () => void;
@@ -163,4 +163,39 @@ describe('remoteRevisionAction', () => {
     expect(shouldWarnBeforeUnload(true,true)).toBe(true);
   });
 
+});
+
+describe('finance reload request generation race safety',()=>{
+  const apply=(readMutationEpoch:number,currentMutationEpoch:number,readId:number,currentId:number,work:boolean,exclusive:boolean,state:string)=>
+    canApplyFinanceReload(readMutationEpoch,currentMutationEpoch,readId,currentId,work,exclusive,state);
+
+  it('keeps a stable loading snapshot eligible but refuses any pending writer or cursor move',()=>{
+    expect(apply(4,4,9,9,false,false,'loading')).toBe(true);
+    expect(apply(4,4,9,9,true,false,'loading')).toBe(false);
+    expect(apply(4,4,9,9,false,true,'loading')).toBe(false);
+    expect(apply(4,4,9,9,false,false,'conflict')).toBe(false);
+    expect(apply(4,4,9,9,false,false,'error')).toBe(false);
+  });
+
+  it('rejects a delayed old load after a save finishes, even when there is no queued work',async()=>{
+    let resolveRead!: (value:string)=>void;
+    const oldRead=new Promise<string>(resolve=>{resolveRead=resolve});
+    const accepted:string[]=[];
+    let mutationEpoch=12;
+    const startedEpoch=mutationEpoch;
+    const task=oldRead.then(snapshot=>{
+      if(apply(startedEpoch,mutationEpoch,5,5,false,false,'loading'))accepted.push(snapshot);
+    });
+    mutationEpoch+=1; // Optimistic write started and received its server revision meanwhile.
+    resolveRead('stale-before-save');
+    await task;
+    expect(accepted).toEqual([]);
+    expect(apply(startedEpoch,mutationEpoch,5,5,false,false,'loading')).toBe(false);
+  });
+
+  it('only the newest reload may install results, including failed or superseded remote reads',()=>{
+    expect(apply(7,7,14,15,false,false,'loading')).toBe(false);
+    expect(apply(7,7,15,15,false,false,'loading')).toBe(true);
+    expect(apply(7,8,15,15,false,false,'loading')).toBe(false);
+  });
 });

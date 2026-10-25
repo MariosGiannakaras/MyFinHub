@@ -5,6 +5,16 @@ const page=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),
 const css=readFileSync(new URL('../src/pages/ReportsPage.css',import.meta.url),'utf8');
 
 describe('Reports post-v1.4 remediation contracts',()=>{
+  it('defers private six-month account-history scans until reveal without losing chart data',()=>{
+    expect(page).toContain("const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data])");
+    expect(page).toContain("const accountIds=useMemo(()=>accounts.slice(0,4).map(account=>account.id),[accounts])");
+    expect(page).toContain("()=>privacyVisible&&accountIds.length?primaryAccountSeries(data,month,accountIds,6,asOf):[]");
+    expect(page).toContain('[data,month,asOf,privacyVisible,accountIds]');
+    expect(page).toContain('data={accountSeries}');
+    expect(page).toContain('onPrivacyVisibleChange(!privacyVisible)');
+  });
+
+
   it('restores one executive financial picture while preserving all five canonical KPI values',()=>{
     expect(page).toContain('report-kpi-strip report-financial-picture');
     expect(page).toContain('className={`report-headline-card report-executive-main');

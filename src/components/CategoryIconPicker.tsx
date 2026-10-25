@@ -2,6 +2,7 @@ import { Search, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { categoryIconKeySupportedByPack } from '../lib/categoryIconPackSupport';
 import { isCatalogIconKey } from '../lib/categoryIconCatalog';
+import { CATEGORY_SEMANTIC_CATALOG_DEFAULTS } from '../lib/categoryIconSemanticDefaults';
 import {
   CATEGORY_ICON_PACKS,
   decodeCategoryIconValue,
@@ -16,6 +17,8 @@ import { CategoryIconGlyph } from './CategoryIconGlyph';
 import './CategoryIconPicker.css';
 
 const PAGE_SIZE=96;
+// Only finance-facing choices by default; the full supported library stays opt-in.
+const FINANCE_ICON_CHOICES=new Set('shopping-bag shopping-basket shopping-cart store coffee cup-soda utensils utensils-crossed pizza sandwich hamburger chef-hat beef salad cake-slice ice-cream-cone bread croissant milk apple gift tags shirt footprints watch smartphone laptop monitor headphones gamepad gamepad-2 bus car car-front bike train tram-front plane ship fuel circle-parking wrench house bed sofa lightbulb plug zap droplet flame wifi phone tv music film ticket dumbbell heart heart-pulse stethoscope pill hospital graduation-cap book-open school briefcase wallet wallet-cards credit-card banknote piggy-bank landmark receipt receipt-text calendar calendar-days coins badge-euro euro hand-coins trending-up tree-pine paw-print dog cat baby scissors'.split(' '));
 const catalogCache=new Map<CategoryIconPack,readonly string[]>();
 const normalize=(text:string)=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
 
@@ -69,6 +72,7 @@ export function CategoryIconPicker({
   const decoded=decodeCategoryIconValue(value);
   const[localPack,setLocalPack]=useState<CategoryIconPack>(decoded.pack);
   const[query,setQuery]=useState('');
+  const[showAll,setShowAll]=useState(false);
   const[visibleCount,setVisibleCount]=useState(PAGE_SIZE);
   const[catalog,setCatalog]=useState<{pack:CategoryIconPack;names:readonly string[]}|null>(null);
   const[error,setError]=useState('');
@@ -83,7 +87,8 @@ export function CategoryIconPicker({
     void getCatalog(pack).then(names=>{if(active){setCatalog({pack,names});setError('');}}).catch(()=>{if(active)setError('Δεν ήταν δυνατή η φόρτωση των τοπικών εικονιδίων.');});
     return()=>{active=false;};
   },[pack,retry]);
-  useEffect(()=>setVisibleCount(PAGE_SIZE),[pack,query]);
+  useEffect(()=>setVisibleCount(PAGE_SIZE),[pack,query,showAll]);
+  useEffect(()=>setShowAll(false),[pack]);
   useEffect(()=>{if(selectedPack===undefined&&value)setLocalPack(decodeCategoryIconValue(value).pack)},[selectedPack,value]);
 
   // Greek terms are mapped to English icon names by the existing semantic taxonomy.
@@ -96,12 +101,19 @@ export function CategoryIconPicker({
 
   const matches=useMemo(()=>{
     if(catalog?.pack!==pack)return [];
-    if(!query.trim())return catalog.names;
-    return catalog.names.filter(name=>{
+    const defaults=new Set(Object.values(CATEGORY_SEMANTIC_CATALOG_DEFAULTS[pack]));
+    // Search is intentionally broader when the owner supplies a term.
+    // Prioritize the semantic defaults, then finance-friendly alternatives.
+    // The initial page is deliberately small; full search and 'All' stay opt-in.
+    const curated=[...catalog.names.filter(name=>defaults.has(name)),
+      ...catalog.names.filter(name=>FINANCE_ICON_CHOICES.has(name)&&!defaults.has(name))].slice(0,48);
+    const candidates=showAll||query.trim()?catalog.names:curated;
+    if(!query.trim())return candidates;
+    return candidates.filter(name=>{
       const text=name.replaceAll('-',' ');
       return searchTerms.some(term=>name.includes(term.replaceAll(' ','-'))||text.includes(term));
     });
-  },[catalog,pack,query,searchTerms]);
+  },[catalog,pack,query,searchTerms,showAll]);
   const shown=matches.slice(0,visibleCount);
   const choosePack=(next:CategoryIconPack)=>{
     if(selectedPack===undefined)setLocalPack(next);
@@ -119,9 +131,10 @@ export function CategoryIconPicker({
       <button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><Sparkles size={17} aria-hidden="true"/><span><b>Αυτόματο</b><small>{automaticLabel??inheritedLabel??'Σημασιολογική αντιστοίχιση'}</small></span></button>
     </div>
     {legacySelection?<div className="category-icon-legacy-choice" aria-label="Αποθηκευμένο παλαιότερο εικονίδιο"><CategoryIconGlyph iconKey={value!} color={color} size={18}/><span>Η υπάρχουσα επιλογή διατηρείται. Οι νέες επιλογές παρακάτω είναι διαφορετικά σχέδια από την πλήρη βιβλιοθήκη.</span></div>:null}
+    <div className="category-icon-catalog-view" role="group" aria-label="Επιλογές εικονιδίων"><button type="button" aria-pressed={!showAll} className={!showAll?"active":""} onClick={()=>setShowAll(false)}>Προτεινόμενα</button><button type="button" aria-pressed={showAll} className={showAll?"active":""} onClick={()=>setShowAll(true)}>Όλα τα εικονίδια</button></div>
     <label className="category-icon-search"><span className="sr-only">Αναζήτηση εικονιδίου</span><AppInputShell leading={<Search size={16}/>}><AppTextInput value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου (ελληνικά ή αγγλικά)…" aria-label="Αναζήτηση εικονιδίου"/></AppInputShell></label>
     <div className="category-icon-catalog-count" role="status" aria-live="polite">
-      {error||((catalog?.pack===pack)?`${matches.length.toLocaleString('el-GR')} διαφορετικά εικονίδια · εμφανίζονται ${shown.length.toLocaleString('el-GR')}`:'Φόρτωση τοπικών εικονιδίων…')}
+      {error||((catalog?.pack===pack)?`${matches.length.toLocaleString('el-GR')} ${showAll||query.trim()?'εικονίδια':'προτεινόμενα εικονίδια'} · εμφανίζονται ${shown.length.toLocaleString('el-GR')}`:'Φόρτωση τοπικών εικονιδίων…')}
     </div>
     {error?<Button type="button" variant="secondary" onClick={()=>{setError('');setRetry(value=>value+1);}}>Επανάληψη φόρτωσης</Button>:null}
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>

@@ -11,6 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
+import { legacyLendingSnapshot } from './lending.js';
 import { isSafeMoneyValue } from './money.js';
 import { isSavingsAccount } from './accountSemantics.js';
 
@@ -50,6 +51,7 @@ export function migrateData(input: FinanceData): FinanceData {
       loanOverrides: state.loanOverrides ?? {},
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
+      lendingPlans: state.lendingPlans ?? [],
       settings: {
         ...(state.settings ?? {}),
         excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,
@@ -196,6 +198,15 @@ export function createEvent(args: {
       legs.push({ accountId: requireAccount(args.accountId), amount });
       receivableDelta = -amount;
       break;
+    case 'lending_writeoff':
+      if(!args.person?.trim()||args.accountId||args.fromAccountId||args.toAccountId)
+        throw new Error('Η διαγραφή απαίτησης χρειάζεται πρόσωπο χωρίς ταμειακό λογαριασμό.');
+      if(Math.abs(amount*100-Math.round(amount*100))>1e-6)
+        throw new Error('Η διαγραφή απαίτησης πρέπει να έχει ακριβώς δύο δεκαδικά σε λεπτά ευρώ.');
+      if(args.loanId||args.recurringId||args.cardId||args.parts?.length)
+        throw new Error('Η διαγραφή απαίτησης δεν συνδέεται με δόση, κάρτα ή διάσπαση δαπάνης.');
+      receivableDelta = -amount;
+      break;
     case 'card_purchase':
       legs.push({ accountId: CREDIT_ACCOUNT.id, amount: -amount });
       creditDelta = -amount;
@@ -206,6 +217,7 @@ export function createEvent(args: {
       break;
     case 'reconciliation': {
       const delta = Number(args.actualBalance ?? 0) - Number(args.currentBalance ?? 0);
+      if(Math.round(delta*100)===0)throw new Error('Δεν υπάρχει διαφορά λογαριασμού για διόρθωση.');
       legs.push({ accountId: requireAccount(args.accountId), amount: delta });
       break;
     }
@@ -305,8 +317,8 @@ export function accountBalances(data: FinanceData, asOf: string): Record<string,
   return balances;
 }
 
-function legacyOutstandingReceivables(data: FinanceData) {
-  return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
+function legacyOutstandingReceivables(data: FinanceData,asOf:string) {
+  return (data.seed.lending ?? []).reduce((sum, p) => sum + legacyLendingSnapshot(p,asOf).outstanding, 0);
 }
 
 function eventReceivables(data: FinanceData,asOf:string) {
@@ -317,7 +329,7 @@ export function netWorth(data: FinanceData, asOf: string) {
   const balances = accountBalances(data, asOf);
   const assets = allAccounts(data).filter((a) => a.kind !== 'credit').reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
   const credit = Math.min(0, balances[CREDIT_ACCOUNT.id] ?? 0);
-  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data,asOf);
+  return assets + credit + legacyOutstandingReceivables(data,asOf) + eventReceivables(data,asOf);
 }
 
 export function availableMoney(data: FinanceData, asOf: string) {

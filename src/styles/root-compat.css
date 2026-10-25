@@ -1,6 +1,7 @@
 /* Stage 5 named owner for the preserved root/login compatibility sequence. */
 @import './theme-surface-foundations.css';
 @import './shell-navigation-foundations.css';
+@import './save-progress-bar.css';
 @import './workspace-heading-metrics.css';
 @import './dashboard-metric-accounts.css';
 @import './dashboard-panels-insights.css';
@@ -72,7 +73,7 @@
 @import './route-skeleton-system.css';
 @import './content-entrance-motion.css';
 @import './navigation-category-management-affordances.css';
-@import './receipt-inbox.css';
+@import './receipt-launch.css';
 @import './category-icon-workspace.css';
 @import './category-taxonomy-editor.css';
 @import './taxonomy-transactions-mobile-layout.css';

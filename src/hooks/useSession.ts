@@ -59,6 +59,7 @@ export function useSession() {
     try {
       const session = await loginApi(nextEmail, password);
       applySession(session);
+      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
       return true;
     } catch (e) {
       const message = e instanceof ApiError && e.status === 401
@@ -86,6 +87,7 @@ export function useSession() {
     try {
       const session = await verifyMfaApi(code, factorId);
       applySession(session);
+      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
       return session.authenticated;
     } catch (e) {
       setError(e instanceof ApiError && e.code === 'INVALID_MFA_CODE'

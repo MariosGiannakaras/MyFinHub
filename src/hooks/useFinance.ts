@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { reachableHistoryNavigation } from '../lib/historyView';
+import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
-export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string; current?:boolean };
+export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string; parentId?:string|null; current?:boolean };
 // Kept as a compatibility export for AppShell and rendered QA. Its payload is now
 // server-authoritative cross-session history rather than a session-only stack.
 export const SESSION_HISTORY_EVENT = 'myfinhub-durable-change-history';
@@ -38,6 +39,8 @@ export function useFinance() {
   const [filePath, setFilePath] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
+  const [savePending,setSavePending]=useState(false);
+  const [saveReceiptCount,setSaveReceiptCount]=useState(0);
   const [saveErrorMessage,setSaveErrorMessage]=useState<string|null>(null);
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
@@ -55,6 +58,8 @@ export function useFinance() {
   const coordinatorRef = useRef<SequentialQueue<QueuedMutation> | null>(null);
   const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
   const initialLoadStartedRef=useRef(false);
+  const mutationEpochRef=useRef(0);
+  const reloadRequestRef=useRef(0);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
@@ -69,7 +74,7 @@ export function useFinance() {
     historyGenerationRef.current=history.generation;
     historyAvailableRef.current=history.available;
     setHistoryAvailable(history.available);
-    const next:ChangeHistoryEntry[]=history.available?history.points.map(point=>({id:point.id,kind:'change',label:point.label,at:point.createdAt,current:point.current})):[];
+    const next:ChangeHistoryEntry[]=history.available?history.points.map(point=>({id:point.id,kind:'change',label:point.label,at:point.createdAt,parentId:point.parentId,current:point.current})):[];
     changeHistoryRef.current=next;
     setChangeHistory(next);
     setUndoDepth(history.available?history.undoDepth:0);
@@ -98,6 +103,7 @@ export function useFinance() {
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
         applyHistory(res.history);
+        setSaveReceiptCount(count=>count+1); // Server revision+history receipt confirmed.
         lastSaveFailed.current = false;
         setSaveErrorMessage(null);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
@@ -122,12 +128,24 @@ export function useFinance() {
   },[coordinator]);
 
   const reload = useCallback(async () => {
+    // A refresh must never replace an optimistic/queued finance write with
+    // older server data while that write is awaiting a revision receipt.
+    if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false;
+    const requestId=++reloadRequestRef.current;
+    const requestMutationEpoch=mutationEpochRef.current;
+    const isCurrent=()=>canApplyFinanceReload(
+      requestMutationEpoch,mutationEpochRef.current,
+      requestId,reloadRequestRef.current,
+      coordinator.hasWork(),exclusiveOperation.current,saveStateRef.current,
+    );
     setCurrentSaveState('loading');
     setSaveErrorMessage(null);
     try {
       for(let attempt=0;attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS;attempt+=1){
         const nextData=await loadData();
+        if(!isCurrent())return false;
         const nextHistory=await loadHistory();
+        if(!isCurrent())return false;
         if(!historyMatchesRevision(nextHistory,nextData.revision)){
           if(attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS-1)continue;
           applyDataEnvelope(nextData);
@@ -143,11 +161,12 @@ export function useFinance() {
       setCurrentSaveState('conflict');
       return false;
     } catch (error) {
+      if(!isCurrent())return false; // A stale failed read cannot override a newer save.
       setSaveErrorMessage(saveFailureMessage(error));
       setCurrentSaveState('error');
       return false;
     }
-  }, [applyDataEnvelope,applyHistory,saveFailureMessage,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory,coordinator,saveFailureMessage,setCurrentSaveState]);
 
   useEffect(() => {
     if(initialLoadStartedRef.current)return;
@@ -184,15 +203,19 @@ export function useFinance() {
   }, [coordinator, reload,setCurrentSaveState]);
 
   const persist = useCallback((next: FinanceData,label:string,requireReceipt=false) => {
+    mutationEpochRef.current+=1;
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
     setSaveErrorMessage(null);
     setCurrentSaveState('saving');
+    setSavePending(true);
     const mutation={data:stamped,label};
     const receipt=requireReceipt?coordinator.enqueueWithReceipt(mutation):(coordinator.enqueue(mutation),null);
     const idle=coordinator.whenIdle();
     void idle.then(()=>{
-      if(!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
+      if(coordinator.hasWork())return; // A newer accepted write extends this save cycle.
+      setSavePending(false);
+      if(saveStateRef.current==='saving'&&!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
     });
     return receipt;
   }, [assignData, coordinator,setCurrentSaveState]);
@@ -224,6 +247,7 @@ export function useFinance() {
     const allowed=direction==='undo'?undoDepth>0:redoDepth>0;
     if(!current||!allowed||!historyAvailableRef.current||state!=='saved'||exclusiveOperation.current||coordinator.hasWork())return false;
     exclusiveOperation.current=true;
+    mutationEpochRef.current+=1;
     setCurrentSaveState('saving');
     try{
       await coordinator.whenIdle();
@@ -232,11 +256,12 @@ export function useFinance() {
       applyDataEnvelope(res);
       applyHistory(res.history);
       setCurrentSaveState('saved');
+      setSaveReceiptCount(count=>count+1); // Acknowledged undo/redo history revision.
       channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
       return true;
     }catch(error){
       lastSaveFailed.current=true;
-      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE')){setSaveErrorMessage(null);setCurrentSaveState('conflict')}
+      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE'||error.code==='HISTORY_IRREVERSIBLE_BOUNDARY')){setSaveErrorMessage(null);setCurrentSaveState('conflict')}
       else{setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error')}
       return false;
     }finally{exclusiveOperation.current=false}
@@ -245,10 +270,54 @@ export function useFinance() {
   const undo=useCallback(()=>move('undo'),[move]);
   const redo=useCallback(()=>move('redo'),[move]);
 
+
+  // Confirmed multi-step navigation uses the existing server cursor RPC per step.
+  // A jump is NOT an atomic restore: on partial failure, leave the exact confirmed
+  // cursor/data visible, mark the save state red/conflicted, and require reload.
+  const goToHistoryPoint=useCallback(async(targetId:string):Promise<boolean>=>{
+    if(saveStateRef.current!=='saved'||!historyAvailableRef.current||
+       coordinator.hasWork()||exclusiveOperation.current||!dataRef.current)return false;
+    const plan=reachableHistoryNavigation(changeHistoryRef.current,undoDepth,redoDepth).get(targetId);
+    if(!plan||plan.pointIds.length===0)return false;
+    exclusiveOperation.current=true;
+    mutationEpochRef.current+=1;
+    setSaveErrorMessage(null);
+    setCurrentSaveState('saving');
+    try{
+      await coordinator.whenIdle();
+      for(const expectedPoint of plan.pointIds){
+        const res=await moveHistory(plan.direction,revisionRef.current,historyGenerationRef.current);
+        if(!historyMatchesRevision(res.history,res.revision)){
+          throw new ApiError('Η βάση επέστρεψε ασύμφωνο ιστορικό.',409,'HISTORY_CURSOR_CONFLICT');
+        }
+        // Preserve the actual confirmed server position even if another actor
+        // changed the path. Never report a target success without matching ID.
+        applyDataEnvelope(res);
+        applyHistory(res.history);
+        if(res.history.currentPointId!==expectedPoint){
+          throw new ApiError('Η μετακίνηση δεν έφτασε στο αναμενόμενο σημείο.',409,'HISTORY_CURSOR_CONFLICT');
+        }
+        setSaveReceiptCount(count=>count+1);
+        channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
+      }
+      setCurrentSaveState('saved');
+      return true;
+    }catch(error){
+      lastSaveFailed.current=true;
+      if(error instanceof ApiError&&(error.status===409||error.code==='HISTORY_UNAVAILABLE'||error.code==='HISTORY_IRREVERSIBLE_BOUNDARY')){
+        setSaveErrorMessage(null);setCurrentSaveState('conflict');
+      }else{
+        setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error');
+      }
+      return false;
+    }finally{exclusiveOperation.current=false}
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
+
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
+    mutationEpochRef.current+=1;
     setSaveErrorMessage(null);
     setCurrentSaveState('saving');
     try {
@@ -260,6 +329,7 @@ export function useFinance() {
         const consistent=historyMatchesRevision(nextHistory,res.revision);
         applyHistory(consistent?nextHistory:{...nextHistory,available:false});
         setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
+        if(consistent&&nextHistory.available)setSaveReceiptCount(count=>count+1);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
@@ -283,5 +353,5 @@ export function useFinance() {
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, goToHistoryPoint, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, goToHistoryPoint, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

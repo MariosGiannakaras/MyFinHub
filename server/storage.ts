@@ -70,6 +70,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     if (/CARD_CLEANUP_INTENT_REQUIRED/i.test(marker)) throw new ApiError(409, 'CARD_CLEANUP_INTENT_REQUIRED', 'Card-secret cleanup is pending. Reload in an updated client before saving.');
     if (/HISTORY_CURSOR_CONFLICT/i.test(marker)) throw new ApiError(409, 'HISTORY_CURSOR_CONFLICT', 'The change history moved in another session. Reload before continuing.');
     if (/HISTORY_UNAVAILABLE/i.test(marker)) throw new ApiError(409, 'HISTORY_UNAVAILABLE', 'There is no change available in that direction. Reload the history.');
+    if (/HISTORY_IRREVERSIBLE_BOUNDARY/i.test(marker)) throw new ApiError(409, 'HISTORY_IRREVERSIBLE_BOUNDARY', 'The operation crosses an irreversible import or permanently deleted card boundary.');
     if (/EXPECTED_HISTORY_GENERATION_REQUIRED/i.test(marker)) throw new ApiError(428, 'HISTORY_PRECONDITION_REQUIRED', 'A current history generation is required before saving.');
     if (/REVISION_CONFLICT|40001/i.test(marker)) throw new ApiError(409, 'REVISION_CONFLICT', 'The data changed in another session. Reload before saving.');
     if (/EXPECTED_REVISION_REQUIRED/i.test(marker)) throw new ApiError(428, 'PRECONDITION_REQUIRED', 'A current revision is required before saving.');

@@ -1,9 +1,10 @@
 import { Globe2, Monitor, RefreshCw, ShieldCheck, ShieldMinus, Smartphone } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, getConnectedDevices, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
+import { ApiError, getConnectedDevices, renameConnectedDevice, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
+import { AppTextInput } from './AppTextInput';
 import './DeviceAccessSettings.css';
 
 type PendingAction={kind:'single';device:ConnectedDevice}|{kind:'others'}|null;
@@ -45,6 +46,8 @@ export function DeviceAccessSettings(){
   const[message,setMessage]=useState('');
   const[messageTone,setMessageTone]=useState<'status'|'error'>('status');
   const[pending,setPending]=useState<PendingAction>(null);
+  const[renaming,setRenaming]=useState<string|null>(null);
+  const[nameDraft,setNameDraft]=useState('');
 
   const load=useCallback(async()=>{
     setLoading(true);setMessageTone('status');setMessage('');
@@ -69,6 +72,18 @@ export function DeviceAccessSettings(){
     finally{setBusy(false)}
   };
 
+  const saveName=async()=>{
+    if(!renaming||busy)return;
+    setBusy(true);setMessage('');
+    try{
+      const result=await renameConnectedDevice(renaming,nameDraft);
+      setDevices(result.devices);setRenaming(null);setNameDraft('');
+      setMessageTone('status');setMessage('Το όνομα συσκευής ενημερώθηκε.');
+    }catch(error){
+      setMessageTone('error');
+      setMessage(error instanceof ApiError&&error.code==='INVALID_DEVICE_NICKNAME'?'Το όνομα πρέπει να περιέχει έως 60 χαρακτήρες.':'Δεν ήταν δυνατή η αλλαγή ονόματος συσκευής.');
+    }finally{setBusy(false)}
+  };
   const others=devices.filter(device=>!device.current);
   return <section className="panel surface-raised device-access-settings" aria-labelledby="device-access-title">
     <div className="panel-head">
@@ -83,8 +98,27 @@ export function DeviceAccessSettings(){
           <div className="device-access-name"><b>{device.label}</b>{device.current?<span className="device-access-current"><ShieldCheck size={12}/> Αυτή η συσκευή</span>:null}</div>
           <span>{platformLabel(device.platform)}{device.appVersion?` · MyFinHub ${device.appVersion}`:''}</span>
           <small>Τελευταία δραστηριότητα: {activityLabel(device.lastSeenAt)}</small>
+          <details className="device-access-details">
+            <summary>Λεπτομέρειες συστήματος</summary>
+            <dl>
+              <div><dt>Σύστημα</dt><dd>{device.systemName||'Μη διαθέσιμο'}</dd></div>
+              <div><dt>Πρόγραμμα</dt><dd>{device.browserName||'Μη διαθέσιμο'}</dd></div>
+              <div><dt>Τύπος</dt><dd>{device.deviceType==='phone'?'Κινητό':device.deviceType==='tablet'?'Tablet':device.deviceType==='desktop'?'Υπολογιστής':'Άγνωστος'}</dd></div>
+              <div><dt>Αναγνωριστικό</dt><dd>{device.defaultLabel||device.label}</dd></div>
+              <div><dt>Πρώτη σύνδεση</dt><dd>{new Date(device.firstSeenAt).toLocaleString('el-GR')}</dd></div>
+              <div><dt>Έκδοση</dt><dd>{device.appVersion||'Μη διαθέσιμη'}</dd></div>
+            </dl>
+          </details>
+          {renaming===device.sessionId?<form className="device-access-rename" onSubmit={event=>{event.preventDefault();void saveName()}}>
+            <AppTextInput aria-label={`Nickname για ${device.label}`} maxLength={60} value={nameDraft} onChange={event=>setNameDraft(event.target.value)} placeholder="Όνομα συσκευής (προαιρετικό)" disabled={busy}/>
+            <Button type="submit" variant="primary" disabled={busy}>Αποθήκευση</Button>
+            <Button type="button" variant="secondary" disabled={busy} onClick={()=>setRenaming(null)}>Άκυρο</Button>
+          </form>:null}
         </div>
-        {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
+        <div className="device-access-row-actions">
+          {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
+          {renaming!==device.sessionId?<Button type="button" variant="secondary" disabled={busy} onClick={()=>{setRenaming(device.sessionId);setNameDraft(device.nickname||'')}}>Μετονομασία</Button>:null}
+        </div>
       </div>)}
     </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
 

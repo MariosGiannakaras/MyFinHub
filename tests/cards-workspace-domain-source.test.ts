@@ -11,7 +11,9 @@ describe('Cards workspace domain and navigation contracts',()=>{
     expect(page).toContain('variant="secondary"');
     expect(page).toContain('variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας');
     expect(page).toContain('banks={cardBank?[cardBank]:banks}');
-    expect(page).toContain('workspaceBanks.map(bank=>');
+    expect(page).toContain('visibleWorkspaceBanks.map(bank=>');
+    expect(page).toContain('const visibleWorkspaceBanks=useMemo(()=>');
+    expect(page).toContain('detailsIsNew&&detailsCard');
   });
 
   it('does not force the legacy 1590px provider-registry strip at standard desktop width',()=>{
@@ -25,8 +27,25 @@ describe('Cards workspace domain and navigation contracts',()=>{
     const component=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     const componentCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
     expect(component).toContain('card-icon-btn card-icon-reveal');
-    expect(component.match(/card-icon-btn card-icon-management/g)?.length).toBe(3);
-    expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.72}');
+    expect(component.match(/card-icon-btn card-icon-management/g)?.length).toBe(2);
+    expect(component).toContain('onEditDetails||onEditCard');
+    expect(component).not.toContain('KeyRound');
+    expect(componentCss).toContain('.card-icon-btn.card-icon-reveal,');
+    expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.96}');
+    expect(componentCss).toContain('stroke-width:2.4;');
+    expect(componentCss).not.toContain('card-icon-btn.card-icon-reveal{background:rgba');
+    const renderedQa=readFileSync(new URL('../scripts/cards-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(renderedQa).toContain('card icon controls retain the owner-approved uniform unboxed visual hierarchy');
+    expect(renderedQa).toContain('current.toolbarIcons.every(icon=>icon.bg');
+    expect(renderedQa).not.toContain('current.revealBg!==current.managementBg');
+    const creditHost=readFileSync(new URL('../src/styles/canonical-credit-card-host.css',import.meta.url),'utf8');
+    expect(creditHost).not.toContain('#myfinhub-card-stack .prototype-payment-card .card-icon-btn::before');
+    expect(componentCss).toContain('.prototype-payment-card .card-toolbar .card-icon-btn::before{content:none;display:none;}');
+    expect(renderedQa).toContain('cards-remediation-mobile-unboxed-');
+    expect(renderedQa).toContain("icon.pseudoDisplay==='none'");
+    expect(renderedQa).toContain("Math.abs(icon.cssWidth-40)<=.1");
+    expect(renderedQa).toContain('icon.width>=40&&icon.width<=44');
+    expect(renderedQa).toContain('for(const width of [320,375,412])');
     expect(componentCss).toContain('font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase');
     expect(componentCss).not.toContain('font-size:.50rem');
   });

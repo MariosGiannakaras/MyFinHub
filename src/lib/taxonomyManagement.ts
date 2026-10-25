@@ -102,15 +102,23 @@ export function taxonomyRetirementDependencies(data:FinanceData,operation:Retire
       if(!rule.enabled||!rule.action.category)continue;
       if(resolveCategoryIdentity(settings,operation.kind,rule.action.category)?.id===record.id)result.push(dependency('rule',rule.id,`Κανόνας «${rule.name}»`));
     }
-    for(const budget of data.state.budgets??[]){
-      if(budget.scope!=='category'||budget.month<currentMonth||!budget.category)continue;
-      if(resolveCategoryIdentity(settings,operation.kind,budget.category)?.id===record.id)result.push(dependency('budget',budget.id,`Budget ${budget.month}`));
+    // A future child allowance depends on the parent as much as a parent budget.
+    // Stable IDs are authoritative, while old name-only records resolve aliases.
+    if(operation.kind==='expense')for(const budget of data.state.budgets??[]){
+      if(budget.scope==='overall'||budget.month<currentMonth||!budget.category)continue;
+      const categoryId=budget.categoryIdentityId??resolveCategoryIdentity(settings,'expense',budget.category)?.id;
+      if(categoryId===record.id)result.push(dependency('budget',budget.id,`Budget ${budget.month}`));
     }
   }else{
     const parent=record.parentId?settings.categoryIdentities?.[record.parentId]:undefined;
     if(!parent)throw new Error('Η γονική κατηγορία δεν βρέθηκε.');
     const parentTree=categoryTree(settings,operation.kind).find(item=>resolveCategoryIdentity(settings,operation.kind,item.name)?.id===parent.id);
     if(!parentTree||!parentTree.subcategories.some(label=>resolveSubcategoryIdentity(settings,operation.kind,parentTree.name,label)?.id===record.id))throw new Error('Η υποκατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+    for(const item of effectiveRecurringItems(data)){
+      if(!recurringIsLive(item)||!item.subcategory)continue;
+      if(resolveSubcategoryIdentity(settings,operation.kind,item.category,item.subcategory)?.id===record.id)
+        result.push(dependency('recurring',item.id,`Recurring «${item.name}»`));
+    }
     for(const item of data.state.scheduled??[]){
       if(item.status!=='pending'||!item.category||!item.subcategory)continue;
       if(resolveSubcategoryIdentity(settings,operation.kind,item.category,item.subcategory)?.id===record.id)result.push(dependency('scheduled',item.id,`Προγραμματισμένη «${item.note||item.id}»`));
@@ -118,6 +126,12 @@ export function taxonomyRetirementDependencies(data:FinanceData,operation:Retire
     for(const rule of data.state.transactionRules??[]){
       if(!rule.enabled||!rule.action.category||!rule.action.subcategory)continue;
       if(resolveSubcategoryIdentity(settings,operation.kind,rule.action.category,rule.action.subcategory)?.id===record.id)result.push(dependency('rule',rule.id,`Κανόνας «${rule.name}»`));
+    }
+    if(operation.kind==='expense')for(const budget of data.state.budgets??[]){
+      if(budget.scope!=='subcategory'||budget.month<currentMonth)continue;
+      const subcategoryId=budget.subcategoryIdentityId??
+        (budget.category&&budget.subcategory?resolveSubcategoryIdentity(settings,'expense',budget.category,budget.subcategory)?.id:undefined);
+      if(subcategoryId===record.id)result.push(dependency('budget',budget.id,`Budget ${budget.month}`));
     }
   }
 
@@ -185,6 +199,19 @@ function reconcileRecurringCategory(data:FinanceData,fromCategory:string,toCateg
   return {recurringOverrides,recurringCustom};
 }
 
+function reconcileRecurringSubcategory(data:FinanceData,
+  fromCategory:string,toCategory:string,fromSubcategory:string,toSubcategory:string){
+  const matches=(item:RecurringItem)=>same(item.category,fromCategory)&&same(item.subcategory,fromSubcategory);
+  const remap=(item:RecurringItem):RecurringItem=>matches(item)
+    ?{...item,category:toCategory,subcategory:toSubcategory}:item;
+  const recurringOverrides={...(data.state.recurringOverrides??{})};
+  for(const seeded of data.seed.recurring??[]){
+    const current=recurringOverrides[seeded.id]??seeded;
+    if(matches(current))recurringOverrides[seeded.id]=remap(current);
+  }
+  return {recurringOverrides,recurringCustom:(data.state.recurringCustom??[]).map(remap)};
+}
+
 function reconcilePendingScheduled(data:FinanceData,fromCategory:string,toCategory:string,fromSubcategory?:string,toSubcategory?:string){
   return (data.state.scheduled??[]).map(item=>{
     if(item.status!=='pending'||!same(item.category,fromCategory))return item;
@@ -203,7 +230,23 @@ function reconcileRules(data:FinanceData,fromCategory:string,toCategory:string,f
 
 function reconcileBudgets(data:FinanceData,asOf:string,fromCategory:string,toCategory:string){
   const currentMonth=asOf.slice(0,7);
-  return (data.state.budgets??[]).map(budget=>budget.scope==='category'&&budget.month>=currentMonth&&same(budget.category,fromCategory)?{...budget,category:toCategory}:budget);
+  return (data.state.budgets??[]).map(budget=>
+    budget.scope!=='overall'&&budget.month>=currentMonth&&same(budget.category,fromCategory)
+      ?{...budget,category:toCategory}:budget);
+}
+
+function reconcileSubcategoryBudgets(data:FinanceData,asOf:string,
+  previousCategory:string,previousSubcategory:string,nextCategory:string,nextSubcategory:string,
+  subcategoryId:string,nextCategoryId:string){
+  const currentMonth=asOf.slice(0,7);
+  return (data.state.budgets??[]).map(budget=>{
+    if(budget.scope!=='subcategory'||budget.month<currentMonth)return budget;
+    const stableMatch=budget.subcategoryIdentityId===subcategoryId;
+    const legacyMatch=!budget.subcategoryIdentityId&&same(budget.category,previousCategory)&&same(budget.subcategory,previousSubcategory);
+    if(!stableMatch&&!legacyMatch)return budget;
+    return {...budget,category:nextCategory,subcategory:nextSubcategory,
+      ...(budget.categoryIdentityId!==undefined?{categoryIdentityId:nextCategoryId}:{})};
+  });
 }
 
 export function applyTaxonomyOperation(data:FinanceData,operation:TaxonomyOperation,asOf:string):FinanceData{
@@ -238,8 +281,11 @@ export function applyTaxonomyOperation(data:FinanceData,operation:TaxonomyOperat
     if(previous&&current&&previousParent&&currentParent){
       nextState={
         ...nextState,
+        ...reconcileRecurringSubcategory(data,previousParent.label,currentParent.label,previous.label,current.label),
         scheduled:reconcilePendingScheduled(data,previousParent.label,currentParent.label,previous.label,current.label),
         transactionRules:reconcileRules(data,previousParent.label,currentParent.label,previous.label,current.label),
+        budgets:reconcileSubcategoryBudgets(data,asOf,previousParent.label,previous.label,
+          currentParent.label,current.label,current.id,currentParent.id),
       };
     }
   }

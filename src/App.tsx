@@ -6,20 +6,21 @@ import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
-import { NotFoundPage } from './pages/NotFoundPage';
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 import { PeriodControl } from './components/PeriodControl';
-import { PersistenceNotice } from './components/PersistenceNotice';
+
 import type { QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
+import { useDesktopAutoBackup } from './hooks/useDesktopAutoBackup';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
 import { isSavingsAccount } from './lib/accountSemantics';
-import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { reportingMonthForDate } from './lib/localDate';
 import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
@@ -40,6 +41,7 @@ import type {
   ScheduledTransaction,
 } from './types';
 
+const PersistenceNotice = lazy(() => import('./components/PersistenceNotice').then((module) => ({ default: module.PersistenceNotice })));
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
 const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
 const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
@@ -72,6 +74,7 @@ type SpecialQuickContext = DistributiveOmit<Exclude<QuickActionContext, { mode: 
 
 function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogout: () => void }) {
   const finance = useFinance();
+  useDesktopAutoBackup(finance.saveState);
   const today = useLocalDate();
   const initialRoute = routeFromLocation();
   const [page, setPage] = useState<PageId>(initialRoute.page);
@@ -80,6 +83,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [quickOpen, setQuickOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandFocusKey,setCommandFocusKey]=useState(0);
+  const [dashboardAccountId,setDashboardAccountId]=useState<string|null>(null);
+  const [dashboardAccountFocusKey,setDashboardAccountFocusKey]=useState(0);
   const [commandCardId,setCommandCardId]=useState<string|null>(null);
   const [commandCardKey,setCommandCardKey]=useState(0);
   const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
@@ -101,6 +106,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const cleanupAttempted=useRef(new Set<string>());
+  // Dashboard card selection is scoped to the next Transactions navigation.
+  useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
   const cleanupInFlight=useRef(new Map<string,Promise<void>>());
   const [cleanupBusy,setCleanupBusy]=useState(false);
   const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
@@ -190,7 +197,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
 
   if (!data) return <AppSkeleton/>;
-  if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
+  if (notFound) return <Suspense fallback={<PageLoading/>}><NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/></Suspense>;
 
   // One identical domain reducer for optimistic page handlers and receipt-aware entry.
   const withEvent=(current:FinanceData,event:FinanceEvent):FinanceData=>{
@@ -202,20 +209,31 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
   const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
-  const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    await finance.updateDurably(current=>withConfirmedLendingPlan(current,draft,true));
+  };
+  const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
+    const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
+    return finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee));
+  };
+  const withoutEventGroup=(current:FinanceData,id:string):FinanceData=>({...current,state:{...current.state,
+    events:(current.state.events??[]).filter(event=>event.id!==id&&event.feeForEventId!==id)
+  }});
+  const deleteEvent=(id:string)=>finance.update(current=>withoutEventGroup(current,id));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
-    setEditingEventId(id);
+    setEditingEventId(event?.feeForEventId??id);
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
   // Transactions lifecycle waits for the exact revision/history receipt.
   const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
-    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
-    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id)}};
+    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση άλλαξε. Ανανέωσε πριν τη διαγράψεις.');
+    return withoutEventGroup(current,id);
   });
-  const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
-  const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
+  const editLegacy=async(transaction:LegacyTransaction)=>{const {withLegacyOverride}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyOverride(current,transaction))};
+  const deleteLegacy=async(id:string)=>{const {withLegacyTombstone}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyTombstone(current,id))};
   const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
     const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
     if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};
@@ -225,7 +243,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>withRecurring(current,item));
   const upsertRecurringDurably=(item:RecurringItem)=>finance.updateDurably(current=>withRecurring(current,item));
-  const withLoan = (current: FinanceData, loan: Loan) => {
+  const withLoan = (current: FinanceData, nextLoan: Loan) => {
+    const loan=preserveLoanLegacyBaseline(current,nextLoan);
     if (current.seed.loans.some((existing) => existing.id === loan.id)) return { ...current, state: { ...current.state, loanOverrides: { ...current.state.loanOverrides, [loan.id]: loan } } };
     const custom = current.state.customLoans ?? [];
     const exists = custom.some((existing) => existing.id === loan.id);
@@ -283,8 +302,13 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
+  const focusRecurringPayment=(id:string)=>{
+    setCommandRecurringId(id);
+    setCommandRecurringKey(key=>key+1);
+    navigate('recurring');
+  };
   const handleAttention = (item: AttentionItem) => {
-    if (item.action === 'pay_recurring' && item.recurringId) { openSpecial({ mode: 'recurring', recurringId: item.recurringId, amount: item.amount, accountId: item.accountId }); return; }
+    if ((item.action === 'pay_recurring'||item.action === 'open_recurring') && item.recurringId) { focusRecurringPayment(item.recurringId); return; }
     if (item.action === 'pay_loan' && item.loanId) { openSpecial({ mode: 'loan', loanId: item.loanId, amount: item.amount, accountId: item.accountId }); return; }
     if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, statementId:item.statementId, amount: item.amount }); return; }
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
@@ -307,7 +331,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='lending_person_focus'){
       setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);navigate('lending');return;
     }
-    if(action.type==='recurring_focus'){setCommandRecurringId(action.recurringId);setCommandRecurringKey(key=>key+1);navigate('recurring');return}
+    if(action.type==='recurring_focus'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='transaction_focus'){
       setCommandFocusKey(key=>key+1);
       setMonth(action.date.slice(0,7));setMonthIsManual(true);
@@ -336,7 +360,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
-    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='recurring_payment'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);navigate('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId});}
   };
@@ -349,27 +373,27 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()};
 
   const content = page === 'dashboard'
-    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
-    : page === 'transactions' ? <TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={(accountId)=>{setDashboardAccountId(accountId??null);setDashboardAccountFocusKey(key=>key+1);navigate('transactions')}} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
+    : page === 'transactions' ? <TransactionsPage data={data} month={month} dashboardAccountId={dashboardAccountId} dashboardAccountFocusKey={dashboardAccountFocusKey} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEventDurably} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
-    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
+    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(value=>value+1)}navigate('credit')}}/>
     : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
-    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/>
+    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} onNavigateHistory={finance.goToHistoryPoint} canUndo={finance.canUndo} canRedo={finance.canRedo} undoDepth={finance.undoDepth} redoDepth={finance.redoDepth} historyAvailable={finance.historyAvailable} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
+      {(finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0) ? <Suspense fallback={null}><PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/></Suspense> : null}
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

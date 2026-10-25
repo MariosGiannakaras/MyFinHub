@@ -23,31 +23,24 @@ function productionLikeQaLazyRoutes() {
     enforce: 'pre' as const,
     transform(code: string, id: string) {
       if (!id.replace(/\\/g, '/').endsWith('/src/qa.tsx')) return null;
-      let next = code.replace(
-        "import { StrictMode, useEffect, useState } from 'react';",
-        "import { lazy, StrictMode, Suspense, useEffect, useState } from 'react';",
-      );
+      // QA and Production must load the same real pages. The performance
+      // fixture is an audit of committed QA routing, not a separate rewriter:
+      // altering only the measured build could conceal regressions in Chromium
+      // rendered QA and make its first-paint evidence incomparable.
+      if (!code.includes("import { DashboardPage } from './pages/DashboardPage';"))
+        throw new Error('Performance fixture eagerly rendered Dashboard is missing.');
       for (const component of performanceRoutes) {
-        const source = `import { ${component} } from './pages/${component}';`;
-        if (!next.includes(source)) throw new Error(`Performance fixture route import not found: ${component}`);
-        next = next.replace(source, `const ${component}=lazy(()=>import('./pages/${component}').then(module=>({default:module.${component}})));`);
+        if (component === 'DashboardPage') continue;
+        const dynamicImport = `const ${component}=lazy(()=>import('./pages/${component}').then(module=>({default:module.${component}})));`;
+        if (!code.includes(dynamicImport))
+          throw new Error(`QA route is not production-lazy: ${component}`);
+        if (!code.includes(`<${component} `))
+          throw new Error(`QA route is not reachable: ${component}`);
       }
-      const contentBoundary = "lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content";
-      const legacyContentBoundary = 'crash?<Crash/>:content';
-      if (next.includes(contentBoundary)) {
-        next = next.replace(
-          contentBoundary,
-          "lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:<Suspense fallback={<PageSkeleton/>}>{content}</Suspense>",
-        );
-      } else if (next.includes(legacyContentBoundary)) {
-        next = next.replace(
-          legacyContentBoundary,
-          'crash?<Crash/>:<Suspense fallback={<PageSkeleton/>}>{content}</Suspense>',
-        );
-      } else {
-        throw new Error('Performance fixture content boundary not found.');
-      }
-      return { code: next, map: null };
+      if (!code.includes('<Suspense fallback={<PageSkeleton/>}>') ||
+          !code.includes('<PageErrorBoundary resetKey={page}'))
+        throw new Error('QA route loading/error boundary missing.');
+      return null;
     },
   };
 }

@@ -25,6 +25,7 @@ describe('real-stack synthetic finance fixture',()=>{
       statementBoundaryRule:'next-cycle',
     });
     expect(fixture.seed.transactions).toHaveLength(1);
+    expect(fixture.seed.lending).toEqual([{person:'Synthetic QA Receivable',outstanding:10,entries:[]}]);
     expect(JSON.stringify(fixture)).not.toMatch(/piraeus|alpha|eurobank|revolut|national|viva|payzy/i);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEvent } from '../src/lib/domain.js';
+import { createEvent, netWorth } from '../src/lib/domain.js';
 import { lendingHistory, lendingOutstandingFor, lendingRows } from '../src/lib/lending.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -18,6 +18,25 @@ describe('receivables history',()=>{
   expect(lendingRows(data,'2026-08-31')[0]).toMatchObject({person:'Alex',outstanding:35,events:4});
   expect(lendingOutstandingFor(data,'Alex','2026-08-31')).toBe(35);
   expect(lendingHistory(data,'2026-08-31').filter(item=>item.date.startsWith('2026-08'))).toHaveLength(2);
+ });
+ it('reconstructs complete imported receivables at historical dates consistently with net worth',()=>{
+  const data=fixture();
+  expect(lendingOutstandingFor(data,'Alex','2025-12-31')).toBe(0);
+  expect(lendingOutstandingFor(data,'Alex','2026-01-15')).toBe(50);
+  expect(lendingOutstandingFor(data,'Alex','2026-02-15')).toBe(30);
+  expect(lendingRows(data,'2026-01-15')[0]).toMatchObject({person:'Alex',outstanding:50,events:1});
+  expect(netWorth(data,'2026-01-15')).toBe(50);
+  expect(netWorth(data,'2026-02-15')).toBe(30);
+  expect(data.seed.lending[0].outstanding).toBe(30);
+ });
+ it('preserves imported summary when dated legacy entries are incomplete or inconsistent',()=>{
+  const data=fixture();
+  data.seed.lending[0].outstanding=35;
+  expect(lendingOutstandingFor(data,'Alex','2026-01-15')).toBe(35);
+  expect(netWorth(data,'2026-01-15')).toBe(35);
+  data.seed.lending[0].entries[0].date='2026-99-99';
+  expect(lendingOutstandingFor(data,'Alex','2026-01-15')).toBe(35);
+  expect(data.seed.lending[0].entries[0].date).toBe('2026-99-99');
  });
  it('does not infer lending from IRIS or cash reimbursement notes',()=>{const data=fixture();const expense=createEvent({kind:'expense',date:'2026-03-02',amount:25,note:'Πλήρωσα εγώ, θα μου τα στείλει με IRIS',accountId:'cash',person:'Nikos'});const repaymentContext=createEvent({kind:'income',date:'2026-03-03',amount:25,note:'IRIS επιστροφή από Νίκο',accountId:'cash',person:'Nikos'});data.state.events=[expense,repaymentContext];expect(lendingRows(data)).toHaveLength(1);expect(lendingRows(data)[0]?.person).toBe('Alex');expect(lendingRows(data)[0]?.outstanding).toBe(30);expect(lendingHistory(data).some(row=>row.person==='Nikos')).toBe(false)});
  it('skips malformed legacy rows instead of crashing the Lending workspace',()=>{const data=fixture() as unknown as Record<string,any>;data.seed.lending=[{person:null,entries:null,outstanding:'NaN'},{person:42,entries:[],outstanding:10},{person:'  Alex  ',entries:[{date:null,lent:100,repaid:0},{date:'bad-date',lent:50,repaid:0},{date:'2026-04-01',lent:'oops',repaid:0},{date:'2026-04-02',lent:15,repaid:0}],outstanding:15},{person:'Broken entries',entries:{date:'2026-01-01'},outstanding:5}];expect(()=>lendingRows(data as FinanceData)).not.toThrow();expect(()=>lendingHistory(data as FinanceData)).not.toThrow();expect(lendingRows(data as FinanceData).map(row=>row.person)).toEqual(['Alex','Broken entries']);expect(lendingHistory(data as FinanceData)).toEqual([expect.objectContaining({person:'Alex',date:'2026-04-02',action:'lent',amount:15,runningOutstanding:15})]);expect(lendingOutstandingFor(data as FinanceData,'  Alex  ')).toBe(15)});

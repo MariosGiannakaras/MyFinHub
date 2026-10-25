@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
 
@@ -334,6 +335,14 @@ async function main(){
       ...nextState.settings,
       accountNames:{...(nextState.settings?.accountNames||{}),'qa-cash':'Local Real Stack QA'},
     };
+    // A non-cash writeoff must survive the real revisioned RPC, relational
+    // transaction table, API reload, Undo and Redo without touching cash.
+    const writeoff=createEvent({
+      kind:'lending_writeoff',date:'2026-10-04',person:'Synthetic QA Receivable',
+      amount:2.5,note:'Synthetic noncash settlement, not a cash movement',
+    });
+    nextState.events=[...(nextState.events??[]),writeoff];
+    validateCompleteFinanceData({...initial.body.data,state:nextState});
     console.log('[real-stack] stage mutable-save');
     const saved=await primary.request('/api/data',{
       method:'PUT',
@@ -359,6 +368,9 @@ async function main(){
     const persisted=await restored.request('/api/data');
     expect(persisted,200,undefined,'reload-read');
     assert(persisted.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
+    assert(persisted.body?.data?.state?.events?.some((event:any)=>event.id===writeoff.id&&
+      event.kind==='lending_writeoff'&&event.receivableDelta===-2.5&&event.legs.length===0),
+      'Noncash writeoff did not round-trip through revisioned API and relational finance storage.');
     const savedGeneration=String(saved.body?.history?.generation||'');
     assert(/^\d+$/.test(savedGeneration),'Mutable save did not return a history generation.');
     console.log('[real-stack] stage history-undo');
@@ -369,6 +381,8 @@ async function main(){
     });
     expect(undone,200,undefined,'history-undo');
     assert(undone.body?.data?.state?.settings?.accountNames?.['qa-cash']!=='Local Real Stack QA','Undo did not restore the previous finance state.');
+    assert(!(undone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id),
+      'Finance Undo did not reverse the noncash writeoff in the same revision.');
 
     console.log('[real-stack] stage history-redo');
     const redone=await primary.request('/api/history',{
@@ -378,6 +392,8 @@ async function main(){
     });
     expect(redone,200,undefined,'history-redo');
     assert(redone.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Redo did not restore the saved finance state.');
+    assert((redone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id&&event.receivableDelta===-2.5),
+      'Finance Redo did not restore the exact noncash writeoff.');
 
     console.log('[real-stack] stage card-vault-write');
     const vaultSaved=await primary.request('/api/card-secrets',{
@@ -444,6 +460,21 @@ async function main(){
     assert(String(recoveredHistory.body?.financeRevision||'')===String(recovered.body?.revision||''),'Recovered history cursor does not match the finance revision.');
     assert(recoveredHistory.body?.points?.some((point:any)=>point.current===true&&point.label==='Εισαγωγή δεδομένων'),'Recovered history does not expose the import recovery point.');
 
+    // The imported seed and state must never be partially reverted by Undo.
+    assert(recoveredHistory.body?.undoDepth===0&&recoveredHistory.body?.canUndo===false,
+      'Import history still advertises unsafe state-only Undo.');
+    const refusedImportUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(recovered.body.revision),'x-rheomiq-history-generation':String(recoveredHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(refusedImportUndo,409,'HISTORY_IRREVERSIBLE_BOUNDARY','import-history-boundary');
+    const afterRefusedImport=await primary.request('/api/data');
+    expect(afterRefusedImport,200,undefined,'import-history-boundary-reload');
+    assert(afterRefusedImport.body.revision===recovered.body.revision&&
+      afterRefusedImport.body.data.seed.sourceName===recovered.body.data.seed.sourceName,
+      'Rejected import Undo changed the saved revision or imported seed.');
+
     const auditRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=action,revision&order=id.desc&limit=12`,local.serviceRole) as any[];
     const auditActions=new Set(Array.isArray(auditRows)?auditRows.map(row=>String(row?.action||'')):[]);
     assert(auditActions.has('backup')&&auditActions.has('import')&&auditActions.has('undo')&&auditActions.has('redo'),'Recovery audit trail is missing expected actions.');
@@ -453,7 +484,16 @@ async function main(){
     assert(vaultAfterRestore.body?.pan===TEST_PAN&&vaultAfterRestore.body?.expiry===TEST_EXPIRY&&vaultAfterRestore.body?.cvv===TEST_CVV,'Finance backup restore unexpectedly changed the separate card vault.');
 
     const health=await upstreamJson(`${local.apiUrl}/rest/v1/rpc/rheomiq_database_health`,local.serviceRole,{method:'POST',body:'{}'}) as any;
-    assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
+    // Only count-based, non-sensitive integrity fields may appear in this
+    // diagnostic. Never print backup contents, personal notes or card data.
+    const failingHealthChecks=Object.entries(health?.checks??{})
+      .filter(([,value])=>typeof value==='number'&&value!==0)
+      .map(([key,value])=>`${key}:${value}`).join(',')||'none';
+    assert(health?.ok===true&&health?.storageMode==='relational_v1',
+      `Database health is not clean after backup restore (nonzero counts: ${failingHealthChecks}).`);
+    assert(Number(health?.checks?.events_without_legs)===0
+      &&Number(health?.checks?.invalid_writeoff_legs)===0,
+      'Zero-leg noncash writeoff was not recognized by the relational health contract.');
     assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
 
     console.log('[real-stack] stage card-profile-vault-durable-cleanup');
@@ -558,6 +598,152 @@ async function main(){
     const finalReload=await primary.request('/api/data');
     expect(finalReload,200,undefined,'card-cleanup-final-reload');
     assert(!(finalReload.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Card vault cleanup marker was not removed after successful deletion.');
+
+    // After final ciphertext removal, the preceding metadata profile may not
+    // be resurrected. Allow only the safe marker-state Undo/Redo pair.
+    const cardBoundaryHistory=await primary.request('/api/history');
+    expect(cardBoundaryHistory,200,undefined,'final-card-history');
+    assert(cardBoundaryHistory.body?.canUndo===true,'Expected one safe post-deletion marker Undo.');
+    const cardMarkerUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(finalReload.body.revision),'x-rheomiq-history-generation':String(cardBoundaryHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(cardMarkerUndo,200,undefined,'post-delete-marker-undo');
+    const forbiddenCardHistory=await primary.request('/api/history');
+    expect(forbiddenCardHistory,200,undefined,'post-delete-card-history');
+    assert(forbiddenCardHistory.body?.undoDepth===0&&!forbiddenCardHistory.body?.canUndo,
+      'Committed Card Vault deletion still advertises restoration of a dead profile.');
+    const forbiddenCardUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(cardMarkerUndo.body.revision),'x-rheomiq-history-generation':String(forbiddenCardHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(forbiddenCardUndo,409,'HISTORY_IRREVERSIBLE_BOUNDARY','post-delete-card-profile-boundary');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),
+      404,'CARD_SECRET_NOT_FOUND','post-delete-card-secret-still-absent');
+    const markerRedone=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(cardMarkerUndo.body.revision),'x-rheomiq-history-generation':String(forbiddenCardHistory.body.generation)},
+      body:{action:'redo',updatedAt:new Date().toISOString()},
+    });
+    expect(markerRedone,200,undefined,'post-delete-marker-redo');
+    assert(!(markerRedone.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),
+      'Redo failed to restore the completed card-secret cleanup marker state.');
+
+
+    // Ordinary metadata-only card creation has no vault secret; its Do/Undo/Redo
+    // must remain reversible even though final cryptographic deletion is not.
+    console.log('[real-stack] stage metadata-only-card-history-roundtrip');
+    const metadataId='real-stack-metadata-only-card';
+    const metadataBefore=await primary.request('/api/data');
+    const metadataHistory=await primary.request('/api/history');
+    expect(metadataBefore,200,undefined,'metadata-before');
+    expect(metadataHistory,200,undefined,'metadata-history-before');
+    const metadataAt=new Date().toISOString();
+    const metadataState=structuredClone(metadataBefore.body.data.state);
+    metadataState.cards=[...(metadataState.cards||[]),{
+      id:metadataId,bankId:'piraeus',nickname:'Synthetic Metadata Only',
+      kind:'debit',network:'visa',active:true,createdAt:metadataAt,updatedAt:metadataAt,
+    }];
+    const metadataDo=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(metadataBefore.body.revision),
+        'x-rheomiq-history-generation':String(metadataHistory.body.generation)},
+      body:{state:metadataState,updatedAt:metadataAt,historyLabel:'Metadata-only card creation'},
+    });
+    expect(metadataDo,200,undefined,'metadata-do');
+    const historyAction=async(action:'undo'|'redo',receipt:any)=>primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(receipt.body.revision),
+        'x-rheomiq-history-generation':String(receipt.body.history.generation)},
+      body:{action,updatedAt:new Date().toISOString()},
+    });
+    const metadataUndo=await historyAction('undo',metadataDo);
+    expect(metadataUndo,200,undefined,'metadata-undo');
+    assert(!(metadataUndo.body.data.state.cards||[]).some((c:any)=>c.id===metadataId),
+      'Metadata-only Undo failed to remove the card.');
+    const metadataRedo=await historyAction('redo',metadataUndo);
+    expect(metadataRedo,200,undefined,'metadata-redo');
+    assert((metadataRedo.body.data.state.cards||[]).some((c:any)=>c.id===metadataId),
+      'Metadata-only Redo was incorrectly treated as a permanent vault deletion.');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:metadataId}}),
+      404,'CARD_SECRET_NOT_FOUND','metadata-no-vault-secret');
+    const metadataFinish=await historyAction('undo',metadataRedo);
+    expect(metadataFinish,200,undefined,'metadata-roundtrip-final-undo');
+    assert(!(metadataFinish.body.data.state.cards||[]).some((c:any)=>c.id===metadataId),
+      'Metadata-only QA card remains after Undo roundtrip.');
+
+
+    // Counterparty IDs and selected posted-event associations must survive
+    // the actual owner+AAL2, revisioned relational Supabase persistence layer.
+    // Deliberately do not add an independent table or rewrite legacy notes.
+    console.log('[real-stack] stage canonical-counterparty-real-db-roundtrip');
+    const cpBefore=await primary.request('/api/data');
+    const cpHistory=await primary.request('/api/history');
+    expect(cpBefore,200,undefined,'counterparty-before');
+    expect(cpHistory,200,undefined,'counterparty-history');
+    const cpNow=new Date().toISOString();
+    const cpId='cp-real-stack-merchant-1';
+    const cpPurchase=createEvent({
+      kind:'expense',date:'2026-10-05',accountId:'qa-cash',
+      amount:12.34,note:'Synthetic exact merchant reference',
+      category:'Synthetic expense',
+    });
+    const cpState=structuredClone(cpBefore.body.data.state);
+    cpState.counterparties=[...(cpState.counterparties||[]),{
+      id:cpId,kind:'merchant',displayName:'Synthetic reviewed merchant',
+      aliases:['SYNTHETIC SHOP'],createdAt:cpNow,updatedAt:cpNow,
+    }];
+    cpState.events=[...(cpState.events||[]),{...cpPurchase,counterpartyId:cpId}];
+    validateCompleteFinanceData({...cpBefore.body.data,state:cpState});
+    const cpDo=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:cpNow,historyLabel:'Reviewed merchant identity'},
+    });
+    expect(cpDo,200,undefined,'counterparty-real-save');
+    const cpRead=await restored.request('/api/data');
+    expect(cpRead,200,undefined,'counterparty-real-reload');
+    const cpRows=cpRead.body?.data?.state?.counterparties||[];
+    const cpEvents=cpRead.body?.data?.state?.events||[];
+    assert(cpRows.some((row:any)=>row.id===cpId&&row.kind==='merchant'&&
+      row.displayName==='Synthetic reviewed merchant'&&row.aliases?.[0]==='SYNTHETIC SHOP'),
+      'Reviewed counterparty identity did not survive revisioned DB reload.');
+    assert(cpEvents.some((event:any)=>event.id===cpPurchase.id&&
+      event.counterpartyId===cpId&&event.note===cpPurchase.note&&
+      event.kind==='expense'&&event.amount===12.34),
+      'Owner-selected merchant relation did not round-trip through the real relational event payload.');
+    const cpStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(cpBefore.body.revision),
+        'x-rheomiq-history-generation':String(cpHistory.body.generation)},
+      body:{state:cpState,updatedAt:new Date().toISOString(),
+        historyLabel:'Stale merchant overwrite must lose'},
+    });
+    assert(cpStale.status===409&&
+      ['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(cpStale.body?.code||'')),
+      'Stale merchant identity writer was not rejected by revision/history protection.');
+    const cpUndo=await historyAction('undo',cpDo);
+    expect(cpUndo,200,undefined,'counterparty-real-undo');
+    assert(!(cpUndo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpUndo.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Undo did not atomically remove the owner identity and posted expense reference.');
+    const cpRedo=await historyAction('redo',cpUndo);
+    expect(cpRedo,200,undefined,'counterparty-real-redo');
+    assert((cpRedo.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      (cpRedo.body?.data?.state?.events||[]).some((event:any)=>
+        event.id===cpPurchase.id&&event.counterpartyId===cpId),
+      'Redo did not atomically restore the reviewed identity and posted expense reference.');
+    const cpFinish=await historyAction('undo',cpRedo);
+    expect(cpFinish,200,undefined,'counterparty-real-final-undo');
+    const cpClean=await restored.request('/api/data');
+    expect(cpClean,200,undefined,'counterparty-real-final-reload');
+    assert(!(cpClean.body?.data?.state?.counterparties||[]).some((row:any)=>row.id===cpId)&&
+      !(cpClean.body?.data?.state?.events||[]).some((event:any)=>event.id===cpPurchase.id),
+      'Final merchant Undo did not leave the actual database history clean.');
+    console.log('[real-stack] PASS selected merchant ID, relational payload, stale conflict and Undo/Redo');
 
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
@@ -673,6 +859,153 @@ async function main(){
     assert(!(serviceAssetsAfterDelete.body?.assets||[]).some((asset:any)=>[serviceAssetKey,replacementKey].includes(asset.assetKey)),'Released recurring logo metadata survived purge.');
     const serviceObjectsAfterDelete=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterDelete.length===initialServiceObjects.length,'Recurring service asset Storage object survived reference-aware purge.');
+
+
+    // Owner-controlled variable estimates are the same revisioned Recurring
+    // model; they are never generated as booked finance expense events.
+    console.log('[real-stack] stage variable-recurring-real-db-roundtrip');
+    const varBefore=await primary.request('/api/data');
+    expect(varBefore,200,undefined,'variable-before');
+    const varHistory=await primary.request('/api/history');
+    expect(varHistory,200,undefined,'variable-history-before');
+    const varState=structuredClone(varBefore.body.data.state);
+    const existingEventCount=(varState.events||[]).length;
+    varState.recurringCustom=varState.recurringCustom.map((row:any)=>row.id===serviceId?
+      {...row,amount:80,amountMode:'variable',estimateMin:60,estimateMax:100}:row);
+    assert(varState.recurringCustom.some((row:any)=>row.id===serviceId&&row.amountMode==='variable'),
+      'Synthetic recurring row missing before variable range save.');
+    const varSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(varBefore.body.revision),
+        'x-rheomiq-history-generation':String(varHistory.body.generation)},
+      body:{state:varState,updatedAt:new Date().toISOString(),historyLabel:'Owner confirmed variable recurring estimate'},
+    });
+    expect(varSave,200,undefined,'variable-save');
+    const varReload=await restored.request('/api/data');
+    expect(varReload,200,undefined,'variable-second-session-reload');
+    assert(varReload.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===80&&row.amountMode==='variable'&&
+      row.estimateMin===60&&row.estimateMax===100),
+      'Variable estimated recurring range did not persist through real relational storage.');
+    assert((varReload.body?.data?.state?.events||[]).length===existingEventCount,
+      'Variable recurring estimate posted a phantom ledger event.');
+    const varStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(varBefore.body.revision),
+        'x-rheomiq-history-generation':String(varHistory.body.generation)},
+      body:{state:varState,updatedAt:new Date().toISOString(),historyLabel:'Stale estimate writer'},
+    });
+    assert(varStale.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(varStale.body?.code||'')),
+      'Stale variable recurring writer bypassed finance revision guard.');
+    const varUndo=await historyAction('undo',varSave);
+    expect(varUndo,200,undefined,'variable-undo');
+    assert(varUndo.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===12&&row.amountMode===undefined),
+      'Undo did not restore the prior fixed recurring amount.');
+    const varRedo=await historyAction('redo',varUndo);
+    expect(varRedo,200,undefined,'variable-redo');
+    assert(varRedo.body?.data?.state?.recurringCustom?.some((row:any)=>
+      row.id===serviceId&&row.amount===80&&row.amountMode==='variable'&&
+      row.estimateMin===60&&row.estimateMax===100),
+      'Redo did not restore the saved variable recurring estimate.');
+    const varRestored=await historyAction('undo',varRedo);
+    expect(varRestored,200,undefined,'variable-final-undo');
+    assert((varRestored.body?.data?.state?.events||[]).length===existingEventCount,
+      'Variable estimate undo/redo changed the posted event count.');
+
+    // Genuine owner+AAL2 revisioned JSON-state budget verification.
+    // Creates only isolated synthetic budgets. The final Undo removes both
+    // budget records, while preserving pre-existing finance events/history.
+    console.log('[real-stack] stage enhanced-budget-real-db-roundtrip');
+    const budgetBefore=await primary.request('/api/data');
+    const budgetBeforeHistory=await primary.request('/api/history');
+    expect(budgetBefore,200,undefined,'enhanced-budget-before');
+    expect(budgetBeforeHistory,200,undefined,'enhanced-budget-history-before');
+    const budgetStamp=new Date().toISOString();
+    const budgetCategory=budgetBefore.body.data.state.settings.expenseCategories[0];
+    assert(typeof budgetCategory==='string'&&budgetCategory.trim().length>0,
+      'Missing owner-defined synthetic budget category.');
+    const knownSubcategory=(budgetBefore.body.data.state.settings.expenseCategoryTree||[])
+      .find((row:any)=>row.name===budgetCategory&&row.subcategories?.length)?.subcategories[0]||
+      'Synthetic QA subcategory';
+    const budgetIdPrefix='qa-budget-real-stack-';
+    const budgetState=structuredClone(budgetBefore.body.data.state);
+    const budgetEventCount=(budgetState.events||[]).length;
+    budgetState.budgets=[...(budgetState.budgets||[]),
+      {id:budgetIdPrefix+'prior',month:'2027-01',scope:'subcategory',
+        category:budgetCategory,subcategory:knownSubcategory,amount:50,carryover:false,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp},
+      {id:budgetIdPrefix+'current',month:'2027-02',scope:'subcategory',
+        category:budgetCategory,subcategory:knownSubcategory,amount:80,carryover:true,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp},
+      {id:budgetIdPrefix+'other-subcategory',month:'2027-02',scope:'subcategory',
+        category:budgetCategory,subcategory:'QA distinct subcategory',amount:60,carryover:false,
+        alertThreshold:.8,createdAt:budgetStamp,updatedAt:budgetStamp}
+    ];
+    validateCompleteFinanceData({...budgetBefore.body.data,state:budgetState});
+    const budgetSaved=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetBefore.body.revision),
+        'x-rheomiq-history-generation':String(budgetBeforeHistory.body.generation)},
+      body:{state:budgetState,updatedAt:budgetStamp,
+        historyLabel:'Synthetic owner reviewed budget with carryover'},
+    });
+    expect(budgetSaved,200,undefined,'enhanced-budget-real-save');
+    const budgetReload=await restored.request('/api/data');
+    expect(budgetReload,200,undefined,'enhanced-budget-real-reload');
+    const budgetRows=budgetReload.body.data.state.budgets||[];
+    const budgetActual=budgetRows.find((item:any)=>item.id===budgetIdPrefix+'current');
+    assert(budgetActual?.scope==='subcategory'&&budgetActual.category===budgetCategory&&
+      budgetActual.subcategory===knownSubcategory&&budgetActual.amount===80&&
+      budgetActual.carryover===true,
+      'Owner-reviewed subcategory limit and carryover did not survive real DB reload.');
+    assert(budgetRows.some((item:any)=>item.id===budgetIdPrefix+'other-subcategory'&&
+      item.scope==='subcategory'&&item.category===budgetCategory&&
+      item.subcategory==='QA distinct subcategory'),
+      'Same-month same-parent distinct subcategory budget was not persisted.');
+    assert((budgetReload.body.data.state.events||[]).length===budgetEventCount,
+      'Budget-only changes unexpectedly created or removed posted money.');
+    const budgetForged=structuredClone(budgetReload.body.data.state);
+    const forgedRow=budgetForged.budgets.find((item:any)=>item.id===budgetIdPrefix+'current');
+    forgedRow.subcategoryIdentityId='qa-nonexistent-taxonomy-identity';
+    const budgetInvalid=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetReload.body.revision),
+        'x-rheomiq-history-generation':String(budgetSaved.body.history.generation)},
+      body:{state:budgetForged,updatedAt:new Date().toISOString(),
+        historyLabel:'Forged budget identity must fail'},
+    });
+    expect(budgetInvalid,400,'INVALID_DATA','enhanced-budget-invalid-identity');
+    const budgetStale=await restored.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(budgetBefore.body.revision),
+        'x-rheomiq-history-generation':String(budgetBeforeHistory.body.generation)},
+      body:{state:budgetState,updatedAt:new Date().toISOString(),
+        historyLabel:'Stale budget overwrite must fail'},
+    });
+    assert(budgetStale.status===409&&
+      ['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(budgetStale.body?.code||'')),
+      'Stale budget writer was not rejected by revision/history protection.');
+    const budgetUndo=await historyAction('undo',budgetSaved);
+    expect(budgetUndo,200,undefined,'enhanced-budget-real-undo');
+    assert(!(budgetUndo.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'||item.id===budgetIdPrefix+'other-subcategory'),
+      'Budget Undo failed to remove both synthetic periods.');
+    const budgetRedo=await historyAction('redo',budgetUndo);
+    expect(budgetRedo,200,undefined,'enhanced-budget-real-redo');
+    assert((budgetRedo.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'current'&&item.carryover===true),
+      'Budget Redo failed to restore the subcategory carryover limit.');
+    const budgetFinish=await historyAction('undo',budgetRedo);
+    expect(budgetFinish,200,undefined,'enhanced-budget-real-final-undo');
+    const budgetClean=await restored.request('/api/data');
+    expect(budgetClean,200,undefined,'enhanced-budget-real-final-reload');
+    assert(!(budgetClean.body.data.state.budgets||[]).some((item:any)=>
+      item.id===budgetIdPrefix+'prior'||item.id===budgetIdPrefix+'current'||item.id===budgetIdPrefix+'other-subcategory'),
+      'Synthetic budget records persisted after final Undo.');
+    assert((budgetClean.body.data.state.events||[]).length===budgetEventCount,
+      'Budget Do/Undo/Redo modified the canonical event ledger.');
+    console.log('[real-stack] PASS subcategory budget persistence, forged taxonomy rejection, stale revision and Undo/Redo');
 
     console.log('[real-stack] stage provider-storage-registration-failure-cleanup');
     const missingProviderId='real-stack-missing-provider';

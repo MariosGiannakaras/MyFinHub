@@ -11,14 +11,16 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(shell).toContain("from './IconButton'");
     expect(shell).toContain('<Button type="button" variant="primary" data-global-quick-entry="desktop"');
     expect(shell).toContain('onClick={onQuickAdd}');
-    expect(shell).toContain('<IconButton type="button" aria-label="Κλείσιμο ιστορικού"');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('<IconButton type="button" aria-label="Κλείσιμο ιστορικού"');
     expect(shell).toContain('<IconButton type="button" aria-label="Αναζήτηση και εντολές"');
     expect(shell).toContain('<IconButton type="button" aria-label="Ανανέωση δεδομένων"');
     expect(shell).toContain('<IconButton type="button" aria-label="Αποσύνδεση"');
     expect(shell).toContain('<IconButton type="button" aria-label="Κλείσιμο μενού"');
-    expect(shell).toContain('<Button type="button" variant="secondary" disabled={!canUndo} onClick={onUndo}>Αναίρεση</Button>');
-    expect(shell).toContain('<Button type="button" variant="secondary" disabled={!canRedo} onClick={onRedo}>Επαναφορά</Button>');
-    expect(shell).toContain('onClick={()=>setHistoryOpen(false)}');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('<Button type="button" variant="secondary" disabled={!canUndo||Boolean(selected)||navigating} onClick={onUndo}>Αναίρεση</Button>');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('<Button type="button" variant="secondary" disabled={!canRedo||Boolean(selected)||navigating} onClick={onRedo}>Επαναφορά</Button>');
+    expect(shell).toContain('onClose={()=>setHistoryOpen(false)}');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('onClick={close}');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('const close=()=>{if(!navigating)onClose()}');
     expect(shell).not.toContain('primary-action');
     expect(shell).not.toContain('<button type="button" className="icon-button" aria-label="Κλείσιμο ιστορικού"');
     expect(shell).not.toContain('<button type="button" aria-label="Αναζήτηση και εντολές"');
@@ -31,17 +33,18 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(login).toContain('if(busy||!ready)return');
     expect(login).not.toContain('primary-action');
     expect(login).toContain("from './IconButton'");
-    expect(login).toContain('<IconButton type="button" className="login-password-toggle"');
+    expect(login).toContain('<IconButton type="button" variant="quiet" className="login-password-toggle"');
     expect(login).not.toContain('<button type="button" className="login-password-toggle"');
   });
 
-  it('uses shared primary Button for MFA enrollment and verification while preserving auth guards',()=>{
+  it('uses shared primary Button for deliberate MFA enrollment while auto-verifying TOTP without weakening auth guards',()=>{
     expect(mfa).toContain("from './Button'");
-    expect(mfa.match(/<Button variant="primary"/g)).toHaveLength(2);
+    expect(mfa.match(/<Button variant="primary"/g)).toHaveLength(1);
     expect(mfa).toContain('<Button variant="primary" className="login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>');
-    expect(mfa).toContain('<Button variant="primary" className="login-submit" type="submit" disabled={busy || code.length !== 6}');
-    expect(mfa).toContain('if (busy || !/^\\d{6}$/.test(code)) return');
-    expect(mfa).toContain('await onVerify(code, enrollment?.factorId)');
+    expect(mfa).toContain("if (next.length !== 6) return");
+    expect(mfa).toContain('verificationInFlight.current = true');
+    expect(mfa).toContain('await onVerify(next, enrollment?.factorId)');
+    expect(mfa).not.toContain('type="submit"');
     expect(mfa).toContain('<Button variant="ghost" className="ghost-button login-logout" type="button" disabled={busy}');
     expect(mfa).not.toContain('<button className="ghost-button login-logout"');
     expect(mfa).not.toContain('primary-action');
