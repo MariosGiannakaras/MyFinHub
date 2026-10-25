@@ -302,6 +302,13 @@
   flex:1;
   font-variant-numeric:tabular-nums;
 }
+#myfinhub-card-stack .payment-card[data-revealed="true"] .card-number{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-size:clamp(.9rem,1.14vw,1.08rem);
+  letter-spacing:.035em;
+  line-height:1.3;
+}
 
 #myfinhub-card-stack .card-fields{
   display:grid;

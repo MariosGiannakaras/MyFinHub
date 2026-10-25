@@ -84,7 +84,7 @@ function cardInlineStyle(card:RuntimeCard){
 function brandMarkup(card:RuntimeCard,providers:FinancialProvider[]){
   const label=card.bankLabel||'Card';
   const provider=providers.find(item=>item.id===card.bankId);
-  const remoteUrl=providerBrandUrl(provider,'card-mark',cardBrandSurfaceTone(card.source));
+  const remoteUrl=providerBrandUrl(provider,'wordmark',cardBrandSurfaceTone(card.source));
   if(remoteUrl)return `<img class="brand-logo-img provider-brand-img" src="${esc(remoteUrl)}" alt="" data-bank-brand="${esc(card.bankId)}" data-bank-logo-source="provider-storage" />`;
   const key=bankBrandKey(card.bankId,label);
   const asset=bankBrandAsset(key);

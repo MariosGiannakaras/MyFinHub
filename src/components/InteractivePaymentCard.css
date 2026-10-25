@@ -19,12 +19,13 @@
   display:flex;align-items:center;gap:8px;min-width:0;
 }
 .prototype-payment-card .card-brand .bank-brand-mark{
-  width:35px;height:35px;min-width:35px;flex:0 0 35px;
-  border-color:rgba(255,255,255,.13);
-  background:rgba(255,255,255,.12);
-  box-shadow:none;
+  width:auto;height:30px;max-width:145px;min-width:0;flex:0 1 auto;
+  border:0;background:transparent;box-shadow:none;border-radius:0;
 }
-.prototype-payment-card .card-brand .bank-logo-image{max-width:30px;max-height:26px}
+.prototype-payment-card .card-brand .bank-logo-image{
+  display:block;width:auto;height:auto;max-width:145px;max-height:30px;
+  object-fit:contain;object-position:left center;
+}
 .prototype-payment-card .card-nickname{
   max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--card-muted);font-size:var(--ux-dense-data-size);font-weight:760;
@@ -113,7 +114,8 @@
 }
 .prototype-payment-card .mastercard-symbol i+i{margin-left:-5px;opacity:.72}
 .prototype-payment-card.is-large .card-inner{padding:27px 29px 25px}
-.prototype-payment-card.is-large .card-brand .bank-brand-mark{width:45px;height:45px;min-width:45px;flex-basis:45px}
+.prototype-payment-card.is-large .card-brand .bank-brand-mark{width:auto;height:36px;max-width:175px;min-width:0;flex:0 1 auto}
+.prototype-payment-card.is-large .card-brand .bank-logo-image{max-width:175px;max-height:36px}
 .prototype-payment-card.is-large .card-nickname{max-width:260px;font-size:.72rem}
 .prototype-payment-card.is-large .card-icon-btn{width:37px;height:37px;min-width:37px}
 .prototype-payment-card.is-large .card-icon-btn svg{width:18px;height:18px}
@@ -124,8 +126,8 @@
   .prototype-payment-card .card-inner{padding:16px 16px 15px}
   .prototype-payment-card .card-header{gap:7px}
   .prototype-payment-card .card-brand{gap:6px}
-  .prototype-payment-card .card-brand .bank-brand-mark{width:30px;height:30px;min-width:30px;flex-basis:30px}
-  .prototype-payment-card .card-brand .bank-logo-image{max-width:26px;max-height:23px}
+  .prototype-payment-card .card-brand .bank-brand-mark{width:auto;height:26px;max-width:112px;min-width:0;flex:0 1 auto}
+  .prototype-payment-card .card-brand .bank-logo-image{max-width:112px;max-height:26px}
   .prototype-payment-card .card-nickname{max-width:112px;font-size:var(--ux-dense-label-size)}
   .prototype-payment-card .card-toolbar{display:grid;grid-template-columns:repeat(2,40px);gap:4px}
   .prototype-payment-card .card-icon-btn{width:40px;height:40px;min-width:40px;border-radius:10px}
@@ -180,8 +182,8 @@
 @media(max-width:680px){.prototype-payment-card:has(.app-card-details-inline){min-height:345px}}
 
 /* Revealed PAN may be up to 32 digits: show all, without changing masked card geometry. */
-.prototype-payment-card:has(.card-number.revealed){aspect-ratio:auto;min-height:200px}
-.prototype-payment-card:has(.card-number.revealed) .card-inner{position:relative;inset:auto;min-height:inherit;height:auto;justify-content:space-between}
+.prototype-payment-card:has(.card-number.revealed){aspect-ratio:1.586/1;min-height:207px}
+.prototype-payment-card:has(.card-number.revealed) .card-inner{position:absolute;inset:0;min-height:0;height:100%;justify-content:space-between}
 .prototype-payment-card .card-number.revealed{
   white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
   font-size:clamp(.88rem,1.14vw,1rem);letter-spacing:.035em;line-height:1.28;
