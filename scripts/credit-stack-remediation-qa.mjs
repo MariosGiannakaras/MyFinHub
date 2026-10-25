@@ -90,18 +90,26 @@ try{
   const cycleOrigin=down.topId;
   const seenIds=new Set([cycleOrigin]);
   for(let cycle=0;cycle<12;cycle++){
+    const previous=await state();
     const startOfCycle=await pointer(-92,65);
+    const dragging=await c.call("function(){const stage=document.querySelector('#myfinhub-card-stack .stack-stage');return Boolean(stage?.classList.contains('dragging'))}");
+    if(!dragging)await shot('credit-stack-cycle-'+(cycle+1)+'-no-pointer-capture');
+    assert(dragging,`real pointerdown must engage the active physical card at step ${cycle+1}/12: ${JSON.stringify(previous)}`);
     await release(startOfCycle,-92);
-    await sleep(550); // restack completes at 470ms; never sample the temporary ghost
+    await sleep(600); // restack completes at 470ms; allow selected-card reconciliation
     const actual=await state();
+    if(actual.topId===previous.topId)await shot('credit-stack-cycle-'+(cycle+1)+'-no-restack');
+    assert(actual.topId!==previous.topId,`each physical gesture rotates to a different card at step ${cycle+1}/12: ${JSON.stringify({previous,actual})}`);
     seenIds.add(actual.topId);
     assert(actual.count===6&&actual.dots===6&&actual.activeVisible&&actual.overflow<=1&&
       actual.editProfile===1&&actual.editDetails===1&&!actual.mode.includes('dragging'),
       `all physical cards and actions survive repeated restack ${cycle+1}/12: ${JSON.stringify(actual)}`);
     if((cycle+1)%6===0){
+      if(actual.topId!==cycleOrigin)await shot('credit-stack-cycle-'+(cycle+1)+'-unexpected-order');
       assert(actual.topId===cycleOrigin,
-        `six consecutive commits return to the original physical card at ${cycle+1}: ${actual.topId}`);
+        `six consecutive commits return to the original physical card at ${cycle+1}: ${JSON.stringify({origin:cycleOrigin,actual})}`);
     }
+    console.log(`Credit stack physical drag ${cycle+1}/12: ${previous.topId} → ${actual.topId}`);
   }
   assert(seenIds.size===6,'two full physical cycles visit every card and preserve all six unique fronts');
   await shot('credit-stack-two-full-cycles');

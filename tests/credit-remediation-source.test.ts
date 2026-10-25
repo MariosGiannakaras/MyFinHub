@@ -51,9 +51,18 @@ describe('Credit post-v1.4 remediation contracts',()=>{
   it('regresses the owner-reported deck loss across two full physical drag cycles',()=>{
     const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('for(let cycle=0;cycle<12;cycle++)');
+    expect(qa).toContain('assert(actual.topId!==previous.topId');
+    expect(qa).toContain('credit-stack-cycle-');
     expect(qa).toContain('actual.count===6&&actual.dots===6&&actual.activeVisible');
     expect(qa).toContain('seenIds.size===6');
     expect(qa).toContain("shot('credit-stack-two-full-cycles')");
+  });
+
+  it('delegates drag from the stable stack stage rather than per-render top nodes',()=>{
+    const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
+    expect(stack).toContain("stage.addEventListener('pointerdown',startDrag)");
+    expect(stack).toContain("stage.removeEventListener('pointerdown',startDrag)");
+    expect(stack).not.toContain("top.addEventListener('pointerdown',startDrag)");
   });
 
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{
