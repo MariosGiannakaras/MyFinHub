@@ -1,4 +1,12 @@
-# MyFinHub — consolidated 1.6.0 release preparation (not deployed)
+# MyFinHub — consolidated v1.6.0 release and closeout (Web + Windows deployed)
+
+## Production Web closeout — 2026-10-25 (SUPERSEDES PRE-RELEASE GATES BELOW)
+
+- The owner-authorized v1.6.0 Web release is **LIVE** at [mgfinhub.vercel.app](https://mgfinhub.vercel.app), merge [PR #605](https://github.com/MariosGiannakaras/MyFinHub/pull/605) -> protected `main@e4ef4123c51826b9f58bc3c17e2ae299dc13e2ab`. Vercel production deployment READY on exact SHA; [Production Smoke #40182089518](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40182089518) and final [main CI #40182012538](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40182012538) **all required SUCCESS**. Earlier Draft/checkpoint descriptions below are historical.
+- All six reviewed SQL migration files were applied in one version-preserving atomic transaction, ledger 58 and no finance revision/history/Storage loss. PIN schema exists, **no global PIN configured**. Android bearer lock-ticket implementation is handed off to [Android #345](https://github.com/MariosGiannakaras/MyFinHub-Android-App/issues/345), unimplemented in this repository.
+- The owner explicitly accepted release with no independently verified full PostgreSQL/Storage recovery backup. Do not label this as backup PASS. Production rollback is a separate deliberate action; never reset or rewrite finance state.
+- The **official Windows Desktop v1.6.0 GitHub Release is now PUBLISHED**: [myfinhub-v1.6.0](https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.6.0), tag directly on released `main@e4ef4123c51826b9f58bc3c17e2ae299dc13e2ab`, [desktop publish #40201433817](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40201433817) both Windows validation and publish jobs SUCCESS. Official Setup executable size 156,806,138 bytes, SHA-256 `02036ab10dc0be86b9f0d02aaf90098b648cf9c1e1f2aef019802e6997881ab9`, alongside published checksum asset. It is **unsigned** by the personal-use publisher, so Windows SmartScreen may warn. Distinguish the official rebuild from the earlier temporary main CI Windows artifact; v1.5.0 release stays untouched.
+- Source counts: PIN **Implementations 2/2 · Sub-implementations 9/9**, Windows backup **4/4 · 8/8**, Undo/Redo QA **1/1 · 2/2**. Postrelease metadata sync tracked [#626](https://github.com/MariosGiannakaras/MyFinHub/issues/626), separate owner taxonomy activation [#617](https://github.com/MariosGiannakaras/MyFinHub/issues/617).
 
 ## Latest integrated source snapshot — 2026-10-25
 
