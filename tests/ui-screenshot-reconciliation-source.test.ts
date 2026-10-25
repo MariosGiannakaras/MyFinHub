@@ -37,6 +37,19 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(css).toContain('.taxonomy-row-actions button{width:40px;height:40px;');
     expect(page).toContain("type:'reorder-subcategory'");
   });
+  it('keeps real hover tilt unobstructed and aligns the Dashboard privacy action',()=>{
+    const motion=read('src/styles/interaction-motion-states.css');
+    const dashboard=read('src/styles/dashboard-desktop-alignment.css');
+    expect(motion).toContain('.payment-card:hover{box-shadow:');
+    expect(motion).not.toContain('.payment-card:hover{transform:');
+    expect(dashboard).toContain('.dashboard-approved-heading .privacy-toggle{min-width:136px;transform:none}');
+  });
+  it('keeps wider Settings tab-panel geometry and compact category rows',()=>{
+    const settings=read('src/pages/SettingsPage.css');
+    expect(settings).toContain('.settings-tab-panel{min-width:0;width:min(100%,1800px)');
+    expect(settings).toContain('.settings-categories-only .category-taxonomy-card{gap:7px;padding:9px;');
+    expect(settings).toContain('@media(min-width:1850px)');
+  });
   it('gives transaction detail-row controls real expanded state, keeping finance edit/delete actions',()=>{
     const page=read('src/pages/TransactionsPage.tsx');
     const css=read('src/styles/transactions-approved.css');

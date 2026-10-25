@@ -4,7 +4,7 @@
 @media(min-width:1410px){
   .dashboard-approved{padding-top:0}
   .dashboard-approved-heading{min-height:73px}
-  .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:translateY(7px)}
+  .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:none}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
   .dashboard-approved .approved-account-card{height:auto;min-height:180px!important}
   .dashboard-approved .approved-account-card:before,.dashboard-approved .approved-account-card:after{display:none!important}
