@@ -4,23 +4,50 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
-### Candidate v1.5.0 — not yet published
+## [1.6.0] — 2026-10-25 (Web production; Windows installer publication pending)
 
 #### Added
+- Shared four-digit owner PIN privacy gate for Web and Windows, backed by owner+AAL2 session-bound unlock tickets, rate-limited server verifier, device revocation and inactivity lock. Native Android support remains a separate deployment compatibility prerequisite before activation.\n- Windows-installed first-run local backup catalog, verified SHA-256 finance snapshots from live owner+AAL2/PIN-authorized server reads, scheduled daily checks while the Desktop is open, retention/history, chosen local folder and explicit guarded restore confirmation; not a full PostgreSQL/Storage disaster-recovery dump.\n- Approved advanced finance work (#588): secure owner-reviewed reconciliation; itemized receipt OCR/matching; multi-source purchases and linked fees; merchant/beneficiary identities; 30/60/90-day cash-flow scenarios; variable recurring commitments; subcategory budgets with carryover and known-due projections; credit repayment estimates, editable actual loan payments, lending write-offs and savings-goal projections.
+- Owner-approved canonical 20 expense / 6 income taxonomy with aliases, recurring/purpose compatibility and non-destructive future budgeting. **Source only until an authenticated owner+AAL2 live finance-state save.**
+- Cross-session finance Undo/Redo/history guards for irreversible import and committed card-vault secret deletion; historical and RLS boundaries preserved.
+
+#### Changed
+- Dashboard three-account card responsive composition, account-filtered Transactions navigation, accessible chart metadata, receipt/loan/card interactions and source-aligned lazy route rendering.
+- Real database save-progress feedback and login six-digit automatic MFA verification, with audit and history consistency.
+- Preserved production CodeQL, Playwright WebKit, mobile Lighthouse and Windows packaging performance/security thresholds; corrected CI runner contention and performance fixture parity without weakening gates.
+
+#### Completed user-journey reconciliation (#616 / #618)
+- Recurring bill payment now originates only from its own Recurring page; Attention and Command Palette focus the exact bill, and editing a linked payment retains its recurring identity across reload without conflating independent expenses.
+- Reports and due-item shortcuts navigate to the originating transaction, credit card or obligation; clarified shared-pool savings goals, device-local receipts, data-backup exclusions and history-preserving account deletion blockers.
+- Updated root HTTP parser dependency to patched body-parser 2.4.0 and Windows packaging to patched Electron 43.8.3 plus undici 7.30.1/6.29.1, without weakening the existing security-audit policy or application access controls.
+
+#### Fixed (pre-release integration audit)
+- Reconciled Recurring subcategory identity on rename/move/retirement, and corrected target-month budget due projection without silently suppressing unrelated similarly named bills or claiming variable estimates are exact.
+- Preserved actual OCR receipt grand-total currency even when another line mentions EUR.
+- Reconstructed historical receivables only from exact reconciled import evidence, and rejected overflowing cumulative savings-goal scenarios instead of capping them to false financial totals.
+
+#### Release boundary
+- v1.5.0 remains the current published Web/Windows release until v1.6.0 release approval, ordered Production migrations, `main` promotion, deployed-SHA smoke and a **new immutable Windows tag and installer**. Do not reuse v1.5.0 binaries or replace previously published history.
+
+
+## [1.5.0] - 2026-10-14
+
+### Added
 - Owner-managed recurring/subscription service-brand assets, including independent service-artwork registration, replacement and lifecycle handling behind owner + TOTP/AAL2 + RLS.
 - Account IBAN metadata management and privacy-safe copy/masking, and cross-surface category icon packs with owner-controlled preferences.
 - Expanded regression coverage for card-vault cleanup, large financial datasets, keyboard accessibility and responsive account/transaction management.
 
-#### Changed
+### Changed
 - Reconciled shared UI primitives, visual hierarchy, motion and reduced-motion behavior across Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Reports and Settings.
 - Improved contextual finance actions, stateful empty/error/loading experiences and desktop/mobile dialog geometry.
 - Made the repository-root Windows `INSTALL_MYFINHUB_WINDOWS.bat` start local development by default, with explicit clean-install and packaged installer modes.
 
-#### Fixed
+### Fixed
 - Guarded persisted card-secret deletion intent and serialized encrypted-vault cleanup after durable finance changes, without removing historical finance events.
 - Stabilized rendered browser QA by capturing transient loading skeletons atomically and recording named large-state route times without relaxing strict performance budgets.
+- Avoided unnecessary historical account-balance scans for hidden Reports charts and reused authoritative period balances, bringing the large-data Reports readiness to 2,820 ms under the unchanged 5,000 ms gate.
 
-**Release boundary:** this is staged candidate content, not a shipped update. The published Web/Windows version and public installer links remain v1.4.0 until a separately authorized and validated production promotion. Four repository Supabase migrations added since production v1.4.0 still require a reviewed production migration rollout.
+**Release validation:** this release completed exact-head Chromium rendered QA (including strict large-dataset route readiness), WebKit, Lighthouse, CodeQL, isolated real-stack security and Windows packaging gates. Four ordered forward-only Supabase migrations were applied and verified at 52/52 before Web production deployment. Production promotion was verified by deployment-SHA-pinned event-driven smoke; the controlled Windows installer is published from the same immutable release tag.
 
 ## [1.4.0] - 2026-10-06
 
