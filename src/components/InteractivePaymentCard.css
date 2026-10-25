@@ -130,7 +130,9 @@
   .prototype-payment-card .card-field-label{font-size:var(--ux-dense-label-size)}
   .prototype-payment-card .copy-mini{
     position:relative;width:40px;height:40px;min-width:40px;min-height:40px;
-    margin:-9.5px;padding:0;border-radius:10px;background:transparent;box-shadow:none;opacity:1;
+    /* Reserve the right edge inside the physical card at 320px while keeping
+       the 40px touch target and a full-width wrapping PAN. */
+    margin:-9.5px 0 -9.5px -9.5px;padding:0;border-radius:10px;background:transparent;box-shadow:none;opacity:1;
   }
   .prototype-payment-card .copy-mini::before{
     content:"";position:absolute;left:50%;top:50%;width:23px;height:23px;

@@ -29,6 +29,8 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(debit).not.toContain('.prototype-payment-card .mastercard-symbol');
     expect(debit).not.toContain('.prototype-payment-card.is-large .card-icon-btn{width:37px');
     expect(debit).toContain('.prototype-payment-card .card-icon-btn{width:40px;height:40px;min-width:40px');
+    expect(debit).toContain('margin:-9.5px 0 -9.5px -9.5px;padding:0');
+    expect(debit).toContain('position:relative;width:40px;height:40px;min-width:40px;min-height:40px');
     expect(credit).toContain('background:transparent;');
   });
   it('preserves 32 digit PAN boundaries and clips no secure form fields',()=>{
