@@ -51,11 +51,24 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stackTwo).toContain('.stack-drag-hint');
   });
 
+  it('keeps Credit finance panels in stable order even when the selected card has no transactions',()=>{
+    const page=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    const css=readFileSync(new URL('../src/styles/credit-approved-target.css',import.meta.url),'utf8');
+    expect(page).toContain('data-credit-purchases');
+    expect(page).toContain('data-credit-repayments');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-purchases]{order:3}');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-repayments]{order:4}');
+    expect(css).not.toContain(':has(.credit-purchases-table){order:3}');
+    expect(css).not.toContain(':has(.credit-payments-table){order:4}');
+  });
+
   it('regresses the owner-reported deck loss across two full physical drag cycles',()=>{
     const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('for(let cycle=0;cycle<12;cycle++)');
     expect(qa).toContain('assert(actual.topId!==previous.topId');
     expect(qa).toContain('Math.abs(actual.pageScrollY-pageScrollOrigin)<=2');
+    expect(qa).toContain('actual.purchasesPanelTop>=actual.stagePanelBottom-2');
+    expect(qa).toContain('actual.repaymentsPanelTop>=actual.purchasesPanelTop');
     expect(qa).toContain('previous.topCenterVisible');
     expect(qa).toContain('credit-stack-cycle-');
     expect(qa).toContain('actual.count===6&&actual.dots===6&&actual.activeVisible');
