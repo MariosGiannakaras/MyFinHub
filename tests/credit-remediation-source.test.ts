@@ -48,6 +48,14 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stackTwo).toContain('.stack-drag-hint');
   });
 
+  it('regresses the owner-reported deck loss across two full physical drag cycles',()=>{
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('for(let cycle=0;cycle<12;cycle++)');
+    expect(qa).toContain('actual.count===6&&actual.dots===6&&actual.activeVisible');
+    expect(qa).toContain('seenIds.size===6');
+    expect(qa).toContain("shot('credit-stack-two-full-cycles')");
+  });
+
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{
     expect(stackThree).toContain('.provider-brand-img');
     expect(stackThree).toContain('max-width:112px');

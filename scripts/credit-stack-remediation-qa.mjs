@@ -84,6 +84,28 @@ try{
   const cancelTop=down.topId;const cancelStart=await pointer(28,60);await release(cancelStart,28);await sleep(120);down=await state();
   assert(down.topId===cancelTop,'sub-threshold drag returns to the original selected card');
 
+  console.log('Credit stack remediation QA: twelve consecutive commits across two complete six-card cycles');
+  // Owner-reported regression: repeated real drags previously made the stack disappear.
+  // Check the *settled DOM* after each transition, not only a source-only count.
+  const cycleOrigin=down.topId;
+  const seenIds=new Set([cycleOrigin]);
+  for(let cycle=0;cycle<12;cycle++){
+    const startOfCycle=await pointer(-92,65);
+    await release(startOfCycle,-92);
+    await sleep(550); // restack completes at 470ms; never sample the temporary ghost
+    const actual=await state();
+    seenIds.add(actual.topId);
+    assert(actual.count===6&&actual.dots===6&&actual.activeVisible&&actual.overflow<=1&&
+      actual.editProfile===1&&actual.editDetails===1&&!actual.mode.includes('dragging'),
+      `all physical cards and actions survive repeated restack ${cycle+1}/12: ${JSON.stringify(actual)}`);
+    if((cycle+1)%6===0){
+      assert(actual.topId===cycleOrigin,
+        `six consecutive commits return to the original physical card at ${cycle+1}: ${actual.topId}`);
+    }
+  }
+  assert(seenIds.size===6,'two full physical cycles visit every card and preserve all six unique fronts');
+  await shot('credit-stack-two-full-cycles');
+
   console.log('Credit stack remediation QA: single-card mode');
   await navigate('');
   const single=await state();
