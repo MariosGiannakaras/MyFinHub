@@ -39,3 +39,10 @@ Branch: `fix/630-app-wide-screenshot-reconciliation`, source baseline `develop@0
 - No speculative Dashboard/stack tweaks made in response to a source-only symptom. Existing multi-card mouse/drag/leave scripts must run to completion after the corrected 320px frontend QA, with actual image inspection.
 
 **Implementations 0/5 completed · Sub-implementations 0/13 completed** (accepted count; code changes are partial until exact-head final rendered QA). Latest branch has intentionally been set back to Draft during this coherent repair batch; switch Ready after draft source validation and run exact-head full gates. No production/main/Android merge/deployment.
+
+## Multi-card endurance checkpoint — 2026-10-25
+- Owner screenshot #6 explicitly reports deck/stack cards disappearing after many repeated actions; the previous Chrome QA only covered two successive drags, which was not equivalent evidence.
+- `scripts/credit-stack-remediation-qa.mjs` now performs 12 additional physical CDP drags (two complete six-card cycles) and at each **settled** state verifies 6 cards, 6 dots, visible active dot, stable keyboard-facing management controls, no dragging class and no horizontal overflow; verifies return to the same card after each complete six-card cycle and 6 unique fronts. Captures `credit-stack-two-full-cycles` screenshot.
+- `tests/credit-remediation-source.test.ts` locks presence of this repeated-interaction coverage. Tests and screenshots **have not yet been observed** on the new head; no claim that repeated stack is fixed unless they pass.
+- The previous Ready run `#40227837748` (head `43fa7fee`) cannot certify subsequent QA script modifications. The latest exact head begins `64064d39` and is Draft for coherent validation. Do not merge before latest Ready rendered artifacts and final required gates all succeed.
+- **Implementations 0/5 completed · Sub-implementations 0/13 completed** until latest exact-head accepted final visuals and functional checks. Production, Android, finance and database unchanged.
