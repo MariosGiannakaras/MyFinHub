@@ -23,6 +23,14 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(credit).toContain('.payment-card[data-revealed="true"] .card-number');
     expect(credit).toContain('overflow-wrap:anywhere;');
   });
+  it('keeps debit/credit actions quiet without dropping real network artwork or mobile hit areas',()=>{
+    const debit=read('src/components/InteractivePaymentCard.css');
+    const credit=read('src/styles/canonical-credit-card-stack-1.css');
+    expect(debit).not.toContain('.prototype-payment-card .mastercard-symbol');
+    expect(debit).not.toContain('.prototype-payment-card.is-large .card-icon-btn{width:37px');
+    expect(debit).toContain('.prototype-payment-card .card-icon-btn{width:40px;height:40px;min-width:40px');
+    expect(credit).toContain('background:transparent;');
+  });
   it('preserves 32 digit PAN boundaries and clips no secure form fields',()=>{
     const details=read('src/lib/cardDetails.ts');
     const editor=read('src/styles/card-details-dialog.css');
