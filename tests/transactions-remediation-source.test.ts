@@ -6,6 +6,13 @@ const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.
 const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
+  it('guards the owner-approved wide ledger against a hidden 1560px recentering cap',()=>{
+    const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('wide.shell>=wide.workspace-wide.left-wide.right-2');
+    expect(qa).toContain('wide.grid<=wide.shell+1');
+    expect(qa).not.toContain('wide.shell<=1561');
+  });
+
   it('uses the available desktop width while retaining readable ledger/detail wrapping',()=>{
     expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%;margin-inline:0}');
     expect(css).toContain('.transactions-approved-table td{height:auto;min-height:48px');

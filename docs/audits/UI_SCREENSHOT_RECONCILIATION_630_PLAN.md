@@ -56,3 +56,10 @@ Branch: `fix/630-app-wide-screenshot-reconciliation`, source baseline `develop@0
 - Current state: PR #631 **Draft** while narrow `validate` and CodeQL run for current head. Ready switch only after draft source check, then final exact-head full CI with images inspected. If rendered still fails, diagnose failure screenshot/state and fix actual cause; **never weaken existing limits/QA**.
 - **Implementations 0/5 completed · Sub-implementations 0/13 completed** (strict fully accepted count, no green exact-head full gate yet). Remaining app-wide Dashboard and cross-breakpoint cosmetic acceptance open.
 - Exact next action: check latest narrow CI head, switch Ready and run full required matrix if green; inspect **all** job outcomes plus 320px network-label and 12-restack screenshots, then reconcile checklist acceptance. Do not merge until genuinely green full matrix and direct evidence review.
+
+## Transactions wide-workspace QA reconciliation — 2026-10-25
+
+- After source-level removal of the old `1560px` centered Transactions desktop width cap, the existing `scripts/transactions-scanability-qa.mjs` **still asserted `wide.shell<=1561` and `wide.grid<=1561`** for 1440/1920/2560 screenshots. This stale hard cap would fail on legitimate owner-approved full-width desktop workspaces, rather than testing the approved product.
+- Updated the rendered geometry guard to assert the ledger shell **fills all available workspace inner width** (`wide.shell>=wide.workspace-wide.left-wide.right-2`), keeps ledger/grid contained, right detail panel <=341px, balanced gutters and zero document overflow. This is a **stronger new product contract**, not a disabled test or higher budget limit. Added source lock for regression.
+- Keep final WebKit/Lighthouse/Windows/CodeQL and rendered 320/375/1440 card labels + 12 credit drag cycles as exact-head acceptance requirements; no merge or production deploy until green and inspected.
+- **Implementations 0/5 completed · Sub-implementations 0/13 completed** — counters unchanged while full Ready verification is outstanding.
