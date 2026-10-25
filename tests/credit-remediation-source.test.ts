@@ -40,7 +40,10 @@ describe('Credit post-v1.4 remediation contracts',()=>{
   });
 
   it('contains pagination and exposes drag discovery without restoring host navigation',()=>{
-    expect(stack).toContain("scrollIntoView({inline:'center',block:'nearest'");
+    // Dot pagination must scroll its own horizontal rail without moving the document.
+    expect(stack).toContain('dots.scrollTo({left,behavior:');
+    expect(stack).toContain('dots.scrollWidth<=dots.clientWidth+1');
+    expect(stack).not.toContain('activeDot.scrollIntoView');
     expect(stack).toContain('Σύρε κάθετα για αλλαγή κάρτας');
     expect(stackTwo).toContain('width:min(100%,280px)');
     expect(stackTwo).toContain('overflow-x:auto');
