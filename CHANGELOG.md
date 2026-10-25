@@ -4,7 +4,7 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
-### v1.6.0 consolidated release candidate — not shipped
+## [1.6.0] — 2026-10-25 (Web production and official Windows desktop release)
 
 #### Added
 - Shared four-digit owner PIN privacy gate for Web and Windows, backed by owner+AAL2 session-bound unlock tickets, rate-limited server verifier, device revocation and inactivity lock. Native Android support remains a separate deployment compatibility prerequisite before activation.\n- Windows-installed first-run local backup catalog, verified SHA-256 finance snapshots from live owner+AAL2/PIN-authorized server reads, scheduled daily checks while the Desktop is open, retention/history, chosen local folder and explicit guarded restore confirmation; not a full PostgreSQL/Storage disaster-recovery dump.\n- Approved advanced finance work (#588): secure owner-reviewed reconciliation; itemized receipt OCR/matching; multi-source purchases and linked fees; merchant/beneficiary identities; 30/60/90-day cash-flow scenarios; variable recurring commitments; subcategory budgets with carryover and known-due projections; credit repayment estimates, editable actual loan payments, lending write-offs and savings-goal projections.
@@ -27,7 +27,7 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 - Reconstructed historical receivables only from exact reconciled import evidence, and rejected overflowing cumulative savings-goal scenarios instead of capping them to false financial totals.
 
 #### Release boundary
-- v1.5.0 remains the current published Web/Windows release until v1.6.0 release approval, ordered Production migrations, `main` promotion, deployed-SHA smoke and a **new immutable Windows tag and installer**. Do not reuse v1.5.0 binaries or replace previously published history.
+- Web v1.6.0 is deployed from `main@e4ef4123` (Production Smoke #40182089518 SUCCESS). All six versioned Supabase migrations applied without changing the finance revision/history/Storage counts. The [official Windows Desktop v1.6.0 Release](https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.6.0) is published from the same main SHA after [Windows publisher #40201433817](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40201433817) SUCCESS, with separate SHA-256 manifest. The v1.5.0 tag and binaries remain immutable. Owner explicitly accepted production rollout without an independently verified full Postgres+Storage restore; no backup-restore PASS is claimed. Android native ticket support is a separate workstream, and shared global PIN remains unconfigured.
 
 
 ## [1.5.0] - 2026-10-14
