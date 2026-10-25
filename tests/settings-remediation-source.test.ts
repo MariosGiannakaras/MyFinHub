@@ -64,7 +64,7 @@ describe('Settings post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain("assert((await applyTheme('dark'))==='dark'");
     expect(rendered).toContain("settings-${tab.id}-dark-desktop");
     expect(rendered).toContain("[1920,1080,'1920'],[2560,1440,'2560']");
-    expect(rendered).toContain('geometry.page<=1681&&geometry.panel<=1541');
+    expect(rendered).toContain('geometry.page<=1881&&geometry.panel<=1801');
     expect(rendered).toContain('settings-diagnostics-explicit-desktop');
   });
 });
