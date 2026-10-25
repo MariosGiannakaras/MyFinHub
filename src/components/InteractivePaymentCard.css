@@ -147,9 +147,13 @@
   .prototype-payment-card.is-large .card-inner{padding:18px}
 }
 @media(max-width:360px){
-  .prototype-payment-card .card-header{align-items:start}
+  /* Keep all three 40px management targets in one row. The former two-row
+     toolbar pushed the full 32-digit reveal's network label off the card. */
+  .prototype-payment-card .card-header{align-items:start;gap:3px}
+  .prototype-payment-card .card-brand .bank-brand-mark{max-width:94px}
+  .prototype-payment-card .card-brand .bank-logo-image{max-width:94px}
   .prototype-payment-card .card-nickname{max-width:96px}
-  .prototype-payment-card .card-toolbar{grid-template-columns:repeat(2,40px);gap:4px}
+  .prototype-payment-card .card-toolbar{grid-template-columns:repeat(3,40px);gap:2px}
   .prototype-payment-card .card-body{gap:11px}
   .prototype-payment-card .card-fields{
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
