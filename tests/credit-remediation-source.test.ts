@@ -52,6 +52,8 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('for(let cycle=0;cycle<12;cycle++)');
     expect(qa).toContain('assert(actual.topId!==previous.topId');
+    expect(qa).toContain('Math.abs(actual.pageScrollY-pageScrollOrigin)<=2');
+    expect(qa).toContain('previous.topCenterVisible');
     expect(qa).toContain('credit-stack-cycle-');
     expect(qa).toContain('actual.count===6&&actual.dots===6&&actual.activeVisible');
     expect(qa).toContain('seenIds.size===6');
@@ -63,6 +65,8 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain("stage.addEventListener('pointerdown',startDrag)");
     expect(stack).toContain("stage.removeEventListener('pointerdown',startDrag)");
     expect(stack).not.toContain("top.addEventListener('pointerdown',startDrag)");
+    expect(stack).not.toContain('activeDot.scrollIntoView');
+    expect(stack).toContain('dots.scrollTo({left,behavior:');
   });
 
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{

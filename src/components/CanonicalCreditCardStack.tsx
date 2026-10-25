@@ -201,7 +201,16 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       const orderedCards=orderRef.current.map(id=>cardById.get(id)).filter((card):card is RuntimeCard=>Boolean(card));
       stage.innerHTML=orderedCards.map((card,index)=>renderCard(card,index)).join('');Array.from(stage.children).forEach((element,index)=>applyLayout(element as HTMLElement,index));
       stage.classList.toggle('single-card',orderedCards.length===1);
-      const activeId=orderRef.current[0]??null;dots.innerHTML=cardsRef.current.length>1?cardsRef.current.map(card=>`<span class="dot${card.id===activeId?' active':''}"></span>`).join(''):'';const activeDot=dots.querySelector<HTMLElement>('.dot.active');if(activeDot)requestAnimationFrame(()=>activeDot.scrollIntoView({inline:'center',block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));bindTopCard();attachTilt();
+      const activeId=orderRef.current[0]??null;dots.innerHTML=cardsRef.current.length>1?cardsRef.current.map(card=>`<span class="dot${card.id===activeId?' active':''}"></span>`).join(''):'';const activeDot=dots.querySelector<HTMLElement>('.dot.active');
+      if(activeDot)requestAnimationFrame(()=>{
+        // scrollIntoView on a nested pagination dot also scrolls the document.
+        // After repeated card changes that used to move the entire physical
+        // stack out of the viewport, making further pointer drags impossible.
+        if(!activeDot.isConnected||!dots.isConnected||dots.scrollWidth<=dots.clientWidth+1)return;
+        const containerRect=dots.getBoundingClientRect(),dotRect=activeDot.getBoundingClientRect();
+        const left=dots.scrollLeft+(dotRect.left-containerRect.left)-(containerRect.width-dotRect.width)/2;
+        dots.scrollTo({left,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+      });bindTopCard();attachTilt();
     }
     renderRef.current=render;
 
