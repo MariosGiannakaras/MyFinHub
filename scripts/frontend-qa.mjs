@@ -76,8 +76,10 @@ try{
     await clickAria('Εμφάνιση στοιχείων');
     await waitFor("function(){return (document.querySelector('.prototype-payment-card .card-number.revealed')?.textContent||'').replace(/\\D/g,'').length===32}",'32-digit eye reveal at '+width+'px');
     const fit=await c.call("function(){const n=document.querySelector('.prototype-payment-card .card-number.revealed'),card=n?.closest('.prototype-payment-card'),copy=card?.querySelector('.card-number-wrap .copy-mini');if(!n||!card)return null;const s=getComputedStyle(n),r=n.getBoundingClientRect(),c=card.getBoundingClientRect(),cr=copy?.getBoundingClientRect();return {digits:(n.textContent||'').replace(/\\D/g,'').length,textOverflow:s.textOverflow,whiteSpace:s.whiteSpace,overflow:s.overflow,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth,scrollHeight:n.scrollHeight,clientHeight:n.clientHeight,bottom:r.bottom,cardBottom:c.bottom,copyRight:cr?.right||0,cardRight:c.right,pageOverflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
-    assert(fit&&fit.digits===32&&fit.textOverflow!=='ellipsis'&&fit.whiteSpace!=='nowrap'&&fit.overflow==='visible'&&fit.scrollWidth<=fit.clientWidth+2&&fit.scrollHeight<=fit.clientHeight+2&&fit.bottom<=fit.cardBottom+3&&fit.copyRight<=fit.cardRight+3&&fit.pageOverflow<=2,'eye displays full 32-digit PAN without clipping at '+width+'px: '+JSON.stringify(fit));
+    // Capture the exact device-width failure state before asserting so CI always
+    // uploads inspectable evidence when a 320px geometry regression recurs.
     await shot('card-reveal-32-digits-'+width);
+    assert(fit&&fit.digits===32&&fit.textOverflow!=='ellipsis'&&fit.whiteSpace!=='nowrap'&&fit.overflow==='visible'&&fit.scrollWidth<=fit.clientWidth+2&&fit.scrollHeight<=fit.clientHeight+2&&fit.bottom<=fit.cardBottom+3&&fit.copyRight<=fit.cardRight+3&&fit.pageOverflow<=2,'eye displays full 32-digit PAN without clipping at '+width+'px: '+JSON.stringify(fit));
     await clickAria('Απόκρυψη στοιχείων');
     assert(await c.eval("!document.querySelector('.prototype-payment-card .card-number.revealed')"),'eye remasks after long PAN');
   }
