@@ -36,6 +36,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('rows={shownPan.includes(\'\\n\')?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
     expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-32-digits-');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
     expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
     expect(editor).toContain('card-inline-value card-inline-expiry');
     expect(editor).toContain('card-inline-value card-inline-cvv');
