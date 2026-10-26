@@ -27,7 +27,11 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(route).toContain('const visibleWorkspaceBanks=');
     expect(route).not.toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
     expect(editor).toContain('if(inline){');
-    expect(editor).toContain('card-inline-value card-inline-pan');
+    expect(editor).toContain('card-number card-inline-value card-inline-pan');
+    expect(editor).toContain('card-field-value card-inline-value card-inline-expiry');
+    expect(editor).toContain('card-field-value card-inline-value card-inline-cvv');
+    expect(editor).toContain('card-inline-action-slot');
+    expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
     expect(editor).toContain('const shownPan=pan.replace(/\\D/g,\'\').length>16');
     expect(editor).toContain('rows={shownPan.includes(\'\\n\')?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');

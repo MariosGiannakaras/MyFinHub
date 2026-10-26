@@ -15,25 +15,20 @@
 .app-card-details-inline{display:grid;gap:7px;min-width:0;max-width:100%;color:var(--ink)}
 .app-card-details-inline .prototype-payment-card{transform:none!important}
 .app-card-details-inline .card-inline-value{
-  display:block;width:100%;min-width:0;max-width:100%;height:27px;min-height:27px;
-  padding:1px 3px;margin:0;border:1px solid transparent;border-radius:4px;
-  color:var(--card-text);background:rgba(255,255,255,.10);box-shadow:none;
-  text-shadow:0 1px 3px rgba(0,0,0,.15);outline-offset:2px;font-variant-numeric:tabular-nums;
+  display:block;width:100%;min-width:0;max-width:100%;height:auto;min-height:0;
+  padding:0;margin:0;border:0;border-radius:0;
+  color:inherit;background:transparent;box-shadow:none;
+  outline-offset:2px;font-variant-numeric:tabular-nums;
 }
-.app-card-details-inline .card-inline-value:focus-visible{
-  border-color:var(--card-text);outline:2px solid var(--card-text);
-}
+.app-card-details-inline .card-inline-value:focus-visible{outline:2px solid var(--card-text)}
 .app-card-details-inline .card-inline-value::placeholder{color:var(--card-muted);opacity:1}
-.app-card-details-inline .card-inline-pan{
-  height:auto;min-height:27px;max-height:none;resize:none;overflow:hidden;
-  white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.2;
-  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
-  font-size:clamp(.88rem,1.14vw,1rem);font-weight:650;letter-spacing:.035em;
-}
-.app-card-details-inline .card-inline-expiry,.app-card-details-inline .card-inline-cvv{
-  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
-  font-size:.92rem;font-weight:700;letter-spacing:.06em;
-}
+.app-card-details-inline .card-inline-pan{resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}
+.app-card-details-inline .card-inline-action-slot{visibility:hidden;pointer-events:none}
+.app-card-details-inline .card-inline-expiry,.app-card-details-inline .card-inline-cvv{width:100%}
+.app-card-details-inline .card-field-line{min-height:0}
+.app-card-details-inline .card-field-value{flex:1}
+.app-card-details-inline .card-inline-value:focus-visible{border-radius:3px}
+
 .app-card-details-inline .card-inline-save-actions{
   display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;
 }
@@ -55,5 +50,4 @@
 @media(max-width:360px){
   .app-card-details-inline .card-inline-save-actions button{min-height:40px;font-size:11px;padding:6px 8px}
   .app-card-details-inline .card-inline-save-actions .card-profile-action{flex-basis:100%;text-align:left}
-  .app-card-details-inline .card-inline-pan{font-size:.84rem;letter-spacing:.02em}
 }

@@ -1,4 +1,4 @@
-import { CreditCard, X } from 'lucide-react';
+import { Archive, CreditCard, Eye, X } from 'lucide-react';
 import { BankBrandMark } from './BankBrandMark';
 import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
@@ -104,22 +104,28 @@ export function CardDetailsDialog({
     const kind=card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';
     // A 32-digit PAN is displayed on two actual card lines, not horizontally
     // scrolled inside a single-line input while the user edits it.
-    const shownPan=pan.replace(/\D/g,'').length>16?pan.slice(0,19)+'\n'+pan.slice(20):pan;
+    const panIsLong=pan.replace(/\D/g,'').length>16;
+    const shownPan=panIsLong?pan.slice(0,19)+'\n'+pan.slice(20):pan;
     return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={[notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>
       <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
         <div className="card-inner">
           <header className="card-header">
             <div className="card-brand-block"><div className="card-brand"><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/></div><div className="card-nickname">{card.nickname}</div></div>
-            <div className="card-toolbar"><button type="button" className="card-icon-btn card-inline-close" aria-label="Κλείσιμο στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></div>
+            <div className="card-toolbar">
+              <span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>
+              <button type="button" className="card-icon-btn card-icon-management card-inline-close" aria-label="Κλείσιμο στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button>
+              <span className="card-icon-btn card-icon-management card-inline-action-slot" aria-hidden="true"><Archive/></span>
+            </div>
           </header>
           <div className="card-body">
             <label className="card-number-wrap">
               <span className="sr-only">Αριθμός κάρτας</span>
-              <AppTextarea data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" spellCheck={false} wrap="soft" rows={shownPan.includes('\n')?2:1} maxLength={40} value={shownPan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
+              <AppTextarea data-autofocus="true" className={'card-number card-inline-value card-inline-pan'+(panIsLong?' revealed':'')} autoComplete="cc-number" inputMode="numeric" spellCheck={false} wrap="soft" rows={panIsLong?2:1} maxLength={40} value={shownPan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
+              <span className="copy-mini card-inline-action-slot" aria-hidden="true"><CreditCard/></span>
             </label>
             <div className="card-fields">
-              <label className="card-field"><span className="card-field-label">VALID THRU</span><AppTextInput className="card-inline-value card-inline-expiry" autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={busy} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>
-              <label className="card-field"><span className="card-field-label">CVV</span><AppTextInput className="card-inline-value card-inline-cvv" autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={busy} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder="•••" onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/></label>
+              <label className="card-field"><span className="card-field-label">VALID THRU</span><span className="card-field-line"><AppTextInput className="card-field-value card-inline-value card-inline-expiry" autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={busy} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/><span className="copy-mini card-inline-action-slot" aria-hidden="true"/></span></label>
+              <label className="card-field"><span className="card-field-label">CVV</span><span className="card-field-line"><AppTextInput className="card-field-value card-inline-value card-inline-cvv" autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={busy} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder="•••" onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/><span className="copy-mini card-inline-action-slot" aria-hidden="true"/></span></label>
               <CardNetworkMark network={card.network} detail={kind}/>
             </div>
           </div>
