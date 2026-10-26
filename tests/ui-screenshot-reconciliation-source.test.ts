@@ -18,8 +18,12 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
   });
   it('inspects official full wordmarks on both card routes instead of the superseded square card-mark',()=>{
     const qa=read('scripts/brand-visual-qa.mjs');
-    expect(qa).toContain('Cards bank identity uses the real production Piraeus universal wordmark');
-    expect(qa).toContain('Credit bank identity uses the genuine Piraeus wordmark');
+    expect(qa).toContain('Cards bank identity loads a bound production Piraeus wordmark image');
+    expect(qa).toContain('Credit bank identity uses the bound production wordmark image');
+    expect(qa).toContain('piraeus-wordmark-light.png');
+    expect(qa).toContain('piraeus-wordmark-dark.png');
+    expect(qa).toContain('state.piraeusProductionWordmark>=1');
+    expect(qa).toContain('state.piraeusProductionLogo>=1');
     expect(qa).not.toContain('state.piraeusProductionCardMark>=1');
     expect(qa).toContain('state.loadedProviderStorage===state.providerStorageImages');
   });
