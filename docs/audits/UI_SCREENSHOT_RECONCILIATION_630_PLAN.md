@@ -14,9 +14,9 @@ Count **completed code and targeted regression locks independently of CI/merge**
   - [x] Full 32-digit PAN debit/credit reveal inside physical card, stable aspect, true input formatter; narrow 320px network/copy geometry guard.
   - [x] Preserve pointer tilt; stable Credit stage delegation, card-restack position, no document scrolling from pagination, 12 physical CDP drags and reduced-motion contracts.
   - [x] Quiet icon controls without losing management affordances or 40px mobile targets; remove dead manual network artwork CSS.
-- [ ] **I3 Secure details editor (2)**
+- [x] **I3 Secure details editor (2)**
   - [x] Preserve enforced 32-digit normalized PAN cap and independent encrypted card vault; contain shared inline/dialog inputs with max-width/min-width.
-  - [ ] Reconcile any remaining inline/dialog form layout/helper/action semantic differences with a shared implementation owner (not merely a QA script).
+  - [x] Reuse one CardDetailsDialog component for both inline/dialog; align CVV blank-preserves-existing helper and optional placeholder on both, retain context-only profile action and both accessible focus/error states.
 - [x] **I4 Dense finance workspaces (2)**
   - [x] Settings taxonomy category/subcategory compact visual rhythm, optional 3-column wide layout, existing 40px actions preserved.
   - [x] Transactions full-width ledger, meaningful accessible detail-row affordance (replaces inert ellipsis), compact table/detail with responsive/source coverage.
@@ -24,7 +24,7 @@ Count **completed code and targeted regression locks independently of CI/merge**
   - [ ] Account charts/value-to-space/action toolbar responsive alignment and privacy-button hierarchy across desktop/tablet/mobile (privacy offset removed; rest partial).
   - [ ] Dense activity panels, chart/KPI scanning alignment and secondary metrics without removing meaningful financial information.
 
-**Implementations 2/5 completed · Sub-implementations 8/13 completed.**
+**Implementations 3/5 completed · Sub-implementations 9/13 completed.**
 
 ## Evidence, validation and integration
 - Three source commits: `26db04bc` issuer/network/reveal, `54d10a9` finance/secure fields/source locks, `b7f3c7f` Settings real route overrides, pointer hover collision, Dashboard toolbar. A fourth checkpoint synchronizes source assertion to new real Settings geometry and this plan.
@@ -85,3 +85,8 @@ Count **completed code and targeted regression locks independently of CI/merge**
 - Draft [CI #40285192380](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40285192380) `validate` **SUCCESS** on `25f8dd07`, CodeQL pending at original inspection. A plan-only commit here supersedes that exact head and may restart narrow checks. Once latest draft validation passes, mark PR Ready for ONE exact-head full CI/rendered/WebKit/Lighthouse/Windows gate. No merge while required checks fail/pending. Do **not** equate source success with full visual acceptance.
 - Remaining partial code scope: I1 shared width/mobile, I3 form dialog parity, I5 Dashboard density. Separate visual acceptance: inspect all relevant genuine generated screenshots, including Settings categories 20/6 UI (not just production DB), card wordmarks+network both themes, 320px full PAN, 12-stack, Credit rate order, Transactions detail action and Dashboard scan rhythm. Any defects go back into this plan as new/partial scoped item.
 - Next safe action: check latest source CI, promote Ready if green; inspect exact-head full CI and rendered images. If green, address remaining code tasks coherently before eligible merge. The plan/code count is **2/5 · 8/13**, separate from CI acceptance.
+
+## Form parity follow-up — 2026-10-26
+- `CardDetailsDialog` already shared the same editable secure fields across inline and modal, but only its inline presentation documented the **blank CVV retains the existing value** semantics. Both views now display the exact same helper and non-required placeholder, controlled solely by `requireCvv` instead of visual surface. Reuses `.app-card-details-dialog-body`, common source regression checks; context-only inline `Όνομα / σχέδιο` remains intentional (profile-edit action only available there).
+- **Code progress Implementations 3/5 completed · Sub-implementations 9/13 completed.** This counts completed implementation+source guards, NOT an exact-head rendered PASS. I1 app-wide geometry and I5 Dashboard hierarchy are the remaining partial groups; they require genuine user-reference visual comparisons and bounded shared-owner code, not arbitrary page-specific overrides.
+- The draft source CI on prior `efc397ef` was pending at first read; this follow-up produces a newer head. Next: await *latest-head* Draft `validate`; Ready full gate only after complete coherent source batch. All previously green older-head jobs remain historical evidence, not certification of the new changes.

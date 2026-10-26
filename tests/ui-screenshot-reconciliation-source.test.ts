@@ -50,6 +50,15 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(details).toContain(".replace(/\\D/g,'').slice(0,32)");
     expect(editor).toContain('.app-card-details-dialog-body .app-control{min-width:0;width:100%;max-width:100%');
   });
+  it('shares CVV preservation semantics across inline and dialog editors',()=>{
+    const details=read('src/components/CardDetailsDialog.tsx');
+    const style=read('src/styles/card-details-dialog.css');
+    expect(details).toContain("{!requireCvv?<small className=\"card-cvv-preserve-hint\">Κενό = διατήρηση υπάρχοντος CVV</small>:null}");
+    expect(details).not.toContain('inline&&!requireCvv?');
+    expect(details).toContain("placeholder={requireCvv?'CVV':'Προαιρετικό'}");
+    expect(style).toContain('.app-card-details-dialog-body .card-cvv-preserve-hint');
+    expect(details).toContain('const content=<>');
+  });
   it('compacts taxonomy row composition without removing actions or reducing hit targets',()=>{
     const css=read('src/styles/category-taxonomy-editor.css');
     const page=read('src/components/CategoryIconsWorkspace.tsx');
