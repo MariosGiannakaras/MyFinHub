@@ -53,8 +53,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
     expect(inlineCss).toContain('width:100%;height:23px;max-height:23px;min-height:0;');
     expect(inlineCss).toContain('line-height:normal;box-sizing:border-box;');
-    expect(frontendQa).toContain('cardFaceBeforeEdit.field');
-    expect(frontendQa).toContain('cardFaceAfterEdit.labelY');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceBeforeEdit.field');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.labelY');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions{');
     expect(inlineCss).toContain('min-height:40px');
     expect(editor).toContain('<details className="app-card-details-help">');
