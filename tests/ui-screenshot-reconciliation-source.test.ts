@@ -16,6 +16,13 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
       expect(css).toContain('box-shadow:none;');
     }
   });
+  it('inspects official full wordmarks on both card routes instead of the superseded square card-mark',()=>{
+    const qa=read('scripts/brand-visual-qa.mjs');
+    expect(qa).toContain('Cards bank identity uses the real production Piraeus universal wordmark');
+    expect(qa).toContain('Credit bank identity uses the genuine Piraeus wordmark');
+    expect(qa).not.toContain('state.piraeusProductionCardMark>=1');
+    expect(qa).toContain('state.loadedProviderStorage===state.providerStorageImages');
+  });
   it('keeps debit card geometry stable on reveal and credit long PAN wrapping',()=>{
     const debit=read('src/components/InteractivePaymentCard.css');
     const credit=read('src/styles/canonical-credit-card-stack-1.css');

@@ -73,7 +73,10 @@
   .credit-card-redesign-page>[data-credit-purchases]{order:3}
   .credit-card-redesign-page>[data-credit-repayments]{order:4}
   .credit-card-redesign-page>[data-credit-statements]{order:5}
-  .credit-card-redesign-page>.deleted-credit-history{order:6}
+  /* Interest-rate editor must never jump above the active stack when a credit
+     card changes; it is contextual supporting information after activity. */
+  .credit-card-redesign-page>[data-credit-rates]{order:6}
+  .credit-card-redesign-page>.deleted-credit-history{order:7}
 }
 
 /* Phase 1 does not redesign mobile. Keep the canonical mobile card stack and

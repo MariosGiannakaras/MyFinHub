@@ -60,6 +60,7 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.credit-card-redesign-page>[data-credit-repayments]{order:4}');
     expect(css).not.toContain(':has(.credit-purchases-table){order:3}');
     expect(css).not.toContain(':has(.credit-payments-table){order:4}');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-rates]{order:6}');
   });
 
   it('regresses the owner-reported deck loss across two full physical drag cycles',()=>{
