@@ -1,4 +1,4 @@
-import { Archive, CreditCard, Eye, X } from 'lucide-react';
+import { Archive, CreditCard, Eye, Save, X } from 'lucide-react';
 import { PrototypeBrand } from './InteractivePaymentCard';
 import { CardNetworkMark } from './CardNetworkMark';
 import { cardThemeClass } from '../lib/cardDesigns';
@@ -77,7 +77,14 @@ export function CardDetailsDialog({
 
   if(!card)return null;
   const busy=loading||saving;
-  const cancel=()=>{if(!busy)onCancel()};
+  // Esc abandons only local drafts; an in-flight server write cannot be cancelled.
+  const cancel=()=>{
+    if(saving)return;
+    onCancel();
+    requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(
+      `[data-command-card-id="${CSS.escape(card.id)}"] button[aria-label^="Επεξεργασία κάρτας"]`,
+    )?.focus());
+  };
   const clearError=()=>{if(error)setError('')};
   const submit=async()=>{
     if(busy)return;
@@ -106,14 +113,14 @@ export function CardDetailsDialog({
     // scrolled inside a single-line input while the user edits it.
     const panIsLong=pan.replace(/\D/g,'').length>16;
     const shownPan=panIsLong?pan.slice(0,19)+'\n'+pan.slice(20):pan;
-    return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={[notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>
+    return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={error?errorId:undefined} onKeyDownCapture={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();cancel()}}}>
       <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
         <div className="card-inner">
           <header className="card-header">
             <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
             <div className="card-toolbar">
-              <span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>
-              <button type="button" className="card-icon-btn card-icon-management card-inline-close" aria-label="Κλείσιμο στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button>
+              {onEditProfile?<button type="button" className="card-icon-btn card-icon-reveal" aria-label="Όνομα / σχέδιο" title="Όνομα / σχέδιο" disabled={busy} onClick={onEditProfile}><CreditCard aria-hidden="true"/></button>:<span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>}
+              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label={error?'Αποθήκευση στοιχείων κάρτας: '+error:'Αποθήκευση στοιχείων κάρτας'} title={error||'Αποθήκευση στοιχείων κάρτας'} data-save-error={error?'true':undefined} disabled={busy} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
               <span className="card-icon-btn card-icon-management card-inline-action-slot" aria-hidden="true"><Archive/></span>
             </div>
           </header>
@@ -134,15 +141,9 @@ export function CardDetailsDialog({
           </div>
         </div>
       </article>
-      <footer className="card-inline-save-actions">
-        {onEditProfile?<Button variant="secondary" className="card-profile-action" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
-        <Button variant="secondary" disabled={busy} onClick={cancel}>Ακύρωση</Button>
-        <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
-      </footer>
-      {!requireCvv?<small className="card-cvv-preserve-hint">Κενό CVV = διατήρηση υπάρχοντος CVV</small>:null}
-      <details className="app-card-details-help"><summary>Ασφάλεια και όρια</summary><span>Αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία. Δεν εφαρμόζεται έλεγχος Luhn ή δικτύου.</span></details>
-      {notice?<div id={noticeId} className="app-card-details-notice" role="status">{notice}</div>:null}
-      {error?<FormError id={errorId}>{error}</FormError>:null}
+      {/* Errors and vault notices remain accessible without changing the card face. */}
+      {notice?<span id={noticeId} className="sr-only" role="status">{notice}</span>:null}
+      {error?<span id={errorId} className="sr-only" role="alert">{error}</span>:null}
     </section>;
   }
 
