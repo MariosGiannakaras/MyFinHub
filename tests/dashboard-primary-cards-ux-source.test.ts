@@ -29,6 +29,14 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(card).toContain('AccountIban accountId={account.id}');
   });
 
+  it('keeps account/chart column allocation in its single canonical Dashboard owner',()=>{
+    const fidelity=read('../src/styles/dashboard-desktop-fidelity.css');
+    const alignment=read('../src/styles/dashboard-desktop-alignment.css');
+    expect(desktop).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)!important');
+    expect(fidelity).not.toContain('grid-template-columns:minmax(176px,1.06fr) minmax(132px,.94fr)!important');
+    expect(alignment).not.toContain('grid-template-columns:minmax(112px,.72fr) minmax(150px,1.28fr)!important');
+  });
+
   it('keeps large revealed financial values inside their account chart/value grid',()=>{
     expect(card).toContain("data-balance-visibility={privacyVisible?'visible':'masked'}");
     expect(desktop).toContain('[data-balance-visibility="visible"] .approved-account-body{height:auto!important;min-height:83px;overflow:visible}');
