@@ -31,9 +31,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('card-field-value card-inline-value card-inline-expiry');
     expect(editor).toContain('card-field-value card-inline-value card-inline-cvv');
     expect(editor).toContain('card-inline-action-slot');
-    expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
-    expect(editor).toContain('const shownPan=pan.replace(/\\D/g,\'\').length>16');
-    expect(editor).toContain('rows={shownPan.includes(\'\\n\')?2:1}');
+    expect(editor).toContain('const panIsLong=pan.replace(/\\D/g,\'\').length>16');
+    expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
     expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-32-digits-');
     expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
@@ -47,6 +46,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('{!requireCvv?<small className="card-cvv-preserve-hint">');
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
     const inlineCss=file('../src/styles/card-details-dialog.css');
+    expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
     // Owner requested the original card/button visual language, not a new boxed editor.
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions{');
