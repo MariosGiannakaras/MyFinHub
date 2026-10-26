@@ -70,7 +70,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(frontendQa).toContain('normal card face with PAN expiry CVV editable in their original positions');
     // getBoundingClientRect uses fractional CSS px; DOM clientHeight is integer-rounded.
     // Normalize measurement units while retaining strict no-clipping and in-card action assertions.
-    expect(frontendQa).toContain('inlineContainment.ratio>=1.45&&inlineContainment.ratio<=1.7');
+    expect(frontendQa).toContain('Math.abs(inlineContainment.physicalCardHeight-inlineContainment.expectedCardHeight)<=2');
+    expect(editor).toContain('aria-label="Κλείσιμο στοιχείων κάρτας"');
     const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
     expect(geomQa).toContain('editable values in original card positions; actions below physical card');
   });

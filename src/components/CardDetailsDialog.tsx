@@ -106,7 +106,7 @@ export function CardDetailsDialog({
         <div className="card-inner">
           <header className="card-header">
             <div className="card-brand-block"><div className="card-brand"><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/></div><div className="card-nickname">{card.nickname}</div></div>
-            <div className="card-toolbar"><button type="button" className="card-icon-btn card-inline-close" aria-label="Ακύρωση επεξεργασίας στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></div>
+            <div className="card-toolbar"><button type="button" className="card-icon-btn card-inline-close" aria-label="Κλείσιμο στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></div>
           </header>
           <div className="card-body">
             <label className="card-number-wrap">
