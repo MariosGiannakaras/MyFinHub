@@ -13,7 +13,10 @@
 /* WYSIWYG editing: inputs stay in the physical number/expiry/CVV slots.
    Secure save actions and vault messages follow BELOW the original-ratio card. */
 .app-card-details-inline{display:grid;gap:7px;min-width:0;max-width:100%;color:var(--ink)}
-.app-card-details-inline .prototype-payment-card{transform:none!important}
+/* Retain the physical card's perspective transform at rest. Its children use
+   translateZ(32px/38px); removing perspective changes their projected
+   line-box geometry and shifts VALID THRU, CVV and network artwork. Editing
+   has no pointer-tilt handlers, so the normal resting projection is stable. */
 .app-card-details-inline .card-inline-value{
   display:block;width:100%;min-width:0;max-width:100%;height:auto;min-height:0;
   padding:0;margin:0;border:0;border-radius:0;
