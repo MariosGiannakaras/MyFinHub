@@ -20,6 +20,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     const interactive=file('../src/components/InteractivePaymentCard.tsx');
     const route=file('../src/pages/CardsPage.tsx');
     const editor=file('../src/components/CardDetailsDialog.tsx');
+    const inlineCss=file('../src/styles/card-details-dialog.css');
     expect(interactive).toContain('detailsEditor ? detailsEditor');
     expect(interactive).toContain('onEditDetails||onEditCard');
     expect(interactive).not.toContain('KeyRound');
@@ -53,16 +54,19 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain("placeholder={requireCvv?'CVV':'Προαιρετικό'}");
     expect(editor).toContain('{!requireCvv?<small className="card-cvv-preserve-hint">');
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
-    const inlineCss=file('../src/styles/card-details-dialog.css');
     expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
     // Owner requested the original card/button visual language, not a new boxed editor.
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
     expect(inlineCss).toContain('font:inherit;letter-spacing:inherit;line-height:inherit');
-    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
-    expect(inlineCss).toContain('height:1.1em;max-height:none;box-sizing:border-box;');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{');
+    expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
+    expect(inlineCss).not.toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
+    expect(inlineCss).not.toContain('height:1.1em;max-height:none;box-sizing:border-box;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberHeight,cardFaceAfterEdit.numberHeight,1)');
     expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.bodyHeight,cardFaceAfterEdit.bodyHeight,1)');
-    expect(inlineCss).toContain('line-height:normal;box-sizing:border-box;');
+    expect(inlineCss).toContain('.app-card-details-inline .card-field-value{flex:1}');
+    expect(inlineCss).not.toContain('width:100%;height:23px;max-height:23px;min-height:0;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.editValue');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceBeforeEdit.field');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.labelY');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions{');
