@@ -71,6 +71,12 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(css).toContain('.taxonomy-row-actions button{width:40px;height:40px;');
     expect(page).toContain("type:'reorder-subcategory'");
   });
+  it('applies app-wide containment across desktop and responsive workspace tracks',()=>{
+    const shell=read('src/styles/shell-navigation-foundations.css');
+    const responsive=read('src/styles/root-responsive-coordination.css');
+    expect(shell).toContain('.app-shell>main,.workspace,.page-stack{min-width:0;max-width:100%;box-sizing:border-box}');
+    expect(responsive).toContain('.app-shell>main,.workspace,.page-stack{min-width:0;max-width:100%}');
+  });
   it('keeps real hover tilt unobstructed and aligns the Dashboard privacy action',()=>{
     const motion=read('src/styles/interaction-motion-states.css');
     const dashboard=read('src/styles/dashboard-desktop-alignment.css');

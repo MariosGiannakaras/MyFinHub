@@ -29,6 +29,21 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(card).toContain('AccountIban accountId={account.id}');
   });
 
+  it('keeps large revealed financial values inside their account chart/value grid',()=>{
+    expect(card).toContain("data-balance-visibility={privacyVisible?'visible':'masked'}");
+    expect(desktop).toContain('[data-balance-visibility="visible"] .approved-account-body{height:auto!important;min-height:83px;overflow:visible}');
+    expect(desktop).toContain('[data-balance-visibility="visible"] .approved-balance{white-space:normal;overflow-wrap:anywhere}');
+    expect(desktop).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)!important');
+  });
+
+  it('retains full text access to visually condensed finance activity',()=>{
+    expect(dashboard).toContain('<b title={item.note}>{item.note}</b>');
+    expect(dashboard).toContain('<small title={item.category}>{item.category}</small>');
+    expect(dashboard).toContain('<b title={item.name}>{item.name}</b>');
+    expect(dashboard).toContain('movements.slice(0,5)');
+    expect(dashboard).toContain('Προβολή όλων των κινήσεων');
+  });
+
   it('uses existing transaction account filter and permits clearing it',()=>{
     expect(card).toContain('onTransactions(account.id)');
     expect(card).toContain('Συναλλαγές για');

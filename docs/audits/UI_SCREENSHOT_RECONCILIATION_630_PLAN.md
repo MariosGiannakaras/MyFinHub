@@ -7,7 +7,7 @@ Count **completed code and targeted regression locks independently of CI/merge**
 
 - [ ] **I1 App-wide width / responsive geometry (3)**
   - [x] Settings desktop panel/tab width reconciled to bounded 1880/1800px with route-scoped density constraints and matching geometry source test.
-  - [ ] Audit/correct remaining shared desktop workspace width mismatches across routes; keep readable Dashboard max width and financial panels.
+  - [x] Shared AppShell/Workspace/PageStack min-width and maximum inline containment at all desktop classes; keep intentionally readable Dashboard 1880px while Settings/Transactions use their own accepted data-width policies. Added source lock.
   - [ ] Correct any remaining tablet/mobile/shared overflow/geometry implementation defects found in rendered sibling sweeps (not just run QA).
 - [x] **I2 Debit + Credit canonical card presentation/behavior (4)**
   - [x] Official provider wordmark and transparent network mark on both renderers, real image-load contracts, source lock (replaces obsolete square card mark).
@@ -21,10 +21,10 @@ Count **completed code and targeted regression locks independently of CI/merge**
   - [x] Settings taxonomy category/subcategory compact visual rhythm, optional 3-column wide layout, existing 40px actions preserved.
   - [x] Transactions full-width ledger, meaningful accessible detail-row affordance (replaces inert ellipsis), compact table/detail with responsive/source coverage.
 - [ ] **I5 Dashboard hierarchy (2)**
-  - [ ] Account charts/value-to-space/action toolbar responsive alignment and privacy-button hierarchy across desktop/tablet/mobile (privacy offset removed; rest partial).
+  - [x] Existing canonical primary account metric/chart grid retained (no duplicate layout). Desktop privacy alignment fixed; large legitimately revealed balances wrap within their metric cell without obscuring chart; source guard.
   - [ ] Dense activity panels, chart/KPI scanning alignment and secondary metrics without removing meaningful financial information.
 
-**Implementations 3/5 completed · Sub-implementations 9/13 completed.**
+**Implementations 3/5 completed · Sub-implementations 11/13 completed.**
 
 ## Evidence, validation and integration
 - Three source commits: `26db04bc` issuer/network/reveal, `54d10a9` finance/secure fields/source locks, `b7f3c7f` Settings real route overrides, pointer hover collision, Dashboard toolbar. A fourth checkpoint synchronizes source assertion to new real Settings geometry and this plan.
@@ -97,3 +97,9 @@ Count **completed code and targeted regression locks independently of CI/merge**
 - The failure was **not** lack of the official asset: QA mocked provider registry `src/qaFinancialProviders.ts` binds `wordmark/light` to `piraeus-wordmark-light.png` and `wordmark/dark` to `piraeus-wordmark-dark.png`, while `logo/universal` alone uses `piraeus-logo-universal.svg`. Previous rendered assertion incorrectly demanded the latter URL on Cards/Credit even though both renderers explicitly request `wordmark`. The old assertion already failed on a previous full run and required semantic root investigation instead of repeating unrelated UI edits.
 - Authored `brand-visual-qa.mjs` provider-aware **Piraeus wordmark** check for both actual light/dark PNG bindings on debit and credit, desktop and mobile. Maintains original Dashboard universal SVG assertion, the provider-storage/loaded-naturalWidth requirement, no legacy fabricated marks, accessible Credit bank label and no overflow. Added cheap source guard verifying full bound wordmark paths and persistence of Dashboard logo assertion. No test disabled or softened.
 - **Implementations 3/5 completed · Sub-implementations 9/13 completed**; validation is separate from code count. Branch PR #631 Draft during coherent correction; no production/main/Android changes. Next: narrow source `validate` on exact head, then complete I1/I5 code before final Ready full gates to avoid redundant expensive CI. Preserve 12 Credit drag, 320px PAN, light/dark provider visuals and screenshot inspection.
+
+## 2026-10-26 shared workspace and Dashboard content-stress pass
+
+- Shared shell ownership: all desktop/tablet/mobile app main/workspace/page-stack nodes now have common `min-width:0;max-width:100%;box-sizing:border-box` at the global shell owner; this prevents implicit grid min-content width from creating overflow and leaves approved route-specific desktop widths alone. Source regression covers desktop + inherited tablet/mobile sibling behavior.
+- Dashboard: existing `DashboardCompletion.css` already owns the real two-column metric/chart layout at >=981px, so did not inject a second competing layout. In the same owner, reveal-only styling now allows very large genuine balances to wrap and their account-body height to grow rather than clip across charts, without changing masked values. Transaction and upcoming labels now expose full untruncated text through native titles while maintaining five-row scan density, dates, values and existing navigation. Source guards preserve finance semantics and chart identity.
+- **Implementations 3/5 completed · Sub-implementations 11/13 completed** by code/source guards. Remaining I1 mobile/app-wide overflow sibling sweep and I5 activity/KPI finishing density/geometry remain partial code scope; rendered acceptance separate and pending. No threshold or finance/security changes. Continue coherent draft CI and final exact-head rendered inspection.
