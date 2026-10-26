@@ -392,7 +392,7 @@ try{
   await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');
   await setByLabel('Λήξη κάρτας','12/30');
   await setByLabel('CVV κάρτας','123');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  const cardSave=await c.call("function(){const node=document.querySelector('.app-card-details-inline button[aria-label=\"Αποθήκευση στοιχείων κάρτας\"]');if(!node||node.disabled)return false;node.click();return true}");assert(cardSave,'created card saves through the existing edit icon slot');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')&&[...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created debit card persists into active Cards stack');
   await restoreCardLifecycleVault();
   await shot('cards-lifecycle-created');
@@ -426,7 +426,7 @@ try{
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
   assert(cardsEdit,'Cards exposes one pencil for inline secure editing');
    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'inline card secure editor');
-   await clickText('.app-card-details-inline button','Όνομα / σχέδιο');
+   const profileSlot=await c.call("function(){const node=document.querySelector('.app-card-details-inline button[aria-label=\"Όνομα / σχέδιο\"]');if(!node||node.disabled)return false;node.click();return true}");assert(profileSlot,'card design remains accessible from original toolbar slots');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
   await selectOwnedByLabel('Δίκτυο κάρτας','Mastercard');
