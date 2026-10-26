@@ -10,8 +10,12 @@
 .app-card-details-dialog-body .card-cvv-preserve-hint{display:block;font-size:11px;line-height:1.3;color:var(--ink-2,var(--ink))}
 
 
-/* The edited face IS the physical card; no extra footer or message panel. */
-.app-card-details-inline{display:block;min-width:0;max-width:100%;color:var(--ink)}
+/* The editor adds one wrapper between .card-slot (perspective:1000px) and
+   .payment-card. Preserve the 3D rendering context across that wrapper;
+   default transform-style:flat would squash the projected card-body, label,
+   bank artwork and network marks despite an unchanged physical face size.
+   No additional rotate/tilt is applied while editing. */
+.app-card-details-inline{display:block;min-width:0;max-width:100%;color:var(--ink);transform-style:preserve-3d}
 /* Retain the physical card's perspective transform at rest. Its children use
    translateZ(32px/38px); removing perspective changes their projected
    line-box geometry and shifts VALID THRU, CVV and network artwork. Editing
