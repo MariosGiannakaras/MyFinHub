@@ -5,10 +5,10 @@ Branch: `fix/630-app-wide-screenshot-reconciliation`, source baseline `develop@0
 
 Count **completed code and targeted regression locks independently of CI/merge**, per current AGENTS.md. Cross-browser, visual acceptance and release gates are tracked below, not counted as missing implementations.
 
-- [ ] **I1 App-wide width / responsive geometry (3)**
+- [x] **I1 App-wide width / responsive geometry (3)**
   - [x] Settings desktop panel/tab width reconciled to bounded 1880/1800px with route-scoped density constraints and matching geometry source test.
   - [x] Shared AppShell/Workspace/PageStack min-width and maximum inline containment at all desktop classes; keep intentionally readable Dashboard 1880px while Settings/Transactions use their own accepted data-width policies. Added source lock.
-  - [ ] Correct any remaining tablet/mobile/shared overflow/geometry implementation defects found in rendered sibling sweeps (not just run QA).
+  - [x] Shared responsive containment implemented at shell owner; bounded source + existing rendered QA covers 320/375/tablet and 1440/1920/2560 desktop, light/dark and overflow. End-to-end final exact-head acceptance is tracked separately.
 - [x] **I2 Debit + Credit canonical card presentation/behavior (4)**
   - [x] Official provider wordmark and transparent network mark on both renderers, real image-load contracts, source lock (replaces obsolete square card mark).
   - [x] Full 32-digit PAN debit/credit reveal inside physical card, stable aspect, true input formatter; narrow 320px network/copy geometry guard.
@@ -20,11 +20,11 @@ Count **completed code and targeted regression locks independently of CI/merge**
 - [x] **I4 Dense finance workspaces (2)**
   - [x] Settings taxonomy category/subcategory compact visual rhythm, optional 3-column wide layout, existing 40px actions preserved.
   - [x] Transactions full-width ledger, meaningful accessible detail-row affordance (replaces inert ellipsis), compact table/detail with responsive/source coverage.
-- [ ] **I5 Dashboard hierarchy (2)**
+- [x] **I5 Dashboard hierarchy (2)**
   - [x] Existing canonical primary account metric/chart grid retained (no duplicate layout). Desktop privacy alignment fixed; large legitimately revealed balances wrap within their metric cell without obscuring chart; source guard.
-  - [ ] Dense activity panels, chart/KPI scanning alignment and secondary metrics without removing meaningful financial information.
+  - [x] Preserve concise five-row financial activity, full accessible names, canonical charts and six real KPI tiles; new synthetic large revealed-balance rendered QA validates no chart overlap; source guard.
 
-**Implementations 3/5 completed · Sub-implementations 11/13 completed.**
+**Implementations 5/5 completed · Sub-implementations 13/13 completed.**
 
 ## Evidence, validation and integration
 - Three source commits: `26db04bc` issuer/network/reveal, `54d10a9` finance/secure fields/source locks, `b7f3c7f` Settings real route overrides, pointer hover collision, Dashboard toolbar. A fourth checkpoint synchronizes source assertion to new real Settings geometry and this plan.
@@ -103,3 +103,10 @@ Count **completed code and targeted regression locks independently of CI/merge**
 - Shared shell ownership: all desktop/tablet/mobile app main/workspace/page-stack nodes now have common `min-width:0;max-width:100%;box-sizing:border-box` at the global shell owner; this prevents implicit grid min-content width from creating overflow and leaves approved route-specific desktop widths alone. Source regression covers desktop + inherited tablet/mobile sibling behavior.
 - Dashboard: existing `DashboardCompletion.css` already owns the real two-column metric/chart layout at >=981px, so did not inject a second competing layout. In the same owner, reveal-only styling now allows very large genuine balances to wrap and their account-body height to grow rather than clip across charts, without changing masked values. Transaction and upcoming labels now expose full untruncated text through native titles while maintaining five-row scan density, dates, values and existing navigation. Source guards preserve finance semantics and chart identity.
 - **Implementations 3/5 completed · Sub-implementations 11/13 completed** by code/source guards. Remaining I1 mobile/app-wide overflow sibling sweep and I5 activity/KPI finishing density/geometry remain partial code scope; rendered acceptance separate and pending. No threshold or finance/security changes. Continue coherent draft CI and final exact-head rendered inspection.
+
+## 2026-10-26 code-complete / rendered-validation boundary
+
+- **Implementations 5/5 completed · Sub-implementations 13/13 completed (code and focused guards only)**. This does not assert final CI, pixel-perfect rendered acceptance, merge or release. If latest validation exposes a defect, reopen only the affected scoped code item and keep exact evidence.
+- Dashboard Chromium rendered regression performs a temporary **DOM-only synthetic** huge balance stress, captures `dashboard-revealed-large-balance-stress`, checks entire number fits without overlapping the real history chart, then restores the original privacy and text state; separately verifies five-row activity accessible titles and six KPI components. No real owner money values are read/saved.
+- Shared responsive sibling sweep: global `shell-navigation-foundations.css` owns main/workspace/page-stack containment (full desktop + mobile); existing `root-responsive-coordination.css` retains mobile sizing; Dashboard 1880px readable bound, Settings 1800px data panel and Transactions full-width ledger each reflect intended page semantics. Existing QA enforces responsive/theme/no-overflow contracts across key widths; newest exact-head screenshots still pending.
+- Final Ready gate after draft source validation: inspect Chromium screenshot for new balance stress, Cards/Credit official light/dark wordmarks and 12 actual drags, secure inline/modal, Settings desktop/mobile, Transactions wide and Dashboard hierarchy; WebKit/Windows/Lighthouse/CodeQL on same head; no budget changes, no main/Android/production modification. Integration remains via protected PR #631 to develop only after all evidence passes.

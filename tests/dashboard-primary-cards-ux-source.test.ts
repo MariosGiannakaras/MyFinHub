@@ -36,6 +36,13 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(desktop).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)!important');
   });
 
+  it('verifies real chart/value geometry and complete five-row activity in Chromium',()=>{
+    const qa=read('../scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(qa).toContain('dashboard-revealed-large-balance-stress');
+    expect(qa).toContain('stressBalance?.fullText&&stressBalance.noOverlap&&stressBalance.valueFits');
+    expect(qa).toContain('readableActivity.movementTitles&&readableActivity.upcomingTitles');
+  });
+
   it('retains full text access to visually condensed finance activity',()=>{
     expect(dashboard).toContain('<b title={item.note}>{item.note}</b>');
     expect(dashboard).toContain('<small title={item.category}>{item.category}</small>');
