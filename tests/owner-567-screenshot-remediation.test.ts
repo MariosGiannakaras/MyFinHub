@@ -64,6 +64,9 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
     const frontendQa=file('../scripts/frontend-qa.mjs');
     expect(frontendQa).toContain('on-card secure editor and every save/cancel action must remain inside expanded card');
+    // getBoundingClientRect uses fractional CSS px; DOM clientHeight is integer-rounded.
+    // Normalize measurement units while retaining strict no-clipping and in-card action assertions.
+    expect(frontendQa).toContain('Math.ceil(inlineContainment.cardHeight)>=inlineContainment.clientHeight&&inlineContainment.scrollHeight<=inlineContainment.clientHeight+1');
     const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
     expect(geomQa).toContain('save/cancel buttons and complete editor must fit expanded card');
   });
