@@ -29,7 +29,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('if(inline)return <section');
     expect(editor).toContain('await onBeforeSave?.(card)');
     expect(editor).toContain('await onSaved(updated)');
-    expect(editor).toContain("inline?'Κενό'");
+    expect(editor).toContain("placeholder={requireCvv?'CVV':'Προαιρετικό'}");
+    expect(editor).toContain('{!requireCvv?<small className="card-cvv-preserve-hint">');
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
     const inlineCss=file('../src/styles/card-details-dialog.css');
     // Owner requested the original card/button visual language, not a new boxed editor.
