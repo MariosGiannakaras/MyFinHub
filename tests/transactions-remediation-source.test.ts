@@ -6,6 +6,17 @@ const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.
 const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
+  it('keeps action buttons immediately after the selected transaction hero, before long details',()=>{
+    const hero=page.indexOf('transactions-detail-hero');
+    const actions=page.indexOf('transactions-detail-actions');
+    const details=page.indexOf('transactions-detail-list');
+    expect(hero).toBeGreaterThan(0);
+    expect(actions).toBeGreaterThan(hero);
+    expect(details).toBeGreaterThan(actions);
+    const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.meta.url),'utf8');
+    expect(css).toContain('.transactions-detail-actions{margin:12px 0 4px;padding:0;');
+    expect(css).toContain('.transactions-detail-actions button{min-height:44px;');
+  });
   it('keeps the desktop filtered-row details button a truthful open/close toggle',()=>{
     const crudQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
     expect(page).toContain("if(isSelected){setDetailOpen(false);return}setSelectedId(r.id);setDetailOpen(true)");

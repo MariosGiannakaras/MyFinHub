@@ -170,8 +170,8 @@ The owner explicitly points out that some behaviors in the EARLY releases were a
   - [ ] Run true 320/375/desktop/light/dark rendered editor saved/new/error/loading geometry and inspect real screenshots against original owner reference. No claim of pixel-perfect pass before evidence.
 - [ ] **I7 Fix the remaining confirmed layout/interaction debt** (3)
   - [x] One-bank Cards: compact the desktop bank workspace and remove mobile single-card scrollbar; preserve existing multi-bank horizontal navigation and scroll hint, rendered guard added.
-  - [ ] Settings taxonomy sparse-card vertical whitespace + mobile tabs affordance, preserving all taxonomy functions.
-  - [ ] Transactions selected-detail Edit/Delete visibility and mobile filter density, preserving keyboard, delete confirmations, read/write semantics.
+  - [x] Mobile Settings selected tab scrolls only the horizontal tablist (not the document), left-edge labels no longer visually masked; existing taxonomy card align-items/start retained to avoid semantic reorder.
+  - [x] Selected desktop Transactions Edit/Delete moved immediately below the hero and above long details, ≥44px targets, real 1440/1920/2560 browser geometry guard. Mobile filters still a P2 density follow-up; no finance behavior altered.
 
 **Current implementation count: Implementations 5/7 completed · Sub-implementations 16/19 completed** (new I6 and I7 are partial; historic I1–I5 5/5 and 13/13 remain completed). The prior green exact-head CI #40304230105 on `38146ab4` is **historical**, not validation of this new batch. PR #631 returned to Draft, no main/production/Android changes.
 
@@ -181,3 +181,9 @@ Other screenshot observations — huge value group wrapping, 2560px intentional 
 - Draft [CI #40314017124](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40314017124) at `95c4eef2` passed **1,542/1,543** Vitest checks; one source contract `tests/cards-approved-surrounding-source.test.ts` failed because replacing the Cards workspace's exact literal `className` removed a structural sentinel. The HTML class string itself was owner-approved and needs preservation.
 - Remediation retains the exact original classes and expresses the single-bank conditional through semantic `data-single-bank="true"` instead, which the shared Cards CSS and new CDP geometry assertions consume. Existing bank-by-bank baseline selector and all on-card security mechanics remain intact. Test was **not** disabled. Latest-head Draft `validate` now required before visual QA.
 - **Implementations 5/7 completed · Sub-implementations 16/19 completed** (current accepted code count; I6/I7 partially authored). No merge/main/production/Android change.
+
+## 2026-10-26 resumed P1 transaction and Settings tab-state work
+- **I7 coded 3/3**. No taxonomy reordering/masonry was introduced: existing CSS already has `align-items:start`, and altering DOM ordering would risk keyboard/edit semantics. Sparse-category desktop whitespace remains a *visual observation* for owner signoff; avoid overstating correction.
+- Real cause of clipped mobile Settings tabs: `selected?.scrollIntoView({inline:'center'})` could move ancestor scrolling, while symmetrical 10px masks cut initial tab text. Changed to rail-only `scrollTo` computed from DOM rectangles, plus right-only overflow fade. Existing #567 focus/tab ownership preserved.
+- Transactions desktop actions were real but in the bottom of the right rail, after ~6 detail rows. Moved the **same** edit/delete buttons before the extended detail list and reduced their touch-safe height from 58px to min 44px. New Chromium assertion at 1440/1920/2560 checks both are inside their panel and above the fold; no selection, delete, undo or mutation semantics changed.
+- **Implementations 6/7 completed · Sub-implementations 18/19 completed** (code only, I6 on-card editing full rendered acceptance pending). Latest Draft CI includes these changes; independent 320/375 + desktop screenshots still needed. Prior CI #40304230105 is historical green, not validation of these changes.
