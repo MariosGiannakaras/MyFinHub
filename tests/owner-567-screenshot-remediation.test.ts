@@ -139,7 +139,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
   it('exercises the real two-stage on-card edit to profile/design path in rendered phone QA',()=>{
     const geometry=file('../scripts/completion-dialog-geometry-qa.mjs');
     expect(geometry).toContain("'on-card secure details visible'");
-    expect(geometry).toContain("await click('.app-card-details-inline button[aria-label=\\\"Όνομα / σχέδιο\\\"]'");
+    expect(geometry).toContain('existing on-card profile slot');
     expect(geometry).toContain("await inspect('.card-create-modal'");
     expect(geometry).toContain("await inspect('.app-card-details-inline'");
   });
