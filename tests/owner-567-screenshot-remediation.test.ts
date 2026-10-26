@@ -27,9 +27,15 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(route).toContain('const visibleWorkspaceBanks=');
     expect(route).not.toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
     expect(editor).toContain('if(inline){');
-    expect(editor).toContain('card-number card-inline-value card-inline-pan');
-    expect(editor).toContain('card-field-value card-inline-value card-inline-expiry');
-    expect(editor).toContain('card-field-value card-inline-value card-inline-cvv');
+    expect(editor).toContain("card-number card-inline-edit-host");
+    expect(editor).toContain('className="card-inline-value card-inline-pan"');
+    expect(editor).toContain('card-inline-metric-only');
+    expect(editor).toContain('aria-hidden="true"');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-value{');
+    expect(inlineCss).toContain('position:absolute;inset:0;display:block;width:100%;height:100%');
+    expect(editor).toContain('card-field-value card-inline-edit-host');
+    expect(editor).toContain('card-inline-value card-inline-expiry');
+    expect(editor).toContain('card-inline-value card-inline-cvv');
     expect(editor).toContain('card-inline-action-slot');
     expect(editor).toContain('<PrototypeBrand card={card} bank={bank}/>');
     expect(interactive).toContain('export function PrototypeBrand(');
@@ -51,7 +57,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
     // Owner requested the original card/button visual language, not a new boxed editor.
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
-    expect(inlineCss).toContain('width:100%;height:23px;max-height:23px;min-height:0;');
+    expect(inlineCss).toContain('font:inherit;letter-spacing:inherit;line-height:inherit');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
     expect(inlineCss).toContain('height:1.1em;max-height:none;box-sizing:border-box;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberHeight,cardFaceAfterEdit.numberHeight,1)');
