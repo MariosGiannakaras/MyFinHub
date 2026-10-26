@@ -87,6 +87,12 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineFace).not.toContain('className="app-card-details-notice"');
     expect(inlineFace).not.toContain('card-inline-close');
     expect(inlineCss).toContain('.app-card-details-inline{display:block;');
+    // The parent .card-slot owns perspective. An inserted flat wrapper would
+    // shrink translateZ children without changing the physical card ratio.
+    expect(file('../src/styles/cards-v15-presentation.css')).toContain('perspective:1000px;position:relative');
+    expect(inlineCss).toContain('transform-style:preserve-3d');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.fieldsHeight,cardFaceAfterEdit.fieldsHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.brandY,cardFaceAfterEdit.brandY)');
     expect(inlineCss).not.toContain('.card-inline-save-actions{');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-save[data-save-error="true"]');
     expect(file('../scripts/frontend-qa.mjs')).toContain('Escape discards draft without secure vault writes');
