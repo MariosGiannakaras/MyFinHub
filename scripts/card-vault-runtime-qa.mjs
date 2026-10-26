@@ -68,7 +68,7 @@ try{
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<150;i+=1){if(await c.call(fn,args))return;await sleep(80)}throw new Error(`Timed out waiting for ${label}`)};
-  const setInput=async(label,value)=>{const ok=await c.call("function(label,value){const input=[...document.querySelectorAll('input')].find(node=>node.getAttribute('aria-label')===label);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`missing input ${label}`);await sleep(60)};
+  const setInput=async(label,value)=>{const ok=await c.call("function(label,value){const input=[...document.querySelectorAll('input,textarea')].find(node=>node.getAttribute('aria-label')===label);if(!input)return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`missing input ${label}`);await sleep(60)};
   const clickAria=async label=>{const ok=await c.call("function(label){const button=[...document.querySelectorAll('button')].find(node=>node.getAttribute('aria-label')===label&&node.getClientRects().length>0);button?.click();return Boolean(button)}",[label]);assert(ok,`missing button ${label}`);await sleep(80)};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const button=[...document.querySelectorAll(selector)].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes(text));button?.click();return Boolean(button)}",[selector,text]);assert(ok,`missing ${selector} containing ${text}`);await sleep(80)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
@@ -94,7 +94,7 @@ try{
   await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'secure details save closes');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const pan=document.querySelector('input[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'saved server secret reveal');
+  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'saved server secret reveal');
   await screenshot('card-vault-revealed-before-reload');
   await clickAria('Κλείσιμο στοιχείων κάρτας');
 
@@ -107,7 +107,7 @@ try{
   await c.send('Page.reload',{ignoreCache:true});
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'}",'Cards after hard reload');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const pan=document.querySelector('input[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'server secret after hard reload');
+  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'server secret after hard reload');
   await setInput('Λήξη κάρτας','11/31');
   await setInput('CVV κάρτας','987');
   await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
@@ -120,7 +120,7 @@ try{
   const deleted=await c.call("async function(){const module=await import('/src/lib/cardVaultClient.ts');await module.deleteCardSecret('qa-debit-card');return globalThis.__myfinhubQaCardVault.calls.at(-1)}");
   assert(deleted?.method==='DELETE'&&deleted?.cardId==='qa-debit-card','explicit DELETE reaches server-vault boundary');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const pan=document.querySelector('input[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan&&!pan.disabled&&pan.value===''&&exp?.value===''&&cvv?.value===''}",'deleted secret returns empty secure editor');
+  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan&&!pan.disabled&&pan.value===''&&exp?.value===''&&cvv?.value===''}",'deleted secret returns empty secure editor');
   const calls=await c.call("function(){return globalThis.__myfinhubQaCardVault.calls}");
   assert(calls.some(call=>call.method==='PUT')&&calls.some(call=>call.method==='POST')&&calls.some(call=>call.method==='DELETE'),'runtime exercised PUT, POST and DELETE vault methods');
   await screenshot('card-vault-empty-after-delete');

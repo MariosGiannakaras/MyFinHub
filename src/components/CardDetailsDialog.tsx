@@ -4,6 +4,7 @@ import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { useEffect, useId, useRef, useState } from 'react';
 import { AppTextInput } from './AppTextInput';
+import { AppTextarea } from './AppTextarea';
 import { Button } from './Button';
 import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
@@ -101,6 +102,9 @@ export function CardDetailsDialog({
   if(inline){
     if(!bank)throw new Error('Inline card editing requires the original card bank');
     const kind=card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';
+    // A 32-digit PAN is displayed on two actual card lines, not horizontally
+    // scrolled inside a single-line input while the user edits it.
+    const shownPan=pan.replace(/\D/g,'').length>16?pan.slice(0,19)+'\n'+pan.slice(20):pan;
     return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={[notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>
       <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
         <div className="card-inner">
@@ -111,7 +115,7 @@ export function CardDetailsDialog({
           <div className="card-body">
             <label className="card-number-wrap">
               <span className="sr-only">Αριθμός κάρτας</span>
-              <AppTextInput data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" maxLength={39} value={pan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
+              <AppTextarea data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" spellCheck={false} wrap="soft" rows={shownPan.includes('\n')?2:1} maxLength={40} value={shownPan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
             </label>
             <div className="card-fields">
               <label className="card-field"><span className="card-field-label">VALID THRU</span><AppTextInput className="card-inline-value card-inline-expiry" autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={busy} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>

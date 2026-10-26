@@ -28,6 +28,11 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(route).not.toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
     expect(editor).toContain('if(inline){');
     expect(editor).toContain('card-inline-value card-inline-pan');
+    expect(editor).toContain('const shownPan=pan.replace(/\\D/g,\'\').length>16');
+    expect(editor).toContain('rows={shownPan.includes(\'\\n\')?2:1}');
+    expect(editor).toContain('<AppTextarea data-autofocus');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-32-digits-');
+    expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
     expect(editor).toContain('card-inline-value card-inline-expiry');
     expect(editor).toContain('card-inline-value card-inline-cvv');
     expect(editor).toContain('<CardNetworkMark network={card.network} detail={kind}/>');

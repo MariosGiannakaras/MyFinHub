@@ -25,6 +25,8 @@
 }
 .app-card-details-inline .card-inline-value::placeholder{color:var(--card-muted);opacity:1}
 .app-card-details-inline .card-inline-pan{
+  height:auto;min-height:27px;max-height:none;resize:none;overflow:hidden;
+  white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.2;
   font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
   font-size:clamp(.88rem,1.14vw,1rem);font-weight:650;letter-spacing:.035em;
 }
