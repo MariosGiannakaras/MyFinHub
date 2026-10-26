@@ -120,7 +120,7 @@ export function CardDetailsDialog({
             <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
             <div className="card-toolbar">
               {onEditProfile?<button type="button" className="card-icon-btn card-icon-reveal" aria-label="Όνομα / σχέδιο" title="Όνομα / σχέδιο" disabled={busy} onClick={onEditProfile}><CreditCard aria-hidden="true"/></button>:<span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>}
-              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label="Αποθήκευση στοιχείων κάρτας" aria-describedby={error?errorId:undefined} title={error||'Αποθήκευση στοιχείων κάρτας'} data-save-error={error?'true':undefined} disabled={busy} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
+              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label="Αποθήκευση στοιχείων κάρτας" aria-describedby={error?errorId:undefined} title="Αποθήκευση στοιχείων κάρτας" data-save-error={error?'true':undefined} disabled={busy} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
               <span className="card-icon-btn card-icon-management card-inline-action-slot" aria-hidden="true"><Archive/></span>
             </div>
           </header>
