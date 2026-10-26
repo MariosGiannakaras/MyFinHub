@@ -112,7 +112,7 @@ export function CardsPage({
   const saveCardProfile=(card:PaymentCard)=>{onUpsertCard(card);setProfileCard(null);setMessage(`Η ενημέρωση της «${card.nickname}» αποθηκεύεται.`)};
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
-  const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(`Η κάρτα «${card.nickname}» και τα ασφαλή στοιχεία επιβεβαιώθηκαν ως αποθηκευμένα.`)};
+  const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage('')};
   const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η αρχειοθέτηση της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν διαθέσιμα.`)};
   const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η επαναφορά της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν.`)};
   const confirmDelete=async()=>{
