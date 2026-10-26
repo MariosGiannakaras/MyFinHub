@@ -22,7 +22,14 @@
 }
 .app-card-details-inline .card-inline-value:focus-visible{outline:2px solid var(--card-text)}
 .app-card-details-inline .card-inline-value::placeholder{color:var(--card-muted);opacity:1}
-.app-card-details-inline .card-inline-pan{resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}
+/* Native textarea intrinsic rows add block height compared to a plain
+   card-number div. Keep its box equal to the original type line-box so
+   bottom-anchored expiry/CVV/network never shift on entering edit mode. */
+.app-card-details-inline .card-inline-pan{
+  height:1.1em;max-height:none;box-sizing:border-box;
+  resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}
 .app-card-details-inline .card-inline-action-slot{visibility:hidden;pointer-events:none}
 /* Native input elements default to a taller 1.4 line box than the normal
    card-field-value span. Let the original 23px copy slot determine row height

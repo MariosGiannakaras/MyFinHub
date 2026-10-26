@@ -52,6 +52,10 @@ describe('owner #567 screenshot-driven corrections',()=>{
     // Owner requested the original card/button visual language, not a new boxed editor.
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
     expect(inlineCss).toContain('width:100%;height:23px;max-height:23px;min-height:0;');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
+    expect(inlineCss).toContain('height:1.1em;max-height:none;box-sizing:border-box;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberHeight,cardFaceAfterEdit.numberHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.bodyHeight,cardFaceAfterEdit.bodyHeight,1)');
     expect(inlineCss).toContain('line-height:normal;box-sizing:border-box;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceBeforeEdit.field');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.labelY');
