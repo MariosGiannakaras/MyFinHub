@@ -21,6 +21,14 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).not.toContain('wide.shell<=1561');
   });
 
+  it('keeps the functional last-column details affordance visible at 1280–1599px',()=>{
+    expect(css).toContain('@media(min-width:1181px) and (max-width:1599px)');
+    expect(css).toContain('.transactions-approved-table{min-width:0;table-layout:fixed}');
+    expect(css).toContain('.transactions-approved-table td:last-child{width:48px}');
+    expect(qa).toContain('visibleActions.scrollWidth<=visibleActions.wrapWidth+2');
+    expect(qa).toContain('visibleActions.buttonRight<=visibleActions.wrapRight+1');
+  });
+
   it('uses the available desktop width while retaining readable ledger/detail wrapping',()=>{
     expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%;margin-inline:0}');
     expect(css).toContain('.transactions-approved-table td{height:auto;min-height:48px');

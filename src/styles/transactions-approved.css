@@ -97,4 +97,16 @@
 .transaction-empty-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--accent-soft);color:var(--accent)}
 .transaction-empty-state>span:not(.transaction-empty-icon){max-width:520px}
 .transaction-empty-state button{min-height:40px}
+/* The 900px minimum must not put the only details action outside the ledger
+   when a 320–340px details rail is open on mid-size desktop windows. Use the
+   existing table's wrapping semantics so all 8 columns, including actions,
+   remain in the visible viewport. Very wide desktops retain the 900px minimum. */
+@media(min-width:1181px) and (max-width:1599px){
+  .transactions-approved-table{min-width:0;table-layout:fixed}
+  .transactions-approved-table td:nth-child(2),
+  .transactions-approved-table td:nth-child(3),
+  .transactions-approved-table td:nth-child(4){min-width:0}
+  .transactions-approved-table th:last-child,
+  .transactions-approved-table td:last-child{width:48px}
+}
 @media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}
