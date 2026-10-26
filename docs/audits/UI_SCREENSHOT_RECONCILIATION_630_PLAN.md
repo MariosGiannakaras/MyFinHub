@@ -1,26 +1,30 @@
 # Issue #630 — active visual reconciliation (authoritative task branch)
 Branch: `fix/630-app-wide-screenshot-reconciliation`, source baseline `develop@00a962f5231d86454b6ab9910b1ef237265ac9ed`. Draft PR [#631](https://github.com/MariosGiannakaras/MyFinHub/pull/631). Eight annotated owner screenshots are references only; financial/card data in originals must not enter Git or QA fixtures.
 
-## Scope 5 implementations / 13 sub-implementations
+## Scope — 5 code implementations / 13 code sub-implementations (2026-10-26 code checkpoint)
 
-- [ ] **I1 App-wide desktop geometry** (3)
-  - [ ] Authored: Transactions full-width data ledger and Settings bounded 1880/1800px tab/panel desktop measure, source contracts adjusted; desktop rendered fit awaits QA
-  - [ ] Shared layout alignment across Dashboard/other app pages, preserving route-specific readable maxima and finance visual hierarchy
-  - [ ] Tablet/mobile + 1440/1920/2560 Light/Dark rendered overflow/geometry and keyboard QA
-- [ ] **I2 Cards/Credit visual & behavior** (4)
-  - [ ] Authored: provider real wordmark role for debit and credit, unframed real Visa/Mastercard SVG; direct screenshot verification pending
-  - [ ] Authored: debit original-aspect revealed PAN, credit full long PAN wrapping, no 16-digit/Luhn restrictions; full 32-digit rendered QA pending
-  - [ ] Authored: remove generic `.payment-card:hover` transform competing with live mouse/pen 3D tilt; existing CDP rendered debit/credit tests test hover/leave/reduced motion and multi-card stack; terminal output and screenshots pending
-  - [ ] Shared visual reduction of icon action noise while preserving all management/reveal/archive commands and 40/44px mobile hit targets; rendered acceptance pending
-- [ ] **I3 Card-details editor** (2)
-  - [ ] Authored: form field containment while preserving existing 32 digit input formatting, 39-character presentation maximum, no Luhn and server vault
-  - [ ] Actual inline/dialog full PAN+expiry+CVV/error/focus responsiveness and persistence evidence
-- [ ] **I4 Dense workspaces** (2)
-  - [ ] Authored: compact Settings taxonomy parent/subcategory visuals in actual route-scoped stylesheet, optional three columns wide, all toolbar actions preserved; rendered QA pending
-  - [ ] Authored: Transactions full-width ledger and meaningful disclosure toggle replacing non-semantic ellipsis, detail Edit/Delete preserved; rendered functional QA pending
-- [ ] **I5 Dashboard hierarchy** (2)
-  - [ ] Authored: remove desktop privacy button 7px visual offset; inspect actual account chart and action alignment across key breakpoints
-  - [ ] Dashboard activity/secondary KPI hierarchy without suppressing useful financial data; evidence pending
+Count **completed code and targeted regression locks independently of CI/merge**, per current AGENTS.md. Cross-browser, visual acceptance and release gates are tracked below, not counted as missing implementations.
+
+- [ ] **I1 App-wide width / responsive geometry (3)**
+  - [x] Settings desktop panel/tab width reconciled to bounded 1880/1800px with route-scoped density constraints and matching geometry source test.
+  - [ ] Audit/correct remaining shared desktop workspace width mismatches across routes; keep readable Dashboard max width and financial panels.
+  - [ ] Correct any remaining tablet/mobile/shared overflow/geometry implementation defects found in rendered sibling sweeps (not just run QA).
+- [x] **I2 Debit + Credit canonical card presentation/behavior (4)**
+  - [x] Official provider wordmark and transparent network mark on both renderers, real image-load contracts, source lock (replaces obsolete square card mark).
+  - [x] Full 32-digit PAN debit/credit reveal inside physical card, stable aspect, true input formatter; narrow 320px network/copy geometry guard.
+  - [x] Preserve pointer tilt; stable Credit stage delegation, card-restack position, no document scrolling from pagination, 12 physical CDP drags and reduced-motion contracts.
+  - [x] Quiet icon controls without losing management affordances or 40px mobile targets; remove dead manual network artwork CSS.
+- [ ] **I3 Secure details editor (2)**
+  - [x] Preserve enforced 32-digit normalized PAN cap and independent encrypted card vault; contain shared inline/dialog inputs with max-width/min-width.
+  - [ ] Reconcile any remaining inline/dialog form layout/helper/action semantic differences with a shared implementation owner (not merely a QA script).
+- [x] **I4 Dense finance workspaces (2)**
+  - [x] Settings taxonomy category/subcategory compact visual rhythm, optional 3-column wide layout, existing 40px actions preserved.
+  - [x] Transactions full-width ledger, meaningful accessible detail-row affordance (replaces inert ellipsis), compact table/detail with responsive/source coverage.
+- [ ] **I5 Dashboard hierarchy (2)**
+  - [ ] Account charts/value-to-space/action toolbar responsive alignment and privacy-button hierarchy across desktop/tablet/mobile (privacy offset removed; rest partial).
+  - [ ] Dense activity panels, chart/KPI scanning alignment and secondary metrics without removing meaningful financial information.
+
+**Implementations 2/5 completed · Sub-implementations 8/13 completed.**
 
 ## Evidence, validation and integration
 - Three source commits: `26db04bc` issuer/network/reveal, `54d10a9` finance/secure fields/source locks, `b7f3c7f` Settings real route overrides, pointer hover collision, Dashboard toolbar. A fourth checkpoint synchronizes source assertion to new real Settings geometry and this plan.
@@ -72,3 +76,12 @@ Branch: `fix/630-app-wide-screenshot-reconciliation`, source baseline `develop@0
 - Added 12-step real browser assertions for `pageScrollY` stability and actual card center inside viewport in addition to all cards, dot counts, accessible tools and new selected identity. Focused source test updated to **require** local horizontal dot scroll and to **forbid** `activeDot.scrollIntoView`. Old test still demanded `scrollIntoView`, failing [CI #40235383764](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40235383764) with 1 source-test failure / 1,532 tests passed; corrected contract now part of follow-up source head. No relaxed bounds/budgets.
 - Branch remains Draft during source remediation; only after draft `npm run check` pass transition Ready to trigger all required rendered/Windows/WebKit/Lighthouse/CodeQL gates on exact final head. Direct image inspection is still required. **Implementations 0/5 completed · Sub-implementations 0/13 completed** pending final acceptance.
 - No changes to owner finance data, security, database, production main or Android repository.
+
+## 2026-10-26 latest code / QA checkpoint
+
+- PR #631 code head **`25f8dd0721c44590da7fecc6efe9cb86e2c12b43`** before this plan-only checkpoint. Base `develop@00a962f5231d86454b6ab9910b1ef237265ac9ed` unchanged, single PR owner; no changes to `main`/Vercel/Android/finance DB.
+- Latest previous full **Ready CI #40242213425** on `d5b1f0fd` was **FAIL** only in rendered **`scripts/brand-visual-qa.mjs`**, which still demanded Piraeus square `card-mark` on Cards. This contradicts the now approved real wordmark in both renderers; all other required WebKit, Windows x3, Lighthouse, CodeQL passed. The 12 consecutive Credit physical restack gestures **passed** in that exact artifact, generating `credit-stack-two-full-cycles.png`; manually opened that screenshot, plus 320px/375px full PAN and Dashboard/Transactions/Settings representative screenshots. Confirmed successful Credit gesture cycle and mobile card elements, but direct visual inspection identified stale Credit rate editor visually preceding the card stack.
+- Source batch `25f8dd07`: `brand-visual-qa.mjs` now tests actual loaded Piraeus universal wordmark in both Cards/Credit at desktop/mobile and preserves provider image natural-width and overflow checks; source regression asserts old card-mark is not required. `credit-approved-target.css` explicitly orders interest-rate panel after activity, not above physical card; Credit browser QA and unit source lock enforce it on selected cards with/without purchases.
+- Draft [CI #40285192380](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40285192380) `validate` **SUCCESS** on `25f8dd07`, CodeQL pending at original inspection. A plan-only commit here supersedes that exact head and may restart narrow checks. Once latest draft validation passes, mark PR Ready for ONE exact-head full CI/rendered/WebKit/Lighthouse/Windows gate. No merge while required checks fail/pending. Do **not** equate source success with full visual acceptance.
+- Remaining partial code scope: I1 shared width/mobile, I3 form dialog parity, I5 Dashboard density. Separate visual acceptance: inspect all relevant genuine generated screenshots, including Settings categories 20/6 UI (not just production DB), card wordmarks+network both themes, 320px full PAN, 12-stack, Credit rate order, Transactions detail action and Dashboard scan rhythm. Any defects go back into this plan as new/partial scoped item.
+- Next safe action: check latest source CI, promote Ready if green; inspect exact-head full CI and rendered images. If green, address remaining code tasks coherently before eligible merge. The plan/code count is **2/5 · 8/13**, separate from CI acceptance.
