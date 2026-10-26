@@ -73,12 +73,24 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.editValue');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceBeforeEdit.field');
     expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.labelY');
-    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions{');
-    expect(inlineCss).toContain('min-height:40px');
-    expect(editor).toContain('<details className="app-card-details-help">');
-    expect(editor).toContain('className="card-profile-action"');
-    expect(inlineCss).toContain('.app-card-details-inline .app-card-details-help{');
-    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions .card-profile-action');
+    const inlineFace=editor.split('if(inline){')[1]?.split('const content=<>')[0]??'';
+    expect(inlineFace).toContain('className="card-icon-btn card-icon-management card-inline-save"');
+    expect(inlineFace).toContain('aria-label="Αποθήκευση στοιχείων κάρτας"');
+    expect(inlineFace).toContain('onClick={()=>void submit()}');
+    expect(inlineFace).toContain("event.key==='Escape'");
+    expect(inlineFace).toContain('onKeyDownCapture=');
+    expect(inlineFace).toContain('className="sr-only" role="alert"');
+    expect(inlineFace).toContain('aria-label="Όνομα / σχέδιο"');
+    expect(inlineFace).not.toContain('<footer');
+    expect(inlineFace).not.toContain('<details className="app-card-details-help">');
+    expect(inlineFace).not.toContain('className="card-cvv-preserve-hint"');
+    expect(inlineFace).not.toContain('className="app-card-details-notice"');
+    expect(inlineFace).not.toContain('card-inline-close');
+    expect(inlineCss).toContain('.app-card-details-inline{display:block;');
+    expect(inlineCss).not.toContain('.card-inline-save-actions{');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save[data-save-error="true"]');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('Escape discards draft without secure vault writes');
+    expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('partial vault save must keep inline editor');
     expect(route).toContain("data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined}");
     const collections=file('../src/styles/cards-v15-presentation.css');
     expect(collections).toContain('.cards-workspace[data-single-bank="true"] .cards-grid{');
@@ -101,13 +113,13 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(qa).toContain("'eye reports server vault configuration error'");
     expect(cardCss).not.toContain('.prototype-payment-card:has(.app-card-details-inline)');
     const frontendQa=file('../scripts/frontend-qa.mjs');
-    expect(frontendQa).toContain('normal card face with PAN expiry CVV editable in their original positions');
+    expect(frontendQa).toContain('normal card face with only original slot save icon and no added UI');
     // getBoundingClientRect uses fractional CSS px; DOM clientHeight is integer-rounded.
     // Normalize measurement units while retaining strict no-clipping and in-card action assertions.
     expect(frontendQa).toContain('Math.abs(inlineContainment.physicalCardHeight-inlineContainment.expectedCardHeight)<=2');
     expect(editor).toContain('aria-label="Κλείσιμο στοιχείων κάρτας"');
     const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
-    expect(geomQa).toContain('editable values in original card positions; actions below physical card');
+    expect(geomQa).toContain('editable values and save icon in original card; no new panels');
   });
   it('shows semantic finance icons first and preserves explicit opt-in to the whole catalog',()=>{
     const picker=file('../src/components/CategoryIconPicker.tsx');
@@ -127,7 +139,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
   it('exercises the real two-stage on-card edit to profile/design path in rendered phone QA',()=>{
     const geometry=file('../scripts/completion-dialog-geometry-qa.mjs');
     expect(geometry).toContain("'on-card secure details visible'");
-    expect(geometry).toContain("await clickText('.app-card-details-inline button','Όνομα / σχέδιο')");
+    expect(geometry).toContain("await click('.app-card-details-inline button[aria-label=\\\"Όνομα / σχέδιο\\\"]'");
     expect(geometry).toContain("await inspect('.card-create-modal'");
     expect(geometry).toContain("await inspect('.app-card-details-inline'");
   });
