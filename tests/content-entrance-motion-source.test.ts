@@ -83,7 +83,7 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("'.row-context-button','reopen the selected modern event details'");
     expect(functional).toContain("'selected modern event details close and expose collapsed ARIA state'");
     expect(functional).toContain("'.transactions-detail-actions button','Επεξεργασία'");
-    expect(functional).toContain("'filtered modern event detail panel'");
+    expect(functional).toContain("'filtered modern event detail panel is genuinely expanded'");
     expect(functional).toContain("'exactly one settled modern event in the primary ledger'");
     expect(functional).toContain("'.transactions-approved-table tbody [data-transaction-source=\"event\"]'");
     expect(functional).toContain("'.transactions-detail-actions button','Διαγραφή'");
