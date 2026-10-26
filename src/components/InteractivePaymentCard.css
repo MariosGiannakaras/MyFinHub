@@ -170,15 +170,6 @@
   .prototype-payment-card .copy-mini{transition:none!important}
 }
 
-/* #567 Inline secure editor stays ON the card rather than opening a modal.
-   Its actual field/error content defines height; avoid a gratuitous fixed
-   400px minimum that amplifies tall early editor layouts. */
-.prototype-payment-card:has(.app-card-details-inline){aspect-ratio:auto;min-height:300px;transform:none!important;overflow:hidden}
-.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto;height:auto;min-height:0;padding:0;display:block}
- /* Prevent the default absolute credit-card inset from limiting this owner-approved expandable editor. */
-.prototype-payment-card:has(.app-card-details-inline) .app-card-details-inline{height:auto;max-height:none}
-@media(max-width:680px){.prototype-payment-card:has(.app-card-details-inline){min-height:300px}}
-
 /* Revealed PAN may be up to 32 digits: show all, without changing masked card geometry. */
 .prototype-payment-card:has(.card-number.revealed){aspect-ratio:1.586/1;min-height:207px}
 .prototype-payment-card:has(.card-number.revealed) .card-inner{position:absolute;inset:0;min-height:0;height:100%;justify-content:space-between}

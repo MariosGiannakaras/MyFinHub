@@ -1,4 +1,7 @@
 import { CreditCard, X } from 'lucide-react';
+import { BankBrandMark } from './BankBrandMark';
+import { CardNetworkMark } from './CardNetworkMark';
+import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { useEffect, useId, useRef, useState } from 'react';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
@@ -7,14 +10,15 @@ import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, normalizeCardDetailsInput, saveCardDetails } from '../lib/cardDetails';
-import type { PaymentCard } from '../types';
+import type { CardBank, PaymentCard } from '../types';
 import '../styles/card-details-dialog.css';
 
 export function CardDetailsDialog({
-  open,card,requireCvv=false,motionMode='system',inline=false,onEditProfile,onBeforeSave,onSaved,onCancel,
+  open,card,bank,requireCvv=false,motionMode='system',inline=false,onEditProfile,onBeforeSave,onSaved,onCancel,
 }:{
   open:boolean;
   card:PaymentCard|null;
+  bank?:CardBank;
   requireCvv?:boolean;
   motionMode?:'system'|'reduced'|'full';
   inline?:boolean;
@@ -94,6 +98,41 @@ export function CardDetailsDialog({
     }finally{setSaving(false)}
   };
 
+  if(inline){
+    if(!bank)throw new Error('Inline card editing requires the original card bank');
+    const kind=card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';
+    return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={[notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>
+      <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
+        <div className="card-inner">
+          <header className="card-header">
+            <div className="card-brand-block"><div className="card-brand"><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/></div><div className="card-nickname">{card.nickname}</div></div>
+            <div className="card-toolbar"><button type="button" className="card-icon-btn card-inline-close" aria-label="Ακύρωση επεξεργασίας στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></div>
+          </header>
+          <div className="card-body">
+            <label className="card-number-wrap">
+              <span className="sr-only">Αριθμός κάρτας</span>
+              <AppTextInput data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" maxLength={39} value={pan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
+            </label>
+            <div className="card-fields">
+              <label className="card-field"><span className="card-field-label">VALID THRU</span><AppTextInput className="card-inline-value card-inline-expiry" autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={busy} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>
+              <label className="card-field"><span className="card-field-label">CVV</span><AppTextInput className="card-inline-value card-inline-cvv" autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={busy} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder="•••" onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/></label>
+              <CardNetworkMark network={card.network} detail={kind}/>
+            </div>
+          </div>
+        </div>
+      </article>
+      <footer className="card-inline-save-actions">
+        {onEditProfile?<Button variant="secondary" className="card-profile-action" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
+        <Button variant="secondary" disabled={busy} onClick={cancel}>Ακύρωση</Button>
+        <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
+      </footer>
+      {!requireCvv?<small className="card-cvv-preserve-hint">Κενό CVV = διατήρηση υπάρχοντος CVV</small>:null}
+      <details className="app-card-details-help"><summary>Ασφάλεια και όρια</summary><span>Αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία. Δεν εφαρμόζεται έλεγχος Luhn ή δικτύου.</span></details>
+      {notice?<div id={noticeId} className="app-card-details-notice" role="status">{notice}</div>:null}
+      {error?<FormError id={errorId}>{error}</FormError>:null}
+    </section>;
+  }
+
   const content=<>
     <header><div><small>ΑΣΦΑΛΗ ΣΤΟΙΧΕΙΑ ΚΑΡΤΑΣ</small><h2 id={titleId}>Στοιχεία · {card.nickname}</h2><p id={descriptionId}>Ο αριθμός, η λήξη και το CVV αποθηκεύονται μαζί κρυπτογραφημένα στο card vault και συγχρονίζονται στις εγκεκριμένες εφαρμογές.</p></div><IconButton aria-label="Κλείσιμο στοιχείων κάρτας" disabled={busy} onClick={cancel}><X aria-hidden="true"/></IconButton></header>
     <div className="settings-form app-card-details-dialog-body">
@@ -110,6 +149,5 @@ export function CardDetailsDialog({
       <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
     </footer>
   </>;
-  if(inline)return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-labelledby={titleId} aria-describedby={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>{content}</section>;
   return <DialogShell open={open} className="app-card-details-dialog" role="dialog" ariaLabelledBy={titleId} ariaDescribedBy={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')} busy={busy} motionMode={motionMode} preferredFocus='[data-autofocus="true"]' onRequestClose={cancel}>{content}</DialogShell>;
 }
