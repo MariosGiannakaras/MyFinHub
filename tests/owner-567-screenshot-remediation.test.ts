@@ -32,6 +32,10 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('className="card-inline-value card-inline-pan"');
     expect(editor).toContain('card-inline-metric-only');
     expect(editor).toContain('aria-hidden="true"');
+    // The ordinary card's perspective projects translateZ children. Removing it
+    // during editing shrinks their rectangles ~4% and shifts fields/network.
+    expect(inlineCss).not.toContain('.app-card-details-inline .prototype-payment-card{transform:none!important}');
+    expect(file('../src/styles/cards-v15-presentation.css')).toContain('transform:perspective(1000px) rotateX(0) rotateY(0)');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-value{');
     expect(inlineCss).toContain('position:absolute;inset:0;display:block;width:100%;height:100%');
     expect(editor).toContain('card-field-value card-inline-edit-host');
