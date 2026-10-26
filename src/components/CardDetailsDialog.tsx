@@ -1,7 +1,7 @@
 import { Archive, CreditCard, Eye, X } from 'lucide-react';
-import { BankBrandMark } from './BankBrandMark';
+import { PrototypeBrand } from './InteractivePaymentCard';
 import { CardNetworkMark } from './CardNetworkMark';
-import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
+import { cardThemeClass } from '../lib/cardDesigns';
 import { useEffect, useId, useRef, useState } from 'react';
 import { AppTextInput } from './AppTextInput';
 import { AppTextarea } from './AppTextarea';
@@ -110,7 +110,7 @@ export function CardDetailsDialog({
       <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
         <div className="card-inner">
           <header className="card-header">
-            <div className="card-brand-block"><div className="card-brand"><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/></div><div className="card-nickname">{card.nickname}</div></div>
+            <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
             <div className="card-toolbar">
               <span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>
               <button type="button" className="card-icon-btn card-icon-management card-inline-close" aria-label="Κλείσιμο στοιχείων κάρτας" title="Ακύρωση" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button>

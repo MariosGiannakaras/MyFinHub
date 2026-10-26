@@ -31,6 +31,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('card-field-value card-inline-value card-inline-expiry');
     expect(editor).toContain('card-field-value card-inline-value card-inline-cvv');
     expect(editor).toContain('card-inline-action-slot');
+    expect(editor).toContain('<PrototypeBrand card={card} bank={bank}/>');
+    expect(interactive).toContain('export function PrototypeBrand(');
     expect(editor).toContain('const panIsLong=pan.replace(/\\D/g,\'\').length>16');
     expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');

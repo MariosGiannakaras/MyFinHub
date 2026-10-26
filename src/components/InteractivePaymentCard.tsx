@@ -52,7 +52,7 @@ async function playArchiveShred(card:HTMLElement){
   finally{animations.forEach(animation=>animation.cancel());layer.remove()}
 }
 
-function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
+export function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
   return <><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
