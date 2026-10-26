@@ -89,10 +89,21 @@ try{
   await navigate('transactions');
   await setByLabel('Αναζήτηση συναλλαγών','Freddo espresso');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event row');
-  // The desktop ledger deliberately keeps legacy row-actions inside a hidden
-  // semantic fallback. A user opens the visible row details before editing.
-  await clickVisibleRowAction('[data-transaction-source="event"]','Freddo espresso','.row-context-button','filtered modern event details access');
-  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso'))}",'filtered modern event detail panel');
+  // The visible ledger owns the row actions. A filtered first row can ALREADY
+  // be expanded because the detail rail intentionally selects rows[0] by
+  // default; pressing the same action then correctly closes it. Verify both
+  // real toggle directions instead of assuming every click always opens.
+  await waitFor("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source]')];return rows.length>0&&rows.every(row=>(row.textContent||'').includes('Freddo espresso'))}",'deferred Freddo search has settled in the visible ledger');
+  const detailsExpanded=await c.call("function(){const row=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true'}");
+  if(!detailsExpanded){
+    await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','open filtered modern event details');
+  }
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');const row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso')&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true')}",'filtered modern event detail panel is genuinely expanded');
+  await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','hide the selected modern event details');
+  await waitFor("function(){const panel=document.querySelector('.transactions-detail-panel'),row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return !panel&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='false'}",'selected modern event details close and expose collapsed ARIA state');
+  await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','reopen the selected modern event details');
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel'),row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso')&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true')}",'filtered modern event detail panel reopens for edit');
+  await shot('transactions-filtered-details-toggle');
   await clickText('.transactions-detail-actions button','Επεξεργασία');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
   await setByLabel('Ποσό','21.75');

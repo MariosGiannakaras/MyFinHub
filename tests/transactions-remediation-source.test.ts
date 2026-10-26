@@ -6,6 +6,14 @@ const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.
 const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
+  it('keeps the desktop filtered-row details button a truthful open/close toggle',()=>{
+    const crudQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain("if(isSelected){setDetailOpen(false);return}setSelectedId(r.id);setDetailOpen(true)");
+    expect(crudQa).toContain('deferred Freddo search has settled in the visible ledger');
+    expect(crudQa).toContain('selected modern event details close and expose collapsed ARIA state');
+    expect(crudQa).toContain('filtered modern event detail panel reopens for edit');
+    expect(crudQa).toContain("shot('transactions-filtered-details-toggle')");
+  });
   it('guards the owner-approved wide ledger against a hidden 1560px recentering cap',()=>{
     const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('wide.shell>=wide.workspace-wide.left-wide.right-2');
