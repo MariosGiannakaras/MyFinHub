@@ -69,6 +69,7 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<150;i+=1){if(await c.call(fn,args))return;await sleep(80)}throw new Error(`Timed out waiting for ${label}`)};
   const setInput=async(label,value)=>{const ok=await c.call("function(label,value){const input=[...document.querySelectorAll('input,textarea')].find(node=>node.getAttribute('aria-label')===label);if(!input)return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`missing input ${label}`);await sleep(60)};
+  const pressEscape=async()=>{await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27})};
   const clickAria=async label=>{const ok=await c.call("function(label){const button=[...document.querySelectorAll('button')].find(node=>node.getAttribute('aria-label')===label&&node.getClientRects().length>0);button?.click();return Boolean(button)}",[label]);assert(ok,`missing button ${label}`);await sleep(80)};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const button=[...document.querySelectorAll(selector)].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes(text));button?.click();return Boolean(button)}",[selector,text]);assert(ok,`missing ${selector} containing ${text}`);await sleep(80)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
@@ -84,19 +85,19 @@ try{
   await setInput('Αριθμός κάρτας','4242 4242 4242 4242');
   await setInput('Λήξη κάρτας','1');
   await setInput('CVV κάρτας','12');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
-  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline [role=alert]'))}",'incomplete expiry alert');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline [role=alert]'))}",'incomplete expiry alert');assert(await c.call("function(){const editor=document.querySelector('.app-card-details-inline'),error=editor?.querySelector('[role=alert]');return Boolean(editor&&!editor.querySelector('footer,.app-card-details-help,.app-card-details-notice,.card-cvv-preserve-hint')&&error?.classList.contains('sr-only')&&editor.querySelectorAll('.card-toolbar button').length>=1)}"),'validation feedback stays screen-reader accessible without visual card appendages');
   assert(!(await c.call("function(){return globalThis.__myfinhubQaCardVault.calls.some(call=>call.method==='PUT')}")),'incomplete expiry must not reach PUT');
 
   console.log('Card Vault runtime QA: save and reveal through server boundary');
   await setInput('Λήξη κάρτας','13/30');
   await setInput('CVV κάρτας','123');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'secure details save closes');
   await clickAria('Επεξεργασία κάρτας QA Debit');
   await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'saved server secret reveal');
   await screenshot('card-vault-revealed-before-reload');
-  await clickAria('Κλείσιμο στοιχείων κάρτας');
+  await pressEscape();
 
   const saved=await c.call("function(){return globalThis.__myfinhubQaCardVault.secret}");
   assert(saved?.pan==='4242424242424242'&&saved?.expiry==='13/30'&&saved?.cvv==='123','synthetic server retained normalized secret before reload');
@@ -110,11 +111,11 @@ try{
   await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'server secret after hard reload');
   await setInput('Λήξη κάρτας','11/31');
   await setInput('CVV κάρτας','987');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'updated secure details close');
   await clickAria('Επεξεργασία κάρτας QA Debit');
   await waitFor("function(){return document.querySelector('input[aria-label=\"Λήξη κάρτας\"]')?.value==='11/31'&&document.querySelector('input[aria-label=\"CVV κάρτας\"]')?.value==='987'}",'updated secret reveal');
-  await clickAria('Κλείσιμο στοιχείων κάρτας');
+  await pressEscape();
 
   console.log('Card Vault runtime QA: explicit delete clears subsequent reveal');
   const deleted=await c.call("async function(){const module=await import('/src/lib/cardVaultClient.ts');await module.deleteCardSecret('qa-debit-card');return globalThis.__myfinhubQaCardVault.calls.at(-1)}");
@@ -135,7 +136,7 @@ try{
   await setInput('Αριθμός κάρτας','5555 5555 5555 9999');
   await setInput('Λήξη κάρτας','12/30');
   await setInput('CVV κάρτας','123');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
   await waitFor("function(){return (document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'').includes('το προφίλ δεν επιβεβαιώθηκε')}",'vault committed but finance profile receipt failed');
   const partial=await c.call("function(){return {editing:Boolean(document.querySelector('.app-card-details-inline')),error:document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'',vault:globalThis.__myfinhubQaCardVault.secret,calls:globalThis.__myfinhubQaCardVault.calls}}");
   assert(partial.editing&&partial.error.includes('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault')&&partial.vault?.pan==='5555555555559999'&&partial.calls.some(call=>call.method==='PUT'),'partial vault save must keep inline editor, acknowledge durable secret and permit explicit retry');
