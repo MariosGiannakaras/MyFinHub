@@ -41,9 +41,9 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('className="card-profile-action"');
     expect(inlineCss).toContain('.app-card-details-inline details.app-card-details-help');
     expect(inlineCss).toContain('.app-card-details-inline footer .card-profile-action');
-    expect(route).toContain("visibleWorkspaceBanks.length===1?' is-single-bank':''");
+    expect(route).toContain("data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined}");
     const collections=file('../src/styles/cards-v15-presentation.css');
-    expect(collections).toContain('.cards-workspace.is-single-bank .cards-grid{');
+    expect(collections).toContain('.cards-workspace[data-single-bank="true"] .cards-grid{');
     expect(collections).toContain('grid-template-columns:minmax(0,1fr);');
     expect(file('../scripts/cards-remediation-qa.mjs')).toContain('current.workspaceScroll<=current.workspaceClient+1');
     expect(inlineCss).not.toContain('.app-card-details-inline footer button:first-child:nth-last-child(3)');

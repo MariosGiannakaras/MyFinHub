@@ -19,11 +19,11 @@
 /* #630: with one represented bank the full-width scroll gallery created an
    empty ~1,000px panel on desktop and a native scrollbar on 320px phones.
    Real multi-bank navigation keeps the original snap/scroll behavior. */
-.cards-workspace.is-single-bank{
+.cards-workspace[data-single-bank="true"]{
   width:min(100%,400px);box-sizing:border-box;
   overflow-x:clip;scroll-snap-type:none;scrollbar-gutter:auto;
 }
-.cards-workspace.is-single-bank .cards-grid{
+.cards-workspace[data-single-bank="true"] .cards-grid{
   width:100%;min-width:0;padding-bottom:0;
   grid-template-columns:minmax(0,1fr);
 }

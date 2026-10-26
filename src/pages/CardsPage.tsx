@@ -138,7 +138,7 @@ export function CardsPage({
       <Surface as="article" variant="flat" className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon prepaid"><WalletCards/></span><div><small>Προπληρωμένες</small><strong>{prepaidCount}</strong><span>{archivedCards.length?`${archivedCards.length} αρχειοθετημένες συνολικά`:'χωρίς αρχειοθετημένες κάρτες'}</span></div></Surface>
     </section>
 
-    <section className={`cards-workspace cards-prototype-workspace surface-raised${visibleWorkspaceBanks.length===1?' is-single-bank':''}`} aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
+    <section className="cards-workspace cards-prototype-workspace surface-raised" data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined} aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
       {visibleWorkspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
       {visibleWorkspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,visibleWorkspaceBanks.length)} as React.CSSProperties}>{visibleWorkspaceBanks.map(bank=>{
         const persisted=cardsForBank(data,bank.id);const active=detailsIsNew&&detailsCard?.bankId===bank.id?[detailsCard,...persisted.filter(card=>card.id!==detailsCard.id)]:persisted;const archived=archivedCardsForBank(data,bank.id);
