@@ -26,7 +26,11 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(route).toContain('<CardDetailsDialog inline open');
     expect(route).toContain('const visibleWorkspaceBanks=');
     expect(route).not.toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
-    expect(editor).toContain('if(inline)return <section');
+    expect(editor).toContain('if(inline){');
+    expect(editor).toContain('card-inline-value card-inline-pan');
+    expect(editor).toContain('card-inline-value card-inline-expiry');
+    expect(editor).toContain('card-inline-value card-inline-cvv');
+    expect(editor).toContain('<CardNetworkMark network={card.network} detail={kind}/>');
     expect(editor).toContain('await onBeforeSave?.(card)');
     expect(editor).toContain('await onSaved(updated)');
     expect(editor).toContain("placeholder={requireCvv?'CVV':'Προαιρετικό'}");
@@ -34,13 +38,13 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
     const inlineCss=file('../src/styles/card-details-dialog.css');
     // Owner requested the original card/button visual language, not a new boxed editor.
-    expect(inlineCss).toContain('color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none');
-    expect(inlineCss).toContain('.app-card-details-inline footer{display:flex;');
-    expect(inlineCss).toContain('min-height:38px');
-    expect(editor).toContain('inline?<details className="app-card-details-security-note app-card-details-help"');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions{');
+    expect(inlineCss).toContain('min-height:40px');
+    expect(editor).toContain('<details className="app-card-details-help">');
     expect(editor).toContain('className="card-profile-action"');
-    expect(inlineCss).toContain('.app-card-details-inline details.app-card-details-help');
-    expect(inlineCss).toContain('.app-card-details-inline footer .card-profile-action');
+    expect(inlineCss).toContain('.app-card-details-inline .app-card-details-help{');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save-actions .card-profile-action');
     expect(route).toContain("data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined}");
     const collections=file('../src/styles/cards-v15-presentation.css');
     expect(collections).toContain('.cards-workspace[data-single-bank="true"] .cards-grid{');
@@ -61,14 +65,14 @@ describe('owner #567 screenshot-driven corrections',()=>{
     const qa=file('../scripts/frontend-qa.mjs');
     expect(qa).toContain("'eye reveals server PAN and CVV'");
     expect(qa).toContain("'eye reports server vault configuration error'");
-    expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
+    expect(cardCss).not.toContain('.prototype-payment-card:has(.app-card-details-inline)');
     const frontendQa=file('../scripts/frontend-qa.mjs');
-    expect(frontendQa).toContain('on-card secure editor and every save/cancel action must remain inside expanded card');
+    expect(frontendQa).toContain('normal card face with PAN expiry CVV editable in their original positions');
     // getBoundingClientRect uses fractional CSS px; DOM clientHeight is integer-rounded.
     // Normalize measurement units while retaining strict no-clipping and in-card action assertions.
-    expect(frontendQa).toContain('Math.ceil(inlineContainment.cardHeight)>=inlineContainment.clientHeight&&inlineContainment.scrollHeight<=inlineContainment.clientHeight+1');
+    expect(frontendQa).toContain('inlineContainment.ratio>=1.45&&inlineContainment.ratio<=1.7');
     const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
-    expect(geomQa).toContain('save/cancel buttons and complete editor must fit expanded card');
+    expect(geomQa).toContain('editable values in original card positions; actions below physical card');
   });
   it('shows semantic finance icons first and preserves explicit opt-in to the whole catalog',()=>{
     const picker=file('../src/components/CategoryIconPicker.tsx');
