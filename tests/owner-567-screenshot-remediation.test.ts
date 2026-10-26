@@ -37,6 +37,15 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none');
     expect(inlineCss).toContain('.app-card-details-inline footer{display:flex;');
     expect(inlineCss).toContain('min-height:38px');
+    expect(editor).toContain('inline?<details className="app-card-details-security-note app-card-details-help"');
+    expect(editor).toContain('className="card-profile-action"');
+    expect(inlineCss).toContain('.app-card-details-inline details.app-card-details-help');
+    expect(inlineCss).toContain('.app-card-details-inline footer .card-profile-action');
+    expect(route).toContain("visibleWorkspaceBanks.length===1?' is-single-bank':''");
+    const collections=file('../src/styles/cards-v15-presentation.css');
+    expect(collections).toContain('.cards-workspace.is-single-bank .cards-grid{');
+    expect(collections).toContain('grid-template-columns:minmax(0,1fr);');
+    expect(file('../scripts/cards-remediation-qa.mjs')).toContain('current.workspaceScroll<=current.workspaceClient+1');
     expect(inlineCss).not.toContain('.app-card-details-inline footer button:first-child:nth-last-child(3)');
     expect(inlineCss).not.toContain('.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:8px');
     const cardCss=file('../src/components/InteractivePaymentCard.css');

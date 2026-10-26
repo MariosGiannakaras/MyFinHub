@@ -100,12 +100,12 @@ export function CardDetailsDialog({
       <label className="wide"><span>Αριθμός κάρτας</span><AppTextInput data-autofocus="true" autoComplete="cc-number" inputMode="numeric" maxLength={39} value={pan} disabled={loading} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="1234 5678 9012 3456" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/></label>
       <label><span>Λήξη</span><AppTextInput autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={loading} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>
       <label><span>CVV</span><AppTextInput autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={loading} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder={requireCvv?'CVV':'Προαιρετικό'} onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/>{!requireCvv?<small className="card-cvv-preserve-hint">Κενό = διατήρηση υπάρχοντος CVV</small>:null}</label>
-      <div className="app-card-details-security-note" role="note"><CreditCard aria-hidden="true"/><span>Χωρίς έλεγχο Luhn ή δικτύου. Όρια: αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία.</span></div>
+      {inline?<details className="app-card-details-security-note app-card-details-help"><summary>Ασφάλεια και όρια</summary><span>Χωρίς έλεγχο Luhn ή δικτύου. Όρια: αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία.</span></details>:<div className="app-card-details-security-note" role="note"><CreditCard aria-hidden="true"/><span>Χωρίς έλεγχο Luhn ή δικτύου. Όρια: αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία.</span></div>}
       {notice?<div id={noticeId} className="app-card-details-notice" role="status">{notice}</div>:null}
       {error?<FormError id={errorId}>{error}</FormError>:null}
     </div>
     <footer>
-      {inline&&onEditProfile?<Button variant="secondary" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
+      {inline&&onEditProfile?<Button variant="secondary" className="card-profile-action" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
       <Button variant="secondary" disabled={busy} onClick={cancel}>Ακύρωση</Button>
       <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
     </footer>

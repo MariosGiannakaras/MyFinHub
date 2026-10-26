@@ -158,3 +158,21 @@ Count **completed code and targeted regression locks independently of CI/merge**
 
 - Draft [CI #40303765237](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40303765237) at `6d6919f3` failed `npm run hygiene:unused` before tests/build: a new `//` comment introduced inside the formerly single-line `transactions-scanability-source.test.ts` test had swallowed all subsequent same-line assertions and its closing `});`, triggering TypeScript TS1005. Corrected the comment to a proper bounded block comment and retained all original real assertions. This is a source syntax fix; no finance/UI/QA limits changed. New exact-head draft validation required.
 - **Implementations 5/5 completed · Sub-implementations 13/13 completed**, rendered acceptance and merge still pending. No production/main/Android/database change.
+
+## 2026-10-26 owner-directed preservation-first visual follow-up
+
+The owner explicitly points out that some behaviors in the EARLY releases were already correct, especially **editing PAN, expiry and CVV directly on the physical payment card**. Historical authority #567 (closed, accepted) confirms the edit icon must lead to an **inline on-card editor**, not a modal or separate floating sheet. v1.4/v1.5 used a modal; #567 restored original inline semantics. Do not treat the earlier general suggestion to detach the editor into a modal as authorization; that would contradict the owner-approved contract.
+
+### Additional owner visual acceptance scope — 2 implementations / 6 sub-implementations
+- [ ] **I6 Restore the accepted, compact on-card editor** (3)
+  - [x] Cross-check historic #567 and v1.4/v1.5/v1.6 renderer lineage; preserve current inline vault inputs/profile edit, actual PAN/CVV bounds, owner/AAL2 and non-destructive error semantics.
+  - [x] Compact on-card form via accessible native rules disclosure, subtle separate profile action, smaller content-driven yellow editor; keep modal variant only in its separate intentional contexts.
+  - [ ] Run true 320/375/desktop/light/dark rendered editor saved/new/error/loading geometry and inspect real screenshots against original owner reference. No claim of pixel-perfect pass before evidence.
+- [ ] **I7 Fix the remaining confirmed layout/interaction debt** (3)
+  - [x] One-bank Cards: compact the desktop bank workspace and remove mobile single-card scrollbar; preserve existing multi-bank horizontal navigation and scroll hint, rendered guard added.
+  - [ ] Settings taxonomy sparse-card vertical whitespace + mobile tabs affordance, preserving all taxonomy functions.
+  - [ ] Transactions selected-detail Edit/Delete visibility and mobile filter density, preserving keyboard, delete confirmations, read/write semantics.
+
+**Current implementation count: Implementations 5/7 completed · Sub-implementations 16/19 completed** (new I6 and I7 are partial; historic I1–I5 5/5 and 13/13 remain completed). The prior green exact-head CI #40304230105 on `38146ab4` is **historical**, not validation of this new batch. PR #631 returned to Draft, no main/production/Android changes.
+
+Other screenshot observations — huge value group wrapping, 2560px intentional max width, mixed ASC/DESC labels, visual hover easing — remain **P2 follow-ups** and must not be called fixed without separate scoped source/QA evidence. Preserve operator semantics. Next: run narrow source/QA for this coherent batch, complete I7 + direct new visuals, then full Ready Chromium/WebKit/Lighthouse/CodeQL/Windows exact-head CI and inspect screenshot artifacts before merging to develop.

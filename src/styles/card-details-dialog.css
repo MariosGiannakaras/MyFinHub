@@ -25,3 +25,27 @@
 @media(max-width:360px){.app-card-details-inline .app-card-details-dialog-body{gap:6px}.app-card-details-inline{padding:10px}}
 
 .app-card-details-dialog-body .card-cvv-preserve-hint{display:block;font-size:11px;line-height:1.3;color:var(--ink-2,var(--ink))}
+
+/* Historical #567 contract: keep PAN, expiry and CVV editable ON the branded
+   card. The rules are accessible via native disclosure, not a permanently
+   expanded second callout that makes the card unnecessarily tall. */
+.app-card-details-inline details.app-card-details-help{
+  display:block;min-width:0;margin:0;padding:4px 7px;
+  color:var(--card-text,inherit);background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.26);border-radius:8px;
+}
+.app-card-details-inline .app-card-details-help summary{
+  cursor:pointer;font-size:11px;line-height:1.35;font-weight:700;
+}
+.app-card-details-inline .app-card-details-help span{
+  display:block;padding-top:5px;font-size:11px;line-height:1.4;
+}
+.app-card-details-inline footer .card-profile-action{
+  flex:0 0 100%;min-height:28px;padding:1px 0;
+  border:0;background:transparent;box-shadow:none;
+  color:inherit;text-align:left;text-decoration:underline;
+  text-underline-offset:3px;font-size:11px;
+}
+.app-card-details-inline footer button:not(.card-profile-action){
+  flex:1 1 auto;min-width:0;
+}
