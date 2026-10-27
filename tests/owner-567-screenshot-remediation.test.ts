@@ -64,7 +64,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('maxLength={3} value={cvv}');
     expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
-    expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-32-digits-');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-16-digits-');
     expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
     expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
     expect(editor).toContain('card-inline-value card-inline-expiry');
@@ -82,7 +82,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{');
     expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
     // The app's general 16px mobile form-input override must not inflate the
-    // physical card's 32-digit PAN and force unseen wrapped textarea rows.
+    // physical card's 16-digit PAN and force unseen wrapped textarea rows.
     expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
     expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.inputFont===liveEdit.faceFont');
@@ -141,7 +141,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(interactive).toContain("visible&&revealed.pan?'revealed':'masked'");
     expect(cardCss).toContain('.prototype-payment-card:has(.card-number.revealed) .card-inner{');
     expect(cardCss).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;');
-    expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 32-digit PAN without clipping');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 16-digit PAN without clipping');
     const qa=file('../scripts/frontend-qa.mjs');
     expect(qa).toContain("'eye reveals server PAN and CVV'");
     expect(qa).toContain("'eye reports server vault configuration error'");
