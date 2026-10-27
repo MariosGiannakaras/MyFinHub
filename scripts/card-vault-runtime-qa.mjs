@@ -89,6 +89,20 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline [role=alert]'))}",'incomplete expiry alert');assert(await c.call("function(){const editor=document.querySelector('.app-card-details-inline'),error=editor?.querySelector('[role=alert]');return Boolean(editor&&!editor.querySelector('footer,.app-card-details-help,.app-card-details-notice,.card-cvv-preserve-hint')&&error?.classList.contains('sr-only')&&editor.querySelectorAll('.card-toolbar button').length>=1)}"),'validation feedback stays screen-reader accessible without visual card appendages');
   assert(!(await c.call("function(){return globalThis.__myfinhubQaCardVault.calls.some(call=>call.method==='PUT')}")),'incomplete expiry must not reach PUT');
 
+  // Owner 4×4 card input: reject impossible expiry month and 2-digit CVV
+  // before any encrypted vault write; no extra visible card error panels.
+  await setInput('Λήξη κάρτας','13/30');
+  await setInput('CVV κάρτας','123');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
+  await waitFor("function(){return (document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'').includes('έγκυρο μήνα')}",'invalid 13th expiry month');
+  assert(!(await c.call("function(){return globalThis.__myfinhubQaCardVault.calls.some(call=>call.method==='PUT')}")),'invalid month must not reach vault PUT');
+
+  await setInput('Λήξη κάρτας','11/30');
+  await setInput('CVV κάρτας','12');
+  await clickAria('Αποθήκευση στοιχείων κάρτας');
+  await waitFor("function(){return (document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'').includes('3 ψηφία')}",'two-digit CVV is rejected');
+  assert(!(await c.call("function(){return globalThis.__myfinhubQaCardVault.calls.some(call=>call.method==='PUT')}")),'short CVV must not reach vault PUT');
+
   console.log('Card Vault runtime QA: save and reveal through server boundary');
   await setInput('Λήξη κάρτας','11/30');
   await setInput('CVV κάρτας','123');
