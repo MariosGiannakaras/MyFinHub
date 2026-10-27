@@ -71,6 +71,12 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('font:inherit;letter-spacing:inherit;line-height:inherit');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{');
     expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
+    // The app's general 16px mobile form-input override must not inflate the
+    // physical card's 32-digit PAN and force unseen wrapped textarea rows.
+    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.inputFont===liveEdit.faceFont');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.scrollHeight<=liveEdit.clientHeight+2');
     expect(inlineCss).not.toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
     expect(inlineCss).not.toContain('height:1.1em;max-height:none;box-sizing:border-box;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberHeight,cardFaceAfterEdit.numberHeight,1)');
