@@ -69,17 +69,17 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.r-card-status[role=alert]')?.textContent?.includes('ρύθμισης του διακομιστή'))}",'eye reports server vault configuration error');
   assert(await c.eval("document.querySelector('.prototype-payment-card .card-icon-reveal')?.getAttribute('aria-pressed')==='false'"),'failed vault reveal preserves masked card');
   await c.call("function(){window.__qaCardVaultFail503=false;return true}");
-  // Verify full synthetic 32-digit Eye reveal through browser geometry, not only DOM text.
+  // Verify owner-approved 16-digit Eye reveal through browser geometry, not only DOM text.
   await clickAria('Επεξεργασία κάρτας QA Debit');
   await waitFor("function(){const editor=document.querySelector('.app-card-details-inline');return Boolean(editor&&!editor.hasAttribute('aria-busy'))}",'long PAN inline editor');await waitFor("function(){return !document.querySelector('.r-card-status')}",'stale Eye failure status clears when icon-only editor opens');
-  await setCardField('Αριθμός κάρτας','12345678901234567890123456789012');
-  // The full 32 digits must remain visible WHILE editing at the same card-face
+  await setCardField('Αριθμός κάρτας','1234567890123456');
+  // All four digit quartets must remain visible WHILE editing at the same card-face
   // number location, including 320px and 375px phones (not just after Eye).
   for(const editWidth of [320,375,1440]){
     await viewport(editWidth,editWidth===1440?1000:812);
-    const liveEdit=await c.call("function(){const card=document.querySelector('.app-card-details-inline .prototype-payment-card'),pan=card?.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]');if(!card||!pan)return null;const a=pan.getBoundingClientRect(),b=card.getBoundingClientRect();return {digits:pan.value.replace(/\\D/g,'').length,lines:pan.value.split('\\n').length,inputFont:getComputedStyle(pan).fontSize,faceFont:getComputedStyle(pan.closest('.card-number')).fontSize,scrollWidth:pan.scrollWidth,clientWidth:pan.clientWidth,scrollHeight:pan.scrollHeight,clientHeight:pan.clientHeight,left:a.left,right:a.right,bottom:a.bottom,cardBottom:b.bottom,pageWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth}}");
-    await shot('card-inline-edit-32-digits-'+editWidth);
-    assert(liveEdit&&liveEdit.digits===32&&liveEdit.lines===2&&liveEdit.inputFont===liveEdit.faceFont&&liveEdit.scrollWidth<=liveEdit.clientWidth+2&&liveEdit.scrollHeight<=liveEdit.clientHeight+2&&liveEdit.left>=-1&&liveEdit.right<=liveEdit.viewportWidth+1&&liveEdit.bottom<=liveEdit.cardBottom+1&&liveEdit.pageWidth<=liveEdit.viewportWidth+2,'all 32 PAN digits visibly editable on real card without horizontal scrolling at '+editWidth+'px: '+JSON.stringify(liveEdit));
+    const liveEdit=await c.call("function(){const card=document.querySelector('.app-card-details-inline .prototype-payment-card'),pan=card?.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]');if(!card||!pan)return null;const a=pan.getBoundingClientRect(),b=card.getBoundingClientRect();return {digits:pan.value.replace(/\\D/g,'').length,formatted:pan.value,lines:pan.value.split('\\n').length,inputFont:getComputedStyle(pan).fontSize,faceFont:getComputedStyle(pan.closest('.card-number')).fontSize,scrollWidth:pan.scrollWidth,clientWidth:pan.clientWidth,scrollHeight:pan.scrollHeight,clientHeight:pan.clientHeight,left:a.left,right:a.right,bottom:a.bottom,cardBottom:b.bottom,pageWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth}}");
+    await shot('card-inline-edit-16-digits-'+editWidth);
+    assert(liveEdit&&liveEdit.digits===16&&liveEdit.lines===1&&liveEdit.formatted==='1234 5678 9012 3456'&&liveEdit.inputFont===liveEdit.faceFont&&liveEdit.scrollWidth<=liveEdit.clientWidth+2&&liveEdit.scrollHeight<=liveEdit.clientHeight+2&&liveEdit.left>=-1&&liveEdit.right<=liveEdit.viewportWidth+1&&liveEdit.bottom<=liveEdit.cardBottom+1&&liveEdit.pageWidth<=liveEdit.viewportWidth+2,'all 16 PAN digits visible as 4 automatically spaced quartets at '+editWidth+'px: '+JSON.stringify(liveEdit));
   }
   await viewport(1440,1000);
   await setCardField('Λήξη κάρτας','12/31');
@@ -89,12 +89,12 @@ try{
   for(const width of [320,375,1440]){
     await viewport(width,width===1440?1000:812);
     await clickAria('Εμφάνιση στοιχείων');
-    await waitFor("function(){return (document.querySelector('.prototype-payment-card .card-number.revealed')?.textContent||'').replace(/\\D/g,'').length===32}",'32-digit eye reveal at '+width+'px');
+    await waitFor("function(){return (document.querySelector('.prototype-payment-card .card-number.revealed')?.textContent||'').replace(/\\D/g,'').length===16}",'16-digit eye reveal at '+width+'px');
     const fit=await c.call("function(){const n=document.querySelector('.prototype-payment-card .card-number.revealed'),card=n?.closest('.prototype-payment-card'),copy=card?.querySelector('.card-number-wrap .copy-mini');if(!n||!card)return null;const s=getComputedStyle(n),r=n.getBoundingClientRect(),c=card.getBoundingClientRect(),cr=copy?.getBoundingClientRect(),network=card.querySelector('.card-network-type')?.getBoundingClientRect(),brand=card.querySelector('.card-brand')?.getBoundingClientRect(),toolbar=card.querySelector('.card-toolbar')?.getBoundingClientRect();return {digits:(n.textContent||'').replace(/\\D/g,'').length,textOverflow:s.textOverflow,whiteSpace:s.whiteSpace,overflow:s.overflow,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth,scrollHeight:n.scrollHeight,clientHeight:n.clientHeight,bottom:r.bottom,cardBottom:c.bottom,copyRight:cr?.right||0,cardRight:c.right,networkBottom:network?.bottom||0,brandRight:brand?.right||0,toolbarLeft:toolbar?.left||0,pageOverflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
     // Capture the exact device-width failure state before asserting so CI always
     // uploads inspectable evidence when a 320px geometry regression recurs.
-    await shot('card-reveal-32-digits-'+width);
-    assert(fit&&fit.digits===32&&fit.textOverflow!=='ellipsis'&&fit.whiteSpace!=='nowrap'&&fit.overflow==='visible'&&fit.scrollWidth<=fit.clientWidth+2&&fit.scrollHeight<=fit.clientHeight+2&&fit.bottom<=fit.cardBottom+3&&fit.copyRight<=fit.cardRight+3&&fit.networkBottom>0&&fit.networkBottom<=fit.cardBottom+2&&fit.brandRight<=fit.toolbarLeft+2&&fit.pageOverflow<=2,'eye displays full 32-digit PAN without clipping at '+width+'px: '+JSON.stringify(fit));
+    await shot('card-reveal-16-digits-'+width);
+    assert(fit&&fit.digits===16&&fit.textOverflow!=='ellipsis'&&fit.whiteSpace!=='nowrap'&&fit.overflow==='visible'&&fit.scrollWidth<=fit.clientWidth+2&&fit.scrollHeight<=fit.clientHeight+2&&fit.bottom<=fit.cardBottom+3&&fit.copyRight<=fit.cardRight+3&&fit.networkBottom>0&&fit.networkBottom<=fit.cardBottom+2&&fit.brandRight<=fit.toolbarLeft+2&&fit.pageOverflow<=2,'eye displays full 16-digit PAN without clipping at '+width+'px: '+JSON.stringify(fit));
     await clickAria('Απόκρυψη στοιχείων');
     assert(await c.eval("!document.querySelector('.prototype-payment-card .card-number.revealed')"),'eye remasks after long PAN');
   }
