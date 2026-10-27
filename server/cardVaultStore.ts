@@ -58,7 +58,7 @@ function mapCryptoError(error:unknown):never{
   const code=error instanceof Error?error.message:'';
   if(code==='INVALID_CARD_PAN')throw new ApiError(400,'INVALID_CARD_PAN','Ο αριθμός κάρτας δεν είναι έγκυρος.');
   if(code==='INVALID_CARD_EXPIRY')throw new ApiError(400,'INVALID_CARD_EXPIRY','Η ημερομηνία λήξης δεν είναι έγκυρη.');
-  if(code==='INVALID_CARD_CVV')throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.');
+  if(code==='INVALID_CARD_CVV')throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει ακριβώς 3 αριθμητικά ψηφία.');
   if(code==='EMPTY_CARD_SECRET'||code==='INVALID_CARD_SECRET')throw new ApiError(400,'INVALID_CARD_SECRET','Δεν δόθηκαν έγκυρα στοιχεία κάρτας.');
   if(code==='CARD_VAULT_DECRYPT_FAILED')throw new ApiError(500,'CARD_VAULT_DECRYPT_FAILED','Το αποθηκευμένο στοιχείο κάρτας δεν μπόρεσε να αποκρυπτογραφηθεί.',false);
   if(code.startsWith('CARD_VAULT_KEY_')||code==='CARD_VAULT_KEY_NOT_CONFIGURED')throw new ApiError(503,'CARD_VAULT_CONFIG_ERROR','Το ασφαλές vault καρτών δεν είναι σωστά ρυθμισμένο στον διακομιστή.',false);
@@ -78,7 +78,9 @@ export async function writeCardSecrets(ownerUserId:string,cardId:string,input:un
   const existing=await readCardSecrets(ownerUserId,cardId,accessToken);
   const merged={...(existing??{}),...update};
   let encrypted:CardSecretEnvelope;
-  try{encrypted=encryptCardSecrets(merged,ownerUserId,cardId)}catch(error){return mapCryptoError(error)}
+  // Existing legacy fields may remain when a partial PUT omits them. Only
+  // submitted values are checked under the new 16/expiry/3 write contract.
+  try{encrypted=encryptCardSecrets(merged,ownerUserId,cardId,undefined,undefined,{allowLegacy:true})}catch(error){return mapCryptoError(error)}
   const normalized=await (async()=>{
     try{return decryptCardSecrets(encrypted,ownerUserId,cardId)}catch(error){return mapCryptoError(error)}
   })();

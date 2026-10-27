@@ -79,9 +79,11 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("await clickText('.savings-action','Μεταφορά στην άκρη')");
     expect(functional).toContain("'manual savings contextual transfer editor'");
     expect(functional).toContain("const entered=");
-    expect(functional).toContain("'.row-context-button','filtered modern event details access'");
+    expect(functional).toContain("'.row-context-button','hide the selected modern event details'");
+    expect(functional).toContain("'.row-context-button','reopen the selected modern event details'");
+    expect(functional).toContain("'selected modern event details close and expose collapsed ARIA state'");
     expect(functional).toContain("'.transactions-detail-actions button','Επεξεργασία'");
-    expect(functional).toContain("'filtered modern event detail panel'");
+    expect(functional).toContain("'filtered modern event detail panel is genuinely expanded'");
     expect(functional).toContain("'exactly one settled modern event in the primary ledger'");
     expect(functional).toContain("'.transactions-approved-table tbody [data-transaction-source=\"event\"]'");
     expect(functional).toContain("'.transactions-detail-actions button','Διαγραφή'");
@@ -90,7 +92,8 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("parent.matches?.('[data-content-entrance] > *')");
     const guardedActions=functional.split('\n').filter(line=>line.includes('await clickVisibleRowAction('));
     for(const caseLabel of [
-      'filtered modern event details access',
+      'hide the selected modern event details',
+      'reopen the selected modern event details',
       'saved loan exposes edit',
       'self-loan exposes return action',
       'self-loan exposes forgiveness',

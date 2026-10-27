@@ -1,27 +1,70 @@
 .app-card-details-dialog{width:min(590px,calc(100vw - 36px));box-sizing:border-box;background:var(--surface-elevated-gradient,var(--surface,#fff))!important;border:1px solid var(--border-subtle,var(--line));box-shadow:0 24px 64px rgba(18,33,62,.22)!important;isolation:isolate}
 .app-card-details-dialog-body{padding:0 20px 4px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .app-card-details-dialog-body .wide,.app-card-details-security-note,.app-card-details-notice,.app-card-details-dialog-body .form-error{grid-column:1/-1}
-.app-card-details-dialog-body .app-control{width:100%;box-sizing:border-box;font-variant-numeric:tabular-nums;letter-spacing:.035em}
+.app-card-details-dialog-body .app-control{min-width:0;width:100%;max-width:100%;box-sizing:border-box;font-variant-numeric:tabular-nums;letter-spacing:.035em}
 .app-card-details-security-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--surface-inset,rgba(127,127,127,.08));font-size:.86rem;line-height:1.45}
 .app-card-details-security-note svg{width:18px;height:18px;flex:0 0 auto;margin-top:1px}
 .app-card-details-notice{padding:10px 12px;border:1px solid rgba(47,111,237,.2);border-radius:12px;background:rgba(47,111,237,.055);color:var(--ink-2);font-size:.82rem;line-height:1.45}
 @media(max-width:680px){.app-card-details-dialog-body{grid-template-columns:1fr;padding-left:13px;padding-right:13px}.app-card-details-dialog-body .wide,.app-card-details-security-note,.app-card-details-notice,.app-card-details-dialog-body .form-error{grid-column:1}.app-card-details-dialog>footer button{min-height:44px;flex:1}}
 
-/* #567: the original branded payment-card surface remains visible while editing.
-   Do not introduce a second framed panel or enlarge the pre-existing icon actions. */
-.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:0;padding:clamp(10px,3vw,16px);box-sizing:border-box;gap:8px;overflow-wrap:anywhere;color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none}
-.app-card-details-inline>header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-width:0}
-.app-card-details-inline>header>div{min-width:0}.app-card-details-inline header small{font-size:10px;letter-spacing:.1em}.app-card-details-inline header h2{font-size:clamp(14px,3.8vw,20px);margin:2px 0;line-height:1.25}.app-card-details-inline header p{display:none}.app-card-details-inline header button{flex:0 0 40px;min-width:40px;min-height:40px;color:inherit;background:transparent;border:0;box-shadow:none}
-.app-card-details-inline .app-card-details-dialog-body{padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-content:start;min-width:0}
-.app-card-details-inline label{display:grid;gap:2px;min-width:0}.app-card-details-inline label span{font-size:clamp(11px,2.6vw,13px);font-weight:700}.app-card-details-inline label.wide{grid-column:1/-1}
-.app-card-details-inline input{min-width:0;width:100%;box-sizing:border-box;font-size:16px;min-height:42px;background:var(--control-bg);color:var(--ink)}
-.app-card-details-inline .app-card-details-security-note,.app-card-details-inline .app-card-details-notice,.app-card-details-inline .form-error{grid-column:1/-1;padding:5px 7px;font-size:11px;line-height:1.3}
-.app-card-details-inline .app-card-details-security-note{display:flex;margin:2px 0 0;color:var(--ink-2,var(--ink));background:var(--surface-inset,rgba(47,111,237,.06));border:1px solid var(--border-subtle,var(--line,#d5dfec));border-radius:8px}
-.app-card-details-inline footer{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;min-width:0;margin-top:2px}
-.app-card-details-inline footer button{min-width:0;min-height:38px;padding:5px 9px;font-size:11px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
-.app-card-details-inline footer .save-button{color:#fff;background:var(--blue,#2f6fed);border-color:var(--blue,#2f6fed)}
-.app-card-details-inline footer .secondary{color:var(--ink,#173467);background:var(--surface-inset,#f2f6fb);border-color:var(--border-subtle,var(--line,#d5dfec))}
-.app-card-details-inline footer :is(button,.save-button):focus-visible{outline:2px solid var(--blue,#2f6fed);outline-offset:2px}
-@media(max-width:360px){.app-card-details-inline .app-card-details-dialog-body{gap:6px}.app-card-details-inline{padding:10px}}
+.app-card-details-dialog-body .card-cvv-preserve-hint{display:block;font-size:11px;line-height:1.3;color:var(--ink-2,var(--ink))}
 
-.app-card-details-inline .card-inline-cvv-hint{font-size:11px;line-height:1.3;color:var(--ink-2,var(--ink))}
+
+/* The editor adds one wrapper between .card-slot (perspective:1000px) and
+   .payment-card. Preserve the 3D rendering context across that wrapper;
+   default transform-style:flat would squash the projected card-body, label,
+   bank artwork and network marks despite an unchanged physical face size.
+   No additional rotate/tilt is applied while editing. */
+.app-card-details-inline{display:block;min-width:0;max-width:100%;color:var(--ink);transform-style:preserve-3d}
+/* Retain the physical card's perspective transform at rest. Its children use
+   translateZ(32px/38px); removing perspective changes their projected
+   line-box geometry and shifts VALID THRU, CVV and network artwork. Editing
+   has no pointer-tilt handlers, so the normal resting projection is stable. */
+.app-card-details-inline .card-inline-value{
+  display:block;width:100%;min-width:0;max-width:100%;height:auto;min-height:0;
+  padding:0;margin:0;border:0;border-radius:0;
+  color:inherit;background:transparent;box-shadow:none;
+  outline-offset:2px;font-variant-numeric:tabular-nums;
+}
+.app-card-details-inline .card-inline-value:focus-visible{outline:2px solid var(--card-text)}
+.app-card-details-inline .card-inline-value::placeholder{color:var(--card-muted);opacity:1}
+/* The original card-number/card-field-value owns intrinsic line metrics.
+   Inputs overlay these identical value slots, so native textarea/input line
+   boxes cannot change card-body, expiry, CVV or network positions.  Only
+   static MASK glyphs size the hosts; real PAN/CVV are never duplicated. */
+/* The original masked card uses ellipsis, which painted visible dots over
+   its otherwise invisible metric glyphs and clipped the textarea's final
+   quartet. Only the editing host may let its overlay use the hidden slot. */
+.app-card-details-inline .card-number.card-inline-edit-host{
+  overflow:visible;text-overflow:clip;
+}
+.app-card-details-inline .card-inline-edit-host{position:relative}
+.app-card-details-inline .card-inline-metric-only{visibility:hidden;pointer-events:none;user-select:none}
+.app-card-details-inline .card-inline-edit-host>.card-inline-value{
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  min-height:0;max-height:100%;padding:0;margin:0;resize:none;
+  font:inherit;letter-spacing:inherit;line-height:inherit;box-sizing:border-box;
+}
+.app-card-details-inline .card-inline-pan{
+  overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+/* The mobile shared form rule forces textarea font-size:16px!important.
+   The physical card instead uses its canonical responsive .card-number size
+   (14.08px at 320px). At 16px, a 19-character PAN group wraps twice more
+   inside the unchanged card and clips digits. Match the rendered card's
+   inherited glyph metrics for this uniquely on-face editable value only. */
+@media(max-width:680px){
+  .app-card-details-inline .card-inline-pan{font-size:inherit!important}
+}
+.app-card-details-inline .card-inline-action-slot{visibility:hidden;pointer-events:none}
+/* Preserve normal card fields' intrinsic layout, not a taller native input. */
+.app-card-details-inline .card-field-line{min-height:0}
+.app-card-details-inline .card-field-value{flex:1}
+.app-card-details-inline .card-inline-value:focus-visible{border-radius:3px}
+
+.app-card-details-inline .card-inline-save[data-save-error="true"]{
+  outline:2px solid var(--danger,#b83a4b);outline-offset:2px;
+}
+
+/* Reuse hidden copy-slot horizontal space on narrow card face. */
+@media(max-width:360px){.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}}
