@@ -103,6 +103,11 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).not.toContain('.card-inline-save-actions{');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-save[data-save-error="true"]');
     expect(file('../scripts/frontend-qa.mjs')).toContain('Escape discards draft without secure vault writes');
+    // A real CDP Escape must be delivered to the freshly focused editor.
+    // Await React dismissal before trying the normal card's Eye button.
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'Escape restores persisted expiry and focuses the card editor'");
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'Escape restores keyboard focus to the original pencil'");
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'second Escape closes inline editor before revealing card'");
     expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('partial vault save must keep inline editor');
     expect(route).toContain("data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined}");
     const collections=file('../src/styles/cards-v15-presentation.css');
