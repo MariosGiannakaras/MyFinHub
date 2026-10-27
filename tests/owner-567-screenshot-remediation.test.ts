@@ -22,6 +22,11 @@ describe('owner #567 screenshot-driven corrections',()=>{
     const editor=file('../src/components/CardDetailsDialog.tsx');
     const inlineCss=file('../src/styles/card-details-dialog.css');
     expect(interactive).toContain('detailsEditor ? detailsEditor');
+    // A previous Eye failure may have its own visible alert. It must clear
+    // when the user enters the icon-only editor, without suppressing the
+    // actual failed reveal state before that interaction.
+    expect(interactive).toContain("if(detailsEditor)setMessage('')");
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'stale Eye failure status clears when icon-only editor opens'");
     expect(interactive).toContain('onEditDetails||onEditCard');
     expect(interactive).not.toContain('KeyRound');
     expect(route).toContain('<CardDetailsDialog inline open');
