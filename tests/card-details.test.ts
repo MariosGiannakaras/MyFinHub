@@ -19,7 +19,7 @@ describe('card secure details',()=>{
     expect(formatCardNumberInput('4242424242424242')).toBe('4242 4242 4242 4242');
     expect(formatCardNumberInput('4242-4242-4242-4242-999')).toBe('4242 4242 4242 4242');
     const old='12345678901234567890123456789012';
-    expect(formatStoredCardNumberInput(old).replace(/\\D/g,'')).toBe(old);
+    expect(formatStoredCardNumberInput(old).replace(/\D/g,'')).toBe(old);
     expect(()=>normalizeCardDetailsInput({pan:old,expiry:'12/31'})).toThrow(CardDetailsInputError);
     expect(formatCardExpiryInput('1231')).toBe('12/31');
   });
