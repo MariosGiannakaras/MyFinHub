@@ -127,7 +127,7 @@ export function CardDetailsDialog({
           <div className="card-body">
             <label className="card-number-wrap">
               <span className="sr-only">Αριθμός κάρτας</span>
-              <span className={'card-number card-inline-edit-host'+(panIsLong?' revealed':'')}>
+              <span className={'card-number card-inline-edit-host'+(panIsLong?' revealed card-number-long':'')}>
                 <span className="card-inline-metric-only" aria-hidden="true">{panIsLong?<>•••• •••• •••• ••••<br/>•••• •••• •••• ••••</>:'•••• •••• •••• ••••'}</span>
                 <AppTextarea data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" spellCheck={false} wrap="soft" rows={panIsLong?2:1} maxLength={19} value={shownPan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
               </span>
