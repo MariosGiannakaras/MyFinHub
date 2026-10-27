@@ -54,6 +54,15 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(details).toContain(".replace(/\\D/g,'').slice(0,16)");
     expect(editor).toContain('.app-card-details-dialog-body .app-control{min-width:0;width:100%;max-width:100%');
   });
+  it('runs real WebKit from the version-matched immutable Playwright image without apt mirror stalls',()=>{
+    const workflow=read('.github/workflows/cross-engine-smoke.yml');
+    expect(workflow).toContain('mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e');
+    expect(workflow).toContain('playwright@1.62.1');
+    expect(workflow).toContain('webkit.executablePath()');
+    expect(workflow).toContain('node scripts/webkit-smoke.mjs');
+    expect(workflow).not.toContain('install --with-deps');
+    expect(workflow).not.toContain('if-no-files-found: ignore');
+  });
   it('shares CVV preservation semantics across inline and dialog editors',()=>{
     const details=read('src/components/CardDetailsDialog.tsx');
     const style=read('src/styles/card-details-dialog.css');
