@@ -69,9 +69,9 @@ export function cardVaultErrorMessage(error:unknown){
   }
   if(error instanceof CardVaultClientError){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
-    if(error.code==='INVALID_CARD_PAN')return 'Γράψε έναν αριθμό κάρτας με αριθμητικά ψηφία.';
-    if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη της κάρτας — χρησιμοποίησε μορφή MM/YY.';
-    if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
+    if(error.code==='INVALID_CARD_PAN')return 'Ο αριθμός κάρτας πρέπει να έχει ακριβώς 16 ψηφία (4 τετράδες).';
+    if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη: MM/YY, μήνας 01–12 και όχι περασμένη ημερομηνία.';
+    if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει ακριβώς 3 αριθμητικά ψηφία.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
     if(error.code==='DEVICE_ACCESS_REVOKED'||error.code==='AUTH_REQUIRED')return 'Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.';
     if(error.code==='CARD_VAULT_CONFIG_ERROR')return 'Η ασφαλής αποθήκευση καρτών δεν είναι διαθέσιμη λόγω ρύθμισης του διακομιστή. Τα υπόλοιπα στοιχεία της κάρτας δεν χάθηκαν.';
