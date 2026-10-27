@@ -90,17 +90,17 @@ try{
   assert(!(await c.call("function(){return globalThis.__myfinhubQaCardVault.calls.some(call=>call.method==='PUT')}")),'incomplete expiry must not reach PUT');
 
   console.log('Card Vault runtime QA: save and reveal through server boundary');
-  await setInput('Λήξη κάρτας','13/30');
+  await setInput('Λήξη κάρτας','11/30');
   await setInput('CVV κάρτας','123');
   await clickAria('Αποθήκευση στοιχείων κάρτας');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'secure details save closes');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'saved server secret reveal');
+  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='11/30'&&cvv?.value==='123'}",'saved server secret reveal');
   await screenshot('card-vault-revealed-before-reload');
   await pressEscape();
 
   const saved=await c.call("function(){return globalThis.__myfinhubQaCardVault.secret}");
-  assert(saved?.pan==='4242424242424242'&&saved?.expiry==='13/30'&&saved?.cvv==='123','synthetic server retained normalized secret before reload');
+  assert(saved?.pan==='4242424242424242'&&saved?.expiry==='11/30'&&saved?.cvv==='123','synthetic server retained normalized secret before reload');
   const preload=`(${vaultFixture.toString()})(${JSON.stringify(saved)})`;
   await c.send('Page.addScriptToEvaluateOnNewDocument',{source:preload});
 
@@ -108,7 +108,7 @@ try{
   await c.send('Page.reload',{ignoreCache:true});
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'}",'Cards after hard reload');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='13/30'&&cvv?.value==='123'}",'server secret after hard reload');
+  await waitFor("function(){const pan=document.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),exp=document.querySelector('input[aria-label=\"Λήξη κάρτας\"]'),cvv=document.querySelector('input[aria-label=\"CVV κάρτας\"]');return pan?.value==='4242 4242 4242 4242'&&exp?.value==='11/30'&&cvv?.value==='123'}",'server secret after hard reload');
   await setInput('Λήξη κάρτας','11/31');
   await setInput('CVV κάρτας','987');
   await clickAria('Αποθήκευση στοιχείων κάρτας');
