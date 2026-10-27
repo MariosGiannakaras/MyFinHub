@@ -110,7 +110,9 @@ describe('release-readiness source contracts',()=>{
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
     expect(webkitWorkflow).toContain('playwright@1.62.1');
     expect(webkitWorkflow).toContain('TOOL_ROOT=/tmp/myfinhub-playwright-tool');
-    expect(webkitWorkflow).toContain('install --with-deps webkit');
+    expect(webkitWorkflow).toContain('mcr.microsoft.com/playwright:v1.62.1-noble@sha256:');
+    expect(webkitWorkflow).toContain('webkit.executablePath()');
+    expect(webkitWorkflow).not.toContain('install --with-deps webkit');
     expect(webkitWorkflow).toContain('node scripts/webkit-smoke.mjs');
     expect(webkitWorkflow).not.toContain('npm run qa:frontend');
     expect(webkitWorkflow).not.toContain('playwright@latest');

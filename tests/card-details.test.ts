@@ -4,6 +4,7 @@ import {
   CardDetailsInputError,
   formatCardExpiryInput,
   formatCardNumberInput,
+  formatStoredCardNumberInput,
   normalizeCardDetailsInput,
   saveCardDetails,
   type CardDetailsPersistence,
@@ -13,20 +14,32 @@ import type { PaymentCard } from '../src/types.js';
 const card:PaymentCard={id:'card-test',bankId:'piraeus',nickname:'Test Debit',kind:'debit',network:'visa',active:true,createdAt:'2026-09-25T00:00:00.000Z',updatedAt:'2026-09-25T00:00:00.000Z'};
 
 describe('card secure details',()=>{
-  it('formats entry without imposing issuer length or Luhn validation',()=>{
+  it('automatically separates typed or pasted PAN into four groups of four',()=>{
     expect(formatCardNumberInput('12345-67890')).toBe('1234 5678 90');
-    expect(normalizeCardDetailsInput({pan:'12345',expiry:'09/31'})).toEqual({pan:'12345',expiry:'09/31',cvv:undefined});
+    expect(formatCardNumberInput('4242424242424242')).toBe('4242 4242 4242 4242');
+    expect(formatCardNumberInput('4242-4242-4242-4242-999')).toBe('4242 4242 4242 4242');
+    const old='12345678901234567890123456789012';
+    expect(formatStoredCardNumberInput(old).replace(/\D/g,'')).toBe(old);
+    expect(()=>normalizeCardDetailsInput({pan:old,expiry:'12/31'})).toThrow(CardDetailsInputError);
     expect(formatCardExpiryInput('1231')).toBe('12/31');
   });
 
-  it('bounds fields without checking issuer, card-number validity or expiry month value',()=>{
-    expect(normalizeCardDetailsInput({pan:'12345',expiry:'13/31'})).toEqual({pan:'12345',expiry:'13/31',cvv:undefined});
-    expect(normalizeCardDetailsInput({pan:'12345',expiry:'99/31',cvv:'1'}).cvv).toBe('1');
-    expect(formatCardNumberInput('1'.repeat(33)).replace(/\D/g,'')).toHaveLength(32);
-    expect(()=>normalizeCardDetailsInput({pan:'1'.repeat(33),expiry:'12/31'})).toThrow(CardDetailsInputError);
-    expect(()=>normalizeCardDetailsInput({pan:'12345',expiry:'12/3'})).toThrow(CardDetailsInputError);
-    expect(()=>normalizeCardDetailsInput({pan:'12345',expiry:'12/31'},{requireCvv:true})).toThrow('Γράψε το CVV');
-    expect(normalizeCardDetailsInput({pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true}).cvv).toBe('123');
+  it('requires 16 digits, an unexpired real MM/YY and exactly 3 CVV digits when supplied',()=>{
+    const pan='1234567890123456';
+    expect(normalizeCardDetailsInput({pan,expiry:'09/31'})).toEqual({pan,expiry:'09/31',cvv:undefined});
+    expect(normalizeCardDetailsInput({pan:'1234 5678 9012 3456',expiry:'12/31',cvv:'123'},{requireCvv:true}).cvv).toBe('123');
+    expect(()=>normalizeCardDetailsInput({pan:'1'.repeat(15),expiry:'12/31'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan:'1'.repeat(17),expiry:'12/31'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'13/31'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'00/31'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'01/20'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'12/3'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'12/31',cvv:'12'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'12/31',cvv:'1234'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan,expiry:'12/31'},{requireCvv:true})).toThrow('Γράψε το CVV');
+    const now=new Date();
+    const thisMonth=`${String(now.getUTCMonth()+1).padStart(2,'0')}/${String(now.getUTCFullYear()%100).padStart(2,'0')}`;
+    expect(normalizeCardDetailsInput({pan,expiry:thisMonth}).expiry).toBe(thisMonth);
   });
 
   it('stores PAN/expiry/CVV together through the shared server vault',async()=>{
@@ -35,8 +48,8 @@ describe('card secure details',()=>{
       saveSecret:async(_id,secret)=>{calls.push(`server:${JSON.stringify(secret)}`);return {saved:true,last4:'2345'}},
       now:()=> '2026-09-25T10:00:00.000Z',
     };
-    const updated=await saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
-    expect(calls).toEqual(['server:{"pan":"12345","expiry":"12/31","cvv":"123"}']);
+    const updated=await saveCardDetails(card,{pan:'1234567890122345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
+    expect(calls).toEqual(['server:{"pan":"1234567890122345","expiry":"12/31","cvv":"123"}']);
     expect(updated.last4).toBe('2345');
     expect(updated.vaultRef).toBe(card.id);
   });
@@ -48,7 +61,7 @@ describe('card secure details',()=>{
       cleanupLocalCvv:async()=>{calls.push('cleanup')},
       now:()=> '2026-09-25T10:00:00.000Z',
     };
-    await saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
+    await saveCardDetails(card,{pan:'1234567890122345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
     expect(calls).toEqual(['server','cleanup']);
   });
 
@@ -58,7 +71,7 @@ describe('card secure details',()=>{
       saveSecret:async()=>{calls.push('server');throw new Error('server failed')},
       now:()=> 'never',
     };
-    await expect(saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence)).rejects.toThrow('server failed');
+    await expect(saveCardDetails(card,{pan:'1234567890122345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence)).rejects.toThrow('server failed');
     expect(calls).toEqual(['server']);
   });
 

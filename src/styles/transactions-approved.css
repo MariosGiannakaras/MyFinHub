@@ -15,7 +15,7 @@
 .transactions-summary-copy strong.positive{color:#11a867}.transactions-summary-copy strong.negative{color:#e53835}
 .transactions-summary-copy span{display:block;margin-top:7px;color:var(--text-secondary);font-weight:650}
 .transactions-summary-copy span.positive{color:var(--finance-positive)}.transactions-summary-copy span.negative{color:var(--finance-negative)}.transactions-summary-copy span.neutral{color:var(--text-secondary)}
-.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}
+.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%;margin-inline:0}
 .transactions-approved-filters{display:grid;grid-template-columns:minmax(180px,1.25fr) minmax(110px,.7fr) minmax(110px,.7fr) minmax(100px,.65fr) minmax(240px,1.15fr) 42px;gap:10px;min-width:0;width:100%;box-sizing:border-box;padding:10px;border-radius:14px;background:rgba(248,251,255,.82);border:1px solid rgba(218,228,241,.75);box-shadow:0 4px 15px rgba(35,63,104,.045)}
 .transactions-approved-filters .filter-label{display:block;min-width:0}
 .transactions-approved-filters .transaction-filter-pass-through{display:contents}
@@ -41,7 +41,8 @@
 .transactions-approved-table{width:100%;min-width:900px;border-collapse:collapse;table-layout:auto;color:var(--text-secondary)}
 .transactions-approved-table th{height:38px;text-align:left;font-weight:760;color:var(--text-secondary);padding:0 8px;border-bottom:1px solid var(--chart-grid);background:var(--surface-inset);box-sizing:border-box}
 .transactions-approved-table th:first-child,.transactions-approved-table td:first-child{width:38px;text-align:center}
-.transactions-approved-table th:nth-child(2){width:17%}.transactions-approved-table th:nth-child(3){width:22%}.transactions-approved-table th:nth-child(4){width:15%}.transactions-approved-table th:nth-child(5){width:14%}.transactions-approved-table th:nth-child(6){width:12%}.transactions-approved-table th:nth-child(7){width:10%}.transactions-approved-table th:last-child,.transactions-approved-table td:last-child{width:40px;text-align:center}
+/* Superseded 2–4 header widths removed: their later auto-width owner wins. */
+.transactions-approved-table th:nth-child(5){width:14%}.transactions-approved-table th:nth-child(6){width:12%}.transactions-approved-table th:nth-child(7){width:10%}.transactions-approved-table th:last-child,.transactions-approved-table td:last-child{width:40px;text-align:center}
 .transactions-approved-table td{height:auto;min-height:48px;padding:10px 8px;border-bottom:1px solid var(--line);white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.45;vertical-align:middle;background:var(--surface);box-sizing:border-box}
 .transactions-approved-table tbody tr{cursor:pointer;transition:background .12s ease,box-shadow .12s ease}
 .transactions-approved-table tbody tr:hover td{background:#f4f8fd}
@@ -81,12 +82,12 @@
 .transactions-detail-row>span{color:var(--text-secondary)}.transactions-detail-row b{color:var(--ink-2);overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
 .transactions-detail-row .detail-account{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:7px;color:var(--ink-2)}.transactions-detail-row .detail-account svg{margin-top:1px}.transactions-detail-row .detail-account span{color:inherit;overflow-wrap:anywhere}
 .transactions-detail-comment-row b{white-space:pre-line;color:var(--text-secondary)}
-.transactions-detail-actions{margin-top:auto;padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.transactions-detail-actions button{height:58px;border-radius:10px;background:#f8fbff;font-weight:750;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.transactions-detail-actions{margin:12px 0 4px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.transactions-detail-actions button{min-height:44px;height:auto;padding:9px 6px;border-radius:10px;background:#f8fbff;font-weight:750;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
 .transactions-detail-actions .edit{border:1px solid #2b87e8;color:#1777d4}.transactions-detail-actions .delete{border:1px solid #f06a68;color:#de3635;background:#fff8f8}
 .transactions-approved .mobile-transaction-list,.transactions-approved .mobile-transaction-filters,.transactions-approved .mobile-transaction-progress,.transactions-approved .transaction-searchbar.mobile-only{display:none}
 @media(max-width:1180px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr)}.transactions-approved-table{min-width:0;table-layout:fixed}.transactions-approved-table td:nth-child(2),.transactions-approved-table td:nth-child(3),.transactions-approved-table td:nth-child(4){min-width:0}.transactions-approved-filters{grid-template-columns:repeat(2,1fr);align-items:center}.transactions-approved-summary{gap:9px}.transactions-summary-card{padding:13px;grid-template-columns:42px minmax(0,1fr);gap:10px}.transactions-summary-icon{width:42px;height:42px}.transactions-summary-copy strong{font-size:19px}}
-@media(max-width:980px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr)}.transactions-approved-table{min-width:0;table-layout:fixed}.transactions-approved-table th{height:48px;white-space:normal;overflow-wrap:anywhere;line-height:1.2}.transactions-approved-table td:nth-child(2),.transactions-approved-table td:nth-child(3),.transactions-approved-table td:nth-child(4){min-width:0}}
+@media(max-width:980px){.transactions-approved-table th{height:48px;white-space:normal;overflow-wrap:anywhere;line-height:1.2}}
 @media(max-width:680px){.transactions-approved{gap:14px}.transactions-approved .transactions-approved-heading h1{font-size:25px}.transactions-approved-summary,.transactions-approved-filters,.transactions-approved-grid{display:none}.transactions-approved .mobile-transaction-list{display:grid}.transactions-approved .mobile-transaction-filters{display:grid}.transactions-approved .transaction-searchbar.mobile-only{display:flex}.transactions-approved .mobile-transaction-progress{display:flex}.transactions-approved-shell{display:block}.transactions-approved .transactions-ledger-panel,.transactions-approved .transactions-detail-panel{display:none}.mobile-transaction-progress{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin:10px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-soft)}.mobile-transaction-progress button{min-height:44px}.mobile-transaction-progress span{color:var(--muted);font-weight:750}}
 
 .transactions-approved .mobile-row-actions .transaction-mobile-action{min-height:44px}
@@ -97,4 +98,16 @@
 .transaction-empty-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--accent-soft);color:var(--accent)}
 .transaction-empty-state>span:not(.transaction-empty-icon){max-width:520px}
 .transaction-empty-state button{min-height:40px}
+/* The 900px minimum must not put the only details action outside the ledger
+   when a 320–340px details rail is open on mid-size desktop windows. Use the
+   existing table's wrapping semantics so all 8 columns, including actions,
+   remain in the visible viewport. Very wide desktops retain the 900px minimum. */
+@media(min-width:1181px) and (max-width:1599px){
+  .transactions-approved-table{min-width:0;table-layout:fixed}
+  .transactions-approved-table td:nth-child(2),
+  .transactions-approved-table td:nth-child(3),
+  .transactions-approved-table td:nth-child(4){min-width:0}
+  .transactions-approved-table th:last-child,
+  .transactions-approved-table td:last-child{width:48px}
+}
 @media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}

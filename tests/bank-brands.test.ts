@@ -60,7 +60,7 @@ describe('bank brand identity',()=>{
     const canonicalStack=source('src/components/CanonicalCreditCardStack.tsx');
     expect(dashboard).toContain('<BankBrandMark');
     expect(createDialog).toContain('<BankBrandMark');
-    expect(paymentCard).toContain('role="card-mark"');
+    expect(paymentCard).toContain('role="wordmark"');
     expect(paymentCard).toContain('cardBrandSurfaceTone(card)');
     expect(paymentCard).not.toContain('piraeus-slashes');
     expect(paymentCard).not.toContain('revolut-wordmark');

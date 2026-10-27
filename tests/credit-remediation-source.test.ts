@@ -40,12 +40,50 @@ describe('Credit post-v1.4 remediation contracts',()=>{
   });
 
   it('contains pagination and exposes drag discovery without restoring host navigation',()=>{
-    expect(stack).toContain("scrollIntoView({inline:'center',block:'nearest'");
+    // Dot pagination must scroll its own horizontal rail without moving the document.
+    expect(stack).toContain('dots.scrollTo({left,behavior:');
+    expect(stack).toContain('dots.scrollWidth<=dots.clientWidth+1');
+    expect(stack).not.toContain('activeDot.scrollIntoView');
     expect(stack).toContain('Σύρε κάθετα για αλλαγή κάρτας');
     expect(stackTwo).toContain('width:min(100%,280px)');
     expect(stackTwo).toContain('overflow-x:auto');
     expect(stackTwo).toContain('flex:0 0 auto');
     expect(stackTwo).toContain('.stack-drag-hint');
+  });
+
+  it('keeps Credit finance panels in stable order even when the selected card has no transactions',()=>{
+    const page=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    const css=readFileSync(new URL('../src/styles/credit-approved-target.css',import.meta.url),'utf8');
+    expect(page).toContain('data-credit-purchases');
+    expect(page).toContain('data-credit-repayments');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-purchases]{order:3}');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-repayments]{order:4}');
+    expect(css).not.toContain(':has(.credit-purchases-table){order:3}');
+    expect(css).not.toContain(':has(.credit-payments-table){order:4}');
+    expect(css).toContain('.credit-card-redesign-page>[data-credit-rates]{order:6}');
+  });
+
+  it('regresses the owner-reported deck loss across two full physical drag cycles',()=>{
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('for(let cycle=0;cycle<12;cycle++)');
+    expect(qa).toContain('assert(actual.topId!==previous.topId');
+    expect(qa).toContain('Math.abs(actual.pageScrollY-pageScrollOrigin)<=2');
+    expect(qa).toContain('actual.purchasesPanelTop>=actual.stagePanelBottom-2');
+    expect(qa).toContain('actual.repaymentsPanelTop>=actual.purchasesPanelTop');
+    expect(qa).toContain('previous.topCenterVisible');
+    expect(qa).toContain('credit-stack-cycle-');
+    expect(qa).toContain('actual.count===6&&actual.dots===6&&actual.activeVisible');
+    expect(qa).toContain('seenIds.size===6');
+    expect(qa).toContain("shot('credit-stack-two-full-cycles')");
+  });
+
+  it('delegates drag from the stable stack stage rather than per-render top nodes',()=>{
+    const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
+    expect(stack).toContain("stage.addEventListener('pointerdown',startDrag)");
+    expect(stack).toContain("stage.removeEventListener('pointerdown',startDrag)");
+    expect(stack).not.toContain("top.addEventListener('pointerdown',startDrag)");
+    expect(stack).not.toContain('activeDot.scrollIntoView');
+    expect(stack).toContain('dots.scrollTo({left,behavior:');
   });
 
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{

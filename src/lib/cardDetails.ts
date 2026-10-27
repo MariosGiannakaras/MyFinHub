@@ -10,7 +10,15 @@ export class CardDetailsInputError extends Error{
 }
 
 export function formatCardNumberInput(value:string){
-  return value.replace(/\D/g,'').slice(0,32).replace(/(.{4})/g,'$1 ').trim();
+  // 16 digits, grouped into four quartets while the owner types or pastes.
+  return value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
+}
+
+// Existing encrypted vault entries are never silently truncated on read.
+// Older nonstandard values can be viewed, but must be replaced with a valid
+// 16-digit PAN before a new write is accepted.
+export function formatStoredCardNumberInput(value:string){
+  return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();
 }
 
 export function formatCardExpiryInput(value:string){
@@ -20,18 +28,24 @@ export function formatCardExpiryInput(value:string){
 
 export function normalizeCardDetailsInput(input:{pan:string;expiry:string;cvv?:string},{requireCvv=false}:{requireCvv?:boolean}={}){
   const pan=input.pan.replace(/\D/g,'');
-  if(pan.length>32)throw new CardDetailsInputError('pan','Ο αριθμός κάρτας μπορεί να έχει έως 32 ψηφία.');
-  if(!pan)throw new CardDetailsInputError('pan','Γράψε τον αριθμό της κάρτας με αριθμητικά ψηφία.');
+  if(!/^\d{16}$/.test(pan))throw new CardDetailsInputError('pan','Ο αριθμός κάρτας πρέπει να έχει ακριβώς 16 ψηφία (4 τετράδες).');
   const expiry=formatCardExpiryInput(input.expiry);
   const match=expiry.match(/^(\d{2})\/(\d{2})$/);
-  if(!match)throw new CardDetailsInputError('expiry','Η λήξη δέχεται έως 4 ψηφία στη μορφή MM/YY.');
+  if(!match)throw new CardDetailsInputError('expiry','Η λήξη πρέπει να έχει μορφή MM/YY.');
+  const month=Number(match[1]);
+  const year=2000+Number(match[2]);
+  const today=new Date();
+  // Cards remain valid through the last day of their expiry month.
+  if(month<1||month>12||year<today.getUTCFullYear()||(year===today.getUTCFullYear()&&month<today.getUTCMonth()+1)){
+    throw new CardDetailsInputError('expiry','Η λήξη πρέπει να έχει έγκυρο μήνα (01–12) και να μην έχει παρέλθει.');
+  }
   const rawCvv=input.cvv?.trim()??'';
   let cvv:string|undefined;
   if(rawCvv){
-    if(!/^\d{1,4}$/.test(rawCvv))throw new CardDetailsInputError('cvv','Το CVV μπορεί να έχει έως 4 ψηφία.');
+    if(!/^\d{3}$/.test(rawCvv))throw new CardDetailsInputError('cvv','Το CVV πρέπει να έχει ακριβώς 3 ψηφία.');
     cvv=rawCvv;
   }else if(requireCvv){
-    throw new CardDetailsInputError('cvv','Γράψε το CVV για να ολοκληρωθεί η νέα κάρτα.');
+    throw new CardDetailsInputError('cvv','Γράψε το CVV 3 ψηφίων για να ολοκληρωθεί η νέα κάρτα.');
   }
   return {pan,expiry:`${match[1]}/${match[2]}`,cvv};
 }

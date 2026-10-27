@@ -52,10 +52,10 @@ async function playArchiveShred(card:HTMLElement){
   finally{animations.forEach(animation=>animation.cancel());layer.remove()}
 }
 
-function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
+export function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
-  return <><BankBrandMark id={bank.id} name={bank.name} compact={false} role="card-mark" surfaceTone={cardBrandSurfaceTone(card)}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
+  return <><BankBrandMark id={bank.id} name={bank.name} compact={false} role="wordmark" surfaceTone={cardBrandSurfaceTone(card)}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
 }
 
 export function InteractivePaymentCard({
@@ -213,16 +213,23 @@ export function InteractivePaymentCard({
     archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;
     if(tiltFrameRef.current!==null)cancelAnimationFrame(tiltFrameRef.current);
   },[]);
-  useEffect(()=>{if(deleteOpen||detailsEditor)resetTilt()},[deleteOpen,detailsEditor]);
+  // A prior Eye/copy vault failure belongs to the view that raised it.
+  // Switching to the card-face editor must not leave stale visible messages
+  // beneath the physical card; the editor owns its accessible error region.
+  useEffect(()=>{
+    if(deleteOpen||detailsEditor)resetTilt();
+    if(detailsEditor)setMessage('');
+  },[deleteOpen,detailsEditor]);
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
+  const legacyLongPan=visible&&Boolean(revealed.pan)&&revealed.pan!.replace(/\D/g,'').length>16;
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
   const shownCvv=visible&&revealed.cvv?revealed.cvv:'•••';
 
   return <div className={`card-slot r-card-slot prototype-card-slot ${large?'is-large':''}`}>
-    <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerEnter={pointerEnter} onPointerMove={pointerMove} onPointerLeave={resetTilt} onPointerCancel={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
+    {detailsEditor ? detailsEditor : <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerEnter={pointerEnter} onPointerMove={pointerMove} onPointerLeave={resetTilt} onPointerCancel={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
       <div className="card-inner">
-        {detailsEditor ? detailsEditor : <>
+        <>
         <header className="card-header">
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
@@ -232,7 +239,7 @@ export function InteractivePaymentCard({
           </div>
         </header>
         <div className="card-body">
-          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?'revealed':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
+          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
           <div className="card-fields">
             <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
             <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
@@ -240,9 +247,9 @@ export function InteractivePaymentCard({
           </div>
         </div>
         {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
-        </>}
+        </>
       </div>
-    </article>
+    </article>}
     {message?<div className="r-card-status" role="alert" aria-live="assertive">{message}</div>:null}
   </div>;
 }
