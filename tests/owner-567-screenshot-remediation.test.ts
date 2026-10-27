@@ -86,6 +86,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}');
+    expect(inlineCss).toContain('.app-card-details-inline .card-number.card-inline-edit-host{');
+    expect(inlineCss).toContain('overflow:visible;text-overflow:clip;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.inputFont===liveEdit.faceFont');
     expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.scrollHeight<=liveEdit.clientHeight+2');
     expect(inlineCss).not.toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
