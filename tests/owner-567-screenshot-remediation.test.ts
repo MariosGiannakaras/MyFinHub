@@ -138,7 +138,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(cardCss).toContain('stroke-width:2.4;');
     expect(interactive).toContain('A missing server vault entry is not a successful reveal');
     expect(interactive).toContain('role="alert" aria-live="assertive"');
-    expect(interactive).toContain("visible&&revealed.pan?'revealed':'masked'");
+    expect(interactive).toContain("legacyLongPan?'revealed card-number-long':'revealed'");
+    expect(cardCss).toContain('.prototype-payment-card .card-number.revealed.card-number-long{');
     expect(cardCss).toContain('.prototype-payment-card:has(.card-number.revealed) .card-inner{');
     expect(cardCss).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;');
     expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 16-digit PAN without clipping');
