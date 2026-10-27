@@ -32,6 +32,12 @@
    Inputs overlay these identical value slots, so native textarea/input line
    boxes cannot change card-body, expiry, CVV or network positions.  Only
    static MASK glyphs size the hosts; real PAN/CVV are never duplicated. */
+/* The original masked card uses ellipsis, which painted visible dots over
+   its otherwise invisible metric glyphs and clipped the textarea's final
+   quartet. Only the editing host may let its overlay use the hidden slot. */
+.app-card-details-inline .card-number.card-inline-edit-host{
+  overflow:visible;text-overflow:clip;
+}
 .app-card-details-inline .card-inline-edit-host{position:relative}
 .app-card-details-inline .card-inline-metric-only{visibility:hidden;pointer-events:none;user-select:none}
 .app-card-details-inline .card-inline-edit-host>.card-inline-value{
