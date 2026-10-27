@@ -31,7 +31,7 @@ function normalizeExpiry(value?: string, allowLegacy = false) {
   const month = Number(match[1]);
   const fullYear = match[2].length === 4 ? Number(match[2]) : 2000 + Number(year);
   const today = new Date();
-  if (!allowLegacy && (month < 1 || month > 12 || fullYear < today.getUTCFullYear() ||
+  if (!allowLegacy && (month < 1 || month > 12 || fullYear < today.getUTCFullYear() || fullYear > 2099 ||
     (fullYear === today.getUTCFullYear() && month < today.getUTCMonth() + 1))) throw new Error('INVALID_CARD_EXPIRY');
   return `${match[1]}/${year}`;
 }
