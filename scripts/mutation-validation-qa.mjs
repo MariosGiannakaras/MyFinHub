@@ -113,7 +113,8 @@ try{
   await clickSelector('button[aria-label^="Επεξεργασία κάρτας"]','secure card details action');
   await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'Card details editor');
   await setAria('Λήξη κάρτας','1');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  // Icon-only Save reuses the physical Pencil slot; there is no text button.
+  await clickSelector('.app-card-details-inline button[aria-label="Αποθήκευση στοιχείων κάρτας"]','on-card Save icon');
   await assertAlert('.app-card-details-inline','Card secret invalid draft');
 
   console.log('Mutation validation QA: Credit purchase');
