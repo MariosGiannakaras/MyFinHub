@@ -71,7 +71,7 @@ try{
   await c.call("function(){window.__qaCardVaultFail503=false;return true}");
   // Verify full synthetic 32-digit Eye reveal through browser geometry, not only DOM text.
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  await waitFor("function(){const editor=document.querySelector('.app-card-details-inline');return Boolean(editor&&!editor.hasAttribute('aria-busy'))}",'long PAN inline editor');
+  await waitFor("function(){const editor=document.querySelector('.app-card-details-inline');return Boolean(editor&&!editor.hasAttribute('aria-busy'))}",'long PAN inline editor');await waitFor("function(){return !document.querySelector('.r-card-status')}",'stale Eye failure status clears when icon-only editor opens');
   await setCardField('Αριθμός κάρτας','12345678901234567890123456789012');
   // The full 32 digits must remain visible WHILE editing at the same card-face
   // number location, including 320px and 375px phones (not just after Eye).
