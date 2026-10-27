@@ -19,7 +19,12 @@ describe('Web/Windows release candidate version synchronization',()=>{
     expect(desktopLock.packages['..'].name).toBe(root.name);
   });
   it('keeps the linked root dependency snapshot current and the Windows tag derived from the desktop package',()=>{
-    expect(desktopLock.packages['..'].devDependencies.vitest).toBe(root.devDependencies.vitest);
+    // The Windows workspace links the root app as file:..; the linked
+    // dependency metadata must track the complete root manifest, not only
+    // one test dependency, or later npm updates silently leave stale locks.
+    expect(desktopLock.packages['..'].dependencies).toEqual(root.dependencies);
+    expect(desktopLock.packages['..'].devDependencies).toEqual(root.devDependencies);
+    expect(desktopLock.packages[''].devDependencies['electron-builder']).toBe(desktop.devDependencies['electron-builder']);
     expect(desktop.devDependencies.rheomiq).toBe('file:..');
     expect(readFileSync('.github/workflows/desktop-publish-release.yml','utf8')).toContain('myfinhub-v$version');
   });
