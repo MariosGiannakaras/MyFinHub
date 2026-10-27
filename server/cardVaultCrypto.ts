@@ -29,7 +29,7 @@ function normalizeExpiry(value?: string, allowLegacy = false) {
   if (!match) throw new Error('INVALID_CARD_EXPIRY');
   const year = match[2].length === 4 ? match[2].slice(2) : match[2];
   const month = Number(match[1]);
-  const fullYear = 2000 + Number(year);
+  const fullYear = match[2].length === 4 ? Number(match[2]) : 2000 + Number(year);
   const today = new Date();
   if (!allowLegacy && (month < 1 || month > 12 || fullYear < today.getUTCFullYear() ||
     (fullYear === today.getUTCFullYear() && month < today.getUTCMonth() + 1))) throw new Error('INVALID_CARD_EXPIRY');
