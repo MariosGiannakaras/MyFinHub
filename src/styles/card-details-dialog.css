@@ -42,6 +42,14 @@
 .app-card-details-inline .card-inline-pan{
   overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;
 }
+/* The mobile shared form rule forces textarea font-size:16px!important.
+   The physical card instead uses its canonical responsive .card-number size
+   (14.08px at 320px). At 16px, a 19-character PAN group wraps twice more
+   inside the unchanged card and clips digits. Match the rendered card's
+   inherited glyph metrics for this uniquely on-face editable value only. */
+@media(max-width:680px){
+  .app-card-details-inline .card-inline-pan{font-size:inherit!important}
+}
 .app-card-details-inline .card-inline-action-slot{visibility:hidden;pointer-events:none}
 /* Preserve normal card fields' intrinsic layout, not a taller native input. */
 .app-card-details-inline .card-field-line{min-height:0}
