@@ -48,10 +48,10 @@ describe('owner screenshot reconciliation #630 shared UX source locks',()=>{
     expect(debit).toContain('position:relative;width:40px;height:40px;min-width:40px;min-height:40px');
     expect(credit).toContain('background:transparent;');
   });
-  it('preserves 32 digit PAN boundaries and clips no secure form fields',()=>{
+  it('preserves owner 4x4 PAN boundaries and clips no secure form fields',()=>{
     const details=read('src/lib/cardDetails.ts');
     const editor=read('src/styles/card-details-dialog.css');
-    expect(details).toContain(".replace(/\\D/g,'').slice(0,32)");
+    expect(details).toContain(".replace(/\\D/g,'').slice(0,16)");
     expect(editor).toContain('.app-card-details-dialog-body .app-control{min-width:0;width:100%;max-width:100%');
   });
   it('shares CVV preservation semantics across inline and dialog editors',()=>{
