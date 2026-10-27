@@ -16,37 +16,42 @@ export type CardSecretEnvelope = {
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 12;
 
-function normalizePan(value?: string) {
+function normalizePan(value?: string, allowLegacy = false) {
   if (value == null || value.trim() === '') return undefined;
   const digits = value.replace(/\D/g, '');
-  if (!digits || digits.length > 32) throw new Error('INVALID_CARD_PAN');
+  if (allowLegacy ? (!digits || digits.length > 32) : !/^\d{16}$/.test(digits)) throw new Error('INVALID_CARD_PAN');
   return digits;
 }
 
-function normalizeExpiry(value?: string) {
+function normalizeExpiry(value?: string, allowLegacy = false) {
   if (value == null || value.trim() === '') return undefined;
   const match = value.trim().match(/^(\d{2})\s*[/\-]\s*(\d{2}|\d{4})$/);
   if (!match) throw new Error('INVALID_CARD_EXPIRY');
   const year = match[2].length === 4 ? match[2].slice(2) : match[2];
+  const month = Number(match[1]);
+  const fullYear = 2000 + Number(year);
+  const today = new Date();
+  if (!allowLegacy && (month < 1 || month > 12 || fullYear < today.getUTCFullYear() ||
+    (fullYear === today.getUTCFullYear() && month < today.getUTCMonth() + 1))) throw new Error('INVALID_CARD_EXPIRY');
   return `${match[1]}/${year}`;
 }
 
-function normalizeCvv(value?: string) {
+function normalizeCvv(value?: string, allowLegacy = false) {
   if (value == null || value.trim() === '') return undefined;
   const normalized = value.trim();
-  if (!/^\d{1,4}$/.test(normalized)) throw new Error('INVALID_CARD_CVV');
+  if (allowLegacy ? !/^\d{1,4}$/.test(normalized) : !/^\d{3}$/.test(normalized)) throw new Error('INVALID_CARD_CVV');
   return normalized;
 }
 
-export function normalizeCardSecrets(input: unknown): CardSecretPlaintext {
+export function normalizeCardSecrets(input: unknown, {allowLegacy = false}: {allowLegacy?:boolean} = {}): CardSecretPlaintext {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('INVALID_CARD_SECRET');
   const record = input as Record<string, unknown>;
   for (const key of Object.keys(record)) {
     if (!['pan', 'expiry', 'cvv'].includes(key)) throw new Error('INVALID_CARD_SECRET');
   }
-  const pan = typeof record.pan === 'string' ? normalizePan(record.pan) : record.pan == null ? undefined : (() => { throw new Error('INVALID_CARD_PAN'); })();
-  const expiry = typeof record.expiry === 'string' ? normalizeExpiry(record.expiry) : record.expiry == null ? undefined : (() => { throw new Error('INVALID_CARD_EXPIRY'); })();
-  const cvv = typeof record.cvv === 'string' ? normalizeCvv(record.cvv) : record.cvv == null ? undefined : (() => { throw new Error('INVALID_CARD_CVV'); })();
+  const pan = typeof record.pan === 'string' ? normalizePan(record.pan, allowLegacy) : record.pan == null ? undefined : (() => { throw new Error('INVALID_CARD_PAN'); })();
+  const expiry = typeof record.expiry === 'string' ? normalizeExpiry(record.expiry, allowLegacy) : record.expiry == null ? undefined : (() => { throw new Error('INVALID_CARD_EXPIRY'); })();
+  const cvv = typeof record.cvv === 'string' ? normalizeCvv(record.cvv, allowLegacy) : record.cvv == null ? undefined : (() => { throw new Error('INVALID_CARD_CVV'); })();
   if (!pan && !expiry && !cvv) throw new Error('EMPTY_CARD_SECRET');
   return {
     ...(pan ? { pan } : {}),
@@ -79,8 +84,8 @@ function aad(ownerUserId: string, cardId: string, version: number) {
   return Buffer.from(`rheomiq-card-v1:${ownerUserId}:${cardId}:${version}`, 'utf8');
 }
 
-export function encryptCardSecrets(input: unknown, ownerUserId: string, cardId: string, rawKey = process.env.CARD_VAULT_KEY, rawVersion = process.env.CARD_VAULT_KEY_VERSION): CardSecretEnvelope {
-  const plaintext = normalizeCardSecrets(input);
+export function encryptCardSecrets(input: unknown, ownerUserId: string, cardId: string, rawKey = process.env.CARD_VAULT_KEY, rawVersion = process.env.CARD_VAULT_KEY_VERSION, options: {allowLegacy?:boolean} = {}): CardSecretEnvelope {
+  const plaintext = normalizeCardSecrets(input, options);
   const key = parseKey(rawKey);
   const version = keyVersion(rawVersion);
   const iv = randomBytes(IV_BYTES);
@@ -100,7 +105,8 @@ export function decryptCardSecrets(envelope: CardSecretEnvelope, ownerUserId: st
     decipher.setAAD(aad(ownerUserId, cardId, version));
     decipher.setAuthTag(Buffer.from(envelope.authTag, 'base64'));
     const plaintext = Buffer.concat([decipher.update(Buffer.from(envelope.ciphertext, 'base64')), decipher.final()]).toString('utf8');
-    return normalizeCardSecrets(JSON.parse(plaintext));
+    // Decryption must not rewrite or invalidate previously encrypted legacy values.
+    return normalizeCardSecrets(JSON.parse(plaintext), {allowLegacy:true});
   } catch (error) {
     if (error instanceof Error && ['INVALID_CARD_PAN','INVALID_CARD_EXPIRY','INVALID_CARD_CVV','EMPTY_CARD_SECRET','INVALID_CARD_SECRET'].includes(error.message)) throw error;
     throw new Error('CARD_VAULT_DECRYPT_FAILED');
