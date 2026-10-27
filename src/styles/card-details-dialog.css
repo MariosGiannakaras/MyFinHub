@@ -59,3 +59,6 @@
 .app-card-details-inline .card-inline-save[data-save-error="true"]{
   outline:2px solid var(--danger,#b83a4b);outline-offset:2px;
 }
+
+/* Reuse hidden copy-slot horizontal space on narrow card face. */
+@media(max-width:360px){.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}}
