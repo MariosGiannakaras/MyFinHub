@@ -52,6 +52,9 @@ describe('CI workflow optimization contracts',()=>{
     expect(cross).toContain('runs-on: ubuntu-24.04');
     expect(cross).toContain('mcr.microsoft.com/playwright:v1.62.1-noble@sha256:');
     expect(cross).toContain('timeout-minutes: 20');
+    // GitHub container steps default to /bin/sh; the smoke includes pipefail
+    // and brace-expansion and must use the same Bash semantics as runner jobs.
+    expect(cross).toContain('shell: bash');
     expect(cross).not.toContain('install --with-deps webkit');
     expect(cross).toContain('webkit.executablePath()');
     expect(cross).toContain('playwright@1.62.1');
