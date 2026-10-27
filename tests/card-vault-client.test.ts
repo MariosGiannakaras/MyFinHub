@@ -79,7 +79,7 @@ describe('card vault client',()=>{
   it('maps card-security failures to direct user-facing copy',()=>{
     const panMessage=cardVaultErrorMessage(new CardVaultClientError(400,'INVALID_CARD_PAN','raw internal message'));
     expect(panMessage).toContain('αριθμό κάρτας');
-    expect(panMessage).not.toContain('16');
+    expect(panMessage).toContain('16 ψηφία');
     expect(cardVaultErrorMessage(new CardVaultClientError(400,'INVALID_CARD_CVV','raw internal message'))).toContain('3');
     expect(cardVaultErrorMessage(new CardVaultClientError(401,'MFA_REQUIRED','raw internal message'))).toContain('επαληθεύσεις ξανά');
   });
