@@ -7,14 +7,16 @@ import { inferredCategoryIcon } from '../src/lib/categoryIconInference.js';
 const file=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 describe('owner #567 screenshot-driven corrections',()=>{
-  it('bounds PAN without issuer-length, Luhn, or numeric value checks on either side',()=>{
-    const pan='1'.repeat(32);
-    expect(formatCardNumberInput(pan).replace(/\D/g,'')).toBe(pan);
-    expect(normalizeCardDetailsInput({pan,expiry:'99/99',cvv:'1'}).pan).toBe(pan);
-    expect(normalizeCardSecrets({pan,expiry:'99/99',cvv:'1'})).toEqual({pan,expiry:'99/99',cvv:'1'});
+  it('requires owner-approved four groups of four, real expiry month and 3-digit CVV',()=>{
+    const pan='1234567890123456';
+    expect(formatCardNumberInput(pan)).toBe('1234 5678 9012 3456');
+    expect(normalizeCardDetailsInput({pan,expiry:'12/31',cvv:'123'},{requireCvv:true})).toEqual({pan,expiry:'12/31',cvv:'123'});
+    expect(normalizeCardSecrets({pan,expiry:'12/31',cvv:'123'})).toEqual({pan,expiry:'12/31',cvv:'123'});
     expect(()=>normalizeCardDetailsInput({pan:pan+'1',expiry:'12/31'})).toThrow();
     expect(()=>normalizeCardSecrets({pan:pan+'1'})).toThrow();
-    expect(()=>normalizeCardSecrets({cvv:'12345'})).toThrow();
+    expect(()=>normalizeCardSecrets({expiry:'13/31'})).toThrow();
+    expect(()=>normalizeCardSecrets({cvv:'12'})).toThrow();
+    expect(()=>normalizeCardSecrets({cvv:'1234'})).toThrow();
   });
   it('retains one on-card edit action, with inline create/edit and no card-details modal on the debit route',()=>{
     const interactive=file('../src/components/InteractivePaymentCard.tsx');
@@ -57,6 +59,9 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('<PrototypeBrand card={card} bank={bank}/>');
     expect(interactive).toContain('export function PrototypeBrand(');
     expect(editor).toContain('const panIsLong=pan.replace(/\\D/g,\'\').length>16');
+    expect(editor).toContain('formatStoredCardNumberInput(nextPan)');
+    expect(editor).toContain('maxLength={19} value={shownPan}');
+    expect(editor).toContain('maxLength={3} value={cvv}');
     expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
     expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-32-digits-');
