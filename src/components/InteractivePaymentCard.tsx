@@ -213,7 +213,13 @@ export function InteractivePaymentCard({
     archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;
     if(tiltFrameRef.current!==null)cancelAnimationFrame(tiltFrameRef.current);
   },[]);
-  useEffect(()=>{if(deleteOpen||detailsEditor)resetTilt()},[deleteOpen,detailsEditor]);
+  // A prior Eye/copy vault failure belongs to the view that raised it.
+  // Switching to the card-face editor must not leave stale visible messages
+  // beneath the physical card; the editor owns its accessible error region.
+  useEffect(()=>{
+    if(deleteOpen||detailsEditor)resetTilt();
+    if(detailsEditor)setMessage('');
+  },[deleteOpen,detailsEditor]);
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
