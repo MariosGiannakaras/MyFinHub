@@ -165,8 +165,13 @@ export function SettingsPage({
   }, [draft]);
 
   useEffect(() => {
-    const selected = tablistRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
-    selected?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' });
+    const rail = tablistRef.current;
+    const selected = rail?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if(!rail||!selected||rail.scrollWidth<=rail.clientWidth+1)return;
+    // Scroll only the Settings tab rail; scrollIntoView would also move
+    // document ancestors and partially hide the selected mobile tab.
+    const bounds=rail.getBoundingClientRect(),tab=selected.getBoundingClientRect();
+    rail.scrollTo({left:rail.scrollLeft+(tab.left-bounds.left)-(bounds.width-tab.width)/2,behavior:'auto'});
   }, [activeTab]);
 
   useEffect(() => {

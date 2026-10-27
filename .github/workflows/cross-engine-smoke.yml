@@ -15,9 +15,18 @@ jobs:
   webkit-smoke:
     name: WebKit compatibility smoke
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    # Pin the known Playwright-compatible LTS image: ubuntu-latest is migrating
-    # to 26.04, whose transient Azure apt mirror stalls in install --with-deps.
+    # Playwright's official version-matched image already contains WebKit and
+    # its OS libraries. Avoid apt's Azure mirror: it twice exhausted the
+    # 20-minute CI job before reaching the actual smoke test.
+    # Pin by MCR-published OCI digest so the browser/deps cannot drift.
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    # Container jobs default to /bin/sh, whereas our vetted test steps use
+    # pipefail and brace-expansion. Run the existing scripts in bash.
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,15 +35,17 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Install pinned WebKit driver
+      - name: Link version-matched Playwright and verify preinstalled WebKit
         run: |
+          set -euo pipefail
           TOOL_ROOT=/tmp/myfinhub-playwright-tool
           rm -rf "$TOOL_ROOT"
           mkdir -p "$TOOL_ROOT"
-          npm install --prefix "$TOOL_ROOT" --package-lock=false playwright@1.62.1
+          npm install --prefix "$TOOL_ROOT" --package-lock=false --ignore-scripts playwright@1.62.1
           ln -s "$TOOL_ROOT/node_modules/playwright" node_modules/playwright
           ln -s "$TOOL_ROOT/node_modules/playwright-core" node_modules/playwright-core
-          "$TOOL_ROOT/node_modules/.bin/playwright" install --with-deps webkit
+          node --input-type=module -e "import {webkit} from 'playwright';import {existsSync} from 'node:fs';if(!existsSync(webkit.executablePath()))throw new Error('PINNED_WEBKIT_NOT_PREINSTALLED');console.log('Pinned WebKit available: '+webkit.executablePath())"
+          # Never fall back to an ad-hoc apt install or skip browser smoke.
       - name: Run WebKit compatibility smoke
         run: |
           npm run dev:web > /tmp/myfinhub-webkit-vite.log 2>&1 &

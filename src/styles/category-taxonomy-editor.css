@@ -1,6 +1,6 @@
-.category-taxonomy-card{display:grid;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px}
-.category-taxonomy-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
-.category-taxonomy-glyph{width:38px;height:38px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;color:var(--blue-3)}
+.category-taxonomy-card{display:grid;gap:9px;padding:11px;border:1px solid var(--line);border-radius:16px}
+.category-taxonomy-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.category-taxonomy-glyph{width:34px;height:34px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;color:var(--blue-3)}
 .category-taxonomy-title{min-width:0;display:grid;gap:3px}
 .category-taxonomy-title b,.taxonomy-subcategory-main b{overflow-wrap:anywhere}
 .category-taxonomy-title small,.taxonomy-subcategory-main small,.taxonomy-subcategory-heading small{color:var(--muted)}
@@ -20,10 +20,10 @@
 .taxonomy-icon-disclosure>summary::-webkit-details-marker{display:none}
 .taxonomy-icon-disclosure[open]>summary{border-bottom:1px solid var(--line)}
 .taxonomy-icon-disclosure>.category-icon-picker,.taxonomy-icon-disclosure>.category-icon-picker-block{padding:10px}
-.taxonomy-subcategory-section{display:grid;gap:9px}
+.taxonomy-subcategory-section{display:grid;gap:6px}
 .taxonomy-subcategory-heading>div,.taxonomy-subcategory-main>div{display:grid;gap:2px}
-.taxonomy-subcategory-list{display:grid;gap:7px}
-.taxonomy-subcategory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:13px}
+.taxonomy-subcategory-list{display:grid;gap:4px}
+.taxonomy-subcategory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:7px;border:1px solid var(--line);border-radius:13px}
 .taxonomy-subcategory-main{min-width:0;display:flex;align-items:center;gap:8px}
 .taxonomy-subcategory-main>svg{flex:0 0 auto;color:var(--blue-3)}
 .taxonomy-subcategory-main>div{min-width:0}

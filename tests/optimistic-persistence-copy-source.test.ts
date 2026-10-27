@@ -21,7 +21,10 @@ describe('optimistic finance edit feedback parity with durable save state (DV-FB
   });
   it('distinguishes confirmed vault writes from still queued card profile changes',()=>{
     expect(credit).toContain('Το προφίλ και τα ασφαλή στοιχεία της πιστωτικής αποθηκεύτηκαν.');
-    expect(cards).toContain('επιβεβαιώθηκαν ως αποθηκευμένα.');
+    // No card-edit success banner under the owner-approved icon-only WYSIWYG face.
+    // Continue requiring durable finance receipt before dismissing the editor.
+    expect(cards).toContain("const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage('')}");
+    expect(cards).not.toContain('επιβεβαιώθηκαν ως αποθηκευμένα.');
     expect(cards).toContain('καθαρισμός του ασφαλούς vault ολοκληρώθηκε.');
     expect(credit).toContain('τα ασφαλή στοιχεία καθαρίστηκαν.');
     expect(app).toContain('finance.updateDurably(current=>withCardSecretCleanupPending');

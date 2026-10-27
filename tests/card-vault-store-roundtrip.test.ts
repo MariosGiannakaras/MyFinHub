@@ -54,7 +54,7 @@ describe('card vault encrypted persistence round trip',()=>{
   it('fails with a distinct safe configuration error when encryption material is missing',async()=>{
     delete process.env.CARD_VAULT_KEY;
     const {writeCardSecrets}=await import('../server/cardVaultStore.js');
-    await expect(writeCardSecrets('owner-1','card-1',{pan:'4242',expiry:'12/31'},'jwt')).rejects.toMatchObject({
+    await expect(writeCardSecrets('owner-1','card-1',{pan:'4'.repeat(16),expiry:'12/31'},'jwt')).rejects.toMatchObject({
       status:503,
       code:'CARD_VAULT_CONFIG_ERROR',
     });
