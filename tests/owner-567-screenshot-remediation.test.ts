@@ -42,6 +42,13 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('card-inline-value card-inline-expiry');
     expect(editor).toContain('card-inline-value card-inline-cvv');
     expect(editor).toContain('card-inline-action-slot');
+    // Global button min-height is 24px even though .copy-mini's own height
+    // is 23px. Span placeholders shrink the PAN row by 1px (1.08px in 3D).
+    expect(file('../src/styles/theme-surface-foundations.css')).toContain('button{min-width:24px;min-height:24px}');
+    expect(editor).toContain('className="copy-mini card-inline-action-slot" disabled tabIndex={-1} aria-hidden="true"');
+    expect(editor).not.toContain('<span className="copy-mini card-inline-action-slot"');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberWrapHeight,cardFaceAfterEdit.numberWrapHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.copySlotHeight,cardFaceAfterEdit.copySlotHeight,1)');
     expect(editor).toContain('<PrototypeBrand card={card} bank={bank}/>');
     expect(interactive).toContain('export function PrototypeBrand(');
     expect(editor).toContain('const panIsLong=pan.replace(/\\D/g,\'\').length>16');
