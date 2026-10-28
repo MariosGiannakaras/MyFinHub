@@ -8,7 +8,7 @@
 <p align="center"><strong>Web v1.7.0 deployed · Windows installer v1.7.0 officially published</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.6.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.7.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.7.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.7.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.7.0-0F766E?style=for-the-badge"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
 </p>
@@ -21,16 +21,16 @@
 <p align="center">
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.7.0">v1.7.0 release notes</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.6.0-x64.exe.sha256">SHA-256</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.7.0-x64.exe.sha256">SHA-256</a> ·
   <a href="docs/WINDOWS_DESKTOP.md">Windows documentation</a>
 </p>
 
-> **Windows release:** download only `MyFinHub-Setup-1.6.0-x64.exe`. You do not need to clone or download the repository. The current personal-use build may be unsigned, so Windows can display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum and controlled GitHub Release channel.
+> **Windows release:** download only `MyFinHub-Setup-1.7.0-x64.exe`. You do not need to clone or download the repository. The current personal-use build may be unsigned, so Windows can display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum and controlled GitHub Release channel.
 
 ## Download and install
 
 1. Click **Download for Windows** above.
-2. Run `MyFinHub-Setup-1.6.0-x64.exe`.
+2. Run `MyFinHub-Setup-1.7.0-x64.exe`.
 3. Choose the installation folder if desired; Setup creates Start Menu and Desktop shortcuts.
 4. On first launch, sign in with your MyFinHub account and complete TOTP verification. No Supabase or card-vault provisioning is required.
 5. Use **Ρυθμίσεις → Ενημερώσεις** for future desktop update checks.
