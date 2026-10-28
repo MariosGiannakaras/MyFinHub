@@ -4,7 +4,11 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
-No changes recorded yet.
+#### v1.7.1 candidate — Windows login patch, NOT deployed or published (2026-10-28)
+- **Authentication UI (#641, PR #642):** preserve the actual sanitized Greek login failure message instead of coercing it to boolean and rendering an empty alert. Regressions assert real readable alert text/geometry across Login, TOTP/MFA sibling states, dark/light responsive screenshots.
+- **Packaged Windows auth transport (#641):** fix strict same-origin validation for the *explicit packaged* direct `http://127.0.0.1:<port>` backend under `NODE_ENV=production` without weakening production browser HTTPS, CSRF, owner authorization, TOTP/AAL2, RLS or session provenance. Synthetic real Express POST login/MFA/logout and adversarial origins are covered by tests; no owner credentials used.
+- **Patch metadata:** root and Windows desktop package + linked npm lockfile root versions staged to `1.7.1` with unchanged dependencies. No finance, database schema, Android source or Card Vault secret edits.
+- **Release status:** code fixes were accepted in `develop` after [PR #642 final CI](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40756731897) SUCCESS and direct 216-image inspection; official public links remain on the published v1.7.0 until the new immutable v1.7.1 installer and verified SHA-256 exist. The prior full PostgreSQL+Storage restore test waiver was limited to v1.7.0, and any 1.7.1 risk acceptance is still a separate release decision.
 
 ## [1.7.0] — 2026-10-28 (Web production and official Windows desktop release)
 
