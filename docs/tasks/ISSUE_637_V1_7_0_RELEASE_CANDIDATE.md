@@ -20,13 +20,15 @@ Each numbered implementation counts as complete only when all sub-implementation
 - [x] **I3 — Truthful release notes and Android handoff (2/2)**:
   - [x] populate CHANGELOG [Unreleased] with exact approved four-PR delta, including compatibility caveat;
   - [x] document precise Android native-client acceptance contract and explicit go/no-go gate, preserving established API auth/AAL2/owner/PIN and legacy-data protections.
+- [x] **I4 — Real-stack actual-browser regression selector (1/1)**:
+  - [x] Align debit-card inline icon-only secure save selection to its existing accessible button name, with source regression lock. Root cause verified in Draft Real Stack #40626418731: new UI uses `aria-label="Αποθήκευση στοιχείων κάρτας"` while E2E attempted visible text `Αποθήκευση στοιχείων`; no app control removal or backend defect established.
 
-**Implementations 3/3 completed · Sub-implementations 7/7 completed** — code/configuration and focused regression checks written; validation/CI and release remain separate.
+**Implementations 4/4 completed · Sub-implementations 8/8 completed** — code/configuration and focused regression checks written, including real-browser selector repair; validation/CI and release remain separate.
 
 ## Validation / integration / production (not implementation counters)
 - [x] Check live branch/ref and no overlapping implementation PR before final write.
-- [ ] Narrow source tests, JSON and version coherence, card-vault source tests, and lockfile metadata checks.
-- [ ] Draft PR CI preflight; one coherent Ready exact-head CI matrix (Chromium rendered UI, WebKit, CodeQL, Lighthouse, Windows installer, installed first-run and clean launch, Unified gate) with direct rendered evidence inspection.
+- [ ] Narrow source tests, JSON and version coherence, card-vault source tests, real-browser selector source test, and lockfile metadata checks (Draft CI #40626418824 source/build PASS on prior head 40f5ba36; pending on repaired head).
+- [ ] Draft PR CI preflight (prior Draft #40626418824 PASS; standalone CodeQL #40626418732 PASS; Real Stack #40626418731 failed at stale inline-card save selector — repaired in source, new exact-head result pending); one coherent Ready exact-head CI matrix (Chromium rendered UI, WebKit, CodeQL, Lighthouse, Windows installer, installed first-run and clean launch, Unified gate) with direct rendered evidence inspection.
 - [ ] Opt-in 216-image final visual release acceptance when required, with direct review; do not misstate a skipped job as PASS.
 - [ ] Confirm Android client writes match PAN exactly 16 digits, CVV exactly 3, current/future expiry (valid MM/YY, compatible MM/YYYY transport); protect legacy local-vault upload/migration and report partial secret sync failures accurately. On-device code/tests belong to separate Android owner. **Do not ship the strict backend to production while Android incompatibility remains unresolved or without a distinct explicit owner acceptance of those exact failure paths.**
 - [ ] Independently validate current full PostgreSQL+Storage recoverability or obtain specific release-risk acceptance; old v1.6.0 waiver was not proof of restore.
@@ -35,5 +37,5 @@ Each numbered implementation counts as complete only when all sub-implementation
 ## Cross-client mismatch confirmed at source
 Current `server/cardVaultCrypto.ts` strict write: exactly 16 numeric PAN digits (spaces normalized), CVV exactly 3 when supplied, genuine unexpired expiry with 01–12 month; valid future `MM/YYYY` is accepted and normalized to `MM/YY`. Legacy decrypt accepts older PAN/CVV lengths without rewriting. Current Android code accepts 12–19 PAN, 3–4 CVV, and does not reject expired expiry before PUT. For incompatible legacy local-vault migration PUT, Android retains its local encrypted secrets on failure, but shared server synchronization can remain partial. Android #345 shared PIN support is a separate uncompleted compatibility requirement. Preserve server's security/domain contract; require a reviewed Android fix (or explicit known-failure acceptance), not a silent server relaxation.
 
-## Next safe action
-Prepare source batch on this branch, then run focused validation and draft PR. Production `main`, existing public Windows v1.6.0 assets and Android remain unchanged until release gates are satisfied.
+## Latest checkpoint and next safe action
+One corrective batch for the deterministic Real Stack actual-browser harness regression was committed after Draft #40626418731. Keep PR #638 Draft until repaired exact-head Real Stack and Draft CI pass; if green, mark Ready once for full strict exact-head validation, inspect rendered evidence, and keep production/Android release gates separate. No running or skipped job is a claimed PASS. Production `main`, existing public Windows v1.6.0 assets and Android remain unchanged until release gates are satisfied.
