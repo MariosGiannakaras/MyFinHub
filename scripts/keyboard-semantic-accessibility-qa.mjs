@@ -180,7 +180,12 @@ try{
      await c.send('Page.navigate',{url:url.href});
      await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))}",`${mode} auth ${screen}`);
      const audit=await semanticAudit();assertAudit(audit,`${mode}/auth/${screen}${error?'/error':''}`);
-     if(error)assert(audit.statuses.some(item=>item.role==='alert'),`${mode}/auth/${screen}: error state must expose an alert`);
+     if(error){
+       assert(audit.statuses.some(item=>item.role==='alert'),`${mode}/auth/${screen}: error state must expose an alert`);
+       const expectedMessage=screen==='login'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':'Ο κωδικός επαλήθευσης δεν είναι σωστός.';
+       const alertText=await c.call("function(){const alert=document.querySelector('.login-error[role=alert]'),span=alert?.querySelector('span');if(!span)return null;const rect=span.getBoundingClientRect(),style=getComputedStyle(span);return {text:span.textContent?.trim(),width:rect.width,height:rect.height,visibility:style.visibility,display:style.display,opacity:style.opacity}}");
+       assert(alertText?.text===expectedMessage&&alertText.width>=30&&alertText.height>=10&&alertText.visibility==='visible'&&alertText.display!=='none'&&Number(alertText.opacity)>0,`${mode}/auth/${screen}: error message must be rendered and readable: ${JSON.stringify(alertText)}`);
+     }
      await tabSweep(`${mode}/auth/${screen}${error?'/error':''}`);
      if(screen==='login'&&!error){
        const fieldState=await c.call("function(){const input=document.querySelector('#login-email');const outer=input?.closest('.app-input-shell');if(!input||!outer)return null;input.focus();const a=getComputedStyle(outer),b=getComputedStyle(input);return {oneShell:document.querySelectorAll('.login-field:first-child .app-input-shell').length===1,parentHasRing:a.boxShadow!=='none',outerBorder:parseFloat(a.borderTopWidth||'0'),innerBorder:parseFloat(b.borderTopWidth||'0')}}");
