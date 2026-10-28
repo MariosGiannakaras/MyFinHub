@@ -8,6 +8,10 @@ const interactiveCardCss=readFileSync(new URL('../src/components/InteractivePaym
 const cardLayoutCss=readFileSync(new URL('../src/styles/cards-v15-presentation.css',import.meta.url),'utf8');
 
 describe('approved Cards surrounding desktop target source contract',()=>{
+  it('keeps the pale bank-add button blue across light/dark despite the stronger legacy bank-header selector',()=>{
+    expect(cardLayoutCss).toMatch(/\.bank-column-head \.bank-add-btn\{[^}]*color:#2f6fed/);
+    expect(source).toContain('className="bank-add-btn"');
+  });
   it('keeps the existing bank-by-bank card workspace and card handlers intact',()=>{
     expect(source.match(/className="cards-workspace cards-prototype-workspace surface-raised"/g)).toHaveLength(1);
     expect(source.match(/className="cards-grid cards-prototype-grid"/g)).toHaveLength(1);
