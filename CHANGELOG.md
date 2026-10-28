@@ -4,6 +4,14 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+#### v1.7.0 candidate — NOT deployed or published (2026-10-28)
+- **UI and Card Vault (#631):** align Card/Credit and Settings/finance workspaces with approved responsive and accessible visual interactions, and enforce 4×4-digit PAN input, real non-expired card expiry and three-digit CVV on **new Web/API writes** while preserving legacy encrypted-secret reads. The stricter API contract can reject older Android client writes and legacy-vault synchronization attempts; Android rollout coordination is a **release gate**, not a completed client fix.
+- **CI security tooling (#634):** upgrade pinned CodeQL action initialization and analysis to v4.39.1 without lowering security gates.
+- **Windows toolchain (#633):** upgrade electron-builder to 26.18.0, retaining existing installed-launch, installer and audit requirements.
+- **Web/desktop dependency reconciliation (#632):** integrate accepted React, lucide-react, Vite and Vitest dependency updates and the coherent desktop-linked root lock snapshot.
+- Release metadata advances the unpublished Web/Windows candidate to **v1.7.0**. Published v1.6.0 GitHub tag, Windows installer, checksum and README download links remain unchanged until a new release exists. No new migration, finance rewrite, Android code change, production deployment or independent full PostgreSQL+Storage restore is claimed.
+
+
 ## [1.6.0] — 2026-10-25 (Web production and official Windows desktop release)
 
 #### Added

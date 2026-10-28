@@ -75,6 +75,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage budget-create-reload');
     expect(source).toContain('stage rule-create-apply-reload');
     expect(source).toContain('stage cards-lifecycle-reload');
+    // The accepted inline debit-card editor uses an icon-only Save control. The
+    // actual-browser flow must find it by accessible name, not visible text.
+    expect(source).toContain("await clickAria('Αποθήκευση στοιχείων κάρτας')");
+    expect(source).not.toContain("clickText('.app-card-details-inline button','Αποθήκευση στοιχείων')");
+    expect(readFileSync('src/components/CardDetailsDialog.tsx','utf8')).toContain('aria-label="Αποθήκευση στοιχείων κάρτας"');
     expect(source).toContain("await waitCardState('Real Browser Lifecycle Card',true,true,'4242')");
     expect(source).toContain('new card details closed after final durable save');
     expect(source).toContain('card.last4===last4&&card.vaultRef===card.id');

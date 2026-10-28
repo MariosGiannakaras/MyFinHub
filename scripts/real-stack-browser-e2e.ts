@@ -427,7 +427,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const selectDesign=await c.call<boolean>("function(){const option=[...document.querySelectorAll('.card-create-modal .design-option')].find(node=>node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}");assert(selectDesign,'Card design option is unavailable.');
     await clickText('.card-create-modal button','Προσθήκη κάρτας');
     await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
-    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickAria('Αποθήκευση στοιχείων κάρτας');
     // A new card is durably staged without secrets first. Do not reload merely
     // because its empty profile appeared; wait for vault + final finance receipt.
     await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'new card details closed after final durable save');
