@@ -6,11 +6,20 @@ const css=readFileSync(new URL('../src/styles/cards-approved-surrounding.css',im
 const legacyCardCss=readFileSync(new URL('../src/styles/cards-prototype-presentation.css',import.meta.url),'utf8');
 const interactiveCardCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
 const cardLayoutCss=readFileSync(new URL('../src/styles/cards-v15-presentation.css',import.meta.url),'utf8');
+const semanticTheme=readFileSync(new URL('../src/lib/theme.ts',import.meta.url),'utf8');
+const finalScreenshots=readFileSync(new URL('../scripts/final-screenshots-qa.mjs',import.meta.url),'utf8');
 
 describe('approved Cards surrounding desktop target source contract',()=>{
   it('keeps the pale bank-add button blue across light/dark despite the stronger legacy bank-header selector',()=>{
     expect(cardLayoutCss).toMatch(/\.bank-column-head \.bank-add-btn\{[^}]*color:#2f6fed/);
     expect(source).toContain('className="bank-add-btn"');
+    // Insertion of semantic theme !important rules must not supersede the
+    // specialized bank-add color; :where keeps unrelated icon specificity.
+    expect(semanticTheme).toContain('.icon-button:where(:not(.bank-add-btn))');
+    expect(semanticTheme).toContain('.icon-button:where(:not(.bank-add-btn)):hover');
+    expect(semanticTheme).not.toContain('.text-size-picker button,.bank-add-btn,.inline-icon-action');
+    expect(finalScreenshots).toContain("if(page==='cards')");
+    expect(finalScreenshots).toContain('Cards bank-add icon contrast regression');
   });
   it('keeps the existing bank-by-bank card workspace and card handlers intact',()=>{
     expect(source.match(/className="cards-workspace cards-prototype-workspace surface-raised"/g)).toHaveLength(1);

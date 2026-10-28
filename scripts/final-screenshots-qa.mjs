@@ -91,6 +91,16 @@ try{
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
     await applyTheme(activeTheme);
+    // The final capture route must assert the *injected* semantic-theme style:
+    // isolated Cards source QA cannot detect runtime !important overrides.
+    if(page==='cards'){
+      const bankAdd=await c.call("function(){const button=document.querySelector('.cards-bank-column .bank-add-btn'),glyph=button?.querySelector('svg');if(!button||!glyph)return null;const b=getComputedStyle(button),g=getComputedStyle(glyph);return {width:innerWidth,buttonColor:b.color,glyphColor:g.color,glyphStroke:g.stroke}}");
+      const blue='rgb(47, 111, 237)';
+      if(!bankAdd||bankAdd.buttonColor!==blue||bankAdd.glyphColor!==blue||
+          (bankAdd.glyphStroke!==blue&&bankAdd.glyphStroke!=='currentcolor')){
+        throw new Error(`Cards bank-add icon contrast regression: ${activeTheme} ${JSON.stringify(bankAdd)}`);
+      }
+    }
     if(page==='dashboard'){
       await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
       await waitFor("function(){if(innerWidth<=680)return true;const visibleShape=selector=>[...document.querySelectorAll(selector)].some(node=>{try{const box=node.getBBox();return box.width>2&&box.height>2}catch{return false}});return visibleShape('.approved-bar-wrap .recharts-rectangle')&&visibleShape('.summary-donut .recharts-sector')&&visibleShape('.approved-category-donut .recharts-sector')}",[],'Dashboard painted charts');
