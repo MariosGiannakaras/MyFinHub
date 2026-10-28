@@ -24,6 +24,21 @@ describe('card secret crypto',()=>{
     expect(()=>normalizeCardSecrets(old)).toThrow('INVALID_CARD_PAN');
   });
 
+  it('fails safely for Android legacy write formats while preserving legacy encrypted reads',()=>{
+    for(const length of [12,15,17,19]){
+      expect(()=>normalizeCardSecrets({pan:'1'.repeat(length)})).toThrow('INVALID_CARD_PAN');
+    }
+    expect(()=>normalizeCardSecrets({cvv:'1234'})).toThrow('INVALID_CARD_CVV');
+    expect(()=>normalizeCardSecrets({expiry:'01/2020'})).toThrow('INVALID_CARD_EXPIRY');
+    // MM/YYYY is a supported wire form for a real future date, normalized into MM/YY.
+    expect(normalizeCardSecrets({pan:'1234 5678 9012 3456',expiry:'12/2098',cvv:'123'}))
+      .toEqual({pan:'1234567890123456',expiry:'12/98',cvv:'123'});
+    const legacy={pan:'1'.repeat(19),expiry:'01/20',cvv:'1234'};
+    const sealed=encryptCardSecrets(legacy,'owner-android','card-legacy',key,'1',{allowLegacy:true});
+    expect(decryptCardSecrets(sealed,'owner-android','card-legacy',key)).toEqual(legacy);
+    expect(()=>normalizeCardSecrets(legacy)).toThrow('INVALID_CARD_PAN');
+  });
+
   it('binds ciphertext to owner and card id',()=>{
     const encrypted=encryptCardSecrets({pan:'4111111111111111'},'owner-1','card-1',key,'1');
     expect(()=>decryptCardSecrets(encrypted,'owner-1','card-2',key)).toThrow('CARD_VAULT_DECRYPT_FAILED');

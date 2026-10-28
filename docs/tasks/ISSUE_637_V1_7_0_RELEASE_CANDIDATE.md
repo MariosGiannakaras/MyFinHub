@@ -10,21 +10,21 @@ Owner approved necessary corrections after the v1.7.0 vs Android-compatibility r
 ## Source implementation checklist
 Each numbered implementation counts as complete only when all sub-implementations are written and reviewed. Validation and deployment are tracked separately.
 
-- [ ] **I1 — Single v1.7.0 release identity (0/3)**:
-  - [ ] root and desktop manifest versions advance to 1.7.0, preserving existing package names/dependencies and installer naming;
-  - [ ] root and desktop lockfile root/linked-root versions align, without dependency resolution changes;
-  - [ ] existing release coherence and Windows publishing identity remain valid, with no v1.6.0 tag reuse or published download-link rewrite.
-- [ ] **I2 — Focused release/regression locks (0/2)**:
-  - [ ] reinforce release identity / published-version boundaries in existing version-coherence tests;
-  - [ ] reinforce strict Card Vault new-write / legacy decrypt cross-client failure-path tests without relaxing validated security.
-- [ ] **I3 — Truthful release notes and Android handoff (0/2)**:
-  - [ ] populate CHANGELOG [Unreleased] with exact approved four-PR delta, including compatibility caveat;
-  - [ ] document precise Android native-client acceptance contract and explicit go/no-go gate, preserving established API auth/AAL2/owner/PIN and legacy-data protections.
+- [x] **I1 — Single v1.7.0 release identity (3/3)**:
+  - [x] root and desktop manifest versions advance to 1.7.0, preserving existing package names/dependencies and installer naming;
+  - [x] root and desktop lockfile root/linked-root versions align, without dependency resolution changes;
+  - [x] existing release coherence and Windows publishing identity remain valid, with no v1.6.0 tag reuse or published download-link rewrite.
+- [x] **I2 — Focused release/regression locks (2/2)**:
+  - [x] reinforce release identity / published-version boundaries in existing version-coherence tests;
+  - [x] reinforce strict Card Vault new-write / legacy decrypt cross-client failure-path tests without relaxing validated security.
+- [x] **I3 — Truthful release notes and Android handoff (2/2)**:
+  - [x] populate CHANGELOG [Unreleased] with exact approved four-PR delta, including compatibility caveat;
+  - [x] document precise Android native-client acceptance contract and explicit go/no-go gate, preserving established API auth/AAL2/owner/PIN and legacy-data protections.
 
-**Implementations 0/3 completed · Sub-implementations 0/7 completed** — initial candidate checklist.
+**Implementations 3/3 completed · Sub-implementations 7/7 completed** — code/configuration and focused regression checks written; validation/CI and release remain separate.
 
 ## Validation / integration / production (not implementation counters)
-- [ ] Check live branch/ref and no overlapping implementation PR before final write.
+- [x] Check live branch/ref and no overlapping implementation PR before final write.
 - [ ] Narrow source tests, JSON and version coherence, card-vault source tests, and lockfile metadata checks.
 - [ ] Draft PR CI preflight; one coherent Ready exact-head CI matrix (Chromium rendered UI, WebKit, CodeQL, Lighthouse, Windows installer, installed first-run and clean launch, Unified gate) with direct rendered evidence inspection.
 - [ ] Opt-in 216-image final visual release acceptance when required, with direct review; do not misstate a skipped job as PASS.
