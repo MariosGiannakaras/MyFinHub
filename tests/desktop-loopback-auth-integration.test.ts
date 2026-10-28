@@ -12,7 +12,7 @@ describe('packaged Windows synthetic local authentication boundary (#641)', () =
     const tempDir = mkdtempSync(join(tmpdir(), 'myfinhub-auth-loopback-'));
     writeFileSync(join(tempDir, 'index.html'), '<!doctype html><title>QA</title>');
     writeFileSync(join(tempDir, '404.html'), '<!doctype html><title>QA 404</title>');
-    const env = {
+    const env: NodeJS.ProcessEnv = {
       ...process.env,
       NODE_ENV: 'production',
       RHEOMIQ_DESKTOP: '1',
