@@ -12,13 +12,13 @@
 .prototype-payment-card .card-network-assets .card-network-badge{
   min-width:54px;
   height:28px;
-  padding:4px 6px;
+  padding:0;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  border-radius:7px;
-  background:rgba(255,255,255,.94);
-  box-shadow:0 2px 6px rgba(0,0,0,.14),inset 0 0 0 1px rgba(18,35,77,.06);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 .prototype-payment-card .card-network-assets .card-network-logo{
   display:block;

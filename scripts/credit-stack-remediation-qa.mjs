@@ -27,7 +27,7 @@ try{
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async(state='',motion='system')=>{const url=new URL(baseUrl);url.searchParams.set('page','credit');if(state)url.searchParams.set('state',state);if(motion==='reduced')url.searchParams.set('motion','reduced');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')&&Boolean(document.querySelector('#myfinhub-card-stack .stack-card.top'))}",'Credit page');await sleep(120)};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
-  const state=()=>c.call(`function(){const stage=document.querySelector('#myfinhub-card-stack .stack-stage'),cards=[...document.querySelectorAll('#myfinhub-card-stack .stack-card')],top=stage?.querySelector('.stack-card.top'),dots=document.querySelector('#myfinhub-card-stack .dots'),active=dots?.querySelector('.dot.active'),hint=document.querySelector('#myfinhub-card-stack .stack-drag-hint'),stack=document.querySelector('#myfinhub-card-stack'),stats=document.querySelector('.credit-card-stage-stats'),toolbar=top?.querySelector('.card-toolbar');const rect=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};const dotsRect=rect(dots),activeRect=rect(active);return {mode:stack?.className||'',count:cards.length,topId:top?.getAttribute('data-card-id')||'',tops:cards.slice(0,4).map(node=>rect(node)?.top||0),dots:document.querySelectorAll('#myfinhub-card-stack .dot').length,dotsScroll:dots?.scrollLeft||0,dotsClient:dots?.clientWidth||0,dotsWidth:dots?.scrollWidth||0,activeVisible:Boolean(activeRect&&dotsRect&&activeRect.left>=dotsRect.left-1&&activeRect.right<=dotsRect.right+1),hintVisible:Boolean(hint&&getComputedStyle(hint).display!=='none'&&hint.getBoundingClientRect().height>0),cursor:stage?getComputedStyle(stage).cursor:'',touchAction:stage?getComputedStyle(stage).touchAction:'',hostNav:document.querySelectorAll('.credit-card-view-controls,.credit-card-horizontal-nav').length,editProfile:toolbar?.querySelectorAll('.edit-profile-btn').length||0,editDetails:toolbar?.querySelectorAll('.edit-details-btn').length||0,stats:stats?.textContent||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
+  const state=()=>c.call(`function(){const stage=document.querySelector('#myfinhub-card-stack .stack-stage'),cards=[...document.querySelectorAll('#myfinhub-card-stack .stack-card')],top=stage?.querySelector('.stack-card.top'),dots=document.querySelector('#myfinhub-card-stack .dots'),active=dots?.querySelector('.dot.active'),hint=document.querySelector('#myfinhub-card-stack .stack-drag-hint'),stack=document.querySelector('#myfinhub-card-stack'),stats=document.querySelector('.credit-card-stage-stats'),toolbar=top?.querySelector('.card-toolbar');const rect=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};const dotsRect=rect(dots),activeRect=rect(active);return {mode:stack?.className||'',count:cards.length,topId:top?.getAttribute('data-card-id')||'',tops:cards.slice(0,4).map(node=>rect(node)?.top||0),dots:document.querySelectorAll('#myfinhub-card-stack .dot').length,dotsScroll:dots?.scrollLeft||0,dotsClient:dots?.clientWidth||0,dotsWidth:dots?.scrollWidth||0,activeVisible:Boolean(activeRect&&dotsRect&&activeRect.left>=dotsRect.left-1&&activeRect.right<=dotsRect.right+1),hintVisible:Boolean(hint&&getComputedStyle(hint).display!=='none'&&hint.getBoundingClientRect().height>0),cursor:stage?getComputedStyle(stage).cursor:'',touchAction:stage?getComputedStyle(stage).touchAction:'',hostNav:document.querySelectorAll('.credit-card-view-controls,.credit-card-horizontal-nav').length,editProfile:toolbar?.querySelectorAll('.edit-profile-btn').length||0,editDetails:toolbar?.querySelectorAll('.edit-details-btn').length||0,stats:stats?.textContent||'',stagePanelBottom:rect(document.querySelector('.credit-card-stage'))?.bottom??0,ratesPanelTop:rect(document.querySelector('[data-credit-rates]'))?.top??0,purchasesPanelTop:rect(document.querySelector('[data-credit-purchases]'))?.top??0,repaymentsPanelTop:rect(document.querySelector('[data-credit-repayments]'))?.top??0,pageScrollY:window.scrollY,topCenterVisible:Boolean(top&&rect(top)&&(rect(top).top+rect(top).height/2)>=0&&(rect(top).top+rect(top).height/2)<=innerHeight),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
   const pointer=async(deltaY,holdMs=80)=>{const rect=await c.call("function(){const r=document.querySelector('#myfinhub-card-stack .stack-card.top')?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null}");assert(rect,'top card geometry exists');await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x,y:rect.y});await c.send('Input.dispatchMouseEvent',{type:'mousePressed',x:rect.x,y:rect.y,button:'left',clickCount:1});await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x,y:rect.y+deltaY,button:'left',buttons:1});await sleep(holdMs);return rect};
   const release=async(rect,deltaY)=>c.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:rect.x,y:rect.y+deltaY,button:'left',clickCount:1});
   const pressArrow=async key=>{await c.call("function(){const stage=document.querySelector('#myfinhub-card-stack .stack-stage');stage?.focus();return document.activeElement===stage}");await c.send('Input.dispatchKeyEvent',{type:'keyDown',key,code:key});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code:key})};
@@ -83,6 +83,47 @@ try{
   assert(down.topId==='qa-credit-stack-3'&&down.stats.includes('1.600'),'committed downward drag cycles to the next stable card and host state');
   const cancelTop=down.topId;const cancelStart=await pointer(28,60);await release(cancelStart,28);await sleep(120);down=await state();
   assert(down.topId===cancelTop,'sub-threshold drag returns to the original selected card');
+
+  console.log('Credit stack remediation QA: twelve consecutive commits across two complete six-card cycles');
+  // Owner-reported regression: repeated real drags previously made the stack disappear.
+  // Check the *settled DOM* after each transition, not only a source-only count.
+  // Wait for the previous animation, then pin the page viewport before
+  // exercising repeated physical gestures; only dots may scroll horizontally.
+  await sleep(300);
+  const cycleOrigin=down.topId;
+  const pageScrollOrigin=(await state()).pageScrollY;
+  const seenIds=new Set([cycleOrigin]);
+  for(let cycle=0;cycle<12;cycle++){
+    const previous=await state();
+    assert(previous.stagePanelBottom>0&&previous.purchasesPanelTop>=previous.stagePanelBottom-2&&previous.repaymentsPanelTop>=previous.purchasesPanelTop&&previous.ratesPanelTop>=previous.stagePanelBottom-2,
+      `credit finance panels must remain BELOW the active stack for every selected card, even with empty purchases/repayments: ${JSON.stringify(previous)}`);
+    assert(previous.topCenterVisible&&Math.abs(previous.pageScrollY-pageScrollOrigin)<=2,
+      `credit stack remains in the viewport without document-scroll drift before drag ${cycle+1}/12: ${JSON.stringify(previous)}`);
+    const startOfCycle=await pointer(-92,65);
+    const dragging=await c.call("function(){const stage=document.querySelector('#myfinhub-card-stack .stack-stage');return Boolean(stage?.classList.contains('dragging'))}");
+    if(!dragging)await shot('credit-stack-cycle-'+(cycle+1)+'-no-pointer-capture');
+    assert(dragging,`real pointerdown must engage the active physical card at step ${cycle+1}/12: ${JSON.stringify(previous)}`);
+    await release(startOfCycle,-92);
+    await sleep(600); // restack completes at 470ms; allow selected-card reconciliation
+    const actual=await state();
+    if(actual.topId===previous.topId)await shot('credit-stack-cycle-'+(cycle+1)+'-no-restack');
+    assert(actual.topId!==previous.topId,`each physical gesture rotates to a different card at step ${cycle+1}/12: ${JSON.stringify({previous,actual})}`);
+    seenIds.add(actual.topId);
+    assert(actual.stagePanelBottom>0&&actual.purchasesPanelTop>=actual.stagePanelBottom-2&&actual.repaymentsPanelTop>=actual.purchasesPanelTop&&actual.ratesPanelTop>=actual.stagePanelBottom-2,
+      `Credit layout stable after physical card switch ${cycle+1}/12, including empty states: ${JSON.stringify(actual)}`);
+    assert(actual.topCenterVisible&&Math.abs(actual.pageScrollY-pageScrollOrigin)<=2&&
+      actual.count===6&&actual.dots===6&&actual.activeVisible&&actual.overflow<=1&&
+      actual.editProfile===1&&actual.editDetails===1&&!actual.mode.includes('dragging'),
+      `all physical cards and actions survive repeated restack ${cycle+1}/12: ${JSON.stringify(actual)}`);
+    if((cycle+1)%6===0){
+      if(actual.topId!==cycleOrigin)await shot('credit-stack-cycle-'+(cycle+1)+'-unexpected-order');
+      assert(actual.topId===cycleOrigin,
+        `six consecutive commits return to the original physical card at ${cycle+1}: ${JSON.stringify({origin:cycleOrigin,actual})}`);
+    }
+    console.log(`Credit stack physical drag ${cycle+1}/12: ${previous.topId} → ${actual.topId}`);
+  }
+  assert(seenIds.size===6,'two full physical cycles visit every card and preserve all six unique fronts');
+  await shot('credit-stack-two-full-cycles');
 
   console.log('Credit stack remediation QA: single-card mode');
   await navigate('');

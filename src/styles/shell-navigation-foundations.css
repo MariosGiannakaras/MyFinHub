@@ -1,4 +1,7 @@
 .app-shell{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;padding:14px}
+/* Shared desktop + responsive containment: wide workspaces may use all the
+   available main-grid track; children never impose intrinsic page overflow. */
+.app-shell>main,.workspace,.page-stack{min-width:0;max-width:100%;box-sizing:border-box}
 .sidebar{height:calc(100vh - 28px);position:sticky;top:14px;border-radius:20px;padding:18px 14px;display:flex;flex-direction:column;overflow:auto}
 .brand-block{display:flex;align-items:center;gap:10px;padding:0 7px 17px}
 .brand-word{font-size:25px;font-weight:850;letter-spacing:-.05em;color:#142a68}

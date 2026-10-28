@@ -198,3 +198,8 @@
     font-size:10px;
   }
 }
+
+/* Owner #630: genuinely large revealed balances should wrap within the
+   metric/chart grid without changing the masked account presentation. */
+.dashboard-approved .approved-account-card[data-balance-visibility="visible"] .approved-account-body{height:auto!important;min-height:83px;overflow:visible}
+.dashboard-approved .approved-account-card[data-balance-visibility="visible"] .approved-balance{white-space:normal;overflow-wrap:anywhere}

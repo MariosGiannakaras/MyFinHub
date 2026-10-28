@@ -29,6 +29,36 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(card).toContain('AccountIban accountId={account.id}');
   });
 
+  it('keeps account/chart column allocation in its single canonical Dashboard owner',()=>{
+    const fidelity=read('../src/styles/dashboard-desktop-fidelity.css');
+    const alignment=read('../src/styles/dashboard-desktop-alignment.css');
+    expect(desktop).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)!important');
+    expect(fidelity).not.toContain('grid-template-columns:minmax(176px,1.06fr) minmax(132px,.94fr)!important');
+    expect(alignment).not.toContain('grid-template-columns:minmax(112px,.72fr) minmax(150px,1.28fr)!important');
+  });
+
+  it('keeps large revealed financial values inside their account chart/value grid',()=>{
+    expect(card).toContain("data-balance-visibility={privacyVisible?'visible':'masked'}");
+    expect(desktop).toContain('[data-balance-visibility="visible"] .approved-account-body{height:auto!important;min-height:83px;overflow:visible}');
+    expect(desktop).toContain('[data-balance-visibility="visible"] .approved-balance{white-space:normal;overflow-wrap:anywhere}');
+    expect(desktop).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.08fr)!important');
+  });
+
+  it('verifies real chart/value geometry and complete five-row activity in Chromium',()=>{
+    const qa=read('../scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(qa).toContain('dashboard-revealed-large-balance-stress');
+    expect(qa).toContain('stressBalance?.fullText&&stressBalance.noOverlap&&stressBalance.valueFits');
+    expect(qa).toContain('readableActivity.movementTitles&&readableActivity.upcomingTitles');
+  });
+
+  it('retains full text access to visually condensed finance activity',()=>{
+    expect(dashboard).toContain('<b title={item.note}>{item.note}</b>');
+    expect(dashboard).toContain('<small title={item.category}>{item.category}</small>');
+    expect(dashboard).toContain('<b title={item.name}>{item.name}</b>');
+    expect(dashboard).toContain('movements.slice(0,5)');
+    expect(dashboard).toContain('Προβολή όλων των κινήσεων');
+  });
+
   it('uses existing transaction account filter and permits clearing it',()=>{
     expect(card).toContain('onTransactions(account.id)');
     expect(card).toContain('Συναλλαγές για');

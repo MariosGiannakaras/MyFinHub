@@ -55,7 +55,11 @@ describe('cross-page UI consistency contracts',()=>{
     const hardening=read('src/styles/ui-hardening-foundations.css');
     const sharedControls=read('src/styles/app-controls.css');
     expect(theme).toContain('.sidebar nav button.active,.mobile-nav button.active,.save-button');
-    expect(theme).toContain('.top-actions button,.icon-button,.settings-actions button,.secondary');
+    expect(theme).toContain('.top-actions button,.icon-button:where(:not(.bank-add-btn)),.settings-actions button,.secondary');
+    expect(theme).toContain('.icon-button-accent,.top-actions .icon-button-accent');
+    expect(theme).toContain('.icon-button-quiet,.top-actions .icon-button-quiet');
+    expect(theme).toContain('.top-actions button:hover,.icon-button:where(:not(.bank-add-btn)):hover,.text-button,');
+    expect(theme).not.toContain('.top-actions button,.icon-button,.settings-actions button,.secondary');
     expect(theme).toContain('input,select,textarea{background-color:var(--control-bg)!important');
     expect(theme).toContain("'--focus'");
     expect(sharedControls).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');

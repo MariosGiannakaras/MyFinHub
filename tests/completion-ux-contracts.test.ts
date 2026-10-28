@@ -83,7 +83,8 @@ describe('completion UX contracts',()=>{
     const settingsCss=read('src/pages/SettingsPage.css');
     expect(cards).toContain('scroll-snap-type:x mandatory');
     expect(cards).toContain('scroll-snap-stop:always');
-    expect(settings).toContain("selected?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' })");
+    expect(settings).toContain('rail.scrollTo({left:rail.scrollLeft+');
+    expect(settings).not.toContain('selected?.scrollIntoView(');
     expect(settings).toContain('aria-labelledby={`settings-tab-${activeTab}`}');
     expect(settingsCss).toContain('scroll-snap-type:x proximity');
     expect(settingsCss).toContain('mask-image:linear-gradient');

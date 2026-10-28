@@ -7,35 +7,132 @@ import { inferredCategoryIcon } from '../src/lib/categoryIconInference.js';
 const file=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 describe('owner #567 screenshot-driven corrections',()=>{
-  it('bounds PAN without issuer-length, Luhn, or numeric value checks on either side',()=>{
-    const pan='1'.repeat(32);
-    expect(formatCardNumberInput(pan).replace(/\D/g,'')).toBe(pan);
-    expect(normalizeCardDetailsInput({pan,expiry:'99/99',cvv:'1'}).pan).toBe(pan);
-    expect(normalizeCardSecrets({pan,expiry:'99/99',cvv:'1'})).toEqual({pan,expiry:'99/99',cvv:'1'});
+  it('requires owner-approved four groups of four, real expiry month and 3-digit CVV',()=>{
+    const pan='1234567890123456';
+    expect(formatCardNumberInput(pan)).toBe('1234 5678 9012 3456');
+    expect(normalizeCardDetailsInput({pan,expiry:'12/31',cvv:'123'},{requireCvv:true})).toEqual({pan,expiry:'12/31',cvv:'123'});
+    expect(normalizeCardSecrets({pan,expiry:'12/31',cvv:'123'})).toEqual({pan,expiry:'12/31',cvv:'123'});
     expect(()=>normalizeCardDetailsInput({pan:pan+'1',expiry:'12/31'})).toThrow();
     expect(()=>normalizeCardSecrets({pan:pan+'1'})).toThrow();
-    expect(()=>normalizeCardSecrets({cvv:'12345'})).toThrow();
+    expect(()=>normalizeCardSecrets({expiry:'13/31'})).toThrow();
+    expect(()=>normalizeCardSecrets({cvv:'12'})).toThrow();
+    expect(()=>normalizeCardSecrets({cvv:'1234'})).toThrow();
   });
   it('retains one on-card edit action, with inline create/edit and no card-details modal on the debit route',()=>{
     const interactive=file('../src/components/InteractivePaymentCard.tsx');
     const route=file('../src/pages/CardsPage.tsx');
     const editor=file('../src/components/CardDetailsDialog.tsx');
+    const inlineCss=file('../src/styles/card-details-dialog.css');
     expect(interactive).toContain('detailsEditor ? detailsEditor');
+    // A previous Eye failure may have its own visible alert. It must clear
+    // when the user enters the icon-only editor, without suppressing the
+    // actual failed reveal state before that interaction.
+    expect(interactive).toContain("if(detailsEditor)setMessage('')");
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'stale Eye failure status clears when icon-only editor opens'");
     expect(interactive).toContain('onEditDetails||onEditCard');
     expect(interactive).not.toContain('KeyRound');
     expect(route).toContain('<CardDetailsDialog inline open');
     expect(route).toContain('const visibleWorkspaceBanks=');
     expect(route).not.toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
-    expect(editor).toContain('if(inline)return <section');
+    expect(editor).toContain('if(inline){');
+    expect(editor).toContain("card-number card-inline-edit-host");
+    expect(editor).toContain('className="card-inline-value card-inline-pan"');
+    expect(editor).toContain('card-inline-metric-only');
+    expect(editor).toContain('aria-hidden="true"');
+    // The ordinary card's perspective projects translateZ children. Removing it
+    // during editing shrinks their rectangles ~4% and shifts fields/network.
+    expect(inlineCss).not.toContain('.app-card-details-inline .prototype-payment-card{transform:none!important}');
+    expect(file('../src/styles/cards-v15-presentation.css')).toContain('transform:perspective(1000px) rotateX(0) rotateY(0)');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-value{');
+    expect(inlineCss).toContain('position:absolute;inset:0;display:block;width:100%;height:100%');
+    expect(editor).toContain('card-field-value card-inline-edit-host');
+    expect(editor).toContain('card-inline-value card-inline-expiry');
+    expect(editor).toContain('card-inline-value card-inline-cvv');
+    expect(editor).toContain('card-inline-action-slot');
+    // Global button min-height is 24px even though .copy-mini's own height
+    // is 23px. Span placeholders shrink the PAN row by 1px (1.08px in 3D).
+    expect(file('../src/styles/theme-surface-foundations.css')).toContain('button{min-width:24px;min-height:24px}');
+    expect(editor).toContain('className="copy-mini card-inline-action-slot" disabled tabIndex={-1} aria-hidden="true"');
+    expect(editor).not.toContain('<span className="copy-mini card-inline-action-slot"');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberWrapHeight,cardFaceAfterEdit.numberWrapHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.copySlotHeight,cardFaceAfterEdit.copySlotHeight,1)');
+    expect(editor).toContain('<PrototypeBrand card={card} bank={bank}/>');
+    expect(interactive).toContain('export function PrototypeBrand(');
+    expect(editor).toContain('const panIsLong=pan.replace(/\\D/g,\'\').length>16');
+    expect(editor).toContain('formatStoredCardNumberInput(nextPan)');
+    expect(editor).toContain('maxLength={19} value={shownPan}');
+    expect(editor).toContain('maxLength={3} value={cvv}');
+    expect(editor).toContain('rows={panIsLong?2:1}');
+    expect(editor).toContain('<AppTextarea data-autofocus');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-16-digits-');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
+    expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
+    expect(editor).toContain('card-inline-value card-inline-expiry');
+    expect(editor).toContain('card-inline-value card-inline-cvv');
+    expect(editor).toContain('<CardNetworkMark network={card.network} detail={kind}/>');
     expect(editor).toContain('await onBeforeSave?.(card)');
     expect(editor).toContain('await onSaved(updated)');
-    expect(editor).toContain("inline?'Κενό'");
+    expect(editor).toContain("placeholder={requireCvv?'CVV':'Προαιρετικό'}");
+    expect(editor).toContain('{!requireCvv?<small className="card-cvv-preserve-hint">');
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
-    const inlineCss=file('../src/styles/card-details-dialog.css');
+    expect(inlineCss).not.toContain('font-size:.84rem;letter-spacing:.02em');
     // Owner requested the original card/button visual language, not a new boxed editor.
-    expect(inlineCss).toContain('color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none');
-    expect(inlineCss).toContain('.app-card-details-inline footer{display:flex;');
-    expect(inlineCss).toContain('min-height:38px');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-value{');
+    expect(inlineCss).toContain('font:inherit;letter-spacing:inherit;line-height:inherit');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{');
+    expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
+    // The app's general 16px mobile form-input override must not inflate the
+    // physical card's 16-digit PAN and force unseen wrapped textarea rows.
+    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}');
+    expect(inlineCss).toContain('.app-card-details-inline .card-number.card-inline-edit-host{');
+    expect(inlineCss).toContain('overflow:visible;text-overflow:clip;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.inputFont===liveEdit.faceFont');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('liveEdit.scrollHeight<=liveEdit.clientHeight+2');
+    expect(inlineCss).not.toContain('.app-card-details-inline .card-inline-pan.revealed{height:calc(2 * 1.28em)}');
+    expect(inlineCss).not.toContain('height:1.1em;max-height:none;box-sizing:border-box;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.numberHeight,cardFaceAfterEdit.numberHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.bodyHeight,cardFaceAfterEdit.bodyHeight,1)');
+    expect(inlineCss).toContain('.app-card-details-inline .card-field-value{flex:1}');
+    expect(inlineCss).not.toContain('width:100%;height:23px;max-height:23px;min-height:0;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.editValue');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceBeforeEdit.field');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('cardFaceAfterEdit.labelY');
+    const inlineFace=editor.split('if(inline){')[1]?.split('const content=<>')[0]??'';
+    expect(inlineFace).toContain('className="card-icon-btn card-icon-management card-inline-save"');
+    expect(inlineFace).toContain('aria-label="Αποθήκευση στοιχείων κάρτας"');
+    expect(inlineFace).toContain('onClick={()=>void submit()}');
+    expect(inlineFace).toContain("event.key==='Escape'");
+    expect(inlineFace).toContain('onKeyDownCapture=');
+    expect(inlineFace).toContain('className="sr-only" role="alert"');
+    expect(inlineFace).toContain('aria-label="Όνομα / σχέδιο"');
+    expect(inlineFace).not.toContain('<footer');
+    expect(inlineFace).not.toContain('<details className="app-card-details-help">');
+    expect(inlineFace).not.toContain('className="card-cvv-preserve-hint"');
+    expect(inlineFace).not.toContain('className="app-card-details-notice"');
+    expect(inlineFace).not.toContain('card-inline-close');
+    expect(inlineCss).toContain('.app-card-details-inline{display:block;');
+    // The parent .card-slot owns perspective. An inserted flat wrapper would
+    // shrink translateZ children without changing the physical card ratio.
+    expect(file('../src/styles/cards-v15-presentation.css')).toContain('perspective:1000px;position:relative');
+    expect(inlineCss).toContain('transform-style:preserve-3d');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.fieldsHeight,cardFaceAfterEdit.fieldsHeight,1)');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('near(cardFaceBeforeEdit.brandY,cardFaceAfterEdit.brandY)');
+    expect(inlineCss).not.toContain('.card-inline-save-actions{');
+    expect(inlineCss).toContain('.app-card-details-inline .card-inline-save[data-save-error="true"]');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('Escape discards draft without secure vault writes');
+    // A real CDP Escape must be delivered to the freshly focused editor.
+    // Await React dismissal before trying the normal card's Eye button.
+    expect(file('../scripts/frontend-qa.mjs')).toContain('"Escape restores persisted expiry and focuses the card editor"');
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'Escape restores keyboard focus to the original pencil'");
+    expect(file('../scripts/frontend-qa.mjs')).toContain("'second Escape closes inline editor before revealing card'");
+    expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('partial vault save must keep inline editor');
+    expect(route).toContain("data-single-bank={visibleWorkspaceBanks.length===1?'true':undefined}");
+    const collections=file('../src/styles/cards-v15-presentation.css');
+    expect(collections).toContain('.cards-workspace[data-single-bank="true"] .cards-grid{');
+    expect(collections).toContain('grid-template-columns:minmax(0,1fr);');
+    expect(file('../scripts/cards-remediation-qa.mjs')).toContain('current.workspaceScroll<=current.workspaceClient+1');
     expect(inlineCss).not.toContain('.app-card-details-inline footer button:first-child:nth-last-child(3)');
     expect(inlineCss).not.toContain('.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:8px');
     const cardCss=file('../src/components/InteractivePaymentCard.css');
@@ -44,18 +141,23 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(cardCss).toContain('stroke-width:2.4;');
     expect(interactive).toContain('A missing server vault entry is not a successful reveal');
     expect(interactive).toContain('role="alert" aria-live="assertive"');
-    expect(interactive).toContain("visible&&revealed.pan?'revealed':'masked'");
+    expect(interactive).toContain("legacyLongPan?'revealed card-number-long':'revealed'");
+    expect(cardCss).toContain('.prototype-payment-card .card-number.revealed.card-number-long{');
     expect(cardCss).toContain('.prototype-payment-card:has(.card-number.revealed) .card-inner{');
     expect(cardCss).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;');
-    expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 32-digit PAN without clipping');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 16-digit PAN without clipping');
     const qa=file('../scripts/frontend-qa.mjs');
     expect(qa).toContain("'eye reveals server PAN and CVV'");
     expect(qa).toContain("'eye reports server vault configuration error'");
-    expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
+    expect(cardCss).not.toContain('.prototype-payment-card:has(.app-card-details-inline)');
     const frontendQa=file('../scripts/frontend-qa.mjs');
-    expect(frontendQa).toContain('on-card secure editor and every save/cancel action must remain inside expanded card');
+    expect(frontendQa).toContain('normal card face with only original slot save icon and no added UI');
+    // getBoundingClientRect uses fractional CSS px; DOM clientHeight is integer-rounded.
+    // Normalize measurement units while retaining strict no-clipping and in-card action assertions.
+    expect(frontendQa).toContain('Math.abs(inlineContainment.physicalCardHeight-inlineContainment.expectedCardHeight)<=2');
+    expect(editor).toContain('aria-label="Κλείσιμο στοιχείων κάρτας"');
     const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
-    expect(geomQa).toContain('save/cancel buttons and complete editor must fit expanded card');
+    expect(geomQa).toContain('editable values and save icon in original card; no new panels');
   });
   it('shows semantic finance icons first and preserves explicit opt-in to the whole catalog',()=>{
     const picker=file('../src/components/CategoryIconPicker.tsx');
@@ -75,7 +177,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
   it('exercises the real two-stage on-card edit to profile/design path in rendered phone QA',()=>{
     const geometry=file('../scripts/completion-dialog-geometry-qa.mjs');
     expect(geometry).toContain("'on-card secure details visible'");
-    expect(geometry).toContain("await clickText('.app-card-details-inline button','Όνομα / σχέδιο')");
+    expect(geometry).toContain('existing on-card profile slot');
     expect(geometry).toContain("await inspect('.card-create-modal'");
     expect(geometry).toContain("await inspect('.app-card-details-inline'");
   });

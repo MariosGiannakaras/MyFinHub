@@ -89,10 +89,21 @@ try{
   await navigate('transactions');
   await setByLabel('Αναζήτηση συναλλαγών','Freddo espresso');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event row');
-  // The desktop ledger deliberately keeps legacy row-actions inside a hidden
-  // semantic fallback. A user opens the visible row details before editing.
-  await clickVisibleRowAction('[data-transaction-source="event"]','Freddo espresso','.row-context-button','filtered modern event details access');
-  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso'))}",'filtered modern event detail panel');
+  // The visible ledger owns the row actions. A filtered first row can ALREADY
+  // be expanded because the detail rail intentionally selects rows[0] by
+  // default; pressing the same action then correctly closes it. Verify both
+  // real toggle directions instead of assuming every click always opens.
+  await waitFor("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source]')];return rows.length>0&&rows.every(row=>(row.textContent||'').includes('Freddo espresso'))}",'deferred Freddo search has settled in the visible ledger');
+  const detailsExpanded=await c.call("function(){const row=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true'}");
+  if(!detailsExpanded){
+    await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','open filtered modern event details');
+  }
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');const row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso')&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true')}",'filtered modern event detail panel is genuinely expanded');
+  await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','hide the selected modern event details');
+  await waitFor("function(){const panel=document.querySelector('.transactions-detail-panel'),row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return !panel&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='false'}",'selected modern event details close and expose collapsed ARIA state');
+  await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','Freddo espresso','.row-context-button','reopen the selected modern event details');
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel'),row=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Freddo espresso'));return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso')&&row?.querySelector('.row-context-button')?.getAttribute('aria-expanded')==='true')}",'filtered modern event detail panel reopens for edit');
+  await shot('transactions-filtered-details-toggle');
   await clickText('.transactions-detail-actions button','Επεξεργασία');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
   await setByLabel('Ποσό','21.75');
@@ -381,7 +392,7 @@ try{
   await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');
   await setByLabel('Λήξη κάρτας','12/30');
   await setByLabel('CVV κάρτας','123');
-  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  const cardSave=await c.call("function(){const node=document.querySelector('.app-card-details-inline button[aria-label=\"Αποθήκευση στοιχείων κάρτας\"]');if(!node||node.disabled)return false;node.click();return true}");assert(cardSave,'created card saves through the existing edit icon slot');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')&&[...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created debit card persists into active Cards stack');
   await restoreCardLifecycleVault();
   await shot('cards-lifecycle-created');
@@ -415,7 +426,7 @@ try{
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
   assert(cardsEdit,'Cards exposes one pencil for inline secure editing');
    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'inline card secure editor');
-   await clickText('.app-card-details-inline button','Όνομα / σχέδιο');
+   const profileSlot=await c.call("function(){const node=document.querySelector('.app-card-details-inline button[aria-label=\"Όνομα / σχέδιο\"]');if(!node||node.disabled)return false;node.click();return true}");assert(profileSlot,'card design remains accessible from original toolbar slots');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
   await selectOwnedByLabel('Δίκτυο κάρτας','Mastercard');

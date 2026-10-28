@@ -150,7 +150,7 @@ try{
     for(const tab of tabs){
       await clickTab(tab);
       const geometry=await c.call("function(){const page=document.querySelector('.settings-tabs-page'),panel=document.querySelector('.settings-tab-panel');return {page:page?.getBoundingClientRect().width||0,panel:panel?.getBoundingClientRect().width||0,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
-      assert(geometry.page<=1681&&geometry.panel<=1541&&geometry.overflow<=1,`${label}px ${tab.label} Settings measure is bounded: ${JSON.stringify(geometry)}`);
+      assert(geometry.page<=1881&&geometry.panel<=1801&&geometry.overflow<=1,`${label}px ${tab.label} Settings measure is bounded: ${JSON.stringify(geometry)}`);
     }
     await clickTab(tabs[0]);await screenshot(`settings-general-wide-${label}`);
     await clickTab(tabs[2]);await screenshot(`settings-accounts-wide-${label}`);

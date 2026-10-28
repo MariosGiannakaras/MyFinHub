@@ -6,8 +6,42 @@ const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.
 const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
-  it('keeps a bounded ledger/detail reading measure with readable wrapping',()=>{
-    expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}');
+  it('keeps action buttons immediately after the selected transaction hero, before long details',()=>{
+    const hero=page.indexOf('transactions-detail-hero');
+    const actions=page.indexOf('transactions-detail-actions');
+    const details=page.indexOf('transactions-detail-list');
+    expect(hero).toBeGreaterThan(0);
+    expect(actions).toBeGreaterThan(hero);
+    expect(details).toBeGreaterThan(actions);
+    const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.meta.url),'utf8');
+    expect(css).toContain('.transactions-detail-actions{margin:12px 0 4px;padding:0;');
+    expect(css).toContain('.transactions-detail-actions button{min-height:44px;');
+  });
+  it('keeps the desktop filtered-row details button a truthful open/close toggle',()=>{
+    const crudQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain("if(isSelected){setDetailOpen(false);return}setSelectedId(r.id);setDetailOpen(true)");
+    expect(crudQa).toContain('deferred Freddo search has settled in the visible ledger');
+    expect(crudQa).toContain('selected modern event details close and expose collapsed ARIA state');
+    expect(crudQa).toContain('filtered modern event detail panel reopens for edit');
+    expect(crudQa).toContain("shot('transactions-filtered-details-toggle')");
+  });
+  it('guards the owner-approved wide ledger against a hidden 1560px recentering cap',()=>{
+    const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('wide.shell>=wide.workspace-wide.left-wide.right-2');
+    expect(qa).toContain('wide.grid<=wide.shell+1');
+    expect(qa).not.toContain('wide.shell<=1561');
+  });
+
+  it('keeps the functional last-column details affordance visible at 1280–1599px',()=>{
+    expect(css).toContain('@media(min-width:1181px) and (max-width:1599px)');
+    expect(css).toContain('.transactions-approved-table{min-width:0;table-layout:fixed}');
+    expect(css).toContain('.transactions-approved-table td:last-child{width:48px}');
+    expect(qa).toContain('visibleActions.scrollWidth<=visibleActions.wrapWidth+2');
+    expect(qa).toContain('visibleActions.buttonRight<=visibleActions.wrapRight+1');
+  });
+
+  it('uses the available desktop width while retaining readable ledger/detail wrapping',()=>{
+    expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%;margin-inline:0}');
     expect(css).toContain('.transactions-approved-table td{height:auto;min-height:48px');
     expect(css).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere');
     expect(css).toContain('@media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}');

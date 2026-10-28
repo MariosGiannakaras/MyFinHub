@@ -15,7 +15,7 @@
 }
 
 @media(min-width:1410px){
-  .dashboard-approved .approved-account-body{grid-template-columns:minmax(176px,1.06fr) minmax(132px,.94fr)!important}
+  /* The shared two-column account/chart grid is owned by DashboardCompletion.css. */
   .dashboard-approved .approved-account-chart{padding-bottom:1px}
 }
 

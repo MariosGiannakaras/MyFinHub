@@ -1,20 +1,25 @@
-import { CreditCard, X } from 'lucide-react';
+import { Archive, CreditCard, Eye, Save, X } from 'lucide-react';
+import { PrototypeBrand } from './InteractivePaymentCard';
+import { CardNetworkMark } from './CardNetworkMark';
+import { cardThemeClass } from '../lib/cardDesigns';
 import { useEffect, useId, useRef, useState } from 'react';
 import { AppTextInput } from './AppTextInput';
+import { AppTextarea } from './AppTextarea';
 import { Button } from './Button';
 import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
-import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, normalizeCardDetailsInput, saveCardDetails } from '../lib/cardDetails';
-import type { PaymentCard } from '../types';
+import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, normalizeCardDetailsInput, saveCardDetails, formatStoredCardNumberInput } from '../lib/cardDetails';
+import type { CardBank, PaymentCard } from '../types';
 import '../styles/card-details-dialog.css';
 
 export function CardDetailsDialog({
-  open,card,requireCvv=false,motionMode='system',inline=false,onEditProfile,onBeforeSave,onSaved,onCancel,
+  open,card,bank,requireCvv=false,motionMode='system',inline=false,onEditProfile,onBeforeSave,onSaved,onCancel,
 }:{
   open:boolean;
   card:PaymentCard|null;
+  bank?:CardBank;
   requireCvv?:boolean;
   motionMode?:'system'|'reduced'|'full';
   inline?:boolean;
@@ -55,7 +60,7 @@ export function CardDetailsDialog({
         else loadMessage=cardVaultErrorMessage(loadError);
       }
       if(cancelled)return;
-      setPan(formatCardNumberInput(nextPan));
+      setPan(formatStoredCardNumberInput(nextPan));
       setExpiry(formatCardExpiryInput(nextExpiry));
       setCvv(nextCvv);
       setNotice(loadNotice);
@@ -72,7 +77,14 @@ export function CardDetailsDialog({
 
   if(!card)return null;
   const busy=loading||saving;
-  const cancel=()=>{if(!busy)onCancel()};
+  // Esc abandons only local drafts; an in-flight server write cannot be cancelled.
+  const cancel=()=>{
+    if(saving)return;
+    onCancel();
+    requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(
+      `[data-command-card-id="${CSS.escape(card.id)}"] button[aria-label^="Επεξεργασία κάρτας"]`,
+    )?.focus());
+  };
   const clearError=()=>{if(error)setError('')};
   const submit=async()=>{
     if(busy)return;
@@ -94,22 +106,62 @@ export function CardDetailsDialog({
     }finally{setSaving(false)}
   };
 
+  if(inline){
+    if(!bank)throw new Error('Inline card editing requires the original card bank');
+    const kind=card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';
+    // Only previously stored nonstandard PANs can use the legacy two-line face.
+    // New and edited PANs accept exactly four groups of four digits.
+    const panIsLong=pan.replace(/\D/g,'').length>16;
+    const shownPan=panIsLong?pan.slice(0,19)+'\n'+pan.slice(20):pan;
+    return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-busy={busy||undefined} aria-label={'Επεξεργασία στοιχείων κάρτας '+card.nickname} aria-describedby={error?errorId:undefined} onKeyDownCapture={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();cancel()}}}>
+      <article className={'payment-card r-payment-card prototype-payment-card '+cardThemeClass(card)+' is-inplace-editing'} aria-label={card.nickname+' · '+bank.name}>
+        <div className="card-inner">
+          <header className="card-header">
+            <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
+            <div className="card-toolbar">
+              {onEditProfile?<button type="button" className="card-icon-btn card-icon-reveal" aria-label="Όνομα / σχέδιο" title="Όνομα / σχέδιο" disabled={busy} onClick={onEditProfile}><CreditCard aria-hidden="true"/></button>:<span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>}
+              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label="Αποθήκευση στοιχείων κάρτας" aria-describedby={error?errorId:undefined} title="Αποθήκευση στοιχείων κάρτας" data-save-error={error?'true':undefined} disabled={busy} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
+              <span className="card-icon-btn card-icon-management card-inline-action-slot" aria-hidden="true"><Archive/></span>
+            </div>
+          </header>
+          <div className="card-body">
+            <label className="card-number-wrap">
+              <span className="sr-only">Αριθμός κάρτας</span>
+              <span className={'card-number card-inline-edit-host'+(panIsLong?' revealed card-number-long':'')}>
+                <span className="card-inline-metric-only" aria-hidden="true">{panIsLong?<>•••• •••• •••• ••••<br/>•••• •••• •••• ••••</>:'•••• •••• •••• ••••'}</span>
+                <AppTextarea data-autofocus="true" className="card-inline-value card-inline-pan" autoComplete="cc-number" inputMode="numeric" spellCheck={false} wrap="soft" rows={panIsLong?2:1} maxLength={19} value={shownPan} disabled={busy} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="•••• •••• •••• ••••" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/>
+              </span>
+              <button type="button" className="copy-mini card-inline-action-slot" disabled tabIndex={-1} aria-hidden="true"><CreditCard/></button>
+            </label>
+            <div className="card-fields">
+              <label className="card-field"><span className="card-field-label">VALID THRU</span><span className="card-field-line"><span className="card-field-value card-inline-edit-host"><span className="card-inline-metric-only" aria-hidden="true">••/••</span><AppTextInput className="card-inline-value card-inline-expiry" autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={busy} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></span><button type="button" className="copy-mini card-inline-action-slot" disabled tabIndex={-1} aria-hidden="true"/></span></label>
+              <label className="card-field"><span className="card-field-label">CVV</span><span className="card-field-line"><span className="card-field-value card-inline-edit-host"><span className="card-inline-metric-only" aria-hidden="true">•••</span><AppTextInput className="card-inline-value card-inline-cvv" autoComplete="cc-csc" inputMode="numeric" maxLength={3} value={cvv} disabled={busy} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder="•••" onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,3));clearError()}}/></span><button type="button" className="copy-mini card-inline-action-slot" disabled tabIndex={-1} aria-hidden="true"/></span></label>
+              <CardNetworkMark network={card.network} detail={kind}/>
+            </div>
+          </div>
+        </div>
+      </article>
+      {/* Errors and vault notices remain accessible without changing the card face. */}
+      {notice?<span id={noticeId} className="sr-only" role="status">{notice}</span>:null}
+      {error?<span id={errorId} className="sr-only" role="alert">{error}</span>:null}
+    </section>;
+  }
+
   const content=<>
     <header><div><small>ΑΣΦΑΛΗ ΣΤΟΙΧΕΙΑ ΚΑΡΤΑΣ</small><h2 id={titleId}>Στοιχεία · {card.nickname}</h2><p id={descriptionId}>Ο αριθμός, η λήξη και το CVV αποθηκεύονται μαζί κρυπτογραφημένα στο card vault και συγχρονίζονται στις εγκεκριμένες εφαρμογές.</p></div><IconButton aria-label="Κλείσιμο στοιχείων κάρτας" disabled={busy} onClick={cancel}><X aria-hidden="true"/></IconButton></header>
     <div className="settings-form app-card-details-dialog-body">
-      <label className="wide"><span>Αριθμός κάρτας</span><AppTextInput data-autofocus="true" autoComplete="cc-number" inputMode="numeric" maxLength={39} value={pan} disabled={loading} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="1234 5678 9012 3456" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/></label>
+      <label className="wide"><span>Αριθμός κάρτας</span><AppTextInput data-autofocus="true" autoComplete="cc-number" inputMode="numeric" maxLength={19} value={pan} disabled={loading} invalid={Boolean(error)} aria-label="Αριθμός κάρτας" placeholder="1234 5678 9012 3456" onChange={event=>{setPan(formatCardNumberInput(event.target.value));clearError()}}/></label>
       <label><span>Λήξη</span><AppTextInput autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={loading} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>
-      <label><span>CVV</span><AppTextInput autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={loading} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder={requireCvv?'CVV':inline?'Κενό':'Άφησέ το κενό για διατήρηση'} onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/>{inline&&!requireCvv?<small className="card-inline-cvv-hint">Κενό = διατήρηση υπάρχοντος CVV</small>:null}</label>
-      <div className="app-card-details-security-note" role="note"><CreditCard aria-hidden="true"/><span>Χωρίς έλεγχο Luhn ή δικτύου. Όρια: αριθμός έως 32 ψηφία, λήξη έως 5 χαρακτήρες, CVV έως 4 ψηφία.</span></div>
+      <label><span>CVV</span><AppTextInput autoComplete="cc-csc" inputMode="numeric" maxLength={3} value={cvv} disabled={loading} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder={requireCvv?'CVV':'Προαιρετικό'} onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,3));clearError()}}/>{!requireCvv?<small className="card-cvv-preserve-hint">Κενό = διατήρηση υπάρχοντος CVV</small>:null}</label>
+      {inline?<details className="app-card-details-security-note app-card-details-help"><summary>Ασφάλεια και όρια</summary><span>Αριθμός: 16 ψηφία σε 4 τετράδες. Λήξη: MM/YY με έγκυρο μήνα, μη ληγμένη. CVV: 3 ψηφία. Δεν εφαρμόζεται έλεγχος Luhn.</span></details>:<div className="app-card-details-security-note" role="note"><CreditCard aria-hidden="true"/><span>Αριθμός: 16 ψηφία σε 4 τετράδες. Λήξη: MM/YY με έγκυρο μήνα, μη ληγμένη. CVV: 3 ψηφία. Δεν εφαρμόζεται έλεγχος Luhn.</span></div>}
       {notice?<div id={noticeId} className="app-card-details-notice" role="status">{notice}</div>:null}
       {error?<FormError id={errorId}>{error}</FormError>:null}
     </div>
     <footer>
-      {inline&&onEditProfile?<Button variant="secondary" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
+      {inline&&onEditProfile?<Button variant="secondary" className="card-profile-action" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
       <Button variant="secondary" disabled={busy} onClick={cancel}>Ακύρωση</Button>
       <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
     </footer>
   </>;
-  if(inline)return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-labelledby={titleId} aria-describedby={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>{content}</section>;
   return <DialogShell open={open} className="app-card-details-dialog" role="dialog" ariaLabelledBy={titleId} ariaDescribedBy={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')} busy={busy} motionMode={motionMode} preferredFocus='[data-autofocus="true"]' onRequestClose={cancel}>{content}</DialogShell>;
 }

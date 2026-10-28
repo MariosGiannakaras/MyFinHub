@@ -21,7 +21,7 @@ button:disabled{cursor:not-allowed}
   .text-button:not(:disabled):hover{transform:translateY(-1px)}
   .top-actions button:not(:disabled):hover,.icon-button:not(:disabled):hover,.row-actions button:not(:disabled):hover{transform:translateY(-1px) scale(1.025)}
   .sidebar nav button:not(.active):hover svg,.mobile-more-menu nav button:not(.active):hover svg{transform:translateX(2px) scale(1.04)}
-  .payment-card:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(28,51,91,.14),inset 0 1px 0 rgba(255,255,255,.36)}
+  .payment-card:hover{box-shadow:0 18px 34px rgba(28,51,91,.14),inset 0 1px 0 rgba(255,255,255,.36)}
 }
 .secondary:not(:disabled):active,.wide-action:not(:disabled):active,.empty-bank-card:not(:disabled):active,.top-actions button:not(:disabled):active,.icon-button:not(:disabled):active,.row-actions button:not(:disabled):active,.login-logout:not(:disabled):active,.payment-card button:not(:disabled):active{transform:translateY(0) scale(.975)}
 .sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:transform var(--motion-fast) var(--ease-out),color var(--motion-base) ease}

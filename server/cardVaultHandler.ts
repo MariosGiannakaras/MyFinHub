@@ -34,7 +34,7 @@ export function parseCardVaultRequest(value:unknown,method:'POST'|'PUT'|'DELETE'
   if(method!=='PUT')return {cardId};
   const pan=body.pan===undefined?undefined:typeof body.pan==='string'?body.pan: (()=>{throw new ApiError(400,'INVALID_CARD_PAN','Ο αριθμός κάρτας δεν είναι έγκυρος.');})();
   const expiry=body.expiry===undefined?undefined:typeof body.expiry==='string'?body.expiry: (()=>{throw new ApiError(400,'INVALID_CARD_EXPIRY','Η ημερομηνία λήξης δεν είναι έγκυρη.');})();
-  const cvv=body.cvv===undefined?undefined:typeof body.cvv==='string'?body.cvv: (()=>{throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.');})();
+  const cvv=body.cvv===undefined?undefined:typeof body.cvv==='string'?body.cvv: (()=>{throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει ακριβώς 3 αριθμητικά ψηφία.');})();
   return {cardId,pan,expiry,cvv};
 }
 

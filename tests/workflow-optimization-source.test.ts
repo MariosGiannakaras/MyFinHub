@@ -47,11 +47,16 @@ describe('CI workflow optimization contracts',()=>{
       expect(reusable).not.toContain('  pull_request:');
       expect(reusable).not.toContain('    branches: [main, develop]');
     }
-    // Keep WebKit's pinned driver on a stable LTS apt baseline until 26.04
-    // dependency installation is validated; never skip the real WebKit gate.
+    // Official pinned Playwright image includes WebKit OS deps and executable:
+    // never depend on a timeout-prone apt mirror or skip the actual smoke.
     expect(cross).toContain('runs-on: ubuntu-24.04');
+    expect(cross).toContain('mcr.microsoft.com/playwright:v1.62.1-noble@sha256:');
     expect(cross).toContain('timeout-minutes: 20');
-    expect(cross).toContain('install --with-deps webkit');
+    // GitHub container steps default to /bin/sh; the smoke includes pipefail
+    // and brace-expansion and must use the same Bash semantics as runner jobs.
+    expect(cross).toContain('shell: bash');
+    expect(cross).not.toContain('install --with-deps webkit');
+    expect(cross).toContain('webkit.executablePath()');
     expect(cross).toContain('playwright@1.62.1');
     expect(cross).toContain('scripts/webkit-smoke.mjs');
     expect(performance).toContain('lighthouse@13.4.1');
