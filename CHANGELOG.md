@@ -4,12 +4,16 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
-#### v1.7.0 candidate — NOT deployed or published (2026-10-28)
-- **UI and Card Vault (#631):** align Card/Credit and Settings/finance workspaces with approved responsive and accessible visual interactions, and enforce 4×4-digit PAN input, real non-expired card expiry and three-digit CVV on **new Web/API writes** while preserving legacy encrypted-secret reads. The stricter API contract can reject older Android client writes and legacy-vault synchronization attempts; Android rollout coordination is a **release gate**, not a completed client fix.
+No changes recorded yet.
+
+## [1.7.0] — 2026-10-28 (Web production and official Windows desktop release)
+
+#### Released
+- **UI and Card Vault (#631):** align Card/Credit and Settings/finance workspaces with approved responsive and accessible visual interactions, and enforce 4×4-digit PAN input, real non-expired card expiry and three-digit CVV on **new Web/API writes** while preserving legacy encrypted-secret reads. The stricter API can reject incompatible older Android writes and legacy-vault synchronization attempts. The owner accepted that Android remediation is independently owned under Android issue #155, not part of the Web/Windows release.
 - **CI security tooling (#634):** upgrade pinned CodeQL action initialization and analysis to v4.39.1 without lowering security gates.
 - **Windows toolchain (#633):** upgrade electron-builder to 26.18.0, retaining existing installed-launch, installer and audit requirements.
 - **Web/desktop dependency reconciliation (#632):** integrate accepted React, lucide-react, Vite and Vitest dependency updates and the coherent desktop-linked root lock snapshot.
-- Release metadata advances the unpublished Web/Windows candidate to **v1.7.0**. Published v1.6.0 GitHub tag, Windows installer, checksum and README download links remain unchanged until a new release exists. No new migration, finance rewrite, Android code change, production deployment or independent full PostgreSQL+Storage restore is claimed.
+- **Web production:** `main@78325762d564d0aa04cc576d04e1f22b5c8d2871`, [post-merge CI #40747087720](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40747087720) SUCCESS, Vercel READY with matching SHA and [Production Smoke #40747517708](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40747517708) SUCCESS. **Windows:** [official immutable v1.7.0 release](https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.7.0), [publisher #40751293666](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40751293666) SUCCESS with 156,806,181-byte installer and published SHA-256 manifest. Publisher generated the hash from the build; no independent byte-for-byte release download check is claimed. **Unsigned personal-use Windows build**, so Unknown publisher/SmartScreen may appear. No new schema migration, finance rewrite, Android source change, or independently verified full PostgreSQL+Storage disaster restore (v1.7-scoped owner waiver). An empty login error text rendering defect in the published desktop client is tracked separately by issue #641 / PR #642; the immutable v1.7.0 installer is not retroactively modified.
 
 
 ## [1.6.0] — 2026-10-25 (Web production and official Windows desktop release)

@@ -5,11 +5,11 @@
 <h1 align="center">MyFinHub</h1>
 <p align="center"><strong>Smart. Clear. In Control.</strong></p>
 <p align="center">Private, single-owner personal finance workspace for Windows, web and mobile.</p>
-<p align="center"><strong>Web v1.6.0 deployed · Windows installer v1.6.0 officially published</strong></p>
+<p align="center"><strong>Web v1.7.0 deployed · Windows installer v1.7.0 officially published</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.6.0/MyFinHub-Setup-1.6.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.6.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.6.0-0F766E?style=for-the-badge"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.6.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.7.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.7.0-0F766E?style=for-the-badge"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
 </p>
 
@@ -20,8 +20,8 @@
 
 <p align="center">
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.6.0">v1.6.0 release notes</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.6.0/MyFinHub-Setup-1.6.0-x64.exe.sha256">SHA-256</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.7.0">v1.7.0 release notes</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.7.0/MyFinHub-Setup-1.6.0-x64.exe.sha256">SHA-256</a> ·
   <a href="docs/WINDOWS_DESKTOP.md">Windows documentation</a>
 </p>
 
@@ -37,7 +37,7 @@
 
 The installed application contains its own Electron host, bundled Node.js runtime and local backend. Normal use does not require Git, Node.js, a terminal or a browser.
 
-The v1.6.0 Windows package owns its public Supabase client configuration, so a normal user is never asked for infrastructure values. If the local backend cannot start, the recovery window remains available with a structured error code/stage, safe redacted diagnostics and retry capability rather than closing with a generic failure.
+The v1.7.0 Windows package owns its public Supabase client configuration, so a normal user is never asked for infrastructure values. If the local backend cannot start, the recovery window remains available with a structured error code/stage, safe redacted diagnostics and retry capability rather than closing with a generic failure.
 
 ## What MyFinHub manages
 
@@ -125,7 +125,7 @@ The **Dependency health** badge above shows the latest workflow result. **Run de
 
 ## Updates and release history
 
-The current stable Windows release is **v1.6.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
+The current stable Windows release is **v1.7.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
 
 Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow verifies that the tag is already on `main`, builds and smoke-tests `MyFinHub.exe`, creates the interactive NSIS installer, generates SHA-256 metadata and publishes the controlled GitHub Release.
 
