@@ -120,6 +120,18 @@ try{
     await applyTheme(activeTheme);
     await waitFor("function(){const card=document.querySelector('.login-card');return !card||[...card.getAnimations({subtree:true})].filter(animation=>/^rh-login-(card|content)-in$/.test(animation.animationName||'')).every(animation=>animation.playState!=='running')}",[],'auth entrance motion settled before final capture');
     await c.call("function(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}");
+    const errorMessages={
+      'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
+      'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',
+      'session-expired':'Η συνεδρία έληξε. Συνδέσου ξανά για να συνεχίσεις.',
+      'session-revoked':'Η πρόσβαση αυτής της συσκευής έχει ανακληθεί. Συνδέσου ξανά.',
+      'mfa-error':'Ο κωδικός επαλήθευσης δεν είναι σωστός.',
+      'mfa-enroll-error':'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.',
+    };
+    if(Object.hasOwn(errorMessages,screen)){
+      const alert=await c.call("function(){const node=document.querySelector('.login-error[role=alert]'),span=node?.querySelector('span');if(!span)return null;const box=span.getBoundingClientRect(),computed=getComputedStyle(span);return {text:span.textContent?.trim(),width:box.width,height:box.height,visibility:computed.visibility,display:computed.display,opacity:computed.opacity}}");
+      if(alert?.text!==errorMessages[screen]||alert.width<30||alert.height<10||alert.visibility!=='visible'||alert.display==='none'||Number(alert.opacity)<=0)throw new Error(`Unreadable ${screen} auth alert before screenshot capture: ${JSON.stringify(alert)}`);
+    }
   };
   const navigateUtility=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
