@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { accessTokenAal, assertMutationSessionOrigin } from '../server/auth.js';
 import { ApiError, assertSameOrigin } from '../server/http.js';
 import { parseExpectedRevision } from '../server/storage.js';
@@ -60,6 +60,35 @@ describe('HTTP trust boundary', () => {
       'x-forwarded-host': '127.0.0.1:5173',
       'x-forwarded-proto': 'http',
     }))).toThrowError(ApiError);
+  });
+
+
+  it('accepts only same-port HTTP loopback Origin for packaged Windows production', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('RHEOMIQ_DESKTOP', '1');
+    try {
+      const sameSite = { host: '127.0.0.1:53117', origin: 'http://127.0.0.1:53117', 'sec-fetch-site': 'same-origin' };
+      expect(() => assertSameOrigin(request(sameSite))).not.toThrow();
+      expect(() => assertSameOrigin(request({ ...sameSite, origin: 'http://127.0.0.1:53118' }))).toThrowError(ApiError);
+      expect(() => assertSameOrigin(request({ ...sameSite, origin: 'http://evil.example' }))).toThrowError(ApiError);
+      expect(() => assertSameOrigin(request({ ...sameSite, 'sec-fetch-site': 'cross-site' }))).toThrowError(ApiError);
+      expect(() => assertSameOrigin(request({ host: sameSite.host }))).toThrowError(ApiError);
+    } finally { vi.unstubAllEnvs(); }
+  });
+
+  it('never relaxes production web HTTPS or spoofed forwarded desktop origin', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('RHEOMIQ_DESKTOP', '1');
+    try {
+      expect(() => assertSameOrigin(request({ origin: 'http://app.example', host: 'app.example', 'sec-fetch-site': 'same-origin' }))).toThrowError(ApiError);
+      expect(() => assertSameOrigin(request({ origin: 'http://127.0.0.1:53117', host: '127.0.0.1:53117', 'x-forwarded-host': '127.0.0.1:53117' }))).toThrowError(ApiError);
+      expect(() => assertSameOrigin(request({ origin: 'https://app.example', host: 'app.example', 'sec-fetch-site': 'same-origin' }))).not.toThrow();
+    } finally { vi.unstubAllEnvs(); }
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('RHEOMIQ_DESKTOP', '0');
+    try {
+      expect(() => assertSameOrigin(request({ origin: 'http://127.0.0.1:53117', host: '127.0.0.1:53117' }))).toThrowError(ApiError);
+    } finally { vi.unstubAllEnvs(); }
   });
 });
 
