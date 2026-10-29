@@ -333,3 +333,8 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 
 ## Phase 1 shared shell/theme/Dashboard audit — 2026-10-29
 **Current audited-and-triaged 10/23**, thirteen open. [Accepted source, guard and QA classification for I01/I02/I04](./WHOLE_APP_PHASE1_SHELL_UI_TRIAGED_649.md). Preserve default Dashboard privacy for the four explicitly scoped pages, avoid a speculative all-app mask or duplicate #648 sign fix, correct shared feedback and typography at owning components only when proven. **Implementation 0/23 packages · 1/132 pre-staged subitems**, not 10 code fixes. No full CI during this docs-only audit.
+
+## Phase 1 finance-route bulk triage checkpoint — 2026-10-29
+- **18/23 areas classified**, leaving I15/I16/I17/I21/I23. [Eight finance-route audits with direct source/test/visual provenance](./WHOLE_APP_PHASE1_FINANCE_ROUTES_TRIAGED_649.md).
+- **CARD-649-01 A/P1 functional contract:** owner #266 explicitly preserves 32-digit PAN; current `formatCardNumberInput` truncates to 16, `normalizeCardDetailsInput` requires exactly 16, secure input maxLength19, tests enforce the limit. This is shared Cards+Credit+server vault scope, not a new visual preference. Bundle a reviewed 32-digit-safe input/validation/writer/crypto/readback test with I07/I08 and I22; do not commit raw card data or increase only a visual maxLength without server contract.
+- Preserve annual/monthly recurring, owner finance accounting, 16 current security RLS tables, exact saved history and explicit user product decisions. **Phase 2 implementation remains 0/23 · 1/132**, no new code, merge or CI in Phase 1. Next: close last five Settings/Windows/QA audit areas and freeze a deduplicated large-batch implementation plan with risk-gated CI.
