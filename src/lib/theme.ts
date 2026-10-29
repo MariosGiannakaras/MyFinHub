@@ -42,7 +42,9 @@ html,body,#root,.login-screen{background:var(--canvas-gradient)!important;color:
 .surface-inset,.searchbox,.saving-route>span,.reconcile-preview,.sort-direction-control{background:var(--surface-inset)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-inset)!important}
 .surface-flat{background:var(--surface-translucent)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-flat)!important}
 .brand-word,.sidebar nav button,.mobile-nav button,.settings-form span,.form-grid label>span{color:var(--text-secondary)!important}.brand-word{color:var(--ink-2)!important}.brand-word span{color:var(--cyan)!important}
-.sidebar nav button:hover,.insight-list>button:hover{background:var(--surface-hover)!important}.sidebar nav button.active,.mobile-nav button.active,.save-button{background:var(--accent-gradient)!important;color:var(--on-accent)!important}
+.sidebar nav button:hover,.insight-list>button:hover{background:var(--surface-hover)!important}.sidebar nav button.active,.mobile-nav button.active,.save-button:not(.destructive-action){background:var(--accent-gradient)!important;color:var(--on-accent)!important}
+.save-button.destructive-action{background:var(--error-bg)!important;border-color:var(--error)!important;color:var(--error)!important}
+.save-button.destructive-action:hover{background:color-mix(in srgb,var(--error-bg) 80%,var(--error))!important}
 .count-badge{background:var(--surface-elevated)!important;color:var(--accent)!important}
 .top-actions button,.icon-button:where(:not(.bank-add-btn)),.settings-actions button,.secondary,.row-actions button:not(.save-button),.loan-actions button,.review-buttons button,.frequent-strip button,.frequent-grid button,.kind-grid button,.text-size-picker button,.inline-icon-action{background:var(--control-gradient)!important;border-color:var(--control-border)!important;color:var(--ink)!important;box-shadow:var(--shadow-soft)!important}
 .icon-button-accent,.top-actions .icon-button-accent{background:var(--accent-soft)!important;border-color:var(--focus-outline)!important;color:var(--accent)!important;box-shadow:var(--shadow-flat)!important}
