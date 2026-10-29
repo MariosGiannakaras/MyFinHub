@@ -67,7 +67,8 @@ describe('v2.1 audit presentation regression contracts (#646)',()=>{
   });
 
   it('uses a destructive theme token without changing the confirmed solid-red dialog action',()=>{
-    expect(theme).toContain('.save-button:not(.destructive-action){background:var(--accent-gradient)!important');
+    expect(theme).toContain('.save-button{background:var(--accent-gradient)!important');
+    expect(theme).toContain('.save-button.destructive-action{background:var(--error-bg)!important');
     expect(theme).toContain('.save-button.destructive-action{background:var(--error-bg)!important');
     expect(theme).toContain('.app-confirm-dialog .save-button.destructive-action');
     expect(theme).toContain('background:var(--red)!important;color:var(--white)!important');
