@@ -1,5 +1,5 @@
 import {describe,expect,it,vi} from 'vitest';
-import {saveFinanceThenCleanupReceipt} from '../src/lib/receiptPostSave';
+import {saveFinanceThenCleanupReceipt} from '../src/lib/receiptPostSave.js';
 
 describe('#649 receipt post-save second-store boundary',()=>{
   it('never deletes local evidence when the finance commit was rejected',async()=>{

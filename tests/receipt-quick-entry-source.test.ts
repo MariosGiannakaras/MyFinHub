@@ -44,6 +44,16 @@ describe('receipt to Quick Entry contract',()=>{
     expect(contextual).toContain('onReceiptCleanupFailure={onReceiptCleanupFailure}');
   });
 
+  it('keeps rejected local receipt deletion in an error state and never reports success',()=>{
+    const deletion=inbox.slice(inbox.indexOf('const confirmRemove=async()=>'),inbox.indexOf('const toggleDelete'));
+    expect(deletion).toContain('await deleteReceiptDraft(request.draft.id)');
+    expect(deletion).toContain('await deleteReceiptDrafts(request.ids)');
+    expect(deletion).toContain('}catch{');
+    expect(deletion).toContain("setMessage('');");
+    expect(deletion).toContain("setError('Η διαγραφή της τοπικής απόδειξης απέτυχε.");
+    expect(inbox).toContain('<FormError id="receipt-inbox-error">{error}</FormError>');
+  });
+
   it('passes receipt date and full category path into QuickAdd while blocking silent non-EUR prefill',()=>{
     expect(bridge).toContain("receiptProposal?.currency && receiptProposal.currency !== 'EUR'");
     expect(bridge).toContain('amount: explicitNonEur ? 0');

@@ -243,7 +243,8 @@ export function ReceiptInbox({
   const requestRemoveOne=(draft:ReceiptDraft)=>setDeleteRequest({mode:'one',draft});
   const requestRemoveSelected=()=>{const ids=[...deleteSelection];if(ids.length)setDeleteRequest({mode:'many',ids})};
   const confirmRemove=async()=>{
-    const request=deleteRequest;if(!request||deleting)return;setDeleting(true);
+    const request=deleteRequest;if(!request||deleting)return;
+    setDeleting(true);setError('');setMessage('');
     try{
       if(request.mode==='one'){
         if(scanningId===request.draft.id)await cancelScan();
@@ -258,6 +259,13 @@ export function ReceiptInbox({
         await refresh();
         setMessage('Οι επιλεγμένες τοπικές αποδείξεις διαγράφηκαν.');
       }
+      setDeleteRequest(null);
+    }catch{
+      // IndexedDB may reject due to quota, permissions or interrupted storage.
+      // The receipt remains a local draft; never report deletion as completed.
+      try{await refresh()}catch{/* Keep the last visible snapshot. */}
+      setMessage('');
+      setError('Η διαγραφή της τοπικής απόδειξης απέτυχε. Έλεγξε τον τοπικό χώρο αποθήκευσης και δοκίμασε ξανά.');
       setDeleteRequest(null);
     }finally{setDeleting(false)}
   };

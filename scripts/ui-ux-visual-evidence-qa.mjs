@@ -57,11 +57,25 @@ try{
           .filter(node=>node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
         const pending=nodes.filter(node=>node.getAnimations().some(anim=>anim.playState==='running'
           &&Number.isFinite(anim.effect?.getComputedTiming()?.endTime))).length;
-        const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr')];
+        // Visible images must have reached load/error before the capture.
+        // Offscreen lazy imagery is intentionally excluded from this bounded wait.
+        const pendingImages=[...document.images].filter(img=>{
+          const rect=img.getBoundingClientRect();
+          return rect.width>0&&rect.height>0&&rect.top<innerHeight+40&&rect.bottom>=-40&&!img.complete;
+        }).length;
+        const desktopRows=[...document.querySelectorAll('.transactions-approved-table tbody tr')];
+        const mobileRows=[...document.querySelectorAll('.mobile-transaction-row')];
+        const isMobile=matchMedia('(max-width:680px)').matches;
+        const rows=(isMobile?mobileRows:desktopRows).filter(row=>{
+          const rect=row.getBoundingClientRect(),style=getComputedStyle(row);
+          return rect.width>0&&rect.height>0&&style.visibility!=='hidden'&&style.display!=='none';
+        });
         const faded=rows.filter(row=>Number.parseFloat(getComputedStyle(row).opacity)<.98).length;
-        return {nodes:nodes.length,pending,rows:rows.length,faded};
+        return {nodes:nodes.length,pending,pendingImages,rows:rows.length,faded,mode:isMobile?'mobile':'desktop'};
       }`);
-      if(!last.pending&&(page!=='transactions'||!last.faded)){
+      // The synthetic Transactions QA fixture contains many records; never
+      // report a blank or partly painted ledger as accepted visual evidence.
+      if(!last.pending&&!last.pendingImages&&(page!=='transactions'||(last.rows>=3&&!last.faded))){
         await c.call("async function(){await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame)}");
         return;
       }

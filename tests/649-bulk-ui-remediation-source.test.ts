@@ -32,6 +32,11 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(screenshots).toContain('const waitForVisualPaint=async(page)');
     expect(screenshots).toContain("node.getAnimations()");
     expect(screenshots).toContain("getComputedStyle(row).opacity");
+    expect(screenshots).toContain("document.querySelectorAll('.mobile-transaction-row')");
+    expect(screenshots).toContain("document.querySelectorAll('.transactions-approved-table tbody tr')");
+    expect(screenshots).toContain("last.rows>=3&&!last.faded");
+    expect(screenshots).toContain('const pendingImages=');
+    expect(screenshots).toContain('!last.pendingImages');
     expect(screenshots).toContain('await waitForVisualPaint(page)');
     expect(screenshots).not.toContain('await sleep(120);if(page=');
     expect(screenshots).toContain('await new Promise(requestAnimationFrame)');

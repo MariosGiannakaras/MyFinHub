@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {OperationFeedback} from '../src/components/OperationFeedback';
+import {OperationFeedback} from '../src/components/OperationFeedback.js';
 
 describe('#649 shared operation feedback contract',()=>{
   it('announces a rejected operation as an assertive alert with semantic error tone',()=>{
