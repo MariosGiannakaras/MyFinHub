@@ -47,6 +47,9 @@ describe('v2.1 audit presentation regression contracts (#646)',()=>{
     expect(credit).toContain('Όριο επιλεγμένης κάρτας {money.format(limit)}');
     expect(credit).not.toContain('Συνολικό όριο {money.format(limit)}');
     expect(reportsCss).toContain('.report-credit-portfolio-card>div{display:grid;gap:5px;min-width:0}');
+    const layouts=read('src/styles/expanded-report-layouts.css');
+    expect(layouts).toContain('.report-upcoming-card .report-operations-grid.report-credit-portfolio{grid-template-columns:minmax(0,1fr)}');
+    expect(layouts).toContain('.report-upcoming-card .report-credit-portfolio-card{grid-template-columns:18px minmax(0,1fr)');
   });
 
   it('uses explicit report-entry copy targets rather than brittle nested span indices',()=>{

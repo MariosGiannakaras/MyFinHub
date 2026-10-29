@@ -3,28 +3,28 @@
 Branch: `fix/646-audit-v21-first-batch` (base `develop@18e925b3dfbc81ab82099f1351a2d25b19845a3d`)
 Production main remains separate; Android owned separately. Input: owner-provided v2.1 audit and 19 unique screenshots, reconciled as **evidence**, not a code specification.
 
-**Current checkpoint: Implementations 0/3 completed · Sub-implementations 0/13 completed**
+**Current checkpoint: Implementations 3/3 completed · Sub-implementations 13/13 completed (code and focused guards; validation separate)**
 
-Only fully **accepted** work counts; source edits are provisional until focused checks, rendered desktop evidence inspection, and repository-defined review gates.
+The current AGENTS.md distinguishes **implementation** from **validation/acceptance**: scoped code plus reviewed focused regression guard counts as implemented even when CI/rendered QA or merge is pending. These 13 source items are implementation-complete; rendered QA and review remain **NOT ACCEPTED**.
 
-## Implementation I1 — financial display / semantics (0/5)
-- [ ] P-02 show baseline current portfolio, avoid redundant negative sign
-- [ ] P-03 center flat sparkline (without changing forecast values)
-- [ ] S-03 disambiguate shared savings balance from monthly flow
-- [ ] A-03 correctly scope 'upcoming' to current, historical and future reporting periods
-- [ ] A-04 locale-aware reporting percentages
+## Implementation I1 — financial display / semantics (5/5)
+- [x] P-02 show baseline current portfolio, avoid redundant negative sign
+- [x] P-03 center flat sparkline (without changing forecast values)
+- [x] S-03 disambiguate shared savings balance from monthly flow
+- [x] A-03 correctly scope 'upcoming' to current, historical and future reporting periods
+- [x] A-04 locale-aware reporting percentages
 
-## Implementation I2 — shared visual consistency (0/4)
-- [ ] A-02 selected card credit limit labeled as per-card, not portfolio
-- [ ] ST-03 provider summary spacing / header alignment; editing technical ID remains intact
-- [ ] T-03 destructive buttons avoid primary accent-gradient rule
-- [ ] A-01 report counterparties/income semantic text wrapper
+## Implementation I2 — shared visual consistency (4/4)
+- [x] A-02 selected card credit limit labeled as per-card, not portfolio
+- [x] ST-03 provider summary spacing / header alignment; editing technical ID remains intact
+- [x] T-03 destructive buttons avoid primary accent-gradient rule
+- [x] A-01 report counterparties/income semantic text wrapper
 
-## Implementation I3 — reconciled extended audit: financial privacy and overdue visibility (0/4)
-- [ ] D-01 mask direct Dashboard EUR amounts and hide money-bearing chart details while masked
-- [ ] E-02 connect Attention to existing global non-persisted privacy state (App and QA)
-- [ ] E-03 replace misleading green all-clear message/icon when urgent alerts exist
-- [ ] R-01 show recurring overdue date from the identical canonical Attention selector; leave cashflow forecast unchanged
+## Implementation I3 — reconciled extended audit: financial privacy and overdue visibility (4/4)
+- [x] D-01 mask direct Dashboard EUR amounts and hide money-bearing chart details while masked
+- [x] E-02 connect Attention to existing global non-persisted privacy state (App and QA)
+- [x] E-03 replace misleading green all-clear message/icon when urgent alerts exist
+- [x] R-01 show recurring overdue date from the identical canonical Attention selector; leave cashflow forecast unchanged
 
 ## Pending backlog / deliberate exclusions from current 0/13 plan
 - T-01/D-03 running per-event balances and lending signs: requires finance-impact integration and reconciliation tests across same-date, multi-leg, transfer, and legacy cases; don't copy receivable balances as account balances.
@@ -60,3 +60,11 @@ Only fully **accepted** work counts; source edits are provisional until focused 
 
 ## Hygiene correction — 2026-10-29
 - On head 55f7de172b118a70300bfd5568148087761780e2, CI #40900953984 FAILED at TypeScript hygiene: TS1005 missing nested ternary ':' in Dashboard category chart privacy guard; CodeQL #40900953979 SUCCESS. Corrected code uses parenthesized `privacyVisible?(heavyChartsReady?...:null):null` preserving existing heavy-chart deferral, accessibility and new masking test. New head requires fresh actual checks; counters unchanged.
+
+## 2026-10-29 — Full Ready review evidence and coherent correction
+- Previous Ready review head `d77adcbc8bf266de0b88d75c322c17c807fc64e4` CI [#40902368375](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40902368375) **FAILED** at rendered frontend QA only: `scripts/ui-ux-visual-evidence-qa.mjs` waited for painted Dashboard Recharts even though initial shared privacy visibility is deliberately false. The browser/QA state contracts must verify masked default, click the real reveal toggle, then require full desktop painted charts and mobile collapsed donut. The prior source CI #40901777504 and separate CodeQL #40901777364 **SUCCEEDED**; ready-head Windows installer, Windows clean launch, first run, WebKit, Lighthouse and CodeQL also **SUCCEEDED**; Unified gate failed closed because rendered QA failed.
+- Downloaded and directly inspected the Ready WebKit reports desktop/mobile images and 10 representative generated screenshots from the 597-file Chromium artifact. Confirmed A-02 residual: inner `report-operations-grid` has one credit item but inherits 4-column grid; card is ~1/4 intended width, wrapping its numbers vertically. Root correction is scoped to `.report-upcoming-card .report-operations-grid.report-credit-portfolio` (one full-width column), preserving multi-KPI global operations layout, with horizontal icon+copy composition. A **live rendered geometry assertion at desktop/mobile** and cheap source guard added.
+- Source correction: `scripts/ui-ux-visual-evidence-qa.mjs` now asserts the privacy-hidden initial dashboard numeric state and absence of financial Recharts; clicks real `.dashboard-approved-heading .privacy-toggle`, verifies reveal, then uses the established chart readiness acceptance. Reports route uses a bounded geometry assertion in both QA viewports.
+- Regression lock: `tests/ui-audit-v21-rendered-source.test.ts` plus expanded A-02 source assertions in `tests/ui-audit-v21-presentation-source.test.ts`. No finance arithmetic, account history, Android, database or main change.
+- **Current implementation progress:** Implementations 3/3 completed · Sub-implementations 13/13 completed (scoped code + reviewed source guard). **Validation remains pending on corrected head**; a green previous run cannot be borrowed. No merge/deploy. Keep the PR draft during correction, then use one coherent Ready validation cycle and inspect the regenerated reports and 24 canonical visual evidence screens.
+- **Exact next action:** confirm new source diff/CI on branch; mark #647 Ready after narrow preflight; validate exact branch head across CI/CodeQL/rendered/Windows/WebKit/Lighthouse; directly inspect screenshots for credit card width/desktop and mobile dashboard after revealed privacy. Merge to develop only after required successful gates and no unresolved visual findings. Main release separately gated.
