@@ -53,3 +53,7 @@ Only fully **accepted** work counts; source edits are provisional until focused 
 - Source-only I3 changes prepared in a coherent commit; no accepted counters updated without focused/runtime rendered evidence.
 - Pre-expansion head `4cffa93f5876ae96a5ce7512cffdab23d0928f1c`: CI #40896566800 SUCCESS, CodeQL #40896566400 SUCCESS. Since PR is draft, rendered and Windows gates SKIPPED; do not count as final QA.
 - Next action: narrow source/domain assertions on newest branch head, inspect all affected source/rendered evidence including original exact viewports; fix failures coherently; full required CI/CodeQL/browser/Windows only on final review-ready head. No production merge/deploy, Android or Supabase mutation.
+
+## Current validation failure and fix — 2026-10-29
+- Exact head 7d4276b61fa0001ad1b4449e491224465eb03aad: CI #40899265244 FAILED (1,565/1,567 Vitest PASS, 2 fails) while CodeQL #40899264832 SUCCESS. Failed existing contracts were lazy Chart rendering on mobile and decorative Recharts aria-hidden. Root source fix restores the original chart deferral and hidden a11y contract while gating visible sensitive values; added mask-check assertions.
+- This is source-only work, not yet a new CI PASS or rendered QA.

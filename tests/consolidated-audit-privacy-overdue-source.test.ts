@@ -30,6 +30,10 @@ describe('consolidated visual and finance privacy regressions (#646)',()=>{
   expect(dashboard).toContain('privacyMoney(averageDailyExpense)');
   expect(dashboard).toContain("privacyVisible?signedMoney(savingAmount):'•••••• €'");
   expect(dashboard).toContain('!privacyVisible?<span className="dashboard-private-chart-placeholder"');
+  expect(dashboard).toContain('approved-bar-wrap" aria-hidden="true"');
+  expect(dashboard).toContain('privacyVisible?(heavyChartsReady?<Suspense fallback={null}><DashboardSummaryChart');
+  expect(dashboard).toContain('privacyVisible?heavyChartsReady?<Suspense fallback={null}><DashboardCategoryChart');
+  expect(dashboard).toContain("privacyVisible?(flow.expense?safePercent(category.value/flow.expense*100):0):'•••'");
  });
  it('shares Attention overdue truth with Recurring but leaves forecast scheduler unmodified',()=>{
   expect(domain).toContain('export function recurringDue(data:FinanceData,item:RecurringItem,asOf:string)');
