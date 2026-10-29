@@ -1,0 +1,23 @@
+# #649 Phase 2 — consolidated implementation checkpoint
+
+**Active implementation branch:** `fix/649-bulk-remediation` from `develop@f10b963f650a5b9c185512986d62d572c7ef4420`. This file is the branch-owned **source/implementation** checkpoint. Complete [23-area/132-item classified audit](https://github.com/MariosGiannakaras/MyFinHub/blob/chore/649-whole-app-audit-roadmap/docs/audits/WHOLE_APP_REMEDIATION_649_PLAN.md) and [132-item disposition ledger](https://github.com/MariosGiannakaras/MyFinHub/blob/chore/649-whole-app-audit-roadmap/docs/audits/WHOLE_APP_PHASE1_132_DISPOSITIONS_649.md) are owned by draft #650. Source counts and CI/merge statuses must not be conflated. Issue #266 superseding 2026-10-27 PAN rule always takes priority.
+
+**Progress at first coherent source checkpoint:** **Implementations 0/23 completed · Sub-implementations 5/132 completed** (I04.01, I05.01, I15.02, I18.01, I23.01), assuming staged focused source guards remain valid at exact branch head. Statuses below separate integration from validation. The remaining partial overlapping alert work does **not** inflate the count.
+
+## Code in first batch (one coherent commit, no full CI yet)
+- [x] **I04.01 / I05.01:** reconcile accepted #648 source `src/lib/receivableCashDirection.ts`, `DashboardPage.tsx`, `TransactionsPage.tsx` and focused `tests/648-...`, preserving #647 Dashboard privacy and neutral accounting. The latter shows correct first-account **end-of-day** balance labels, **not** fabricated per-event chronology.
+- [x] **I18.01:** reconcile #652 Settings JSON backup scope text and its focused guard; exclude Card Vault, separate IBAN, Storage, local receipts and PIN, without changing actual restore path.
+- [x] **I15.02:** Settings tablist correct arrow/Home/End navigation, one selected Tab stop, focus and selected-panel/hash semantics, focused source guard.
+- [x] **I23.01:** rendered full-page capture waits for finite content entrance animations, font availability and Transactions row opacity before screenshots, with bounded error rather than treating early screenshots as missing data. Existing Dashboard chart readiness and report geometry checks preserved.
+- [ ] **I18.04, I16.02, I20.06, I02.02 PARTIAL:** shared `OperationFeedback` success/error/warning semantics integrated into Settings Data and Account Management for backup/import/blocked/failed deletes. This fixes known source-path mismatch but does NOT yet satisfy all original broad import/recovery/account/clipboard/source controls and negative acceptance. Focused semantic render and source guard added; do not count these four entire subitems complete yet.
+- [ ] **I19.04/.05:** real finance-save followed by failed IndexedDB receipt draft deletion remains unhandled in current source. This is the next prioritized shared partial-success implementation; do **not** introduce a fake finance save failure or auto-duplicate ledger event.
+- [ ] **I07.02:** **KEEP** exact 16-digit new/edit/server PUT PAN per superseding #266 2026-10-27; legacy READ up to 32 digits must remain permissive. Earlier incorrect 32-new-write diagnosis was withdrawn before branch implementation.
+- [ ] Remaining 23-package scoped audit candidates and safety/recovery/owner-decision exceptions from #650 disposition plan.
+
+## Validation and integration (separate)
+- **Narrow tests:** source/Vitest/component tests for `tests/648...`, `tests/652...`, `tests/649-operation-feedback.test.tsx`, `tests/649-bulk-ui-remediation-source.test.ts`; React TypeScript, screenshots script syntax, existing Settings/transactions/privacy/keyboard tests. **Not yet executed on this new branch**; do not claim PASS. Use one draft focused CI on coherent batch if available, not per tiny edit.
+- **Full CI:** not run on bulk head. Keep PR **draft** while implementing more coherent code. Final Ready exact-head CI/security/rendered/WebKit/Lighthouse/Windows + directly inspected evidence only at stable review head.
+- **Integration:** existing #651/#653 remain draft; their source deltas are integrated here, not merged into develop individually. #650 audit remains a separate docs-only draft.
+- **Release:** main remains unchanged, owner production go/no-go pending, no destructive SQL/recovery/secret access and no Android repo edits.
+
+**Next exact safe action:** inspect draft focused unit/TS results and any source compile failures at the combined head; continue one coherent batch of I19 receipt partial-save feedback/idempotency and remaining verified UX defects, run only narrow checks while draft. Update counts only when full code+focused guard per numbered item is complete. Maintain one final full CI at Ready head rather than one per tweak.

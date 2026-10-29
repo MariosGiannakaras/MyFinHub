@@ -45,7 +45,31 @@ try{
     if(!geometry||geometry.cardWidth<geometry.gridWidth*.9||geometry.copyWidth<geometry.cardWidth*.5||geometry.rightOverflow>2||geometry.viewportOverflow>2)
       throw new Error(`Reports credit portfolio nested grid is clipped: ${JSON.stringify(geometry)}`);
   };
-  const navigate=async(page,heading)=>{const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');await c.send('Page.navigate',{url:url.href});for(let i=0;i<100;i++){if(await c.call("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading]))break;if(i===99)throw new Error(`Timed out waiting for visual route ${page}`);await sleep(100)}await sleep(120);if(page==='dashboard'){await revealDashboardForVisualEvidence();await waitForDashboardSteadyState()}if(page==='reports')await assertReportCreditLayout();const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");if(visibleQaControl)throw new Error(`QA-only crash control is visible in visual capture for ${page}`)};
+  // A route title can paint before its staggered table/list rows. Wait for
+  // finite content-entrance animations and (for Transactions) actual opaque
+  // populated rows; do not turn a premature screenshot into a ledger-loss finding.
+  const waitForVisualPaint=async(page)=>{
+    await c.call("async function(){if(document.fonts?.ready)await document.fonts.ready}");
+    let last=null;
+    for(let attempt=0;attempt<60;attempt++){
+      last=await c.call(`function(){
+        const nodes=[...document.querySelectorAll('[data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr')]
+          .filter(node=>node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+        const pending=nodes.filter(node=>node.getAnimations().some(anim=>anim.playState==='running'
+          &&Number.isFinite(anim.effect?.getComputedTiming()?.endTime))).length;
+        const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr')];
+        const faded=rows.filter(row=>Number.parseFloat(getComputedStyle(row).opacity)<.98).length;
+        return {nodes:nodes.length,pending,rows:rows.length,faded};
+      }`);
+      if(!last.pending&&(page!=='transactions'||!last.faded)){
+        await c.call("async function(){await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame)}");
+        return;
+      }
+      await sleep(50);
+    }
+    throw new Error(`Visual evidence did not reach painted content state for ${page}: ${JSON.stringify(last)}`);
+  };
+  const navigate=async(page,heading)=>{const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');await c.send('Page.navigate',{url:url.href});for(let i=0;i<100;i++){if(await c.call("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading]))break;if(i===99)throw new Error(`Timed out waiting for visual route ${page}`);await sleep(100)}await waitForVisualPaint(page);if(page==='dashboard'){await revealDashboardForVisualEvidence();await waitForDashboardSteadyState()}if(page==='reports')await assertReportCreditLayout();const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");if(visibleQaControl)throw new Error(`QA-only crash control is visible in visual capture for ${page}`)};
   const assertMobileCreditHistory=async()=>{const state=await c.call(`function(){const rows=[...document.querySelectorAll('.credit-purchases-table tbody tr,.credit-payments-table tbody tr')];const details=rows.map(row=>{const cells=[...row.querySelectorAll('td')],amount=row.querySelector('td.amount'),actions=row.querySelector('td.actions');const rect=row.getBoundingClientRect(),amountRect=amount?.getBoundingClientRect(),actionsRect=actions?.getBoundingClientRect();return {cells:cells.length,rowWidth:rect.width,amountVisible:Boolean(amountRect&&amountRect.width>0&&amountRect.left>=0&&amountRect.right<=innerWidth+1),actionsVisible:!actions||Boolean(actionsRect&&actionsRect.width>0&&actionsRect.left>=0&&actionsRect.right<=innerWidth+1)}});return {rows:details.length,details,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);if(!state.rows)throw new Error('Visual QA expected populated mobile credit history rows');if(state.overflow>1||state.details.some(item=>!item.amountVisible||!item.actionsVisible))throw new Error(`Mobile credit history is clipped or unreadable: ${JSON.stringify(state)}`)};
   const fullPage=async(page,mode,width,height)=>{const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:captureWidth,height:captureHeight,scale:1}});const fileName=`${appVersion}__${timestamp}__full-page__${mode}-${width}x${height}.png`;const surfaceDir=resolve(evidenceRoot,page);writeFileSync(resolve(surfaceDir,fileName),Buffer.from(shot.data,'base64'));screenshots.push({file:`visual-qa/${page}/${fileName}`,page,state:'LATEST',viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight}})};
   for(const item of viewports){await viewport(item.width,item.height);for(const [page,heading] of Object.entries(pages)){await navigate(page,heading);if(item.mode==='mobile'&&page==='credit')await assertMobileCreditHistory();await fullPage(page,item.mode,item.width,item.height)}}c.close();
