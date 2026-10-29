@@ -16,7 +16,8 @@ describe('Attention post-v1.4 remediation contracts',()=>{
 
   it('reserves true all-clear language for zero active actionable items',()=>{
     expect(page).toContain('const activeActionable=items.length');
-    expect(page).toContain("activeActionable?'Δεν υπάρχουν επείγοντα θέματα':'Όλα υπό έλεγχο!'");
+    expect(page).toContain("counts.danger?'Εκκρεμούν επείγοντα θέματα':activeActionable?'Δεν υπάρχουν επείγοντα θέματα':'Όλα υπό έλεγχο!'");
+    expect(page).toContain('counts.danger?<AlertTriangle/>:activeActionable?<CircleAlert/>:<CheckCircle2/>');
     expect(page).toContain("activeActionable?`Υπάρχουν ${activeActionable} ενεργά θέματα χαμηλότερης προτεραιότητας παραπάνω.`");
     expect(page).toContain("activeActionable?'has-active':'is-clear'");
   });
