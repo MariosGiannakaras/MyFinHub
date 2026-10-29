@@ -62,3 +62,6 @@
 - Prefer direct QA source/test inspection of unverified states and existing CI logs before rerunning a full suite. The already completed #651 full Ready CI is retained but not reused to prove the entire future #649 batch.
 - Do not count any of these 23 **implementation** packages as completed until actual phase-2 code plus regression guard. All work remains documentation-only in the current task. No new micro PRs, CI gates, production mutations or Android changes.
 
+
+## Phase-1 depth review I05/I11/I18 — 2026-10-29
+**3/23 area triages now explicitly accepted**, without claiming test/implementation completion. Full source/test/QA roots and exact fixes, including NEW Settings Data status-role defect BK-02, documented in [WHOLE_APP_PHASE1_TRIAGED_649.md](./WHOLE_APP_PHASE1_TRIAGED_649.md). The 23-row cross-surface inventory above remains unchanged; all remaining 20 area triages still open.
