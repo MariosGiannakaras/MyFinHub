@@ -2,7 +2,7 @@
 
 **Authority:** issue #649 · `AGENTS.md` · durable owner decisions #266 · [whole-app evidence matrix](./WHOLE_APP_AUDIT_649_EVIDENCE.md) · previous [consolidated audit from #646](https://github.com/MariosGiannakaras/MyFinHub/blob/fix/646-audit-v21-first-batch/docs/audits/CONSOLIDATED_AUDIT_20261029.md).
 
-**Planning state: Implementations 0/23 completed · Sub-implementations 0/132 completed.** These are **proposed code/contract/QA-tool implementation packages**, not 132 proven defects or 132 independent PRs. A candidate failing reproduction can be retired/replaced explicitly before implementation, with the plan denominator updated. Count completion only when scoped code/config and a relevant reviewed regression guard exist. Do **not** count screenshots/CI/merge/deploy as code work.
+**Planning state: Implementations 0/23 completed · Sub-implementations 1/132 completed (I18.01 source code and focused regression guard on #652 branch; validation pending).** These are **proposed code/contract/QA-tool implementation packages**, not 132 proven defects or 132 independent PRs. A candidate failing reproduction can be retired/replaced explicitly before implementation, with the plan denominator updated. Count completion only when scoped code/config and a relevant reviewed regression guard exist. Do **not** count screenshots/CI/merge/deploy as code work.
 
 ## Scope and source of truth
 - Scope **only** `MariosGiannakaras/MyFinHub`: web, API, Supabase contract and Windows/desktop. Android code is strictly excluded.
@@ -204,11 +204,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [ ] **I17.05** Check rule priorities, edit/reorder/disable conflict, pending/rejected receipts and deep-link-to-editor from reports/command palette.
 - [ ] **I17.06** Guard mobile/dark icon picker previews, input ARIA, Greek hierarchy and category labels with stress content.
 
-### I18. Settings — Data, backup, restore and device security — 0/6
+### I18. Settings — Data, backup, restore and device security — 1/6
 
 **Priority:** P0 · **Owner:** `Settings data/import, DesktopBackupPanel, DeviceAccessSettings` · **Dependencies:** #646 X-01/X-06/X-07 review; destructive restore approval
 
-- [ ] **I18.01** Make in-app FinanceData JSON backup coverage explicit: vault/card secrets, IBAN, provider logos/storage, local receipts and device/PIN are excluded where true.
+- [x] **I18.01** Make in-app FinanceData JSON backup coverage explicit: vault/card secrets, IBAN, provider logos/storage, local receipts and device/PIN are excluded where true.
 - [ ] **I18.02** Design and verify independently restorable non-destructive PostgreSQL+Storage checkpoint procedure; do not run production restore or overwrite without explicit approval.
 - [ ] **I18.03** Recheck backup freshness/status by revision and timestamp, invalid/corrupt archive, retention/history boundaries, device-specific desktop backup path.
 - [ ] **I18.04** Test import preview/size validation, pre-import backup/confirmation, conflict and interrupted partial failure; no destructive migration or silent real-data replacement.
@@ -289,3 +289,10 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - **First:** complete and directly inspect PR #647's last 24 route screenshots and exact-head diff, verify all required checks `SUCCESS` and protected-merge conditions; reconcile only accepted delta into develop. This gate is owned by #646 and is not counted as I01 or a new #649 fix.
 - **Second:** rebase/reconcile #648 onto new develop and complete Dashboard cash-sign subitem without touching separate Android work; its own progress remains 1/2 and 2/3 until implemented.
 - **Third:** start the highest-priority unblocked P0 issue from this map with one coherent owned batch. If recovery capability needs external destructive approval, do not block safe read-only/a11y/layout investigations; document that exact blocker.
+
+## First implementation checkpoint — 2026-10-29 (#649 I18.01)
+- Gate 0: #647 PR merged to `develop@f10b963f650a5b9c185512986d62d572c7ef4420` after exact [CI #40921547456](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/40921547456) SUCCESS and direct 24-route screenshot inspection. This accepted earlier work remains excluded from the new 132.
+- Previous finance UX #648 reconciled onto current develop, **2/2 implementations · 3/3 sub-implementations code complete**, [draft PR #651](https://github.com/MariosGiannakaras/MyFinHub/pull/651) at `deca7e588e5467abc5b4910f0f760fc890cc5649`. Draft CI pending at initial checkpoint; no merge.
+- **I18.01 complete as code** on `fix/652-financedata-backup-scope-copy@c8b64ccc292a3550c4a8b648c6c80d773a5e3fbf` in [draft PR #653](https://github.com/MariosGiannakaras/MyFinHub/pull/653): corrected Settings Data backup/import/JSON copy explicitly excludes Card Vault/IBAN/Storage/local receipts/PIN and distinguishes the finance JSON from full PostgreSQL+Storage restoration. Added focused source guard. No backend/data mutation. **Implementation counters: 0/23 · 1/132, I18 = 1/6.** Validation/CI and integration are separate and pending.
+- I18.02 independent full DB+Storage restore test still **not proven**, and is not implicitly authorized by UI copy work. No production DB restore, destructive migration or release.
+- **Next safe action:** inspect draft CI/CodeQL for #651 and #653, correct any failures in bounded batches, use one final Ready QA matrix per coherent head, inspect real browser screens. Do not merge pending/failed checks. When both independently pass, merge to develop in safe order, reconcile this docs PR #650 with the updated develop head, and continue the highest-priority P0 subitem.
