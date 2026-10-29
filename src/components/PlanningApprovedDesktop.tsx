@@ -61,7 +61,10 @@ function accountSummary(forecast:CashFlowForecast,accountId:string){
 function sparklinePoints(points:ForecastPoint[],accountId:string){
   const values=points.map(point=>Number(point.balances[accountId]??0));
   if(!values.length)return '';
-  const min=Math.min(...values);const max=Math.max(...values);const spread=max-min||1;const denominator=Math.max(values.length-1,1);
+  const min=Math.min(...values);const max=Math.max(...values);const denominator=Math.max(values.length-1,1);
+  // A constant series has no min/max range: center it rather than suggesting a zero balance.
+  if(max===min)return values.map((_,index)=>`${(index/denominator)*100},16`).join(' ');
+  const spread=max-min;
   return values.map((value,index)=>`${(index/denominator)*100},${27-((value-min)/spread)*22}`).join(' ');
 }
 
@@ -135,8 +138,8 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,commandSchedu
   return <div className="planning-approved-desktop" data-planning-approved-desktop>
     <section className="panel surface-raised planning-approved-forecast" aria-label="Πρόβλεψη συνολικής ρευστότητας">
       <div className="planning-forecast-summary">
-        <div className="planning-forecast-intro"><span className="planning-forecast-icon"><BarChart3/></span><div><b>Πρόβλεψη συνολικής ρευστότητας</b><small>Με βάση τα τρέχοντα υπόλοιπα, τα πάγια, τις δόσεις και τις προγραμματισμένες κινήσεις.</small><span className="sr-only">Τρέχουσα συνολική ρευστότητα {money.format(forecasts[30].currentPortfolio)}</span></div></div>
-        {([30,60,90] as const).map(days=>{const forecast=forecasts[days];const change=forecastPercent(forecast);return <article className="planning-forecast-kpi" key={days}><span>Σε {days} ημέρες</span><b className={forecast.projectedPortfolio<0?'negative':''}>{money.format(forecast.projectedPortfolio)}</b><small className={change<0?'negative':'positive'}>{change>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {percentLabel(change)}</small></article>})}
+        <div className="planning-forecast-intro"><span className="planning-forecast-icon"><BarChart3/></span><div><b>Πρόβλεψη συνολικής ρευστότητας</b><small>Με βάση τα τρέχοντα υπόλοιπα, τα πάγια, τις δόσεις και τις προγραμματισμένες κινήσεις.</small><small className="planning-current-portfolio">Τρέχουσα συνολική ρευστότητα: <b>{money.format(forecasts[30].currentPortfolio)}</b></small></div></div>
+        {([30,60,90] as const).map(days=>{const forecast=forecasts[days];const change=forecastPercent(forecast);return <article className="planning-forecast-kpi" key={days}><span>Σε {days} ημέρες</span><b className={forecast.projectedPortfolio<0?'negative':''}>{money.format(forecast.projectedPortfolio)}</b><small className={change<0?'negative':'positive'}>{change>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {percentLabel(Math.abs(change)).replace(/^\+/,"")}</small></article>})}
         <button type="button" className="planning-detail-toggle" aria-expanded={detailsOpen} aria-controls="planning-approved-details" onClick={()=>setDetailsVisible(!detailsOpen)}>Αναλυτική πρόβλεψη <ArrowRight size={15}/></button>
       </div>
       <div className="planning-portfolio-trend" role="img" aria-label="Συνολική προβλεπόμενη ρευστότητα για τις επόμενες 90 ημέρες">

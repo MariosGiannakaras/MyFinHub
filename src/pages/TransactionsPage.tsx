@@ -17,6 +17,7 @@ import { TransactionSplitDetails } from '../components/TransactionSplitDetails';
 import { categoryPath, categoryTree } from '../lib/categories';
 import { allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { cleanNote, money, shortDate } from '../lib/format';
+import { receivableCashDirection } from '../lib/receivableCashDirection';
 import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName, eventKindLabel } from '../lib/ui';
@@ -172,8 +173,8 @@ export function TransactionsPage({
   const trendClass=(value:number|null,betterWhenLower=false)=>value===null?'':(betterWhenLower?value<=0:value>=0)?'positive':'negative';
 
   const accountText=(ids:string[])=>ids.map(id=>accountDisplayName(data,id)).join(' → ')||'—';
-  const amountPrefix=(row:{kind:string;impact:{income:number;expense:number;refund:number}})=>row.kind==='lending'?'−':row.kind==='repayment'?'+':row.kind==='transfer'?'↔ ':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'+':row.impact.expense>0?'−':'';
-  const amountClass=(row:TransactionRow)=>row.kind==='lending'?'negative':row.kind==='repayment'?'positive':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'positive':row.impact.expense>0?'negative':'neutral';
+  const amountPrefix=(row:{kind:string;impact:{income:number;expense:number;refund:number}})=>receivableCashDirection(row.kind)<0?'−':receivableCashDirection(row.kind)>0?'+':row.kind==='transfer'?'↔ ':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'+':row.impact.expense>0?'−':'';
+  const amountClass=(row:TransactionRow)=>receivableCashDirection(row.kind)<0?'negative':receivableCashDirection(row.kind)>0?'positive':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'positive':row.impact.expense>0?'negative':'neutral';
   const metadata=(row:TransactionRow)=>{const category=categoryLabel(row);if(row.source!=='legacy')return category;return `${category} · ${row.overridden?'Ιστορικό · override':'Ιστορικό'}`};
   // As-of account balances are end-of-day values, not event-by-event running balances.
   // Imported snapshots and same-day multi-leg transactions do not carry an approved
