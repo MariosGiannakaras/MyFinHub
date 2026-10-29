@@ -89,3 +89,6 @@ All changed **pages** should be sampled at **1440×1000 desktop**, **768–960 t
 - **Already correct D:** preserve and reuse regression lock; do not reopen old completed work or rewrite established finance history.
 
 **Current whole-app proposed code implementation plan:** **Implementations 0/23 completed · Sub-implementations 0/132 completed.** This is a **future remediation workload**, not a claim of 132 verified bugs; earlier completed #646 **3/3 · 13/13** and #648 staged **1/2 · 2/3** are tracked separately. CI/rendered validation, PR integration and production remain independent statuses.
+
+## New two-phase execution directive
+This evidence matrix is part of **Task 1/2 mass audit**, not a green light for a new patch per observation. The 736-PNG/50-JSON evidence archive includes 712 QA suite images and 24 full-page routes; see the [23-area bulk triage registry](./WHOLE_APP_PHASE1_BULK_AUDIT_649.md). After the registry closes, implement the reconciled findings in large compatible batches under the Task 2/2 final-head CI policy. No new product edits during Task 1/2.
