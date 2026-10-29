@@ -113,3 +113,6 @@
   .long-term-loan-copy>div>small{margin-top:3px}
   .long-term-loans-open{display:inline-flex}
 }
+
+/* Preserve future schedule while showing the shared Attention overdue cycle. */
+.recurring-overdue{display:block;margin-top:3px;color:var(--error);font-weight:750;line-height:1.35}

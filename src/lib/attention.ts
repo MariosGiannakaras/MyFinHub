@@ -73,7 +73,7 @@ function effectiveLoans(data:FinanceData):Loan[]{
   return [...seeded,...(data.state.customLoans??[])];
 }
 
-function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
+export function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
   if(recurringCadence(item).months>1){
     const payments=recurringPayments(data,item.id);
     let next=validRecurringAnchor(item.firstExpectedDate);
