@@ -12,7 +12,11 @@ describe('linked transfer fee rendered and revision contract (#588 B2)',()=>{
     expect(app).toContain('return withoutEventGroup(current,id);');
     expect(app).toContain('event.id!==id&&event.feeForEventId!==id');
     expect(qa).toContain('update(current=>replaceLinkedTransferWithFee(current,principal,fee))');
-    expect(wrapper).toContain('onCreateLinkedTransfer={onCreateLinkedTransfer}');
+    expect(wrapper).toContain('onCreateLinkedTransfer={createLinked}');
+    expect(wrapper).toContain('completeWithReceipt(()=>onCreateLinkedTransfer(principal,fee))');
+    const receiptSave=readFileSync('src/lib/receiptPostSave.ts','utf8');
+    expect(receiptSave.indexOf('await saveFinance();')).toBeLessThan(receiptSave.indexOf('await deleteLocalDraft()'));
+    expect(receiptSave).toContain('catch{');
     const generic=readFileSync('src/components/QuickAdd.tsx','utf8');
     const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');
     expect(generic).toContain("await import('../lib/linkedFees')");

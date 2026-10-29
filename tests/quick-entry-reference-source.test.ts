@@ -21,8 +21,13 @@ describe('Quick Entry owner-reference contract',()=>{
     expect(quick).toContain('inert={saving}');
     expect(contextual).toContain('await onCreate(event)');
     expect(contextual).toContain('busy={saving}');
-    expect(receiptAware).toContain('await onCreate(event)');
-    expect(receiptAware.indexOf('await onCreate(event)')).toBeLessThan(receiptAware.indexOf('void deleteReceiptDraft(handledId)'));
+    expect(receiptAware).toContain('const create = async (event:FinanceEvent)=>completeWithReceipt(()=>onCreate(event))');
+    expect(receiptAware).toContain('await saveFinanceThenCleanupReceipt(');
+    const postSave=readFileSync('src/lib/receiptPostSave.ts','utf8');
+    expect(postSave.indexOf('await saveFinance();')).toBeLessThan(postSave.indexOf('await deleteLocalDraft()'));
+    expect(postSave).toContain('onCleanupFailure();');
+    expect(receiptAware).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(receiptAware).not.toContain('void deleteReceiptDraft(handledId)');
     expect(qa).toContain("params.get('quick-event-save-failure')==='1'");
     expect(negative).toContain('quick-entry-finance-receipt-failure-mobile');
     expect(negative).toContain('quick-entry-finance-receipt-pending-desktop');

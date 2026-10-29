@@ -4,6 +4,7 @@ const source=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const settings=source('../src/pages/SettingsPage.tsx');
 const accounts=source('../src/components/AccountManagementSettings.tsx');
 const screenshots=source('../scripts/ui-ux-visual-evidence-qa.mjs');
+const settingsQa=source('../scripts/settings-tabs-qa.mjs');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
   it('uses action-scoped message tone so import, backup and taxonomy errors cannot inherit stale success',()=>{
@@ -21,6 +22,13 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(settings).toContain("onKeyDown={event=>onTabKeyDown(event,index)}");
     expect(settings).toContain("aria-controls={`settings-panel-${tab.id}`}");
     expect(settings).toContain("selectTab(SETTINGS_TABS[next].id)");
+  });
+  it('runs actual Settings tab keyboard, focus and selected-panel assertions in browser QA',()=>{
+    expect(settingsQa).toContain('const verifyKeyboardTablist=async()=>');
+    for(const key of ['ArrowRight','ArrowLeft','Home','End'])expect(settingsQa).toContain(`await press('${key}'`);
+    expect(settingsQa).toContain('active===selected');
+    expect(settingsQa).toContain('el.tabIndex===0');
+    expect(settingsQa).toContain('await verifyKeyboardTablist()');
   });
   it('announces blocked and failed account deletion as warning/error rather than success',()=>{
     expect(accounts).toContain("notify(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'),'error')");

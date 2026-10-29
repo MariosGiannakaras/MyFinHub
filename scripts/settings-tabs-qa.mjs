@@ -26,6 +26,22 @@ try{
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickTab=async tab=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()===label);if(!node||node.disabled)return false;node.click();node.scrollIntoView({block:'nearest',inline:'center'});return true}",[tab.label]);assert(ok,`tab ${tab.label} is enabled and clickable`);await waitFor("function(id,selector){const selected=[...document.querySelectorAll('.settings-tablist [role=tab]')].filter(node=>node.getAttribute('aria-selected')==='true');const panel=document.querySelector('.settings-tab-panel');const target=document.querySelector(selector);return selected.length===1&&selected[0].getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`&&Boolean(target&&target.getClientRects().length)}",`${tab.label} selected panel`,[tab.id,tab.selector]);await c.call("function(){document.querySelector('.settings-tab-panel')?.scrollIntoView({block:'start'});window.scrollBy(0,-132);return true}");await sleep(180)};
+  const verifyKeyboardTablist=async()=>{
+    await clickTab(tabs[0]);
+    const focusFirst=await c.call("function(){const first=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');first?.focus();return document.activeElement===first}");
+    assert(focusFirst,'keyboard tablist starts on selected tab');
+    const press=async(key,expected)=>{
+      await c.call("function(key){document.activeElement?.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}))}",[key]);
+      await waitFor("function(id){const active=document.activeElement;const selected=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');const panel=document.querySelector('.settings-tab-panel');return Boolean(active&&selected&&active===selected&&selected.getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`)}",`Settings tab keyboard ${key} → ${expected}`,[expected]);
+      const oneStop=await c.call("function(){return [...document.querySelectorAll('.settings-tablist [role=tab]')].filter(el=>el.tabIndex===0).length===1}");
+      assert(oneStop,`exactly one sequential Tab stop after ${key}`);
+    };
+    await press('ArrowRight','profile');
+    await press('End','data');
+    await press('ArrowRight','general');
+    await press('ArrowLeft','data');
+    await press('Home','general');
+  };
   const noPageOverflow=async label=>{const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(overflow<=1,`${label} horizontal page overflow ${overflow}px`)};
   const prepareScreenshot=async()=>{const state=await c.call("function(){const active=document.activeElement;if(active instanceof HTMLElement)active.blur();window.scrollTo({top:0,left:0,behavior:'auto'});return {scrollY:window.scrollY}}");assert(Math.abs(state.scrollY)<=1,`screenshot capture scroll offset ${state.scrollY}px`);await sleep(120)};
   const screenshot=async(name)=>{await prepareScreenshot();await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
@@ -139,6 +155,8 @@ try{
       }
     }
   }
+  console.log('Settings tabs QA: real Arrow/Home/End focus and deep-link activation');
+  await viewport(1440,1000);await verifyKeyboardTablist();
   console.log('Settings tabs QA: explicit Dark desktop evidence for every tab');
   await viewport(1440,1000);assert((await applyTheme('dark'))==='dark','Settings Dark theme applied');
   for(const tab of tabs){await clickTab(tab);await noPageOverflow(`dark desktop ${tab.label}`);await screenshot(`settings-${tab.id}-dark-desktop`)}
