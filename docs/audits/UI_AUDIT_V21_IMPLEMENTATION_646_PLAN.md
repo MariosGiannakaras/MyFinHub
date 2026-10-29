@@ -57,3 +57,6 @@ Only fully **accepted** work counts; source edits are provisional until focused 
 ## Current validation failure and fix — 2026-10-29
 - Exact head 7d4276b61fa0001ad1b4449e491224465eb03aad: CI #40899265244 FAILED (1,565/1,567 Vitest PASS, 2 fails) while CodeQL #40899264832 SUCCESS. Failed existing contracts were lazy Chart rendering on mobile and decorative Recharts aria-hidden. Root source fix restores the original chart deferral and hidden a11y contract while gating visible sensitive values; added mask-check assertions.
 - This is source-only work, not yet a new CI PASS or rendered QA.
+
+## Hygiene correction — 2026-10-29
+- On head 55f7de172b118a70300bfd5568148087761780e2, CI #40900953984 FAILED at TypeScript hygiene: TS1005 missing nested ternary ':' in Dashboard category chart privacy guard; CodeQL #40900953979 SUCCESS. Corrected code uses parenthesized `privacyVisible?(heavyChartsReady?...:null):null` preserving existing heavy-chart deferral, accessibility and new masking test. New head requires fresh actual checks; counters unchanged.
