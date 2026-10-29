@@ -25,18 +25,22 @@ try{
   // Capture both essential states: private on fresh load, then deliberate reveal for money-bearing visual evidence.
   // Never require Recharts to render while privacy hides the underlying numeric series.
   const revealDashboardForVisualEvidence=async()=>{
-    let masked=false;
+    // Keep this test strict: only the three monetary KPI fields are counted here.
+    // The donut's independent percentage labels are checked separately.
+    // No amount text is returned to Node, so failure diagnostics stay privacy-safe.
+    let last=null;
     for(let i=0;i<100;i++){
-      masked=await c.call("function(){const toggle=document.querySelector('.dashboard-approved-heading .privacy-toggle');const primary=[...document.querySelectorAll('.approved-account-card .approved-balance')];const summary=[...document.querySelectorAll('.summary-income b,.summary-expense b,.summary-net b')];const sectors=[...document.querySelectorAll('.summary-donut span b')];const charts=[...document.querySelectorAll('.summary-donut .recharts-surface,.approved-bar-wrap .recharts-surface,.approved-category-donut .recharts-surface')];const isHidden=node=>node.textContent.includes('•')&&!/\\d/.test(node.textContent);return toggle?.getAttribute('aria-pressed')==='false'&&primary.length>0&&summary.length===3&&primary.every(isHidden)&&summary.every(isHidden)&&sectors.every(isHidden)&&charts.length===0}");
-      if(masked)break;
+      last=await c.call("function(){const toggle=document.querySelector('.dashboard-approved-heading .privacy-toggle');const primary=[...document.querySelectorAll('.approved-account-card[data-balance-visibility=\"masked\"] .approved-balance')];const summary=[...document.querySelectorAll('.summary-income > div > b,.summary-expense > div > b,.summary-net > div:first-child > b')];const sectors=[...document.querySelectorAll('.summary-donut span b')];const charts=[...document.querySelectorAll('.summary-donut .recharts-surface,.approved-bar-wrap .recharts-surface,.approved-category-donut .recharts-surface')];const isHidden=node=>node.textContent.includes('•')&&!/\\d/.test(node.textContent);const allAccounts=[...document.querySelectorAll('.approved-account-card[data-account-id]')];return {toggle:toggle?.getAttribute('aria-pressed')||null,accounts:allAccounts.length,primary:primary.length,primaryMasked:primary.filter(isHidden).length,summary:summary.length,summaryMasked:summary.filter(isHidden).length,sectors:sectors.length,sectorsMasked:sectors.filter(isHidden).length,charts:charts.length}}");
+      if(last.toggle==='false'&&last.accounts>0&&last.primary===last.accounts&&last.primaryMasked===last.primary&&last.summary===3&&last.summaryMasked===3&&last.sectors===2&&last.sectorsMasked===2&&last.charts===0)break;
       await sleep(100);
     }
-    if(!masked)throw new Error('Dashboard default privacy failed: numeric values or Recharts are visible before reveal');
+    if(!last||last.toggle!=='false'||last.accounts<1||last.primary!==last.accounts||last.primaryMasked!==last.primary||last.summary!==3||last.summaryMasked!==3||last.sectors!==2||last.sectorsMasked!==2||last.charts!==0)
+      throw new Error(`Dashboard default privacy assertion failed (counts and flags only): ${JSON.stringify(last)}`);
     await c.call("function(){const toggle=document.querySelector('.dashboard-approved-heading .privacy-toggle');if(!toggle)throw new Error('Dashboard privacy toggle missing');toggle.click();return true}");
     for(let i=0;i<100;i++){if(await c.call("function(){return document.querySelector('.dashboard-approved-heading .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"))return;await sleep(100)}
     throw new Error('Dashboard privacy did not reveal after explicit toggle');
   };
-  const assertReportCreditLayout=async()=>{
+    const assertReportCreditLayout=async()=>{
     const geometry=await c.call("function(){const grid=document.querySelector('.report-upcoming-card .report-operations-grid.report-credit-portfolio');const card=grid?.querySelector('.report-credit-portfolio-card');const copy=card?.querySelector('div');if(!grid||!card||!copy)return null;const outer=grid.getBoundingClientRect(),box=card.getBoundingClientRect(),text=copy.getBoundingClientRect();return {gridWidth:outer.width,cardWidth:box.width,copyWidth:text.width,rightOverflow:Math.max(0,box.right-outer.right,text.right-box.right),viewportOverflow:Math.max(0,document.documentElement.scrollWidth-innerWidth)}}");
     if(!geometry||geometry.cardWidth<geometry.gridWidth*.9||geometry.copyWidth<geometry.cardWidth*.5||geometry.rightOverflow>2||geometry.viewportOverflow>2)
       throw new Error(`Reports credit portfolio nested grid is clipped: ${JSON.stringify(geometry)}`);
