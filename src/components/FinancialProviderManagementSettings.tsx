@@ -280,7 +280,7 @@ export function FinancialProviderManagementSettings(){
     <div className="provider-list">{providers.map(provider=>{
       const assets=provider.assets??[],bindings=provider.bindings??[];
       return <article className="provider-list-row" key={provider.id}>
-        <div className="provider-list-identity"><span className="provider-list-logo"><BankBrandMark id={provider.id} name={provider.displayName}/></span><div><b>{provider.displayName}</b><span>{kindLabel(provider.kind)} · {provider.id}</span></div></div>
+        <div className="provider-list-identity"><span className="provider-list-logo"><BankBrandMark id={provider.id} name={provider.displayName}/></span><div><b>{provider.displayName}</b><span>{kindLabel(provider.kind)}</span></div></div>
         <div className="provider-list-summary">
           <span><Images size={15}/>{assets.length} {assets.length===1?'εικόνα':'εικόνες'}</span>
           <span>{bindings.length} χρήσεις</span>
