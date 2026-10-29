@@ -341,8 +341,8 @@ export function SettingsPage({
                 <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
                 <div className="settings-data-action-copy">
                   <b>Δημιουργία αντιγράφου ασφαλείας</b>
-                  <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
-                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν περιλαμβάνει μυστικά καρτών (PAN/CVV), ανεξάρτητα IBAN, αρχεία λογοτύπων, τοπικές αποδείξεις ή PIN των Windows. Φύλαξέ τα και διαχειρίσου τα ξεχωριστά.</small>
+                  <p>Δημιούργησε αντίγραφο των οικονομικών δεδομένων στη βάση και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν είναι πλήρες αντίγραφο PostgreSQL ή Supabase Storage: δεν περιλαμβάνει μυστικά καρτών (PAN/λήξη/CVV), ανεξάρτητα IBAN, ανεβασμένα λογότυπα, τοπικές αποδείξεις ή PIN των Windows.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</Button>
               </Surface>
@@ -369,14 +369,14 @@ export function SettingsPage({
                   <h3 id="settings-import-instructions">Πώς γίνεται η εισαγωγή</h3>
                   <ol>
                     <li>Δημιούργησε πρώτα αντίγραφο από το «Backup & λήψη».</li>
-                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε πλήρες backup MyFinHub έως 4 MB.</li>
+                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε έγκυρο αρχείο JSON οικονομικών δεδομένων MyFinHub έως 4 MB.</li>
                     <li>Έλεγξε την προειδοποίηση και επιβεβαίωσε. Η βάση επαληθεύει τη δομή και δημιουργεί αυτόματα backup των προηγούμενων δεδομένων πριν από την αντικατάσταση.</li>
                     <li>Έλεγξε τα στοιχεία μετά την εισαγωγή. Για επιστροφή στα προηγούμενα δεδομένα χρειάζεται ξεχωριστή επαναφορά backup, όχι Undo.</li>
                   </ol>
                 </section>
                 <section aria-labelledby="settings-import-structure">
                   <h3 id="settings-import-structure">Δομή JSON MyFinHub</h3>
-                  <p>Το αρχείο είναι πλήρες JSON της εφαρμογής, όχι CSV ή απλή λίστα συναλλαγών. Τα κύρια πεδία του είναι:</p>
+                  <p>Το αρχείο περιέχει δομημένα οικονομικά δεδομένα του MyFinHub, όχι CSV ή απλή λίστα συναλλαγών. Δεν αποτελεί πλήρες αντίγραφο PostgreSQL ή Supabase Storage. Τα κύρια πεδία του είναι:</p>
                   <dl className="settings-import-guide-fields">
                     <div><dt><code>app</code>, <code>schemaVersion</code>, <code>updatedAt</code></dt><dd>Ταυτότητα εφαρμογής, συμβατή έκδοση και ημερομηνία.</dd></div>
                     <div><dt><code>seed</code></dt><dd>Βασικά δεδομένα: <code>accounts</code>, <code>months</code>, <code>transactions</code>, <code>snapshots</code>, <code>recurring</code>, <code>subscriptions</code>, <code>loans</code>, <code>lending</code>, <code>stats</code>.</dd></div>
@@ -404,7 +404,7 @@ export function SettingsPage({
       <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"
-        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Οι κωδικοί Card Vault είναι ξεχωριστοί και δεν εισάγονται από το JSON. Συνέχεια;"
+        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Το JSON δεν επαναφέρει Card Vault, ανεξάρτητα IBAN ή αρχεία Supabase Storage. Συνέχεια;"
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}
