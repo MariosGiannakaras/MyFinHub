@@ -6,6 +6,7 @@ const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx
 const iban=readFileSync(new URL('../src/components/AccountIban.tsx',import.meta.url),'utf8');
 const paymentCard=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
 const ibanBrowserQa=readFileSync(new URL('../scripts/account-metadata-qa.mjs',import.meta.url),'utf8');
+const ibanStyles=readFileSync(new URL('../src/styles/account-iban-surfaces.css',import.meta.url),'utf8');
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -69,6 +70,10 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     expect(stack).toContain("announce('Δεν ήταν δυνατή η αντιγραφή','error')");
     expect(stack).toContain("tone==='error'?'alert':'status'");
     expect(iban).toContain('role="alert" aria-live="assertive"');
+    expect(iban).toContain('data-copy-error={copyError||undefined}');
+    expect(iban).toContain('copyError?<X size={14} aria-hidden="true"/>');
+    expect(ibanStyles).toContain('.account-iban .account-iban-copy[data-copy-error="true"]');
+    expect(ibanBrowserQa).toContain('copyFailure.errorControl');
     expect(paymentCard).toContain('<OperationFeedback className="r-card-status" tone={messageTone}>');
     expect(paymentCard).toContain("setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')");
     expect(paymentCard).not.toContain('setMessage(current)');

@@ -71,8 +71,9 @@
   .attention-approved-date>b{line-height:1.2;color:var(--ink)}
   .attention-approved-date>small{line-height:1.3;color:var(--text-secondary)}
   .attention-approved-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
-  .attention-approved-actions>.save-button{min-height:34px;padding:7px 9px;border-radius:9px;white-space:nowrap;box-shadow:0 5px 12px rgba(47,111,237,.14)}
-  .attention-approved-actions>.save-button svg{width:13px;height:13px}
+  .attention-approved-actions>.save-button{min-height:34px;min-width:0;max-width:100%;flex:1 1 auto;padding:7px 9px;border-radius:9px;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center;justify-content:center;box-shadow:0 5px 12px rgba(47,111,237,.14)}
+  .attention-approved-actions>.save-button svg{width:13px;height:13px;flex-shrink:0}
+  .attention-approved-actions>.app-tooltip{flex:0 0 auto}
   .attention-approved-icon-action{width:32px;height:32px;display:grid;place-items:center;border-color:transparent!important;border-radius:9px;background:transparent!important;color:var(--text-secondary)!important;box-shadow:none!important;cursor:pointer}
   .attention-approved-icon-action svg{width:15px;height:15px}
   .attention-approved-empty-row{min-height:46px;width:min(100%,1480px);margin-inline:auto;display:flex;align-items:center;gap:9px;padding:8px 14px;color:var(--text-secondary);}

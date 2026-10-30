@@ -1,4 +1,4 @@
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { formatIban } from '../lib/iban';
@@ -28,7 +28,7 @@ export function AccountIban({accountId,variant='default',fallback}:{accountId:st
   return <div className={`account-iban${compact?' account-iban-dashboard':''}`} data-account-iban={accountId}>
     {!compact?<span className="account-iban-label">IBAN</span>:null}
     {metadata.loading&&!metadata.loaded?<span className="account-iban-value">Φόρτωση…</span>:iban?<span className="account-iban-value" title={visibleIban}>{visibleIban}</span>:<span className="account-iban-value muted">{fallback??'Δεν έχει οριστεί'}</span>}
-    {iban?<IconButton type="button" className="inline-icon-action account-iban-copy" aria-label={copyLabel} title={copyLabel} onClick={()=>void copy()}>{copied?<Check size={14} aria-hidden="true"/>:<Copy size={14} aria-hidden="true"/>}</IconButton>:null}
+    {iban?<IconButton type="button" className="inline-icon-action account-iban-copy" data-copy-error={copyError||undefined} aria-label={copyError?'Η αντιγραφή IBAN απέτυχε. Δοκίμασε ξανά.':copyLabel} title={copyError?'Η αντιγραφή IBAN απέτυχε. Δοκίμασε ξανά.':copyLabel} onClick={()=>void copy()}>{copied?<Check size={14} aria-hidden="true"/>:copyError?<X size={14} aria-hidden="true"/>:<Copy size={14} aria-hidden="true"/>}</IconButton>:null}
     {copied?<span className="sr-only" role="status" aria-live="polite">Το IBAN αντιγράφηκε.</span> : null}
     {copyError?<span className="sr-only" role="alert" aria-live="assertive">Η αντιγραφή IBAN απέτυχε. Δοκίμασε ξανά.</span> : null}
   </div>;

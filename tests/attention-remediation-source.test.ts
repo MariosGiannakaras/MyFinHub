@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const page=readFileSync(new URL('../src/pages/AttentionPage.tsx',import.meta.url),'utf8');
 const target=readFileSync(new URL('../src/styles/attention-approved-target.css',import.meta.url),'utf8');
 const refinement=readFileSync(new URL('../src/styles/attention-approved-refinement.css',import.meta.url),'utf8');
+const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
 
 describe('Attention post-v1.4 remediation contracts',()=>{
   it('offers group expansion only when rows are actually truncated',()=>{
@@ -42,5 +43,12 @@ describe('Attention post-v1.4 remediation contracts',()=>{
     expect(refinement).toContain('.attention-approved-date>small{font-size:var(--ux-dense-label-size)}');
     expect(refinement).toContain('.attention-approved-actions>.save-button{min-height:34px;padding-inline:9px;font-size:var(--ux-dense-label-size)}');
     expect(refinement).not.toMatch(/font-size:(?:7(?:\.\d+)?|8(?:\.\d+)?)px/);
+    expect(target).toContain('.attention-approved-actions>.save-button{min-height:34px;min-width:0;max-width:100%;flex:1 1 auto;');
+    expect(target).toContain('white-space:normal;overflow-wrap:anywhere;line-height:1.25');
+    expect(target).toContain('.attention-approved-actions>.save-button svg{width:13px;height:13px;flex-shrink:0}');
+    expect(qa).toContain('assertActionLabelContained');
+    expect(qa).toContain('long action labels must stay inside button boundaries');
+    expect(qa).toContain("[1100,900,'1100']");
+
   });
 });

@@ -66,8 +66,8 @@ try{
   try{
     await expandedHitClick('.primary-balance-card[data-account-id="piraeus-payroll"] .account-iban-copy');
     await waitFor("function(){return Boolean(document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] [role=alert]'))}",'failed clipboard has accessible alert');
-    const copyFailure=await c.call("function(){const root=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"]');return {error:root?.querySelector('[role=alert]')?.textContent||'',falseSuccess:Boolean(root?.querySelector('[role=status]')),leakedField:[...document.querySelectorAll('textarea')].some(node=>node.value.includes('GR1601101250000000012300695'))}}");
-    assert(copyFailure.error.includes('απέτυχε')&&!copyFailure.falseSuccess&&!copyFailure.leakedField,'copy rejection never reports success or leaves account identifier in a temporary field');
+    const copyFailure=await c.call("function(){const root=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"]');return {error:root?.querySelector('[role=alert]')?.textContent||'',falseSuccess:Boolean(root?.querySelector('[role=status]')),errorControl:root?.querySelector('.account-iban-copy')?.getAttribute('data-copy-error')==='true',leakedField:[...document.querySelectorAll('textarea')].some(node=>node.value.includes('GR1601101250000000012300695'))}}");
+    assert(copyFailure.error.includes('απέτυχε')&&copyFailure.errorControl&&!copyFailure.falseSuccess&&!copyFailure.leakedField,'copy rejection never reports success or leaves account identifier in a temporary field');
     await screenshot('account-metadata-clipboard-denied-desktop');
   }finally{
     await c.call("function(){window.__qaRestoreIbanCopy?.();delete window.__qaRestoreIbanCopy;return true}");
