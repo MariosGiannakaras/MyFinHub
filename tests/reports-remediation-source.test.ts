@@ -75,6 +75,9 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain('Reports nested single-credit summary must span its own upcoming panel');
     expect(rendered).toContain('reports-credit-portfolio-fullwidth-desktop.png');
     expect(rendered).toContain('creditPortfolio.cardWidth>=creditPortfolio.outerWidth-2');
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(workflow).toContain("contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->')");
+    expect(workflow).toContain("'reports-visual'");
   });
 
   it('does not introduce unsupported export or download decoration',()=>{
