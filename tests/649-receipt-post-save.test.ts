@@ -17,6 +17,15 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledTimes(1);
   });
+  it('does not convert a confirmed finance save to failure when local cleanup reporting itself throws',async()=>{
+    const save=vi.fn(async()=>undefined);
+    const cleanup=vi.fn(async()=>{throw new Error('local receipt storage rejected')});
+    const notify=vi.fn(()=>{throw new Error('notification UI unavailable')});
+    await expect(saveFinanceThenCleanupReceipt(save,cleanup,notify)).resolves.toBeUndefined();
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
   it('removes the local draft once after finance save and does not announce false errors',async()=>{
     const order:string[]=[];
     const save=vi.fn(async()=>{order.push('finance')});
