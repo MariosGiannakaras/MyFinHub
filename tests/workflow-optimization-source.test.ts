@@ -70,7 +70,7 @@ describe('CI workflow optimization contracts',()=>{
     expect(focused).toContain("<!-- run-fb-focused-qa -->");
     expect(focused).toContain("<!-- run-649-focused-qa -->");
     expect(focused).toContain('FOCUSED_SUITES:');
-    expect(focused).toContain('action-center-context receipt-local-ocr settings-tabs savings-remediation');
+    expect(focused).toContain('action-center-context receipt-local-ocr settings-tabs savings-remediation card-vault-runtime account-metadata');
     expect(focused).toContain('quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette');
     expect(focused.match(/for suite in \$FOCUSED_SUITES; do/g)).toHaveLength(2);
     expect(focused).toContain('cancel-in-progress: true');
