@@ -235,6 +235,8 @@ export function SettingsPage({
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
+    // A new import must not inherit the prior backup/import outcome while confirmation is pending.
+    setOperationResult('');
     setPendingImportFile(file);
   };
 
@@ -247,6 +249,7 @@ export function SettingsPage({
   const confirmImport = async () => {
     const file = pendingImportFile;
     if (!file || busy) return;
+    setOperationResult('');
     setBusy(true);
     try {
       await onImport(JSON.parse(await file.text()));

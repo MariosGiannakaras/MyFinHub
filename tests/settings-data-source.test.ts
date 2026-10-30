@@ -18,6 +18,11 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('δημιουργεί αυτόματα backup των προηγούμενων δεδομένων');
     expect(settings).toContain('Δεν αναιρείται με Undo.');
     expect(settings).toContain('type="file" accept="application/json,.json" hidden');
+    const requestImport=settings.slice(settings.indexOf('const requestImport ='),settings.indexOf('const cancelImport ='));
+    expect(requestImport.indexOf("setOperationResult('');")).toBeLessThan(requestImport.indexOf('setPendingImportFile(file);'));
+    expect(requestImport).toContain("setOperationResult('Το αρχείο είναι μεγαλύτερο");
+    expect(settings).toMatch(/const confirmImport = async \(\) => \{[\s\S]*?setOperationResult\(''\);[\s\S]*?await onImport\(/);
+
   });
 
   it('keeps the Data tab focused on backup and restore actions only',()=>{
