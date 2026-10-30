@@ -1,6 +1,7 @@
-.quick-modal.app-confirm-dialog{background:var(--surface)!important;border-color:var(--border-subtle)!important;color:var(--ink)!important}
-.modal-backdrop>.quick-modal.app-confirm-dialog{width:min(520px,100%)}
+.quick-modal.app-confirm-dialog{width:min(520px,100%);background:var(--surface)!important;border-color:var(--border-subtle)!important;color:var(--ink)!important}
 .app-confirm-dialog>header small{color:var(--muted)}
+/* Explicit confirmation specificity beats later generic modal density overrides. */
+.quick-modal.app-confirm-dialog>header :is(p,small){font-size:12px}
 .app-confirm-dialog[data-tone="destructive"]>header small{color:var(--red)}
 .app-confirm-dialog .destructive-action{background:var(--red);color:var(--white);box-shadow:0 8px 18px color-mix(in srgb,var(--red) 24%,transparent),inset 0 1px 0 color-mix(in srgb,var(--white) 30%,transparent)}
 .app-confirm-dialog .destructive-action:hover{box-shadow:0 10px 22px color-mix(in srgb,var(--red) 30%,transparent),inset 0 1px 0 color-mix(in srgb,var(--white) 30%,transparent)}
