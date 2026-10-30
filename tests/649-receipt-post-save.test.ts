@@ -1,7 +1,15 @@
 import {describe,expect,it,vi} from 'vitest';
+import {readFileSync} from 'node:fs';
 import {saveFinanceThenCleanupReceipt} from '../src/lib/receiptPostSave.js';
 
 describe('#649 receipt post-save second-store boundary',()=>{
+  it('replays failed IndexedDB cleanup and local-only retry in the real browser suite',()=>{
+    const qa=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
+    expect(qa).toContain('QA_RECEIPT_DELETE_BLOCKED');
+    expect(qa).toContain('Η οικονομική κίνηση έχει αποθηκευτεί');
+    expect(qa).toContain('Επανάληψη καθαρισμού');
+    expect(qa).toContain('receipt-local-after-finance-cleanup-failed');
+  });
   it('never deletes local evidence when the finance commit was rejected',async()=>{
     const save=vi.fn(async()=>{throw new Error('conflict')});
     const cleanup=vi.fn(async()=>undefined),notify=vi.fn();

@@ -15,7 +15,7 @@ export async function saveFinanceThenCleanupReceipt(
     // A posted finance event must never be posted again on "retry".
     // Even a broken UI notification cannot turn its committed receipt
     // into a rejected finance save, because QuickAdd may offer resubmission.
-    try{onCleanupFailure()}
+    try{onCleanupFailure();}
     catch{/* The durable finance receipt remains authoritative. */}
   }
 }
