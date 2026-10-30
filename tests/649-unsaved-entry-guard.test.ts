@@ -35,6 +35,8 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   });
   it('exercises discard cancellation in both real-browser QA journeys',()=>{
     expect(contextualQa).toContain('unsaved contextual edits confirmation');
+    expect(contextualQa).toContain('for(let i=0;i<240;i++)');
+    expect(contextualQa).toContain('Chromium exited before the debugging endpoint became ready');
     expect(contextualQa).toContain('cancelling discard preserves actual edited savings account');
     expect(contextualQa).toContain('confirmed contextual discard');
     expect(receiptQa).toContain('receipt unsaved review discard prompt');
