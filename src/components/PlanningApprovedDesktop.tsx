@@ -148,6 +148,9 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,commandSchedu
   },[commandScheduledId,commandScheduledKey,view,scheduledLimit,commandTargetPresent,commandTargetIndex]);
   const accountRows=[...forecasts[90].accounts].sort((a,b)=>{const aState=accountForecastState(a),bState=accountForecastState(b);return accountStatePriority[aState]-accountStatePriority[bState]||Math.abs(b.projected-b.current)-Math.abs(a.projected-a.current)||a.accountId.localeCompare(b.accountId)});
   const portfolioTrend=forecasts[90].points.map(point=>({date:point.date,portfolio:point.portfolio}));
+  // Recharts' default 82px axis clips the minus sign on large negative balances.
+  // Reserve width based on the same formatted finance values used by axis ticks.
+  const portfolioAxisWidth=Math.max(82,Math.ceil(Math.max(0,...portfolioTrend.map(point=>money.format(point.portfolio).length))*7.5)+18);
 
   return <div className="planning-approved-desktop" data-planning-approved-desktop>
     <section className="panel surface-raised planning-approved-forecast" aria-label="Πρόβλεψη συνολικής ρευστότητας">
@@ -161,7 +164,7 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,commandSchedu
           <AreaChart data={portfolioTrend} accessibilityLayer={false} margin={{top:8,right:10,bottom:2,left:4}}>
             <CartesianGrid vertical={false} stroke="var(--chart-grid)"/>
             <XAxis dataKey="date" tickFormatter={value=>shortDate(String(value))} minTickGap={28} tick={{fontSize:11,fill:'var(--text-secondary)'}} axisLine={false} tickLine={false}/>
-            <YAxis width={82} tickFormatter={value=>money.format(Number(value))} tick={{fontSize:11,fill:'var(--text-secondary)'}} axisLine={false} tickLine={false}/>
+            <YAxis width={portfolioAxisWidth} tickFormatter={value=>money.format(Number(value))} tick={{fontSize:11,fill:'var(--text-secondary)'}} axisLine={false} tickLine={false}/>
             <ChartTooltip formatter={value=>money.format(Number(value))} labelFormatter={label=>shortDate(String(label))}/>
             <Area type="stepAfter" dataKey="portfolio" name="Συνολική ρευστότητα" stroke="var(--accent)" fill="var(--accent-soft)" strokeWidth={2.2} isAnimationActive={false}/>
           </AreaChart>

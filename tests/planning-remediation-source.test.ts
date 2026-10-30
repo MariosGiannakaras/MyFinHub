@@ -55,6 +55,16 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('last-row action menu must remain visible and clickable');
   });
 
+  it('allocates axis width from formatted cash values so large negative signs stay inside the chart',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(component).toContain('const portfolioAxisWidth=Math.max(82');
+    expect(component).toContain('money.format(point.portfolio).length');
+    expect(component).toContain('<YAxis width={portfolioAxisWidth} tickFormatter={value=>money.format(Number(value))}');
+    expect(component).not.toContain('<YAxis width={82} tickFormatter={value=>money.format(Number(value))}');
+    expect(qa).toContain('1100px extreme negative portfolio axis must retain visible minus signs without clipping');
+    expect(qa).toContain('tick.left>=negativeAxis.rootLeft+8');
+  });
+
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{
     expect(target).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
     expect(target).toContain('width:min(100%,1320px)');
