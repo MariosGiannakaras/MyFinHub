@@ -107,6 +107,20 @@ try{
         const ruleState=await c.call("function(){const root=document.querySelector('.settings-rules-only [data-rules-workspace]');const text=root?.textContent||'';return {dedicated:Boolean(root),budget:Boolean(document.querySelector('.settings-rules-only .budget-settings-panel')),editorClosed:!document.querySelector('[data-rule-editor]'),newAction:Boolean(root?.querySelector('.rules-new-button')),context:Boolean(root?.querySelector('.rules-status-strip')||root?.querySelector('.rules-empty-state')),human:text.includes('Κανόνες νέων κινήσεων')&&text.includes('δεν αλλάζουν το ιστορικό')}}");assert(ruleState.dedicated,'Rules renders the dedicated transaction-rule workspace');assert(!ruleState.budget,'Rules does not render budget editor');assert(ruleState.editorClosed,'Rules keeps the editor closed until explicitly requested');assert(ruleState.newAction,'Rules exposes the modal editor entry point');assert(ruleState.context,'Rules exposes rule status/order context or the explicit empty state');assert(ruleState.human,'Rules explains the rule model and history safety in human language');
       }
       if(mode.name==='desktop'&&tab.id==='data'){
+        // The backup acknowledgement succeeds in the isolated QA fixture,
+        // but the subsequent JSON read is intentionally unavailable.
+        const blockedRead=await c.call("function(){const original=window.fetch;window.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;const url=new URL(raw,location.href);if(url.pathname==='/api/data')return Promise.reject(new Error('QA_BACKUP_READ_UNAVAILABLE'));return original(input,init)};window.__qaRestoreBackupRead=()=>{window.fetch=original};return true}");
+        assert(blockedRead,'synthetic post-backup JSON read rejection installed');
+        try{
+          const clicked=await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();return Boolean(button)}");
+          assert(clicked,'backup action invoked in isolated fixture');
+          await waitFor("function(){const node=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(node&&(node.textContent||'').includes('Το backup στη βάση δημιουργήθηκε')&&(node.textContent||'').includes('λήψη του JSON'))}",'database backup acknowledged but JSON retrieval fails with partial-success warning');
+          const truthful=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
+          assert(truthful.warnings===1&&truthful.errors===0&&truthful.successes===0,'confirmed database backup is never reported as a total failure on JSON retrieval error');
+          await screenshot('settings-backup-db-ack-download-unavailable-desktop');
+        }finally{
+          await c.call("function(){window.__qaRestoreBackupRead?.();delete window.__qaRestoreBackupRead;return true}");
+        }
         const oversized=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([new Uint8Array(4*1024*1024+1)],'qa-oversized.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
         assert(oversized,'oversized import fixture enters through the real input');
         await waitFor("function(){return (document.querySelector('.settings-data-tab [role=alert]')?.textContent||'').includes('4 MB')}",'oversized import exposes error alert');

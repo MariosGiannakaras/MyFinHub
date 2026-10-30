@@ -267,8 +267,10 @@ export function SettingsPage({
     if (busy) return;
     setOperationResult('');
     setBusy(true);
+    let databaseBackupConfirmed=false;
     try {
       await onBackup();
+      databaseBackupConfirmed=true;
       // Download the acknowledged database document, not optimistic in-memory drafts.
       const snapshot = await loadData();
       downloadJson(snapshot.data);
@@ -286,7 +288,11 @@ export function SettingsPage({
       }
       setOperationResult('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
-            setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'),'error');
+      if(databaseBackupConfirmed){
+        setOperationResult('Το backup στη βάση δημιουργήθηκε, αλλά απέτυχε η ανάκτηση ή η λήψη του JSON στη συσκευή. Το αντίγραφο στη βάση παραμένει διαθέσιμο.','warning');
+      }else{
+        setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'),'error');
+      }
     } finally {
       setBusy(false);
     }
