@@ -20,8 +20,12 @@ describe('Settings Data source contract',()=>{
     expect(qa).toContain('settings-backup-db-ack-download-unavailable-desktop');
     expect(qa).toContain('confirmed database backup is never reported as a total failure');
     expect(qa).toContain('settings-json-import-oversize-error-desktop');
-    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog>header p{font-size:12px;line-height:1.45');
-    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog>header small{color:var(--muted);font-size:11px');
+    expect(confirmCss).toContain('.app-confirm-dialog>header small{color:var(--muted)}');
+    const sharedQuickModal=read('src/styles/quick-entry-modal-base.css');
+    expect(sharedQuickModal).toContain('.quick-modal>header small{color:#4777d6;font-size:11px');
+    expect(sharedQuickModal).toContain('.quick-modal>header p{font-size:12px;line-height:1.45;overflow-wrap:break-word;');
+    expect(confirmCss).not.toContain('.quick-modal.app-confirm-dialog>header p{font-size:');
+    expect(confirmCss).not.toContain('.quick-modal.app-confirm-dialog>header small{color:var(--muted);font-size:');
     expect(qa).toContain('settings-json-import-confirm-mobile');
     expect(qa).toContain('destructive confirmation prose stays readable');
 
