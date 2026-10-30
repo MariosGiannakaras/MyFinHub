@@ -5,6 +5,7 @@ const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx'
 const inbox=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 const contextualQa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
 const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
+const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   it('guards contextual cancel, header, escape and backdrop without altering confirmed saves',()=>{
@@ -17,6 +18,9 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual).not.toContain('onClick={onClose}');
     expect(contextual.match(/setDirty\(true\)/g)?.length).toBeGreaterThanOrEqual(12);
     expect(contextual).toContain('onClose();return;');
+    expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(contextual).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
+
   });
   it('prevents review dismissal, selection switch and manual handoff from silently dropping edits',()=>{
     for(const kind of ['close','select','manual']) expect(inbox).toContain("setDiscardTarget({kind:'"+kind+"'");
@@ -42,5 +46,9 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(receiptQa).toContain('receipt unsaved review discard prompt');
     expect(receiptQa).toContain('receipt editor retains unsaved corrections after cancelled discard');
     expect(receiptQa).toContain('dirty review cannot silently replace selected receipt via new capture');
+    expect(budgetQa).toContain('contextual-quick-invalid-corrected-save-rejected-desktop');
+    expect(budgetQa).toContain('corrected contextual amount removes stale validation message');
+    expect(budgetQa).toContain('rejected contextual finance receipt leaves corrected draft editable without false success');
+
   });
 });
