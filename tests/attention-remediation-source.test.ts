@@ -47,7 +47,8 @@ describe('Attention post-v1.4 remediation contracts',()=>{
     expect(target).toContain('white-space:normal;overflow-wrap:anywhere;line-height:1.25');
     expect(target).toContain('.attention-approved-actions>.save-button svg{width:13px;height:13px;flex-shrink:0}');
     expect(qa).toContain('assertActionLabelContained');
-    expect(qa).toContain('long action labels must stay inside button boundaries');
+    expect(qa).toContain('long action labels must stay inside button boundaries and readable line count');
+    expect(qa).toContain('lineCount>maxLines');
     expect(qa).toContain("[1100,900,'1100']");
 
   });
