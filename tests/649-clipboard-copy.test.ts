@@ -5,6 +5,7 @@ import { copyTextWithFallback } from '../src/lib/copyTextWithFallback.js';
 const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
 const iban=readFileSync(new URL('../src/components/AccountIban.tsx',import.meta.url),'utf8');
 const paymentCard=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
+const ibanBrowserQa=readFileSync(new URL('../scripts/account-metadata-qa.mjs',import.meta.url),'utf8');
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -71,5 +72,7 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     expect(paymentCard).toContain('<OperationFeedback className="r-card-status" tone={messageTone}>');
     expect(paymentCard).toContain("setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')");
     expect(paymentCard).not.toContain('setMessage(current)');
+    expect(ibanBrowserQa).toContain('account-metadata-clipboard-denied-desktop');
+    expect(ibanBrowserQa).toContain('copy rejection never reports success or leaves account identifier');
   });
 });

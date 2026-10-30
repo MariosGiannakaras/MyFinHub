@@ -475,6 +475,27 @@
       "guards": [
         "tests/649-unsaved-entry-guard.test.ts"
       ]
+    },
+    {
+      "id": "FP-025",
+      "title": "Clipboard fallback must confirm success and erase temporary copy fields",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Sensitive-card copy treated the legacy execCommand false return as success and did not guarantee cleanup of a transient clipboard textarea on exceptions. Related IBAN copy had the same exception cleanup risk.",
+      "prevention": "Use one explicitly user-triggered clipboard helper, check native or legacy copy acknowledgement, clear/remove temporary fields in finally, never claim success for rejected writes, and announce failure through accessible error semantics without exposing copied contents.",
+      "paths": [
+        "src/lib/copyTextWithFallback.ts",
+        "src/components/CanonicalCreditCardStack.tsx",
+        "src/components/InteractivePaymentCard.tsx",
+        "src/components/AccountIban.tsx",
+        "scripts/account-metadata-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-clipboard-copy.test.ts"
+      ]
     }
   ]
 }

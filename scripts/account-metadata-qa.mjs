@@ -60,6 +60,19 @@ try{
   await expandedHitClick('.primary-balance-card[data-account-id="piraeus-payroll"] .account-iban-copy');
   await waitFor("function(){return Boolean(document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] [role=status]'))}",'copy confirmation through expanded desktop hit area');
   await noOverflow('account metadata dashboard desktop');await screenshot('account-metadata-dashboard-desktop');
+  console.log('Account metadata QA: denied clipboard and false legacy fallback must show error, not success');
+  const clipboardOverride=await c.call("function(){const own=Object.getOwnPropertyDescriptor(navigator,'clipboard'),original=document.execCommand;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>Promise.reject(new Error('QA clipboard rejected'))}});document.execCommand=()=>false;window.__qaRestoreIbanCopy=()=>{if(own)Object.defineProperty(navigator,'clipboard',own);else delete navigator.clipboard;document.execCommand=original};return true}");
+  assert(clipboardOverride,'clipboard denial fixture installed');
+  try{
+    await expandedHitClick('.primary-balance-card[data-account-id="piraeus-payroll"] .account-iban-copy');
+    await waitFor("function(){return Boolean(document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] [role=alert]'))}",'failed clipboard has accessible alert');
+    const copyFailure=await c.call("function(){const root=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"]');return {error:root?.querySelector('[role=alert]')?.textContent||'',falseSuccess:Boolean(root?.querySelector('[role=status]')),leakedField:[...document.querySelectorAll('textarea')].some(node=>node.value.includes('GR1601101250000000012300695'))}}");
+    assert(copyFailure.error.includes('απέτυχε')&&!copyFailure.falseSuccess&&!copyFailure.leakedField,'copy rejection never reports success or leaves account identifier in a temporary field');
+    await screenshot('account-metadata-clipboard-denied-desktop');
+  }finally{
+    await c.call("function(){window.__qaRestoreIbanCopy?.();delete window.__qaRestoreIbanCopy;return true}");
+  }
+
 
   console.log('Account metadata QA: Account Management edit saves IBAN independently');
   await navigate('settings');await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'settings tabs');
