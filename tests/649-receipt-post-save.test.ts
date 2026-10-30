@@ -3,6 +3,25 @@ import {readFileSync} from 'node:fs';
 import {saveFinanceThenCleanupReceipt} from '../src/lib/receiptPostSave.js';
 
 describe('#649 receipt post-save second-store boundary',()=>{
+  it('uses one production cleanup owner and one warning contract in the real App and synthetic QA app',()=>{
+    const app=readFileSync('src/App.tsx','utf8');
+    const qa=readFileSync('src/qa.tsx','utf8');
+    const owner=readFileSync('src/hooks/useReceiptCleanup.ts','utf8');
+    const notice=readFileSync('src/components/ReceiptCleanupNotice.tsx','utf8');
+    for(const consumer of [app,qa]){
+      expect(consumer).toContain('const receiptCleanup=useReceiptCleanup();');
+      expect(consumer).toContain('<ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>');
+      expect(consumer).toContain('onReceiptCleanupFailure={receiptCleanup.onFailure}');
+    }
+    expect(owner).toContain('await deleteReceiptDraft(id)');
+    expect(owner).toContain('setPending(current=>current.filter(id=>!completed.includes(id)))');
+    expect(owner).not.toContain('addEvent(');
+    expect(owner).not.toContain('onCreate(');
+    expect(notice).toContain('Η οικονομική κίνηση έχει αποθηκευτεί');
+    expect(notice).toContain('Μην καταχωρίσεις ξανά');
+    expect(notice).toContain('Επανάληψη καθαρισμού');
+    expect(notice).toContain('disabled={busy}');
+  });
   it('replays failed IndexedDB cleanup and local-only retry in the real browser suite',()=>{
     const qa=readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8');
     expect(qa).toContain('QA_RECEIPT_DELETE_BLOCKED');
