@@ -45,6 +45,11 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain("await navigate('extreme',1100,720)");
     expect(qa).toContain("Math.abs(scroller.scrollTop-max)<=1");
     expect(qa).toContain('planning-scheduled-last-row-menu-1100');
+    expect(qa).toContain('planning-forecast-extreme-compact-desktop');
+    expect(qa).toContain('compactForecast.numbersFit');
+    expect(component).toContain('onToggle={event=>placeScheduledMenu(event.currentTarget)}');
+    expect(component).toContain("popup.style.bottom='36px'");
+    expect(target).toContain('.planning-forecast-summary{grid-template-columns:repeat(3,minmax(0,1fr));padding-inline:12px 10px}');
     expect(qa).toContain('popupVisibility.within&&popupVisibility.hitInside');
     expect(qa).toContain('last-row action menu must remain visible and clickable');
   });
