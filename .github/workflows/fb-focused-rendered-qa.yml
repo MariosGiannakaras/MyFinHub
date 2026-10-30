@@ -24,7 +24,7 @@ jobs:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # The #649 marker selects only the changed receipt/context/Settings surfaces.
       FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') &&
-          'action-center-context receipt-local-ocr settings-tabs' ||
+          'action-center-context receipt-local-ocr settings-tabs savings-remediation' ||
           'quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette' }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
