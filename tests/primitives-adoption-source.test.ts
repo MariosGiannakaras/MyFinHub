@@ -119,7 +119,7 @@ describe('shared primitive adoption',()=>{
     expect(contextualQuickAdd).toContain('value={amount}');
     expect(contextualQuickAdd).not.toContain('readOnly={Boolean(loanPaymentPlan)}');
     expect(contextualQuickAdd).toContain('invalid={amountError}');
-    expect(contextualQuickAdd).toContain('onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}');
+    expect(contextualQuickAdd).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
     expect(contextualQuickAdd).toContain('actualLoanPaymentLabel');
     expect(rendered).toContain('actual installment amount remains editable MoneyInput');
     expect(contextualQuickAdd).toContain("from './AppTextInput'");
