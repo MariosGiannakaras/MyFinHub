@@ -21,5 +21,8 @@ describe('support diagnostics privacy',()=>{
     expect(panel).toContain('accounts:allAccounts(data).length');
     expect(panel).toContain('transactions:effectiveLegacyTransactions(data).length');
     expect(panel).toContain('JSON.stringify(snapshot,null,2)');
+    expect(panel).toContain('<OperationFeedback className="logic-note compact" tone={copyError?\'error\':\'success\'}>');
+    expect(panel).toContain('setCopyError(true)');
+    expect(panel).toContain('setCopyError(false)');
   });
 });
