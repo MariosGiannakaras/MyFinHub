@@ -120,10 +120,34 @@ export function ReceiptInbox({
   const [reviewTotalEdited,setReviewTotalEdited]=useState(false);
   const [reviewNewPurchaseConfirmed,setReviewNewPurchaseConfirmed]=useState(false);
   const [reviewSaving,setReviewSaving]=useState(false);
+  const [discardTarget,setDiscardTarget]=useState<{kind:'close'}|{kind:'select';id:string}|{kind:'manual';id:string}|null>(null);
+  const requestClose=()=>{
+    if(reviewSaving||deleting||loading)return;
+    if(reviewDirty){setDiscardTarget({kind:'close'});return}
+    onClose();
+  };
+  const chooseDraft=(id:string)=>{
+    if(reviewSaving||id===selectedId)return;
+    if(reviewDirty){setDiscardTarget({kind:'select',id});return}
+    setSelectedId(id);setError('');setMessage('');
+  };
+  const requestManualApply=(id:string)=>{
+    if(reviewSaving)return;
+    if(reviewDirty){setDiscardTarget({kind:'manual',id});return}
+    onApply(id,{});
+  };
+  const confirmDiscard=()=>{
+    const target=discardTarget;
+    setDiscardTarget(null);
+    if(!target)return;
+    if(target.kind==='close'){onClose();return}
+    if(target.kind==='select'){setSelectedId(target.id);setError('');setMessage('');return}
+    onApply(target.id,{});
+  };
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const scanToken = useRef(0);
-  const modalRef = useModalFocus<HTMLElement>(open&&!deleteRequest, 'button', onClose);
+  const modalRef = useModalFocus<HTMLElement>(open&&!deleteRequest&&!discardTarget, 'button', requestClose);
 
   const selected = useMemo(() => drafts.find((draft) => draft.id === selectedId) ?? null, [drafts, selectedId]);
   // Advisory only: calculate candidates from the owner's current review edits,
@@ -378,9 +402,9 @@ export function ReceiptInbox({
   const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 
   return <>
-  <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
+  <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={requestClose}>
     <section ref={modalRef} className="receipt-inbox surface-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></IconButton></header>
+      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={requestClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
         <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
@@ -399,7 +423,7 @@ export function ReceiptInbox({
           <div className="receipt-list-head"><span>{drafts.length} σε αναμονή</span>{deleteSelection.size ? <Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}><Trash2 size={14}/> Διαγραφή ({deleteSelection.size})</Button> : null}</div>
           {drafts.length ? drafts.map((draft) => <div key={draft.id} className={`receipt-draft-row ${selectedId === draft.id ? 'active' : ''}`}>
             <label className="receipt-select-check" title="Επιλογή για διαγραφή"><input type="checkbox" checked={deleteSelection.has(draft.id)} onChange={() => toggleDelete(draft.id)}/><span className="sr-only">Επιλογή απόδειξης</span></label>
-            <button type="button" className="receipt-draft-open" onClick={() => { setSelectedId(draft.id); setError(''); setMessage(''); }}>
+            <button type="button" className="receipt-draft-open" onClick={() => chooseDraft(draft.id)}>
               <span className="receipt-thumb"><ReceiptThumb draft={draft}/></span>
               <span><b>{statusLabel(draft)}</b><small>{capturedLabel(draft.capturedAt)}</small><small>{Math.max(1, Math.round(draft.bytes / 1024))} KB</small></span>
             </button>
@@ -444,8 +468,8 @@ export function ReceiptInbox({
             </div>:null}
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
-              {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
-              <Button type="button" variant="secondary" disabled={scanning||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
+              {!scanning ? <Button type="button" variant="secondary" disabled={reviewDirty||reviewSaving} onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
+              <Button type="button" variant="secondary" disabled={scanning||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={() => requestManualApply(selected.id)}>Χειροκίνητη καταχώριση</Button>
               {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid||reviewLinesInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
               {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
               {proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
@@ -455,6 +479,7 @@ export function ReceiptInbox({
       </div>
     </section>
   </div>
+  <ConfirmDialog open={Boolean(discardTarget)} title="Απόρριψη μη αποθηκευμένων διορθώσεων απόδειξης;" description="Οι αλλαγές στην πρόταση της απόδειξης δεν έχουν αποθηκευτεί τοπικά. Αν συνεχίσεις, θα χαθούν χωρίς να δημιουργηθεί οικονομική κίνηση." confirmLabel="Απόρριψη" tone="destructive" onConfirm={confirmDiscard} onCancel={()=>setDiscardTarget(null)}/>
   <ConfirmDialog open={Boolean(deleteRequest)} title={deleteRequest?.mode==='many'?`Διαγραφή ${deleteCount} αποδείξεων;`:'Διαγραφή τοπικής απόδειξης;'} description={deleteRequest?.mode==='many'?'Οι επιλεγμένες τοπικές αποδείξεις θα διαγραφούν από αυτή τη συσκευή. Δεν θα δημιουργηθεί καμία συναλλαγή.':'Η τοπική απόδειξη θα διαγραφεί από αυτή τη συσκευή. Δεν θα δημιουργηθεί συναλλαγή.'} confirmLabel="Διαγραφή" tone="destructive" busy={deleting} onConfirm={()=>void confirmRemove()} onCancel={()=>{if(!deleting)setDeleteRequest(null)}}/>
   </>;
 }
