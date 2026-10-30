@@ -50,7 +50,8 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain('onToggle={event=>placeScheduledMenu(event.currentTarget)}');
     expect(component).toContain("popup.style.bottom='36px'");
     expect(target).toContain('.planning-forecast-summary{grid-template-columns:repeat(3,minmax(0,1fr));padding-inline:12px 10px}');
-    expect(qa).toContain('popupVisibility.within&&popupVisibility.hitInside');
+    expect(qa).toContain('scroller.scrollIntoView({block:');
+    expect(qa).toContain('popupVisibility.within&&popupVisibility.withinViewport&&popupVisibility.hitInside');
     expect(qa).toContain('last-row action menu must remain visible and clickable');
   });
 
