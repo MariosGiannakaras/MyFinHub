@@ -5,6 +5,7 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 const settings=read('src/pages/SettingsPage.tsx');
 const css=read('src/pages/SettingsData.css');
 const qa=read('scripts/settings-tabs-qa.mjs');
+const confirmCss=read('src/styles/confirm-dialog.css');
 
 describe('Settings Data source contract',()=>{
   it('preserves the canonical backup and import safety semantics',()=>{
@@ -19,6 +20,11 @@ describe('Settings Data source contract',()=>{
     expect(qa).toContain('settings-backup-db-ack-download-unavailable-desktop');
     expect(qa).toContain('confirmed database backup is never reported as a total failure');
     expect(qa).toContain('settings-json-import-oversize-error-desktop');
+    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog>header p{font-size:12px;line-height:1.45');
+    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog>header small{color:var(--muted);font-size:11px');
+    expect(qa).toContain('settings-json-import-confirm-mobile');
+    expect(qa).toContain('destructive confirmation prose stays readable');
+
     expect(qa).toContain('new valid import request clears prior oversized-file failure');
     expect(settings).toContain('Το backup στη βάση δημιουργήθηκε, αλλά απέτυχε η ανάκτηση ή η λήψη του JSON');
     expect(settings).toContain(",'warning');");

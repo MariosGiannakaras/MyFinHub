@@ -129,9 +129,22 @@ try{
         const importRequested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([JSON.stringify({version:'qa-dialog-proof'})],'qa-dialog-proof.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");assert(importRequested,'valid JSON import fixture enters through real file input');
         await waitFor("function(){return !document.querySelector('.settings-data-tab .operation-feedback')}",'new valid import request clears prior oversized-file failure before confirmation');
         await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων από JSON;'))}",'JSON import confirmation');
+        const typography=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');return {description:p?parseFloat(getComputedStyle(p).fontSize):0,eyebrow:small?parseFloat(getComputedStyle(small).fontSize):0}}");
+        assert(typography.description>=12&&typography.eyebrow>=11,'destructive confirmation prose stays readable on desktop: '+JSON.stringify(typography));
         await screenshot('settings-json-import-confirm-desktop');
         const importCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(importCancelled,'JSON import confirmation exposes safe cancel');
         await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&!document.querySelector('.settings-data-tab [role=status]')}",'JSON import cancel leaves data unchanged');
+      }
+      if(mode.name==='mobile'&&tab.id==='data'){
+        const requested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify({version:'qa-mobile-confirm'})],'qa-mobile-confirm.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(requested,'mobile import creates a pending confirmation without a finance write');
+        await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'mobile destructive import confirmation');
+        const geometry=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');if(!modal||!p||!small)return null;const r=modal.getBoundingClientRect(),desc=p.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,descriptionSize:parseFloat(getComputedStyle(p).fontSize),eyebrowSize:parseFloat(getComputedStyle(small).fontSize),descriptionLeft:desc.left,descriptionRight:desc.right}}");
+        assert(geometry&&geometry.descriptionSize>=12&&geometry.eyebrowSize>=11&&geometry.left>=-1&&geometry.right<=geometry.width+1&&geometry.top>=-1&&geometry.bottom<=geometry.height+1&&geometry.descriptionLeft>=geometry.left-1&&geometry.descriptionRight<=geometry.right+1,'destructive confirmation prose stays readable and contained on mobile: '+JSON.stringify(geometry));
+        await screenshot('settings-json-import-confirm-mobile');
+        const cancelled=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const cancel=[...dialog?.querySelectorAll('button')||[]].find(b=>(b.textContent||'').trim()==='Ακύρωση');cancel?.click();return Boolean(cancel)}");
+        assert(cancelled,'mobile destructive import has explicit cancel');
+        await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'mobile import cancellation without finance mutation');
       }
       if(mode.name==='mobile')await visibleTouchTargets(`${mode.name} ${tab.label}`);
       await screenshot(`settings-${tab.id}-${mode.name}`);
