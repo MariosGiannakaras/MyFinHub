@@ -78,6 +78,11 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
     expect(workflow).toContain("contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->')");
     expect(workflow).toContain("'reports-visual'");
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-mobile.png');
+    expect(rendered).toContain('375px mobile nested credit summary stays full-width');
+    expect(rendered).toContain("darkPrivacy.theme==='dark'");
+    expect(rendered).toContain("darkPrivacy.surfaceInset==='#0f1828'");
+
   });
 
   it('does not introduce unsupported export or download decoration',()=>{
