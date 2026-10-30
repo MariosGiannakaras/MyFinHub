@@ -43,8 +43,10 @@ describe('Attention post-v1.4 remediation contracts',()=>{
     expect(refinement).toContain('.attention-approved-date>small{font-size:var(--ux-dense-label-size)}');
     expect(refinement).toContain('.attention-approved-actions>.save-button{min-height:34px;padding-inline:9px;font-size:var(--ux-dense-label-size)}');
     expect(refinement).not.toMatch(/font-size:(?:7(?:\.\d+)?|8(?:\.\d+)?)px/);
-    expect(target).toContain('.attention-approved-actions>.save-button{min-height:34px;min-width:0;max-width:100%;flex:1 1 auto;');
-    expect(target).toContain('white-space:normal;overflow-wrap:anywhere;line-height:1.25');
+    expect(target).toContain('.attention-approved-actions{display:grid;grid-template-columns:minmax(0,1fr) 38px;');
+    expect(target).toContain('.attention-approved-actions>.save-button{grid-column:1;grid-row:1/span 2;');
+    expect(target).toContain('white-space:normal;overflow-wrap:break-word;word-break:normal;line-height:1.25');
+    expect(target).toContain('.attention-approved-actions>.app-tooltip{grid-column:2;');
     expect(target).toContain('.attention-approved-actions>.save-button svg{width:13px;height:13px;flex-shrink:0}');
     expect(qa).toContain('assertActionLabelContained');
     expect(qa).toContain('long action labels must stay inside button boundaries and readable line count');
