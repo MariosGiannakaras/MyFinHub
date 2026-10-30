@@ -206,6 +206,7 @@ export function ReceiptInbox({
 
   const capture = async (file?: File) => {
     if (!file) return;
+    if(reviewDirty||reviewSaving){setError('Αποθήκευσε τις διορθώσεις της απόδειξης πριν προσθέσεις νέα εικόνα.');return}
     setLoading(true);
     setError('');
     setMessage('');
@@ -407,11 +408,12 @@ export function ReceiptInbox({
       <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={requestClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
-        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
-        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" onChange={(event) => void capture(event.target.files?.[0])}/>
-        <Button type="button" variant="primary" disabled={loading || scanning} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
-        <Button type="button" variant="secondary" disabled={loading || scanning} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
+        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving} capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
+        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving} onChange={(event) => void capture(event.target.files?.[0])}/>
+        <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
+        <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
         <small>JPG/PNG · έως 12 MB · έως 30 πρόχειρες αποδείξεις / 60 MB τοπικά</small>
+        {reviewDirty?<small role="status">Αποθήκευσε ή απόρριψε τις διορθώσεις πριν προσθέσεις νέα απόδειξη.</small>:null}
       </div>
 
       {loading ? <div className="receipt-live-state" role="status"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση φωτογραφίας στη συσκευή…</div> : null}

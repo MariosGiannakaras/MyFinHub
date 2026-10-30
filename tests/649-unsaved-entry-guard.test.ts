@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
+const contextualQa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   it('guards contextual cancel, header, escape and backdrop without altering confirmed saves',()=>{
@@ -27,5 +29,16 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(inbox).toContain('disabled={reviewDirty||reviewSaving} onClick={() => void scan(selected)}');
     expect(inbox).toContain("if(target.kind==='select'){setSelectedId(target.id);");
     expect(inbox).toContain('await saveReceiptProposal(selected.id,reviewedSplit)');
+    expect(inbox).toContain('if(reviewDirty||reviewSaving){setError(');
+    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving}');
+    expect(inbox).toContain('disabled={reviewDirty||reviewSaving} capture="environment"');
+  });
+  it('exercises discard cancellation in both real-browser QA journeys',()=>{
+    expect(contextualQa).toContain('unsaved contextual edits confirmation');
+    expect(contextualQa).toContain('cancelling discard preserves actual edited savings account');
+    expect(contextualQa).toContain('confirmed contextual discard');
+    expect(receiptQa).toContain('receipt unsaved review discard prompt');
+    expect(receiptQa).toContain('receipt editor retains unsaved corrections after cancelled discard');
+    expect(receiptQa).toContain('dirty review cannot silently replace selected receipt via new capture');
   });
 });

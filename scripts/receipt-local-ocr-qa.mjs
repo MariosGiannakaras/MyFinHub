@@ -247,6 +247,16 @@ try {
   await waitFor("function(){const save=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));return Boolean(save?.disabled&&document.querySelector('#receipt-review-items-error'))}",'sub-cent receipt item save guard');
   assert((await receiptCount())===1,'invalid OCR item edit never deletes its local receipt');
   await editReviewField('Διόρθωση ποσού γραμμής 2','4.25');
+  const captureLocked=await c.call("function(){const buttons=[...document.querySelectorAll('.receipt-capture-actions button')];return buttons.length===2&&buttons.every(button=>button.disabled)}");
+  assert(captureLocked,'dirty review cannot silently replace selected receipt via new capture');
+  const closeRequested=await c.call("function(){const button=document.querySelector('.receipt-inbox-header button');button?.click();return Boolean(button)}");
+  assert(closeRequested,'receipt review close exists');
+  await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('μη αποθηκευμένων διορθώσεων'))}",'receipt unsaved review discard prompt');
+  const canceled=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Ακύρωση'));button?.click();return Boolean(button)}");
+  assert(canceled,'receipt discard prompt supports cancellation');
+  await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'receipt discard cancelled');
+  assert(await c.call("function(){return Boolean(document.querySelector('.receipt-inbox'))&&[...document.querySelectorAll('input[aria-label]')].some(input=>input.getAttribute('aria-label')==='Διόρθωση ποσού γραμμής 2'&&input.value==='4.25')}"),'receipt editor retains unsaved corrections after cancelled discard');
+  assert((await receiptCount())===1,'receipt discard cancellation never posts or deletes a local draft');
   await waitFor("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}",'precisely balanced 20.25+4.25 EUR receipt items');
   const itemInputs=await c.call("function(){return {items:document.querySelectorAll('.receipt-item-row').length,categorySelectors:document.querySelectorAll('.receipt-item-category [aria-label^=\"Κατηγορία γραμμής\"]').length,balanced:(document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}}");
   assert(itemInputs.items===2&&itemInputs.categorySelectors===2&&itemInputs.balanced,`OCR item review must expose live taxonomy and exactly reconciled EUR cents: ${JSON.stringify(itemInputs)}`);

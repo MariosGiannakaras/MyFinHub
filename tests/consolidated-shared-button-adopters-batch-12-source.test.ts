@@ -15,8 +15,8 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.match(/<IconButton/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="primary"/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
-    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={onClose}>');
-    expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button>');
+    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={requestClose}>');
+    expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
     expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
     expect(contextual).not.toContain('className="icon-button"');
     expect(contextual).not.toContain('className="secondary"');
@@ -26,7 +26,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('preserves ContextualQuickAdd focus and finance completion semantics',()=>{
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('onRequestClose={requestClose}');
+    expect(contextual).toContain('focusActive={!discardOpen}');
+    expect(contextual).toContain('onConfirm={()=>{setDiscardOpen(false);onClose()}}');
     expect(contextual).toContain('busy={saving}');
     expect(contextual).toContain('inert={saving}');
     expect(contextual).toContain('if(saving)return;');
@@ -73,9 +75,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
     expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(10);
     expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(3);
-    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
-    expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
+    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={requestClose}>');
+    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving}');
+    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving}');
     expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)}');
     expect(receipts).toContain('onClick={addReviewLine}>Προσθήκη γραμμής</Button>');
     expect(receipts).toContain('onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής');
