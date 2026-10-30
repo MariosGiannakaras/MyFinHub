@@ -66,7 +66,7 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('loanInstallmentPaymentPlan');
     expect(contextual).toContain('setLoanPaymentInstallmentCount');
     expect(contextual).toContain('Πόσες δόσεις');
-    expect(contextual).toContain('onValueChange={value=>{setAmount(value);setDirty(true)}}');
+    expect(contextual).toContain('onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}');
     expect(contextual).toContain('actualLoanPaymentLabel');
     expect(contextual).toContain('Καλύπτονται οι δόσεις');
   });
