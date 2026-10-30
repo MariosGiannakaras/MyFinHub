@@ -15,7 +15,17 @@ permissions:
 jobs:
   changed-surfaces:
     name: focused-browser-evidence
-    if: github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->')
+    if: >-
+      github.event.pull_request.draft == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->'))
+    env:
+      # One opt-in browser runner, one suite batch, never an extra full Ready gate.
+      # The #649 marker selects only the changed receipt/context/Settings surfaces.
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') &&
+          'action-center-context receipt-local-ocr settings-tabs' ||
+          'quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette' }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -28,7 +38,7 @@ jobs:
       - name: Preflight all focused browser script syntax before launching Chromium
         shell: bash
         run: |
-          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+          for suite in $FOCUSED_SUITES; do
             node --check "scripts/$suite-qa.mjs"
           done
       - name: Launch synthetic web QA app
@@ -53,7 +63,7 @@ jobs:
           export MYFINHUB_QA_PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
           if [ -z "$MYFINHUB_QA_PRIMARY_BROWSER" ]; then echo "Chromium required"; exit 1; fi
           failures=0
-          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+          for suite in $FOCUSED_SUITES; do
             echo "Running changed surface: $suite"
             if node "scripts/$suite-qa.mjs" >"$RUNNER_TEMP/fb-focused/logs/$suite.log" 2>&1; then
               echo "PASS: $suite"

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const ci=read('.github/workflows/ci.yml');
 const codeql=read('.github/workflows/codeql.yml');
+const focused=read('.github/workflows/fb-focused-rendered-qa.yml');
 const cross=read('.github/workflows/cross-engine-smoke.yml');
 const performance=read('.github/workflows/performance-smoke.yml');
 const windows=read('.github/workflows/desktop-windows.yml');
@@ -62,6 +63,20 @@ describe('CI workflow optimization contracts',()=>{
     expect(performance).toContain('lighthouse@13.4.1');
     expect(performance).toContain('node scripts/performance-audit.mjs');
     expect(performance).toContain('node scripts/loading-shift-audit.mjs');
+  });
+
+  it('runs one opt-in draft focused browser batch for #649 without triggering the full review matrix',()=>{
+    expect(focused).toContain("types: [synchronize, edited]");
+    expect(focused).toContain("<!-- run-fb-focused-qa -->");
+    expect(focused).toContain("<!-- run-649-focused-qa -->");
+    expect(focused).toContain('FOCUSED_SUITES:');
+    expect(focused).toContain('action-center-context receipt-local-ocr settings-tabs');
+    expect(focused).toContain('quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette');
+    expect(focused.match(/for suite in \$FOCUSED_SUITES; do/g)).toHaveLength(2);
+    expect(focused).toContain('cancel-in-progress: true');
+    expect(focused).toContain('if: always()');
+    expect(focused).toContain('Failed focused suites: $failures');
+    expect(ci).toContain("github.event.pull_request.draft == false");
   });
 
   it('preserves Windows release tag safety and every original lifecycle test in reusable jobs',()=>{

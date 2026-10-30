@@ -454,6 +454,27 @@
       "guards": [
         "tests/account-metadata.test.ts"
       ]
+    },
+    {
+      "id": "FP-024",
+      "title": "Unsaved form and receipt review edits must not disappear on modal close or draft switch",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Contextual Quick Entry and the local OCR review had direct close, backdrop and draft-switch routes that discarded edited fields without the explicit confirmation already present in generic QuickAdd.",
+      "prevention": "Route all close/cancel/Escape/backdrop and receipt-selection/manual handoff paths through shared destructive-discard confirmation; keep focus with the active dialog, preserve local unsaved fields when cancelled and do not restart finance writes or overwrite a dirty receipt with capture.",
+      "paths": [
+        "src/components/ContextualQuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "scripts/action-center-context-qa.mjs",
+        "scripts/receipt-local-ocr-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-unsaved-entry-guard.test.ts"
+      ]
     }
   ]
 }
