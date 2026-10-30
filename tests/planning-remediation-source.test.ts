@@ -40,6 +40,15 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain("scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})");
   });
 
+  it('reproduces compact-desktop last-row scroll and action-menu clipping using browser geometry',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain("await navigate('extreme',1100,720)");
+    expect(qa).toContain("Math.abs(scroller.scrollTop-max)<=1");
+    expect(qa).toContain('planning-scheduled-last-row-menu-1100');
+    expect(qa).toContain('popupVisibility.within&&popupVisibility.hitInside');
+    expect(qa).toContain('last-row action menu must remain visible and clickable');
+  });
+
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{
     expect(target).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
     expect(target).toContain('width:min(100%,1320px)');
