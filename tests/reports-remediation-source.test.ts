@@ -68,6 +68,15 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(css).toContain('font-size:var(--ux-dense-label-size)');
   });
 
+  it('guards existing single-card credit summary width using actual Reports geometry',()=>{
+    const shared=readFileSync(new URL('../src/styles/expanded-report-layouts.css',import.meta.url),'utf8');
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(shared).toContain('.report-upcoming-card .report-operations-grid.report-credit-portfolio{grid-template-columns:minmax(0,1fr)}');
+    expect(rendered).toContain('Reports nested single-credit summary must span its own upcoming panel');
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-desktop.png');
+    expect(rendered).toContain('creditPortfolio.cardWidth>=creditPortfolio.outerWidth-2');
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });
