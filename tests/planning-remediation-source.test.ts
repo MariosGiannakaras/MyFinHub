@@ -63,6 +63,8 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).not.toContain('<YAxis width={82} tickFormatter={value=>money.format(Number(value))}');
     expect(qa).toContain('1100px extreme negative portfolio axis must retain visible minus signs without clipping');
     expect(qa).toContain('tick.left>=negativeAxis.rootLeft+8');
+    expect(qa).toContain("root.querySelectorAll('svg text')");
+    expect(qa).toContain("includes('€')");
   });
 
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{
