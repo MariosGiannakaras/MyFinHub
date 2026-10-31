@@ -85,6 +85,19 @@ describe('Reports post-v1.4 remediation contracts',()=>{
 
   });
 
+  it('keeps report section links inside the hash router and expands mobile hidden panels before focusing',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain('href="#/reports" data-report-section={id}');
+    expect(page).toContain("if(sectionId==='report-comparisons')setMobileSupportExpanded(true)");
+    expect(page).toContain("target.scrollIntoView({block:'start',behavior:'auto'})");
+    expect(page).toContain("target.focus({preventScroll:true})");
+    expect(page).not.toContain('href="#report-comparisons"');
+    expect(rendered).toContain('reports-mobile-section-nav-comparisons.png');
+    expect(rendered).toContain("mobileSectionNav.beforeHash===mobileSectionNav.afterHash");
+    expect(rendered).toContain("mobileSectionNav.expanded==='true'");
+    expect(rendered).toContain('mobileSectionNav.focused');
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });

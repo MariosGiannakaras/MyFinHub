@@ -165,7 +165,26 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  return <div className="page-stack reports-dashboard reports-composite reports-dense">
   <PageHeader id="report-overview" className="report-heading" eyebrow="ΑΝΑΦΟΡΕΣ" title="Αναφορές" description={<p>Οικονομική εικόνα για <span className="report-selected-period" aria-label={`Επιλεγμένη περίοδος ${monthLabel}`}>{monthLabel}</span>, με τάσεις και προϋπολογισμούς από τα canonical δεδομένα της περιόδου.</p>}/>
 
-  <nav className="report-section-nav" aria-label="Ενότητες αναφορών"><a href="#report-overview">Επισκόπηση</a><a href="#report-budget-overview">Προϋπολογισμοί</a><a href="#report-flow">Ροή</a><a href="#report-obligations">Υποχρεώσεις</a><a href="#report-expenses">Έξοδα</a><a href="#report-comparisons">Συγκρίσεις</a><a href="#report-accounts">Λογαριασμοί</a></nav>
+  <nav className="report-section-nav" aria-label="Ενότητες αναφορών" onClick={event=>{
+    const link=(event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-report-section]');
+    if(!link)return;
+    event.preventDefault();
+    const sectionId=link.dataset.reportSection;
+    if(!sectionId)return;
+    if(sectionId==='report-comparisons')setMobileSupportExpanded(true);
+    requestAnimationFrame(()=>{
+      const target=document.getElementById(sectionId);
+      if(!target)return;
+      target.scrollIntoView({block:'start',behavior:'auto'});
+      target.setAttribute('tabindex','-1');
+      target.focus({preventScroll:true});
+    });
+  }}>{([
+    ['report-overview','Επισκόπηση'],['report-budget-overview','Προϋπολογισμοί'],
+    ['report-flow','Ροή'],['report-obligations','Υποχρεώσεις'],
+    ['report-expenses','Έξοδα'],['report-comparisons','Συγκρίσεις'],
+    ['report-accounts','Λογαριασμοί'],
+  ] as const).map(([id,label])=><a key={id} href="#/reports" data-report-section={id}>{label}</a>)}</nav>
 
   <section className="report-executive report-kpi-strip report-financial-picture" aria-label="Κύρια οικονομική εικόνα περιόδου">
    <Surface as="article" variant="flat" className={`report-headline-card report-executive-main ${netFlow>=0?'positive':'negative'}`}><span>Καθαρή ροή</span><b><AnimatedAmount value={netFlow}/></b><small>{changeLabel(change(netFlow,previousNetFlow))} από τον προηγούμενο μήνα · Έσοδα μείον έξοδα</small></Surface>
