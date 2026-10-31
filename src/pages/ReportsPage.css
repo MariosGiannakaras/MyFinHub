@@ -5,6 +5,7 @@
 .reports-dense .report-heading p{max-width:720px;margin:0}
 .report-section-nav{position:sticky;top:84px;z-index:8;display:flex;gap:4px;align-items:center;max-width:100%;padding:4px;border:1px solid rgba(84,105,139,.11);border-radius:12px;background:color-mix(in srgb,var(--surface,#fff) 94%,transparent);box-shadow:0 6px 18px rgba(32,52,88,.05);overflow-x:auto;scrollbar-width:thin}
 .report-section-nav a{flex:0 0 auto;min-height:31px;display:inline-flex;align-items:center;justify-content:center;padding:0 11px;border-radius:9px;color:var(--ink-2,#334155);font-weight:800;text-decoration:none}.report-section-nav a:hover,.report-section-nav a:focus-visible{background:rgba(47,111,237,.08);color:#1e5fd0}
+.report-section-nav a:focus-visible{outline:2px solid var(--focus-outline)}
 
 .report-kpi-strip{display:grid!important;gap:14px!important;overflow:visible!important}
 .report-kpi-strip:before{display:block!important}

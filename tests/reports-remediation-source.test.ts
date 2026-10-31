@@ -116,6 +116,7 @@ describe('Reports post-v1.4 remediation contracts',()=>{
   it('keeps a visible native keyboard focus and activates same-page mobile navigation via Enter',()=>{
     const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
     expect(css).not.toContain('.report-section-nav a:focus-visible{background:rgba(47,111,237,.08);color:#1e5fd0;outline:none');
+    expect(css).toContain('.report-section-nav a:focus-visible{outline:2px solid var(--focus-outline)}');
     expect(rendered).toContain("keyboardBefore.focusVisible&&keyboardBefore.outlineStyle!=='none'");
     expect(rendered).toContain("Input.dispatchKeyEvent',{type:'keyDown',key:'Enter'");
     expect(rendered).toContain('reports-mobile-section-nav-keyboard-focus-320.png');
