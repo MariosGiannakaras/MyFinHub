@@ -98,6 +98,15 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain('mobileSectionNav.focused');
   });
 
+  it('requires real hit-testing of sticky Reports section navigation after deep mobile scroll',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(rendered).toContain("[[375,812,'375'],[320,720,'320'],[375,4259,'375-long']]");
+    expect(rendered).toContain('document.elementFromPoint(x,y)');
+    expect(rendered).toContain('nav.contains(hit)');
+    expect(rendered).toContain("sticky.withinViewport&&sticky.navHit&&!sticky.documentOverflow");
+    expect(rendered).toContain('reports-sticky-section-nav-');
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });
