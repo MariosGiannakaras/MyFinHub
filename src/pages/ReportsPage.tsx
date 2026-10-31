@@ -176,6 +176,9 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
       const target=document.getElementById(sectionId);
       if(!target)return;
       target.scrollIntoView({block:'start',behavior:'auto'});
+      const navBottom=document.querySelector('.report-section-nav')?.getBoundingClientRect().bottom??0;
+      const delta=navBottom+8-target.getBoundingClientRect().top;
+      if(delta>0)window.scrollBy({top:-delta,behavior:'instant'});
       target.setAttribute('tabindex','-1');
       target.focus({preventScroll:true});
     });

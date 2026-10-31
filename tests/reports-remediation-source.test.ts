@@ -96,6 +96,12 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain("mobileSectionNav.beforeHash===mobileSectionNav.afterHash");
     expect(rendered).toContain("mobileSectionNav.expanded==='true'");
     expect(rendered).toContain('mobileSectionNav.focused');
+    expect(page).toContain("const navBottom=document.querySelector('.report-section-nav')?.getBoundingClientRect().bottom??0");
+    expect(page).toContain("window.scrollBy({top:-delta,behavior:'instant'})");
+    expect(css).toContain('.report-section-nav{position:sticky;top:84px;');
+    expect(css).toContain('.report-section-nav{top:80px}');
+    expect(css).toContain('.report-section-nav{top:62px}');
+    expect(rendered).toContain('mobileSectionNav.top>=mobileSectionNav.navBottom+7');
   });
 
   it('requires real hit-testing of sticky Reports section navigation after deep mobile scroll',()=>{
