@@ -113,6 +113,16 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain('reports-sticky-section-nav-');
   });
 
+  it('keeps a visible native keyboard focus and activates same-page mobile navigation via Enter',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(css).not.toContain('.report-section-nav a:focus-visible{background:rgba(47,111,237,.08);color:#1e5fd0;outline:none');
+    expect(rendered).toContain("keyboardBefore.focusVisible&&keyboardBefore.outlineStyle!=='none'");
+    expect(rendered).toContain("Input.dispatchKeyEvent',{type:'keyDown',key:'Enter'");
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-focus-320.png');
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-activation-320.png');
+    expect(rendered).toContain("keyboardAfter.top>=keyboardAfter.navBottom+7");
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });
