@@ -60,7 +60,7 @@ try{
   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   const keyboardBefore=await c.call("function(){const link=document.querySelector('.report-section-nav [data-report-section=report-comparisons]');if(!link)return null;link.focus();const style=getComputedStyle(link);return {focused:document.activeElement===link,focusVisible:link.matches(':focus-visible'),outlineStyle:style.outlineStyle,outlineWidth:style.outlineWidth,hash:location.hash}}");
-  let shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/reports-mobile-section-nav-keyboard-focus-320.png`,Buffer.from(shot.data,'base64'));
+  shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/reports-mobile-section-nav-keyboard-focus-320.png`,Buffer.from(shot.data,'base64'));
   assert(keyboardBefore&&keyboardBefore.focused&&keyboardBefore.focusVisible&&keyboardBefore.outlineStyle!=='none'&&parseFloat(keyboardBefore.outlineWidth)>0,'320px Reports keyboard-focused section link needs visible native focus outline: '+JSON.stringify(keyboardBefore));
   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
