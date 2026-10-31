@@ -68,6 +68,66 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(css).toContain('font-size:var(--ux-dense-label-size)');
   });
 
+  it('guards existing single-card credit summary width using actual Reports geometry',()=>{
+    const shared=readFileSync(new URL('../src/styles/expanded-report-layouts.css',import.meta.url),'utf8');
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(shared).toContain('.report-upcoming-card .report-operations-grid.report-credit-portfolio{grid-template-columns:minmax(0,1fr)}');
+    expect(rendered).toContain('Reports nested single-credit summary must span its own upcoming panel');
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-desktop.png');
+    expect(rendered).toContain('creditPortfolio.cardWidth>=creditPortfolio.outerWidth-2');
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(workflow).toContain("contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->')");
+    expect(workflow).toContain("'reports-visual'");
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-mobile.png');
+    expect(rendered).toContain('375px mobile nested credit summary stays full-width');
+    expect(rendered).toContain("darkPrivacy.theme==='dark'");
+    expect(rendered).toContain("darkPrivacy.surfaceInset==='#0f1828'");
+
+  });
+
+  it('keeps report section links inside the hash router and expands mobile hidden panels before focusing',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain('href="#/reports" data-report-section={id}');
+    expect(page).toContain("if(sectionId==='report-comparisons')setMobileSupportExpanded(true)");
+    expect(page).toContain("target.scrollIntoView({block:'start',behavior:'auto'})");
+    expect(page).toContain("target.focus({preventScroll:true})");
+    expect(page).not.toContain('href="#report-comparisons"');
+    expect(rendered).toContain('reports-mobile-section-nav-comparisons.png');
+    expect(rendered).toContain("mobileSectionNav.beforeHash===mobileSectionNav.afterHash");
+    expect(rendered).toContain("mobileSectionNav.expanded==='true'");
+    expect(rendered).toContain('mobileSectionNav.focused');
+    expect(page).toContain("const navBottom=document.querySelector('.report-section-nav')?.getBoundingClientRect().bottom??0");
+    expect(page).toContain("window.scrollBy({top:-delta,behavior:'instant'})");
+    expect(css).toContain('.report-section-nav{position:sticky;top:84px;');
+    expect(css).toContain('.report-section-nav{top:80px}');
+    expect(css).toContain('.report-section-nav{top:62px}');
+    expect(rendered).toContain('mobileSectionNav.top>=mobileSectionNav.navBottom+7');
+  });
+
+  it('requires real hit-testing of sticky Reports section navigation after deep mobile scroll',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(rendered).toContain("[[375,812,'375'],[320,720,'320'],[375,4259,'375-long']]");
+    expect(rendered).toContain('document.elementFromPoint(x,y)');
+    expect(rendered).toContain('nav.contains(hit)');
+    expect(rendered).toContain("sticky.withinViewport&&sticky.navHit&&!sticky.documentOverflow");
+    expect(rendered).toContain('reports-sticky-section-nav-');
+  });
+
+  it('keeps a visible native keyboard focus and activates same-page mobile navigation via Enter',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(css).not.toContain('.report-section-nav a:focus-visible{background:rgba(47,111,237,.08);color:#1e5fd0;outline:none');
+    expect(css).toContain('.report-section-nav a:focus-visible{outline:2px solid var(--focus-outline,#2f6fed)}');
+    const reportsBase=readFileSync(new URL('../src/styles/reports-dashboard.css',import.meta.url),'utf8');
+    expect(reportsBase).not.toContain('var(--green,#187852)');
+    expect(reportsBase).not.toContain('var(--red,#b32942)');
+    expect(css).not.toContain('var(--ink,#0f1f45)');
+    expect(rendered).toContain("keyboardBefore.focusVisible&&keyboardBefore.outlineStyle!=='none'");
+    expect(rendered).toContain("Input.dispatchKeyEvent',{type:'keyDown',key:'Enter'");
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-focus-320.png');
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-activation-320.png');
+    expect(rendered).toContain("keyboardAfter.top>=keyboardAfter.navBottom+7");
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });

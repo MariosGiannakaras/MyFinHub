@@ -26,6 +26,22 @@ try{
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickTab=async tab=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()===label);if(!node||node.disabled)return false;node.click();node.scrollIntoView({block:'nearest',inline:'center'});return true}",[tab.label]);assert(ok,`tab ${tab.label} is enabled and clickable`);await waitFor("function(id,selector){const selected=[...document.querySelectorAll('.settings-tablist [role=tab]')].filter(node=>node.getAttribute('aria-selected')==='true');const panel=document.querySelector('.settings-tab-panel');const target=document.querySelector(selector);return selected.length===1&&selected[0].getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`&&Boolean(target&&target.getClientRects().length)}",`${tab.label} selected panel`,[tab.id,tab.selector]);await c.call("function(){document.querySelector('.settings-tab-panel')?.scrollIntoView({block:'start'});window.scrollBy(0,-132);return true}");await sleep(180)};
+  const verifyKeyboardTablist=async()=>{
+    await clickTab(tabs[0]);
+    const focusFirst=await c.call("function(){const first=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');first?.focus();return document.activeElement===first}");
+    assert(focusFirst,'keyboard tablist starts on selected tab');
+    const press=async(key,expected)=>{
+      await c.call("function(key){document.activeElement?.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}))}",[key]);
+      await waitFor("function(id){const active=document.activeElement;const selected=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');const panel=document.querySelector('.settings-tab-panel');return Boolean(active&&selected&&active===selected&&selected.getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`)}",`Settings tab keyboard ${key} → ${expected}`,[expected]);
+      const oneStop=await c.call("function(){return [...document.querySelectorAll('.settings-tablist [role=tab]')].filter(el=>el.tabIndex===0).length===1}");
+      assert(oneStop,`exactly one sequential Tab stop after ${key}`);
+    };
+    await press('ArrowRight','profile');
+    await press('End','data');
+    await press('ArrowRight','general');
+    await press('ArrowLeft','data');
+    await press('Home','general');
+  };
   const noPageOverflow=async label=>{const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(overflow<=1,`${label} horizontal page overflow ${overflow}px`)};
   const prepareScreenshot=async()=>{const state=await c.call("function(){const active=document.activeElement;if(active instanceof HTMLElement)active.blur();window.scrollTo({top:0,left:0,behavior:'auto'});return {scrollY:window.scrollY}}");assert(Math.abs(state.scrollY)<=1,`screenshot capture scroll offset ${state.scrollY}px`);await sleep(120)};
   const screenshot=async(name)=>{await prepareScreenshot();await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
@@ -91,11 +107,44 @@ try{
         const ruleState=await c.call("function(){const root=document.querySelector('.settings-rules-only [data-rules-workspace]');const text=root?.textContent||'';return {dedicated:Boolean(root),budget:Boolean(document.querySelector('.settings-rules-only .budget-settings-panel')),editorClosed:!document.querySelector('[data-rule-editor]'),newAction:Boolean(root?.querySelector('.rules-new-button')),context:Boolean(root?.querySelector('.rules-status-strip')||root?.querySelector('.rules-empty-state')),human:text.includes('Κανόνες νέων κινήσεων')&&text.includes('δεν αλλάζουν το ιστορικό')}}");assert(ruleState.dedicated,'Rules renders the dedicated transaction-rule workspace');assert(!ruleState.budget,'Rules does not render budget editor');assert(ruleState.editorClosed,'Rules keeps the editor closed until explicitly requested');assert(ruleState.newAction,'Rules exposes the modal editor entry point');assert(ruleState.context,'Rules exposes rule status/order context or the explicit empty state');assert(ruleState.human,'Rules explains the rule model and history safety in human language');
       }
       if(mode.name==='desktop'&&tab.id==='data'){
-        const importRequested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([JSON.stringify({version:'qa-dialog-proof'})],'qa-dialog-proof.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");assert(importRequested,'JSON import fixture enters through real file input');
+        // The backup acknowledgement succeeds in the isolated QA fixture,
+        // but the subsequent JSON read is intentionally unavailable.
+        const blockedRead=await c.call("function(){const original=window.fetch;window.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;const url=new URL(raw,location.href);if(url.pathname==='/api/data')return Promise.reject(new Error('QA_BACKUP_READ_UNAVAILABLE'));return original(input,init)};window.__qaRestoreBackupRead=()=>{window.fetch=original};return true}");
+        assert(blockedRead,'synthetic post-backup JSON read rejection installed');
+        try{
+          const clicked=await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();return Boolean(button)}");
+          assert(clicked,'backup action invoked in isolated fixture');
+          await waitFor("function(){const node=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(node&&(node.textContent||'').includes('Το backup στη βάση δημιουργήθηκε')&&(node.textContent||'').includes('λήψη του JSON'))}",'database backup acknowledged but JSON retrieval fails with partial-success warning');
+          const truthful=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
+          assert(truthful.warnings===1&&truthful.errors===0&&truthful.successes===0,'confirmed database backup is never reported as a total failure on JSON retrieval error');
+          await screenshot('settings-backup-db-ack-download-unavailable-desktop');
+        }finally{
+          await c.call("function(){window.__qaRestoreBackupRead?.();delete window.__qaRestoreBackupRead;return true}");
+        }
+        const oversized=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([new Uint8Array(4*1024*1024+1)],'qa-oversized.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(oversized,'oversized import fixture enters through the real input');
+        await waitFor("function(){return (document.querySelector('.settings-data-tab [role=alert]')?.textContent||'').includes('4 MB')}",'oversized import exposes error alert');
+        assert(await c.call("function(){return !document.querySelector('[role=alertdialog]')}"),'oversized JSON never opens destructive import confirmation');
+        await screenshot('settings-json-import-oversize-error-desktop');
+        const importRequested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([JSON.stringify({version:'qa-dialog-proof'})],'qa-dialog-proof.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");assert(importRequested,'valid JSON import fixture enters through real file input');
+        await waitFor("function(){return !document.querySelector('.settings-data-tab .operation-feedback')}",'new valid import request clears prior oversized-file failure before confirmation');
         await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων από JSON;'))}",'JSON import confirmation');
+        const typography=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');return {description:p?parseFloat(getComputedStyle(p).fontSize):0,eyebrow:small?parseFloat(getComputedStyle(small).fontSize):0}}");
+        assert(typography.description>=12&&typography.eyebrow>=11,'destructive confirmation prose stays readable on desktop: '+JSON.stringify(typography));
         await screenshot('settings-json-import-confirm-desktop');
         const importCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(importCancelled,'JSON import confirmation exposes safe cancel');
         await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&!document.querySelector('.settings-data-tab [role=status]')}",'JSON import cancel leaves data unchanged');
+      }
+      if(mode.name==='mobile'&&tab.id==='data'){
+        const requested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify({version:'qa-mobile-confirm'})],'qa-mobile-confirm.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(requested,'mobile import creates a pending confirmation without a finance write');
+        await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'mobile destructive import confirmation');
+        const geometry=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');if(!modal||!p||!small)return null;const r=modal.getBoundingClientRect(),desc=p.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,descriptionSize:parseFloat(getComputedStyle(p).fontSize),eyebrowSize:parseFloat(getComputedStyle(small).fontSize),descriptionLeft:desc.left,descriptionRight:desc.right}}");
+        assert(geometry&&geometry.descriptionSize>=12&&geometry.eyebrowSize>=11&&geometry.left>=-1&&geometry.right<=geometry.width+1&&geometry.top>=-1&&geometry.bottom<=geometry.height+1&&geometry.descriptionLeft>=geometry.left-1&&geometry.descriptionRight<=geometry.right+1,'destructive confirmation prose stays readable and contained on mobile: '+JSON.stringify(geometry));
+        await screenshot('settings-json-import-confirm-mobile');
+        const cancelled=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const cancel=[...dialog?.querySelectorAll('button')||[]].find(b=>(b.textContent||'').trim()==='Ακύρωση');cancel?.click();return Boolean(cancel)}");
+        assert(cancelled,'mobile destructive import has explicit cancel');
+        await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'mobile import cancellation without finance mutation');
       }
       if(mode.name==='mobile')await visibleTouchTargets(`${mode.name} ${tab.label}`);
       await screenshot(`settings-${tab.id}-${mode.name}`);
@@ -139,6 +188,8 @@ try{
       }
     }
   }
+  console.log('Settings tabs QA: real Arrow/Home/End focus and deep-link activation');
+  await viewport(1440,1000);await verifyKeyboardTablist();
   console.log('Settings tabs QA: explicit Dark desktop evidence for every tab');
   await viewport(1440,1000);assert((await applyTheme('dark'))==='dark','Settings Dark theme applied');
   for(const tab of tabs){await clickTab(tab);await noPageOverflow(`dark desktop ${tab.label}`);await screenshot(`settings-${tab.id}-dark-desktop`)}

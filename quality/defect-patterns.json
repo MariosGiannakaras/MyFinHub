@@ -454,6 +454,48 @@
       "guards": [
         "tests/account-metadata.test.ts"
       ]
+    },
+    {
+      "id": "FP-024",
+      "title": "Unsaved form and receipt review edits must not disappear on modal close or draft switch",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Contextual Quick Entry and the local OCR review had direct close, backdrop and draft-switch routes that discarded edited fields without the explicit confirmation already present in generic QuickAdd.",
+      "prevention": "Route all close/cancel/Escape/backdrop and receipt-selection/manual handoff paths through shared destructive-discard confirmation; keep focus with the active dialog, preserve local unsaved fields when cancelled and do not restart finance writes or overwrite a dirty receipt with capture.",
+      "paths": [
+        "src/components/ContextualQuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "scripts/action-center-context-qa.mjs",
+        "scripts/receipt-local-ocr-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-unsaved-entry-guard.test.ts"
+      ]
+    },
+    {
+      "id": "FP-025",
+      "title": "Clipboard fallback must confirm success and erase temporary copy fields",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Sensitive-card copy treated the legacy execCommand false return as success and did not guarantee cleanup of a transient clipboard textarea on exceptions. Related IBAN copy had the same exception cleanup risk.",
+      "prevention": "Use one explicitly user-triggered clipboard helper, check native or legacy copy acknowledgement, clear/remove temporary fields in finally, never claim success for rejected writes, and announce failure through accessible error semantics without exposing copied contents.",
+      "paths": [
+        "src/lib/copyTextWithFallback.ts",
+        "src/components/CanonicalCreditCardStack.tsx",
+        "src/components/InteractivePaymentCard.tsx",
+        "src/components/AccountIban.tsx",
+        "scripts/account-metadata-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-clipboard-copy.test.ts"
+      ]
     }
   ]
 }

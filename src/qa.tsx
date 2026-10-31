@@ -12,10 +12,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
+import { ReceiptCleanupNotice } from './components/ReceiptCleanupNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { SaveProgressBar } from './components/SaveProgressBar';
 import { useSession } from './hooks/useSession';
+import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
@@ -446,6 +448,7 @@ function QaWorkspace(){
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [qaCleanupPending,setQaCleanupPending]=useState(()=>params.get('save')==='cleanup-pending'?1:0);
+  const receiptCleanup=useReceiptCleanup();
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
@@ -655,11 +658,12 @@ function QaWorkspace(){
   return <>
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
+      <ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }

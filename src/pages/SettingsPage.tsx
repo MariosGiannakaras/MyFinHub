@@ -1,11 +1,12 @@
 import { Download, FileJson, ShieldCheck, TriangleAlert } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { FinancialProviderManagementSettings } from '../components/FinancialProviderManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { Button } from '../components/Button';
+import { OperationFeedback, type OperationFeedbackTone } from '../components/OperationFeedback';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
@@ -151,8 +152,19 @@ export function SettingsPage({
   const [localTab,setLocalTab]=useState<SettingsTab>('general');
   const activeTab=controlledTab??localTab;
   const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
-  const [message, setMessage] = useState('');
-  const [backupMessageIsError,setBackupMessageIsError] = useState(false);
+  // ARIA tablists use one Tab stop; arrows/Home/End move focus and activate a tab.
+  const onTabKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+    const count=SETTINGS_TABS.length;
+    const next=event.key==='Home'?0:event.key==='End'?count-1:
+      event.key==='ArrowRight'?(index+1)%count:
+      event.key==='ArrowLeft'?(index+count-1)%count:null;
+    if(next===null)return;
+    event.preventDefault();
+    selectTab(SETTINGS_TABS[next].id);
+    tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  };
+  const [operationFeedback,setOperationFeedback] = useState<{message:string;tone:OperationFeedbackTone}|null>(null);
+  const setOperationResult=(message:string,tone:OperationFeedbackTone='success')=>setOperationFeedback(message?{message,tone}:null);
   const [busy, setBusy] = useState(false);
   const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -185,7 +197,7 @@ export function SettingsPage({
     draftRef.current = normalized;
     setDraft(normalized);
     onSettings(normalized);
-    if (feedback) { setBackupMessageIsError(false); setMessage(feedback); }
+    if (feedback) setOperationResult(feedback);
   };
 
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
@@ -195,7 +207,7 @@ export function SettingsPage({
     draftRef.current = next;
     setDraft(next);
     onTaxonomyOperation(operation);
-    setMessage(
+    setOperationResult(
       operation.type === 'retire-category' || operation.type === 'retire-subcategory'
         ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
         : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
@@ -207,22 +219,24 @@ export function SettingsPage({
   const confirmOwnerTaxonomy=async()=>{
     if(busy)return;
     setBusy(true);
-    setMessage('');
+    setOperationResult('');
     try{
       await onFinanceDurably(current=>prepareApprovedOwnerTaxonomy(current,asOf));
       setPendingOwnerTaxonomy(false);
     }catch(reason){
-      setMessage(userErrorMessage(reason,'Η εφαρμογή των κατηγοριών δεν αποθηκεύτηκε. Τα προηγούμενα δεδομένα παραμένουν ανέπαφα.'));
+      setOperationResult(userErrorMessage(reason,'Η εφαρμογή των κατηγοριών δεν αποθηκεύτηκε. Τα προηγούμενα δεδομένα παραμένουν ανέπαφα.'),'error');
     }finally{setBusy(false)}
   };
 
   const requestImport = (file?: File) => {
     if (!file || busy) return;
     if (file.size > MAX_FINANCE_DOCUMENT_BYTES) {
-      setMessage('Το αρχείο είναι μεγαλύτερο από το υποστηριζόμενο όριο των 4 MB. Διάλεξε μικρότερο αντίγραφο ασφαλείας και δοκίμασε ξανά.');
+      setOperationResult('Το αρχείο είναι μεγαλύτερο από το υποστηριζόμενο όριο των 4 MB. Διάλεξε μικρότερο αντίγραφο ασφαλείας και δοκίμασε ξανά.','error');
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
+    // A new import must not inherit the prior backup/import outcome while confirmation is pending.
+    setOperationResult('');
     setPendingImportFile(file);
   };
 
@@ -235,12 +249,13 @@ export function SettingsPage({
   const confirmImport = async () => {
     const file = pendingImportFile;
     if (!file || busy) return;
+    setOperationResult('');
     setBusy(true);
     try {
       await onImport(JSON.parse(await file.text()));
-      setMessage('Η εισαγωγή ολοκληρώθηκε και δημιουργήθηκε αυτόματο αντίγραφο ασφαλείας των προηγούμενων δεδομένων.');
+      setOperationResult('Η εισαγωγή ολοκληρώθηκε και δημιουργήθηκε αυτόματο αντίγραφο ασφαλείας των προηγούμενων δεδομένων.');
     } catch (error) {
-      setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'));
+      setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'),'error');
     } finally {
       setBusy(false);
       setPendingImportFile(null);
@@ -250,10 +265,12 @@ export function SettingsPage({
 
   const backup = async () => {
     if (busy) return;
-    setBackupMessageIsError(false);
+    setOperationResult('');
     setBusy(true);
+    let databaseBackupConfirmed=false;
     try {
       await onBackup();
+      databaseBackupConfirmed=true;
       // Download the acknowledged database document, not optimistic in-memory drafts.
       const snapshot = await loadData();
       downloadJson(snapshot.data);
@@ -264,16 +281,18 @@ export function SettingsPage({
           if (!receipt.verified) throw new Error('Local checksum missing.');
           setBackupRefreshToken(value => value + 1);
         } catch {
-          setBackupMessageIsError(true);
-          setBackupRefreshToken(value => value + 1);
-          setMessage('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.');
+                    setBackupRefreshToken(value => value + 1);
+          setOperationResult('Δημιουργήθηκε το backup στη βάση και κατέβηκε το JSON, αλλά η τοπική αποθήκευση Windows απέτυχε. Έλεγξε τον φάκελο.','warning');
           return;
         }
       }
-      setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
+      setOperationResult('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
-      setBackupMessageIsError(true);
-      setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
+      if(databaseBackupConfirmed){
+        setOperationResult('Το backup στη βάση δημιουργήθηκε, αλλά απέτυχε η ανάκτηση ή η λήψη του JSON στη συσκευή. Το αντίγραφο στη βάση παραμένει διαθέσιμο.','warning');
+      }else{
+        setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'),'error');
+      }
     } finally {
       setBusy(false);
     }
@@ -284,13 +303,15 @@ export function SettingsPage({
       <PageHeader className="settings-page-heading" eyebrow="ΡΥΘΜΙΣΕΙΣ" title="Ρυθμίσεις" description={<p>Διαχειρίσου τις πραγματικές προτιμήσεις και τα εργαλεία του MyFinHub ανά ενότητα.</p>}/>
 
       <div ref={tablistRef} className="settings-tablist" role="tablist" aria-label="Ενότητες ρυθμίσεων">
-        {SETTINGS_TABS.map((tab) => (
+        {SETTINGS_TABS.map((tab,index) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
             id={`settings-tab-${tab.id}`}
             aria-selected={activeTab === tab.id}
+            tabIndex={activeTab===tab.id?0:-1}
+            onKeyDown={event=>onTabKeyDown(event,index)}
             aria-controls={`settings-panel-${tab.id}`}
             className={activeTab === tab.id ? 'active' : ''}
             onClick={() => selectTab(tab.id)}
@@ -341,8 +362,8 @@ export function SettingsPage({
                 <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
                 <div className="settings-data-action-copy">
                   <b>Δημιουργία αντιγράφου ασφαλείας</b>
-                  <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
-                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν περιλαμβάνει μυστικά καρτών (PAN/CVV), ανεξάρτητα IBAN, αρχεία λογοτύπων, τοπικές αποδείξεις ή PIN των Windows. Φύλαξέ τα και διαχειρίσου τα ξεχωριστά.</small>
+                  <p>Δημιούργησε αντίγραφο των οικονομικών δεδομένων στη βάση και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα. Το JSON δεν είναι πλήρες αντίγραφο PostgreSQL ή Supabase Storage: δεν περιλαμβάνει μυστικά καρτών (PAN/λήξη/CVV), ανεξάρτητα IBAN, ανεβασμένα λογότυπα, τοπικές αποδείξεις ή PIN των Windows.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</Button>
               </Surface>
@@ -369,14 +390,14 @@ export function SettingsPage({
                   <h3 id="settings-import-instructions">Πώς γίνεται η εισαγωγή</h3>
                   <ol>
                     <li>Δημιούργησε πρώτα αντίγραφο από το «Backup & λήψη».</li>
-                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε πλήρες backup MyFinHub έως 4 MB.</li>
+                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε έγκυρο αρχείο JSON οικονομικών δεδομένων MyFinHub έως 4 MB.</li>
                     <li>Έλεγξε την προειδοποίηση και επιβεβαίωσε. Η βάση επαληθεύει τη δομή και δημιουργεί αυτόματα backup των προηγούμενων δεδομένων πριν από την αντικατάσταση.</li>
                     <li>Έλεγξε τα στοιχεία μετά την εισαγωγή. Για επιστροφή στα προηγούμενα δεδομένα χρειάζεται ξεχωριστή επαναφορά backup, όχι Undo.</li>
                   </ol>
                 </section>
                 <section aria-labelledby="settings-import-structure">
                   <h3 id="settings-import-structure">Δομή JSON MyFinHub</h3>
-                  <p>Το αρχείο είναι πλήρες JSON της εφαρμογής, όχι CSV ή απλή λίστα συναλλαγών. Τα κύρια πεδία του είναι:</p>
+                  <p>Το αρχείο περιέχει δομημένα οικονομικά δεδομένα του MyFinHub, όχι CSV ή απλή λίστα συναλλαγών. Δεν αποτελεί πλήρες αντίγραφο PostgreSQL ή Supabase Storage. Τα κύρια πεδία του είναι:</p>
                   <dl className="settings-import-guide-fields">
                     <div><dt><code>app</code>, <code>schemaVersion</code>, <code>updatedAt</code></dt><dd>Ταυτότητα εφαρμογής, συμβατή έκδοση και ημερομηνία.</dd></div>
                     <div><dt><code>seed</code></dt><dd>Βασικά δεδομένα: <code>accounts</code>, <code>months</code>, <code>transactions</code>, <code>snapshots</code>, <code>recurring</code>, <code>subscriptions</code>, <code>loans</code>, <code>lending</code>, <code>stats</code>.</dd></div>
@@ -387,7 +408,7 @@ export function SettingsPage({
                 <p className="settings-import-guide-warning">Η εισαγωγή αντικαθιστά (δεν συγχωνεύει) τα οικονομικά δεδομένα και δεν αναιρείται με Undo/Redo. Το ξεχωριστό κρυπτογραφημένο Card Vault (PAN/λήξη/CVV) δεν περιλαμβάνεται στο JSON backup. Τα δεδομένα προφίλ κάρτας δεν επαναφέρουν από μόνα τους αυτούς τους κωδικούς.</p>
               </div>
             </details>
-            {message ? <div className={`logic-note compact${backupMessageIsError ? ' is-error' : ''}`} role={backupMessageIsError ? 'alert' : 'status'} aria-live="polite">{backupMessageIsError ? <TriangleAlert/> : <ShieldCheck/>}<span>{message}</span></div> : null}
+            {operationFeedback ? <OperationFeedback className="logic-note compact" tone={operationFeedback.tone}>{operationFeedback.tone==='success'?<ShieldCheck/>:<TriangleAlert/>}<span>{operationFeedback.message}</span></OperationFeedback> : null}
           </div>
         ) : null}
       </div>
@@ -404,7 +425,7 @@ export function SettingsPage({
       <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"
-        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Οι κωδικοί Card Vault είναι ξεχωριστοί και δεν εισάγονται από το JSON. Συνέχεια;"
+        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Το JSON δεν επαναφέρει Card Vault, ανεξάρτητα IBAN ή αρχεία Supabase Storage. Συνέχεια;"
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}

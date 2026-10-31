@@ -22,18 +22,36 @@ describe('receipt to Quick Entry contract',()=>{
   it('OCR only applies a prefill and never owns a finance create callback',()=>{
     expect(inbox).toContain('onApply: (draftId: string, proposal: ReceiptProposal) => void');
     expect(inbox).not.toContain('onCreate: (event: FinanceEvent)');
-    expect(bridge).toContain('await onCreate(event);');
-    expect(bridge).toContain('void deleteReceiptDraft(handledId)');
-    expect(bridge.indexOf('await onCreate(event);')).toBeLessThan(bridge.indexOf('void deleteReceiptDraft(handledId)'));
+    expect(bridge).toContain('await saveFinanceThenCleanupReceipt(');
+    expect(bridge).toContain('const create = async (event:FinanceEvent)=>completeWithReceipt(()=>onCreate(event));');
+    expect(bridge).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(bridge).not.toContain('void deleteReceiptDraft(handledId)');
   });
 
   it('keeps the draft when Quick Entry is cancelled and deletes it only after normal submit',()=>{
-    const create=bridge.slice(bridge.indexOf('const create = async (event'),bridge.indexOf('if (!open) return null'));
-    expect(create).toContain('await onCreate(event);');
-    expect(create).toContain('deleteReceiptDraft(handledId)');
-    expect(create.indexOf('await onCreate(event);')).toBeLessThan(create.indexOf('deleteReceiptDraft(handledId)'));
-    expect(create).not.toContain('void onCreate(event)');
+    const create=bridge.slice(bridge.indexOf('const completeWithReceipt = async'),bridge.indexOf('if (!open) return null'));
+    expect(create).toContain('await saveFinanceThenCleanupReceipt(');
+    expect(create).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(create).toContain('onReceiptCleanupFailure?.(handledId)');
+    expect(create).not.toContain('void deleteReceiptDraft');
     expect(bridge).not.toMatch(/onClose[^\n]*deleteReceiptDraft/);
+  });
+
+  it('keeps linked transfers on the same durable finance-then-local-cleanup boundary',()=>{
+    expect(bridge).toContain('const createLinked = onCreateLinkedTransfer');
+    expect(bridge).toContain('completeWithReceipt(()=>onCreateLinkedTransfer(principal,fee))');
+    expect(bridge).toContain('onCreateLinkedTransfer={createLinked}');
+    expect(contextual).toContain('onReceiptCleanupFailure={onReceiptCleanupFailure}');
+  });
+
+  it('keeps rejected local receipt deletion in an error state and never reports success',()=>{
+    const deletion=inbox.slice(inbox.indexOf('const confirmRemove=async()=>'),inbox.indexOf('const toggleDelete'));
+    expect(deletion).toContain('await deleteReceiptDraft(request.draft.id)');
+    expect(deletion).toContain('await deleteReceiptDrafts(request.ids)');
+    expect(deletion).toContain('}catch{');
+    expect(deletion).toContain("setMessage('');");
+    expect(deletion).toContain("setError('Η διαγραφή της τοπικής απόδειξης απέτυχε.");
+    expect(inbox).toContain('<FormError id="receipt-inbox-error">{error}</FormError>');
   });
 
   it('passes receipt date and full category path into QuickAdd while blocking silent non-EUR prefill',()=>{

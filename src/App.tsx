@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
+import { ReceiptCleanupNotice } from './components/ReceiptCleanupNotice';
 import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
@@ -11,6 +12,7 @@ import { PeriodControl } from './components/PeriodControl';
 
 import type { QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
+import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import { useDesktopAutoBackup } from './hooks/useDesktopAutoBackup';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
@@ -111,6 +113,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const cleanupInFlight=useRef(new Map<string,Promise<void>>());
   const [cleanupBusy,setCleanupBusy]=useState(false);
   const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
+  const receiptCleanup=useReceiptCleanup();
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -389,11 +392,12 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} onNavigateHistory={finance.goToHistoryPoint} canUndo={finance.canUndo} canRedo={finance.canRedo} undoDepth={finance.undoDepth} redoDepth={finance.redoDepth} historyAvailable={finance.historyAvailable} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
       {(finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0) ? <Suspense fallback={null}><PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/></Suspense> : null}
+      <ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

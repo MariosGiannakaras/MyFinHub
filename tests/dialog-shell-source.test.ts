@@ -106,7 +106,9 @@ describe('DialogShell source contract',()=>{
     expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('onRequestClose={requestClose}');
+    expect(contextual).toContain('focusActive={!discardOpen}');
+    expect(contextual).toContain('<ConfirmDialog open={discardOpen}');
     expect(contextual).toContain('busy={saving}');
     expect(contextual).toContain('inert={saving}');
     expect(contextual).not.toContain('useModalFocus');

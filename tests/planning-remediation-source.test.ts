@@ -40,6 +40,33 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain("scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})");
   });
 
+  it('reproduces compact-desktop last-row scroll and action-menu clipping using browser geometry',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain("await navigate('extreme',1100,720)");
+    expect(qa).toContain("Math.abs(scroller.scrollTop-max)<=1");
+    expect(qa).toContain('planning-scheduled-last-row-menu-1100');
+    expect(qa).toContain('planning-forecast-extreme-compact-desktop');
+    expect(qa).toContain('compactForecast.numbersFit');
+    expect(component).toContain('onToggle={event=>placeScheduledMenu(event.currentTarget)}');
+    expect(component).toContain("popup.style.bottom='36px'");
+    expect(target).toContain('.planning-forecast-summary{grid-template-columns:repeat(3,minmax(0,1fr));padding-inline:12px 10px}');
+    expect(qa).toContain('scroller.scrollIntoView({block:');
+    expect(qa).toContain('popupVisibility.within&&popupVisibility.withinViewport&&popupVisibility.hitInside');
+    expect(qa).toContain('last-row action menu must remain visible and clickable');
+  });
+
+  it('allocates axis width from formatted cash values so large negative signs stay inside the chart',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(component).toContain('const portfolioAxisWidth=Math.max(82');
+    expect(component).toContain('money.format(point.portfolio).length');
+    expect(component).toContain('<YAxis width={portfolioAxisWidth} tickFormatter={value=>money.format(Number(value))}');
+    expect(component).not.toContain('<YAxis width={82} tickFormatter={value=>money.format(Number(value))}');
+    expect(qa).toContain('1100px extreme negative portfolio axis must retain visible minus signs without clipping');
+    expect(qa).toContain('tick.left>=negativeAxis.rootLeft+8');
+    expect(qa).toContain("root.querySelectorAll('svg text')");
+    expect(qa).toContain("includes('€')");
+  });
+
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{
     expect(target).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
     expect(target).toContain('width:min(100%,1320px)');

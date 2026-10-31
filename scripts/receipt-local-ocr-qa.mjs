@@ -247,6 +247,16 @@ try {
   await waitFor("function(){const save=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));return Boolean(save?.disabled&&document.querySelector('#receipt-review-items-error'))}",'sub-cent receipt item save guard');
   assert((await receiptCount())===1,'invalid OCR item edit never deletes its local receipt');
   await editReviewField('Διόρθωση ποσού γραμμής 2','4.25');
+  const captureLocked=await c.call("function(){const buttons=[...document.querySelectorAll('.receipt-capture-actions button')];return buttons.length===2&&buttons.every(button=>button.disabled)}");
+  assert(captureLocked,'dirty review cannot silently replace selected receipt via new capture');
+  const closeRequested=await c.call("function(){const button=document.querySelector('.receipt-inbox-header button');button?.click();return Boolean(button)}");
+  assert(closeRequested,'receipt review close exists');
+  await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('μη αποθηκευμένων διορθώσεων'))}",'receipt unsaved review discard prompt');
+  const canceled=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Ακύρωση'));button?.click();return Boolean(button)}");
+  assert(canceled,'receipt discard prompt supports cancellation');
+  await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'receipt discard cancelled');
+  assert(await c.call("function(){return Boolean(document.querySelector('.receipt-inbox'))&&[...document.querySelectorAll('input[aria-label]')].some(input=>input.getAttribute('aria-label')==='Διόρθωση ποσού γραμμής 2'&&input.value==='4.25')}"),'receipt editor retains unsaved corrections after cancelled discard');
+  assert((await receiptCount())===1,'receipt discard cancellation never posts or deletes a local draft');
   await waitFor("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}",'precisely balanced 20.25+4.25 EUR receipt items');
   const itemInputs=await c.call("function(){return {items:document.querySelectorAll('.receipt-item-row').length,categorySelectors:document.querySelectorAll('.receipt-item-category [aria-label^=\"Κατηγορία γραμμής\"]').length,balanced:(document.querySelector('.receipt-item-balance')?.textContent||'').includes('Συμφωνεί')}}");
   assert(itemInputs.items===2&&itemInputs.categorySelectors===2&&itemInputs.balanced,`OCR item review must expose live taxonomy and exactly reconciled EUR cents: ${JSON.stringify(itemInputs)}`);
@@ -330,11 +340,26 @@ try {
   assert(quickValues.some((value) => value==='QA CORRECTED MARKET'), `corrected merchant not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => value === '2026-08-22' || /22\s+Αυγ\s+2026/i.test(value)), `date not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => Number(value) === 31.75), `corrected amount not prefilled: ${JSON.stringify(quickValues)}`);
-  const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
-  assert(submitClicked, 'normal Quick Entry submit exists');
-  await waitFor("function(){return !document.querySelector('.quick-modal')}", 'normal transaction submit');
-  await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after transaction');
-  assert((await receiptCount()) === 0, 'receipt draft deleted only after normal submit');
+  console.log('Receipt OCR QA: committed finance write survives failed local receipt cleanup and retries only local cleanup');
+  const localCleanupBlocked=await c.call("function(){const proto=IDBObjectStore.prototype,original=proto.delete;proto.delete=function(key){if(this.name==='receipts')throw new Error('QA_RECEIPT_DELETE_BLOCKED');return original.call(this,key)};window.__qaRestoreReceiptDelete=()=>{proto.delete=original};return true}");
+  assert(localCleanupBlocked,'local receipt deletion rejection fixture installed');
+  try{
+    const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
+    assert(submitClicked, 'normal Quick Entry submit exists');
+    await waitFor("function(){return !document.querySelector('.quick-modal')}", 'confirmed finance transaction submit');
+    await waitFor("function(){return [...document.querySelectorAll('.operation-feedback[data-feedback-tone=\"warning\"]')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'committed finance with local receipt cleanup failure banner');
+    const partial=await c.call("function(){const warning=[...document.querySelectorAll('.operation-feedback[data-feedback-tone=\"warning\"]')].find(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'));return {warning:warning?.textContent||'',retry:[...warning?.querySelectorAll('button')||[]].some(button=>(button.textContent||'').includes('Επανάληψη καθαρισμού')),financeError:Boolean(document.querySelector('.quick-modal .form-error'))}}");
+    assert(partial.retry&&partial.warning.includes('Μην καταχωρίσεις ξανά')&&!partial.financeError,'finance commit remains successful, local cleanup remains explicitly retryable');
+    assert((await receiptCount())===1,'failed cleanup preserves local receipt evidence after finance commit');
+    await screenshot('receipt-local-after-finance-cleanup-failed');
+  }finally{
+    await c.call("function(){window.__qaRestoreReceiptDelete?.();delete window.__qaRestoreReceiptDelete;return true}");
+  }
+  const retryLocalCleanup=await c.call("function(){const warning=[...document.querySelectorAll('.operation-feedback[data-feedback-tone=\"warning\"]')].find(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'));const button=[...warning?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Επανάληψη καθαρισμού'));button?.click();return Boolean(button)}");
+  assert(retryLocalCleanup,'explicit local-only receipt cleanup retry exists');
+  await waitFor("function(){return ![...document.querySelectorAll('.operation-feedback')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'successful local-only retry clears partial-success warning');
+  await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after local-only retry');
+  assert((await receiptCount()) === 0, 'local-only retry removes draft without another finance submit');
   console.log('Receipt OCR QA: owner reviews existing-purchase association without another finance save');
   const seededDuplicate=await c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readwrite');const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),x=>x.charCodeAt(0));const image=new Blob([bytes],{type:'image/png'}),now=new Date().toISOString();tx.objectStore('receipts').put({id:'qa-reviewed-existing',capturedAt:now,updatedAt:now,status:'ready',image,mimeType:'image/png',bytes:image.size,width:1,height:1,proposal:{merchant:'QA CORRECTED MARKET',date:'2026-08-22',total:31.75,currency:'EUR'}});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};open.onerror=()=>reject(open.error)})}`);
   assert(seededDuplicate,'private synthetic already-posted receipt fixture saved to IndexedDB only');
