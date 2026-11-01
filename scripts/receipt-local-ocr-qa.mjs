@@ -298,10 +298,10 @@ try {
   assert(armedLocalWrite,'isolated deterministic local-review-write gate armed');
   let persistItemsClicked=false;
   try{
-    persistItemsClicked=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));if(!b||b.disabled)return false;b.click();return true}");
+    persistItemsClicked=await c.call("function(){document.activeElement instanceof HTMLElement&&document.activeElement.blur();const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));if(!b||b.disabled)return false;b.click();return true}");
     assert(persistItemsClicked,'valid reviewed OCR lines can be saved independently of finance');
     await waitFor("function(){return Boolean(window.__qaReceiptWriteGate?.ready)&&document.querySelector('.receipt-inbox-layout')?.inert===true}",'local OCR review save held by IndexedDB open gate');
-    const pendingReview=await c.call("function(){
+    const pendingReview=await c.call(`function(){
       const layout=document.querySelector('.receipt-inbox-layout');
       const close=document.querySelector('.receipt-inbox-header button');
       const capture=[...document.querySelectorAll('.receipt-capture-actions button')];
@@ -314,12 +314,12 @@ try {
         nativeFileInputsDisabled:files.length===2&&files.every(x=>x.disabled),
         focusBlocked:document.activeElement!==editor,unchanged:editor?.value===before,
         progress:[...document.querySelectorAll('.receipt-live-state[role=status]')].some(x=>(x.textContent||'').includes('Αποθήκευση διορθώσεων απόδειξης'))};
-    }");
+    }`);
     assert(pendingReview.busy==='true'&&pendingReview.inert&&pendingReview.headerCloseDisabled&&pendingReview.captureDisabled&&pendingReview.nativeFileInputsDisabled&&pendingReview.focusBlocked&&pendingReview.unchanged&&pendingReview.progress,`real Chromium pending receipt save must lock all review and capture affordances: ${JSON.stringify(pendingReview)}`);
     await screenshot('receipt-local-review-save-inflight-locked');
     assert((await receiptCount())===1,'pending review save cannot delete receipt or create finance');
   }finally{
-    const released=await c.call("function(){
+    const released=await c.call(`function(){
       const gate=window.__qaReceiptWriteGate;
       if(!gate)return false;
       gate.proto.open=gate.original;
@@ -327,7 +327,7 @@ try {
       delete window.__qaReceiptWriteGate;
       release?.();
       return Boolean(release);
-    }");
+    }`);
     assert(released,'held IndexedDB open was released without modifying other requests');
   }
   await waitFor("function(){const layout=document.querySelector('.receipt-inbox-layout');const close=document.querySelector('.receipt-inbox-header button');return Boolean(layout&&layout.inert===false&&layout.getAttribute('aria-busy')==='false'&&!close?.disabled)}",'receipt editors and close re-enabled after local save');
