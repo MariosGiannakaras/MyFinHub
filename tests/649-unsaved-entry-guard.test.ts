@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
+const generic=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 const contextualQa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
 const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
@@ -21,6 +22,17 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
     expect(contextual).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
 
+  });
+  it('keeps Quick Entry portalled receipt launch inert and retry errors honest until acknowledged finance receipt',()=>{
+    expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(generic).toContain('<footer inert={saving}>');
+    expect(generic).toContain('await onCreate(event);');
+    expect(generic).toContain('reset();onClose();');
+    expect(generic.indexOf('await onCreate(event);')).toBeLessThan(generic.indexOf('reset();onClose();'));
+    expect(budgetQa).toContain('rejected finance receipt cannot create a finance write or unlock synthetic Undo');
+    expect(budgetQa).toContain('pending generic finance receipt locks portalled receipt launch');
+    expect(budgetQa).toContain('real Chromium pointer cannot open receipt capture during pending finance save');
+    expect(budgetQa).toContain('only the acknowledged synthetic finance event becomes available to Undo');
   });
   it('prevents review dismissal, selection switch and manual handoff from silently dropping edits',()=>{
     for(const kind of ['close','select','manual']) expect(inbox).toContain("setDiscardTarget({kind:'"+kind+"'");
