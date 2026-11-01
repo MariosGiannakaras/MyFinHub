@@ -34,8 +34,22 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(inbox).toContain("if(target.kind==='select'){setSelectedId(target.id);");
     expect(inbox).toContain('await saveReceiptProposal(selected.id,reviewedSplit)');
     expect(inbox).toContain('if(reviewDirty||reviewSaving){setError(');
-    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving}');
-    expect(inbox).toContain('disabled={reviewDirty||reviewSaving} capture="environment"');
+    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
+    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment"');
+  });
+  it('locks receipt review while asynchronous local saves, deletes and image capture are pending',()=>{
+    // A local IndexedDB save can be slow: edits or draft switching during the await
+    // must not be accepted then lost by the subsequent refresh.
+    expect(inbox).toContain('className="receipt-inbox-layout" inert={loading||reviewSaving||deleting} aria-busy={loading||reviewSaving||deleting}');
+    expect(inbox).toContain('disabled={reviewSaving||deleting||loading} onClick={requestClose}');
+    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment"');
+    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
+    expect(inbox).toContain('if(deleting||loading||scanningId)return;');
+    expect(inbox).toContain('if(reviewSaving||deleting||loading)return;');
+    expect(inbox).toContain('setReviewSaving(true);setError(\'\');');
+    expect(inbox).toContain('finally{setReviewSaving(false)}');
+    expect(inbox).toContain('Αποθήκευση διορθώσεων απόδειξης στη συσκευή…');
+    expect(inbox).toContain('Διαγραφή τοπικών αποδείξεων…');
   });
   it('exercises discard cancellation in both real-browser QA journeys',()=>{
     expect(contextualQa).toContain('unsaved contextual edits confirmation');

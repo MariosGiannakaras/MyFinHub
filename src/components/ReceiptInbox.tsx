@@ -206,6 +206,7 @@ export function ReceiptInbox({
 
   const capture = async (file?: File) => {
     if (!file) return;
+    if(deleting||loading||scanningId)return;
     if(reviewDirty||reviewSaving){setError('Αποθήκευσε τις διορθώσεις της απόδειξης πριν προσθέσεις νέα εικόνα.');return}
     setLoading(true);
     setError('');
@@ -405,22 +406,24 @@ export function ReceiptInbox({
   return <>
   <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={requestClose}>
     <section ref={modalRef} className="receipt-inbox surface-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={requestClose}><X/></IconButton></header>
+      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
-        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving} capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
-        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving} onChange={(event) => void capture(event.target.files?.[0])}/>
-        <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
-        <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
+        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
+        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} onChange={(event) => void capture(event.target.files?.[0])}/>
+        <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
+        <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
         <small>JPG/PNG · έως 12 MB · έως 30 πρόχειρες αποδείξεις / 60 MB τοπικά</small>
         {reviewDirty?<small role="status">Αποθήκευσε ή απόρριψε τις διορθώσεις πριν προσθέσεις νέα απόδειξη.</small>:null}
       </div>
 
       {loading ? <div className="receipt-live-state" role="status"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση φωτογραφίας στη συσκευή…</div> : null}
+      {reviewSaving ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση διορθώσεων απόδειξης στη συσκευή…</div> : null}
+      {deleting ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Διαγραφή τοπικών αποδείξεων…</div> : null}
       {message ? <div className="receipt-live-state receipt-success" role="status" aria-live="polite"><Check size={17}/> {message}</div> : null}
       {error ? <FormError id="receipt-inbox-error">{error}</FormError> : null}
 
-      <div className="receipt-inbox-layout">
+      <div className="receipt-inbox-layout" inert={loading||reviewSaving||deleting} aria-busy={loading||reviewSaving||deleting}>
         <aside className="receipt-draft-list" aria-label="Τοπικές αποδείξεις σε αναμονή">
           <div className="receipt-list-head"><span>{drafts.length} σε αναμονή</span>{deleteSelection.size ? <Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}><Trash2 size={14}/> Διαγραφή ({deleteSelection.size})</Button> : null}</div>
           {drafts.length ? drafts.map((draft) => <div key={draft.id} className={`receipt-draft-row ${selectedId === draft.id ? 'active' : ''}`}>
