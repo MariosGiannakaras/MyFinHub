@@ -75,9 +75,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
     expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(10);
     expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(3);
-    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={requestClose}>');
-    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving}');
-    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving}');
+    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}>');
+    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
+    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
     expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)}');
     expect(receipts).toContain('onClick={addReviewLine}>Προσθήκη γραμμής</Button>');
     expect(receipts).toContain('onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής');

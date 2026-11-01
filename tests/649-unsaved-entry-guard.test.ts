@@ -59,6 +59,11 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextualQa).toContain('confirmed contextual discard');
     expect(receiptQa).toContain('receipt unsaved review discard prompt');
     expect(receiptQa).toContain('receipt editor retains unsaved corrections after cancelled discard');
+    expect(receiptQa).toContain('receipt-local-review-save-inflight-locked');
+    expect(receiptQa).toContain('window.__qaReceiptWriteGate');
+    expect(receiptQa).toContain("local OCR review save held by IndexedDB open gate");
+    expect(receiptQa).toContain('pendingReview.focusBlocked');
+    expect(receiptQa).toContain('receipt editors and close re-enabled after local save');
     expect(receiptQa).toContain('dirty review cannot silently replace selected receipt via new capture');
     expect(budgetQa).toContain('contextual-quick-invalid-corrected-save-rejected-desktop');
     expect(budgetQa).toContain('corrected contextual amount removes stale validation message');

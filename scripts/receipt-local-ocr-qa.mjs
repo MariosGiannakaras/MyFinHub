@@ -271,7 +271,68 @@ try {
   assert(itemMobile.rows===2&&!itemMobile.overlap&&itemMobile.overflow<=1&&itemMobile.modal?.left>=-1&&itemMobile.modal?.right<=376,`375px item editor remains contained: ${JSON.stringify(itemMobile)}`);
   await screenshot('receipt-local-reviewed-items-mobile');
   await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
-  const persistItemsClicked=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));b?.click();return Boolean(b&&!b.disabled)}");
+  // Deterministic browser negative-path: hold only the next local receipt DB open
+  // while an owner save is in-flight. No finance function, transaction schema or
+  // production code is patched by the synthetic browser fixture.
+  const armedLocalWrite=await c.call(`function(){
+    if(window.__qaReceiptWriteGate)return false;
+    const proto=IDBFactory.prototype,original=proto.open;
+    const gate={proto,original,armed:false,ready:false,release:null};
+    window.__qaReceiptWriteGate=gate;
+    proto.open=function(...args){
+      const request=original.apply(this,args);
+      if(args[0]==='myfinhub-local-receipts-v1'&&!gate.armed){
+        gate.armed=true;
+        proto.open=original;
+        Object.defineProperty(request,'onsuccess',{configurable:true,set(handler){
+          request.addEventListener('success',event=>{
+            gate.ready=true;
+            gate.release=()=>handler?.call(request,event);
+          },{once:true});
+        }});
+      }
+      return request;
+    };
+    return true;
+  }`);
+  assert(armedLocalWrite,'isolated deterministic local-review-write gate armed');
+  let persistItemsClicked=false;
+  try{
+    persistItemsClicked=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));if(!b||b.disabled)return false;b.click();return true}");
+    assert(persistItemsClicked,'valid reviewed OCR lines can be saved independently of finance');
+    await waitFor("function(){return Boolean(window.__qaReceiptWriteGate?.ready)&&document.querySelector('.receipt-inbox-layout')?.inert===true}",'local OCR review save held by IndexedDB open gate');
+    const pendingReview=await c.call("function(){
+      const layout=document.querySelector('.receipt-inbox-layout');
+      const close=document.querySelector('.receipt-inbox-header button');
+      const capture=[...document.querySelectorAll('.receipt-capture-actions button')];
+      const files=[...document.querySelectorAll('.receipt-capture-actions input[type=file]')];
+      const editor=document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]');
+      const before=editor?.value;
+      editor?.focus();
+      return {busy:layout?.getAttribute('aria-busy'),inert:layout?.inert,
+        headerCloseDisabled:close?.disabled,captureDisabled:capture.every(x=>x.disabled)&&capture.length===2,
+        nativeFileInputsDisabled:files.length===2&&files.every(x=>x.disabled),
+        focusBlocked:document.activeElement!==editor,unchanged:editor?.value===before,
+        progress:[...document.querySelectorAll('.receipt-live-state[role=status]')].some(x=>(x.textContent||'').includes('Αποθήκευση διορθώσεων απόδειξης'))};
+    }");
+    assert(pendingReview.busy==='true'&&pendingReview.inert&&pendingReview.headerCloseDisabled&&pendingReview.captureDisabled&&pendingReview.nativeFileInputsDisabled&&pendingReview.focusBlocked&&pendingReview.unchanged&&pendingReview.progress,`real Chromium pending receipt save must lock all review and capture affordances: ${JSON.stringify(pendingReview)}`);
+    await screenshot('receipt-local-review-save-inflight-locked');
+    assert((await receiptCount())===1,'pending review save cannot delete receipt or create finance');
+  }finally{
+    const released=await c.call("function(){
+      const gate=window.__qaReceiptWriteGate;
+      if(!gate)return false;
+      gate.proto.open=gate.original;
+      const release=gate.release;
+      delete window.__qaReceiptWriteGate;
+      release?.();
+      return Boolean(release);
+    }");
+    assert(released,'held IndexedDB open was released without modifying other requests');
+  }
+  await waitFor("function(){const layout=document.querySelector('.receipt-inbox-layout');const close=document.querySelector('.receipt-inbox-header button');return Boolean(layout&&layout.inert===false&&layout.getAttribute('aria-busy')==='false'&&!close?.disabled)}",'receipt editors and close re-enabled after local save');
+  const afterPendingReview=await c.call("function(){const field=document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]');return {value:field?.value,saveFeedback:(document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}}");
+  assert(afterPendingReview.value==='QA τοπικό προϊόν 1'&&afterPendingReview.saveFeedback,`owner review survives successful local save: ${JSON.stringify(afterPendingReview)}`);
   assert(persistItemsClicked,'valid reviewed OCR lines can be saved independently of finance');
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'reviewed OCR line local save receipt');
   const localLines=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').getAll();req.onsuccess=()=>{const p=req.result[0]?.proposal;db.close();resolve({count:p?.items?.length??0,sum:p?.items?.reduce((n,x)=>n+Math.round(x.amount*100),0),balanced:p?.itemsBalanced})};req.onerror=()=>reject(req.error)};request.onerror=()=>reject(request.error)})}`);
