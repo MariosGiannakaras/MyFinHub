@@ -412,6 +412,9 @@ try{
   await c.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...pendingEntry.receiptCoords});
   await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...pendingEntry.receiptCoords});
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal[aria-busy=true]'))&&!document.querySelector('.receipt-inbox')&&document.querySelector('.generic-quick-modal footer')?.inert===true}"),'real Chromium pointer cannot open receipt capture during pending finance save');
+  // Preserve the previously accepted immutable screenshot contract as well
+  // as the new negative pointer/portalled-launch evidence.
+  await screenshot('quick-entry-finance-receipt-pending-desktop');
   await screenshot('quick-entry-finance-receipt-pending-locked-receipt-launch-desktop');
   await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
   await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'Quick Entry dismissed only after finance receipt');
