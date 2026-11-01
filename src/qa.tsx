@@ -508,6 +508,7 @@ function QaWorkspace(){
       (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
     });
     addEvent(event);
+    document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1);
   };
   const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
     const params=new URLSearchParams(location.search);

@@ -28,6 +28,13 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('Η οικονομική κίνηση έχει αποθηκευτεί');
     expect(qa).toContain('Επανάληψη καθαρισμού');
     expect(qa).toContain('receipt-local-after-finance-cleanup-failed');
+    expect(qa).toContain('receipt-local-retry-still-blocked');
+    expect(qa).toContain('financeWritesAfterCommit===financeWritesBefore+1');
+    expect(qa).toContain('failed local-only retry never re-posts');
+    expect(qa).toContain('successful local-only cleanup retry does not post finance a second time');
+    const qaApp=readFileSync('src/qa.tsx','utf8');
+    expect(qaApp).toContain('document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1)');
+    expect(readFileSync('src/App.tsx','utf8')).not.toContain('qaFinanceWrites');
   });
   it('never deletes local evidence when the finance commit was rejected',async()=>{
     const save=vi.fn(async()=>{throw new Error('conflict')});
