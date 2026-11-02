@@ -63,6 +63,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(receiptQa).toContain('QA_UNEXPECTED_READ_AFTER_LOCAL_WRITE_COMMIT');
     expect(receiptQa).toContain('receipt-local-review-save-without-secondary-read-desktop');
     expect(receiptQa).toContain('successful local review must reconcile confirmed write with zero redundant read');
+    expect(receiptQa).toContain("prefill.notes[0]==='QA προϊόν χωρίς δεύτερη ανάγνωση'");
   });
   it('locks receipt review while asynchronous local saves, deletes and image capture are pending',()=>{
     // A local IndexedDB save can be slow: edits or draft switching during the await
