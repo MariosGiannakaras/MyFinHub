@@ -349,6 +349,12 @@ export function ReceiptInbox({
         ?undefined:lineReview.balanced,
     } satisfies ReceiptProposal;
   };
+  // The local IndexedDB transaction has already confirmed the draft write.
+  // Reconcile its returned row directly: a second list read can fail after a
+  // successful write and otherwise display both success and a stale read error.
+  const reflectSavedDraft=(saved:ReceiptDraft)=>{
+    setDrafts(current=>current.map(draft=>draft.id===saved.id?saved:draft));
+  };
   const setPurchaseAssociation=async(link?:NonNullable<ReceiptProposal['matchedPurchase']>)=>{
     if(!selected||!reviewProposal||reviewSaving)return;
     const normalized=normalizedReview();
@@ -358,8 +364,8 @@ export function ReceiptInbox({
     }
     setReviewSaving(true);setError('');
     try{
-      await saveReceiptProposal(selected.id,{...normalized,reviewedSplit:false,matchedPurchase:link});
-      await refresh(selected.id);
+      const saved=await saveReceiptProposal(selected.id,{...normalized,reviewedSplit:false,matchedPurchase:link});
+      reflectSavedDraft(saved);
       setReviewDirty(false);
       setReviewNewPurchaseConfirmed(false);
       setMessage(link?'Η απόδειξη συσχετίστηκε τοπικά με υπάρχουσα κίνηση. Δεν δημιουργήθηκε νέα δαπάνη.':'Η τοπική συσχέτιση καταργήθηκε. Καμία οικονομική κίνηση δεν άλλαξε.');
@@ -380,9 +386,9 @@ export function ReceiptInbox({
     setReviewSaving(true);setError('');
     try{
       const reviewedSplit=split?{...normalized,reviewedSplit:true}:normalized;
-      await saveReceiptProposal(selected.id,reviewedSplit);
+      const saved=await saveReceiptProposal(selected.id,reviewedSplit);
+      reflectSavedDraft(saved);
       if(apply){onApply(selected.id,reviewedSplit);return}
-      await refresh(selected.id);
       setMessage('Οι διορθώσεις της πρότασης αποθηκεύτηκαν τοπικά.');
       setReviewDirty(false);
     }catch(reason){

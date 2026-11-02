@@ -49,6 +49,21 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
     expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment"');
   });
+  it('uses the confirmed local receipt row instead of a failing second IndexedDB read',()=>{
+    const association=inbox.slice(inbox.indexOf('const setPurchaseAssociation='),inbox.indexOf('const splitProposal='));
+    const review=inbox.slice(inbox.indexOf('const saveReview=async'),inbox.indexOf('if (!open) return null;'));
+    expect(inbox).toContain('const reflectSavedDraft=(saved:ReceiptDraft)=>');
+    expect(inbox).toContain('setDrafts(current=>current.map(draft=>draft.id===saved.id?saved:draft))');
+    expect(association).toContain('const saved=await saveReceiptProposal(selected.id,{...normalized,reviewedSplit:false,matchedPurchase:link})');
+    expect(association).toContain('reflectSavedDraft(saved);');
+    expect(review).toContain('const saved=await saveReceiptProposal(selected.id,reviewedSplit)');
+    expect(review).toContain('reflectSavedDraft(saved);');
+    expect(association).not.toContain('await refresh(selected.id)');
+    expect(review).not.toContain('await refresh(selected.id)');
+    expect(receiptQa).toContain('QA_UNEXPECTED_READ_AFTER_LOCAL_WRITE_COMMIT');
+    expect(receiptQa).toContain('receipt-local-review-save-without-secondary-read-desktop');
+    expect(receiptQa).toContain('successful local review must reconcile confirmed write with zero redundant read');
+  });
   it('locks receipt review while asynchronous local saves, deletes and image capture are pending',()=>{
     // A local IndexedDB save can be slow: edits or draft switching during the await
     // must not be accepted then lost by the subsequent refresh.

@@ -337,6 +337,34 @@ try {
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'reviewed OCR line local save receipt');
   const localLines=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('receipts','readonly'),req=tx.objectStore('receipts').getAll();req.onsuccess=()=>{const p=req.result[0]?.proposal;db.close();resolve({count:p?.items?.length??0,sum:p?.items?.reduce((n,x)=>n+Math.round(x.amount*100),0),balanced:p?.itemsBalanced})};req.onerror=()=>reject(req.error)};request.onerror=()=>reject(request.error)})}`);
   assert(localLines.count===2&&localLines.sum===2450&&localLines.balanced===true,`exact 2450 cents stored only as owner-reviewed local proposal: ${JSON.stringify(localLines)}`);
+  console.log('Receipt OCR QA: confirmed local review write must not need a second IndexedDB list read');
+  await editReviewField('Διόρθωση περιγραφής γραμμής 1','QA προϊόν χωρίς δεύτερη ανάγνωση');
+  const noSecondReadArmed=await c.call(`function(){
+    if(window.__qaReceiptPostSaveReadGuard)return false;
+    const proto=IDBFactory.prototype,original=proto.open;
+    const gate={proto,original,opens:0};
+    window.__qaReceiptPostSaveReadGuard=gate;
+    proto.open=function(...args){
+      if(args[0]==='myfinhub-local-receipts-v1'){
+        gate.opens++;
+        if(gate.opens>2)throw new Error('QA_UNEXPECTED_READ_AFTER_LOCAL_WRITE_COMMIT');
+      }
+      return original.apply(this,args);
+    };
+    return true;
+  }`);
+  assert(noSecondReadArmed,'read-after-write regression guard armed only inside local Chromium QA');
+  try{
+    const clicked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));button?.click();return Boolean(button&&!button.disabled)}");
+    assert(clicked,'corrected local review can be submitted while redundant list reads are denied');
+    await waitFor("function(){const field=document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]');const success=(document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις');return Boolean(field?.value==='QA προϊόν χωρίς δεύτερη ανάγνωση'&&success&&!document.querySelector('#receipt-inbox-error')&&!document.querySelector('.receipt-inbox-layout')?.inert)}",'confirmed local review remains visible and truthful without follow-up read');
+    const observed=await c.call("function(){const gate=window.__qaReceiptPostSaveReadGuard;return {opens:gate?.opens,success:Boolean(document.querySelector('.receipt-success')),error:Boolean(document.querySelector('#receipt-inbox-error')),selectedText:document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]')?.value}}");
+    assert(observed.opens===2&&observed.success&&!observed.error&&observed.selectedText==='QA προϊόν χωρίς δεύτερη ανάγνωση','successful local review must reconcile confirmed write with zero redundant read: '+JSON.stringify(observed));
+    await screenshot('receipt-local-review-save-without-secondary-read-desktop');
+  }finally{
+    const restored=await c.call("function(){const gate=window.__qaReceiptPostSaveReadGuard;if(!gate)return false;gate.proto.open=gate.original;delete window.__qaReceiptPostSaveReadGuard;return true}");
+    assert(restored,'QA-only IndexedDB factory hook restored');
+  }
   console.log('Receipt OCR QA: reviewed categories open one canonical split, without posting money');
   for(let i=0;i<2;i++){
     const opened=await c.call("function(index){const input=document.querySelector('input[role=combobox][aria-label=\"Κατηγορία γραμμής '+(index+1)+'\"]');if(!input||input.disabled)return false;input.click();return true}",[i]);
