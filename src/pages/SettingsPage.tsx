@@ -118,7 +118,7 @@ export function SettingsPage({
   accountFocusKey?:number;
   activeTab?:SettingsTab;
   onActiveTabChange?:(tab:SettingsTab)=>void;
-  onImport: (d: FinanceData) => Promise<void>;
+  onImport: (d: FinanceData) => Promise<void|{status:'complete'|'committed-history-unverified'}>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
   onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
@@ -252,8 +252,12 @@ export function SettingsPage({
     setOperationResult('');
     setBusy(true);
     try {
-      await onImport(JSON.parse(await file.text()));
-      setOperationResult('Η εισαγωγή ολοκληρώθηκε και δημιουργήθηκε αυτόματο αντίγραφο ασφαλείας των προηγούμενων δεδομένων.');
+      const result=await onImport(JSON.parse(await file.text()));
+      if(result&&result.status==='committed-history-unverified'){
+        setOperationResult('Η εισαγωγή επιβεβαιώθηκε στη βάση, αλλά δεν επαληθεύτηκε το ιστορικό αλλαγών. Μην εισαγάγεις ξανά το αρχείο. Φόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.','warning');
+      }else{
+        setOperationResult('Η εισαγωγή ολοκληρώθηκε και δημιουργήθηκε αυτόματο αντίγραφο ασφαλείας των προηγούμενων δεδομένων.');
+      }
     } catch (error) {
       setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'),'error');
     } finally {
