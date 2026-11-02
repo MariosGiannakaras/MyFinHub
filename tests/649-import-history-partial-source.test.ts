@@ -4,6 +4,8 @@ import {describe,expect,it} from 'vitest';
 const hook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const notice=readFileSync(new URL('../src/components/PersistenceNotice.tsx',import.meta.url),'utf8');
+const fixture=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+const browser=readFileSync(new URL('../scripts/save-progress-qa.mjs',import.meta.url),'utf8');
 const importPath=hook.slice(hook.indexOf('const doImport = useCallback'),hook.indexOf('const doBackup = useCallback'));
 
 describe('#649 I18.04 import receipt with unverified history',()=>{
@@ -23,6 +25,16 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(importPath).toContain('available:false,generation:historyGenerationRef.current,financeRevision:res.revision');
     expect(importPath).toContain('currentPointId:null,canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,points:[]');
     expect(importPath).toContain('applyHistory(verified?nextHistory!:unavailableHistory)');
+  });
+  it('tests real-hook post-import history failure and revision mismatch in Chromium',()=>{
+    expect(fixture).toContain('__myfinhubQaImportHistoryCase');
+    expect(fixture).toContain('QA_HISTORY_READ_UNAVAILABLE');
+    expect(fixture).toContain('financeRevision:String(revision+1)');
+    expect(fixture).toContain('data-persistence-import-outcome');
+    expect(browser).toContain("for(const historyFailure of ['read-failure','revision-mismatch'])");
+    expect(browser).toContain('history-committed-import-');
+    expect(browser).toContain('committed import keeps finance revision, blocks stale history');
+    expect(browser).toContain('recovery preserves acknowledged import without reposting finance');
   });
   it('renders partial success as warning with reload, never a destructive import retry',()=>{
     expect(settings).toContain("result.status==='committed-history-unverified'");

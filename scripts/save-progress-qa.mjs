@@ -180,6 +180,25 @@ try{
   assert(partial.budget===partialBase+2&&partial.undo===2&&partial.redo===1&&await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===2&&Boolean(document.querySelector('[data-save-progress=error]'))}"),`failed second step retains exact first confirmed move and red bar: ${JSON.stringify(partial)}`);
   await shot('history-real-hook-jump-partial-conflict-1440-dark');
 
+  // The real finance hook accepts the import before its separate history GET.
+  // Neither an HTTP error nor a mismatched history revision may show green
+  // success or permit stale Undo/Redo; recovery must not repeat the import.
+  for(const historyFailure of ['read-failure','revision-mismatch']){
+    await c.send('Page.navigate',{url:historyHookUrl.href});
+    await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'import history negative probe initialized');
+    const beforeImport=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+    const armed=await c.call("function(mode){return globalThis.__myfinhubQaImportHistoryCase?.(mode)===true}",[historyFailure]);
+    assert(armed,'synthetic post-commit history '+historyFailure+' armed');
+    assert(await press('[data-persistence-import]'),'committed synthetic import started');
+    await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='committed-history-unverified'&&document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'committed import reports unverified history rather than full success');
+    const outcome=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),outcome:document.querySelector('[data-persistence-import-outcome]')?.textContent,state:document.querySelector('[data-persistence-state]')?.textContent,notice:document.querySelector('.persistence-notice.conflict')?.textContent||'',undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+    assert(outcome.budget===beforeImport+13&&outcome.outcome==='committed-history-unverified'&&outcome.state==='conflict'&&outcome.notice.includes('Η εισαγωγή επιβεβαιώθηκε')&&outcome.notice.includes('Μην επαναλάβεις την εισαγωγή')&&outcome.undoDisabled&&outcome.redoDisabled&&outcome.progress==='error','committed import keeps finance revision, blocks stale history and displays truthful recovery: '+JSON.stringify(outcome));
+    await shot('history-committed-import-'+historyFailure+'-1440-dark');
+    assert(await press('[data-persistence-reload]'),'reload accepted imported finance after unverified history');
+    await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'read-only reload recovered imported finance and history');
+    assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",[beforeImport+13]),'recovery preserves acknowledged import without reposting finance');
+  }
+
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}
