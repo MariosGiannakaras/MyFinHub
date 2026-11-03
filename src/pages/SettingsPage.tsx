@@ -24,6 +24,7 @@ import { categoryTree } from '../lib/categories';
 import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE, prepareApprovedOwnerTaxonomy } from '../lib/ownerApprovedTaxonomy';
 import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
+import { previewFinanceImport, type FinanceImportPreview } from '../lib/importPreview';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
 import type { SettingsTabId } from '../lib/routing';
@@ -168,6 +169,7 @@ export function SettingsPage({
   const [busy, setBusy] = useState(false);
   const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<FinanceImportPreview | null>(null);
   const [pendingOwnerTaxonomy, setPendingOwnerTaxonomy] = useState(false);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
   const draftRef = useRef(draft);
@@ -228,21 +230,37 @@ export function SettingsPage({
     }finally{setBusy(false)}
   };
 
-  const requestImport = (file?: File) => {
+  const requestImport = async (file?: File) => {
     if (!file || busy) return;
+    // Discard any previous preview before opening another file, including
+    // a rejected oversized or malformed file.
+    setPendingImportFile(null);
+    setImportPreview(null);
     if (file.size > MAX_FINANCE_DOCUMENT_BYTES) {
       setOperationResult('Το αρχείο είναι μεγαλύτερο από το υποστηριζόμενο όριο των 4 MB. Διάλεξε μικρότερο αντίγραφο ασφαλείας και δοκίμασε ξανά.','error');
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
-    // A new import must not inherit the prior backup/import outcome while confirmation is pending.
     setOperationResult('');
-    setPendingImportFile(file);
+    setBusy(true);
+    try {
+      // Never open destructive confirmation for malformed JSON. Full structural,
+      // semantic and authorization checks still belong to the server on submit.
+      const preview=previewFinanceImport(JSON.parse(await file.text()));
+      setImportPreview(preview);
+      setPendingImportFile(file);
+    } catch (reason) {
+      setOperationResult(reason instanceof SyntaxError
+        ? 'Το επιλεγμένο αρχείο δεν περιέχει έγκυρο JSON. Δεν έγινε εισαγωγή.'
+        : userErrorMessage(reason,'Δεν μπόρεσε να διαβαστεί το αρχείο JSON. Δεν έγινε εισαγωγή.'),'error');
+      if (fileRef.current) fileRef.current.value = '';
+    } finally { setBusy(false); }
   };
 
   const cancelImport = () => {
     if (busy) return;
     setPendingImportFile(null);
+    setImportPreview(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -263,6 +281,7 @@ export function SettingsPage({
     } finally {
       setBusy(false);
       setPendingImportFile(null);
+      setImportPreview(null);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -373,18 +392,19 @@ export function SettingsPage({
               </Surface>
 
               <Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">
-                <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => requestImport(event.target.files?.[0])} />
+                <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => void requestImport(event.target.files?.[0])} />
                 <div className="settings-data-action-icon" aria-hidden="true"><FileJson /></div>
                 <div className="settings-data-action-copy">
                   <b>Επαναφορά από JSON</b>
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
                   <small>Έως 4 MB · αυτόματο backup πριν από την αντικατάσταση · χωρίς Undo της εισαγωγής. Η εισαγωγή δεν επαναφέρει μυστικά καρτών, IBAN, ανεβασμένα λογότυπα ή τοπικές αποδείξεις.</small>
+                  {pendingImportFile&&importPreview?<div className="settings-import-preview" role="status"><strong>Προεπισκόπηση επιλεγμένου JSON</strong><span>Έκδοση {importPreview.schemaVersion} · Ενημέρωση {importPreview.updatedAt}</span><span>{importPreview.accountCount} λογαριασμοί · {importPreview.legacyTransactionCount} αρχικές συναλλαγές · {importPreview.eventCount} καταχωρισμένα συμβάντα</span><small>Προκαταρκτικός έλεγχος αρχείου. Η πλήρης επικύρωση πραγματοποιείται από τη βάση μόνο μετά την επιβεβαίωση.</small></div>:null}
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>
             </div>
             <DesktopBackupPanel refreshToken={backupRefreshToken} onPrepareRestore={(snapshot) => {
-              requestImport(new File([JSON.stringify(snapshot)], 'MyFinHub-local-backup.json', { type: 'application/json' }));
+              void requestImport(new File([JSON.stringify(snapshot)], 'MyFinHub-local-backup.json', { type: 'application/json' }));
             }}/>
 
             <details className="settings-import-guide">
@@ -429,7 +449,7 @@ export function SettingsPage({
       <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"
-        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Το JSON δεν επαναφέρει Card Vault, ανεξάρτητα IBAN ή αρχεία Supabase Storage. Συνέχεια;"
+        description={`Προεπισκόπηση JSON: ${importPreview?.accountCount??0} λογαριασμοί, ${importPreview?.legacyTransactionCount??0} αρχικές συναλλαγές, ${importPreview?.eventCount??0} συμβάντα, έκδοση ${importPreview?.schemaVersion??'–'}. Προκαταρκτικός έλεγχος μόνο· η βάση θα επαληθεύσει την πλήρη δομή. Η εισαγωγή αντικαθιστά τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Το JSON δεν επαναφέρει Card Vault, ανεξάρτητα IBAN ή αρχεία Supabase Storage. Συνέχεια;`}
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}
