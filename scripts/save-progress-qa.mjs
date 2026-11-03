@@ -24,7 +24,7 @@ try{
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
-  const waitFor=async(fn,label)=>{for(let i=0;i<90;i++){if(await c.call(fn))return;await sleep(85)}throw new Error(`Timed out waiting for ${label}`)};
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<90;i++){if(await c.call(fn,args))return;await sleep(85)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async()=>{await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null}",'finance probe ready')};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
   const callMode=mode=>c.call("function(mode){globalThis.__myfinhubQaPersistenceMode(mode);return true}",[mode]);
