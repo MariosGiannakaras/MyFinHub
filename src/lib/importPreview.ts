@@ -1,5 +1,5 @@
-import { isValidDateStamp } from './dateOnly';
-import { isSupportedFinanceSchemaVersion } from './schemaVersion';
+import { isValidDateStamp } from './dateOnly.js';
+import { isSupportedFinanceSchemaVersion } from './schemaVersion.js';
 
 /**
  * Bounded client-side preview only. The API remains the sole authoritative
@@ -31,7 +31,7 @@ export function previewFinanceImport(value:unknown):FinanceImportPreview {
   }
   return {
     schemaVersion:value.schemaVersion as number,
-    updatedAt:value.updatedAt,
+    updatedAt:value.updatedAt as string,
     accountCount:value.seed.accounts.length,
     legacyTransactionCount:value.seed.transactions.length,
     eventCount:Array.isArray(value.state.events)?value.state.events.length:0,
