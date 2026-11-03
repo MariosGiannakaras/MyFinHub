@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
-import {previewFinanceImport} from '../src/lib/importPreview';
-import {qaFinanceData} from '../src/qaFixture';
+import {previewFinanceImport} from '../src/lib/importPreview.js';
+import {qaFinanceData} from '../src/qaFixture.js';
 import {readFileSync} from 'node:fs';
 
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
