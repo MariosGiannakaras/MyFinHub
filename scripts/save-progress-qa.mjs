@@ -180,6 +180,27 @@ try{
   assert(partial.budget===partialBase+2&&partial.undo===2&&partial.redo===1&&await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===2&&Boolean(document.querySelector('[data-save-progress=error]'))}"),`failed second step retains exact first confirmed move and red bar: ${JSON.stringify(partial)}`);
   await shot('history-real-hook-jump-partial-conflict-1440-dark');
 
+  // Rejected before commit (409 or 503) is distinct from a committed import
+  // whose separate history read failed. Use the production finance hook and
+  // assert that no synthetic database mutation or replay has taken place.
+  for(const preCommitFailure of ['conflict','unavailable']){
+    await c.send('Page.navigate',{url:historyHookUrl.href});
+    await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'pre-commit import rejection probe initialized');
+    const untouchedBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+    assert(await press('[data-persistence-mutate]'),'establish confirmed finance/history before rejected import');
+    await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${untouchedBudget+1}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'pre-import acknowledged finance baseline');
+    assert(await c.call("function(mode){return globalThis.__myfinhubQaRejectNextImport?.(mode)===true}",[preCommitFailure]),'arm isolated pre-commit import '+preCommitFailure);
+    assert(await press('[data-persistence-import]'),'attempt rejected import with actual useFinance hook');
+    const expectedState=preCommitFailure==='conflict'?'conflict':'error';
+    await waitFor("function(state){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent===state}",'rejected import never reports a confirmed receipt',[expectedState]);
+    const rejected=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,outcome:document.querySelector('[data-persistence-import-outcome]')?.textContent,attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}");
+    assert(rejected.budget===untouchedBudget+1&&rejected.state===expectedState&&rejected.outcome==='error'&&rejected.attempts===1&&rejected.commits===0&&rejected.undoDisabled&&rejected.redoDisabled&&rejected.progress==='error','pre-commit rejection preserves exact confirmed finance without false success, duplicate import or stale Undo: '+JSON.stringify(rejected));
+    await shot('history-rejected-import-'+preCommitFailure+'-1440-dark');
+    assert(await press('[data-persistence-reload]'),'read-only reload after rejected import');
+    await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'rejected import recovery by read-only reload');
+    assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0&&globalThis.__myfinhubQaImportAttemptCount?.()===1}",[untouchedBudget+1]),'read-only recovery preserves prior finance and never replays rejected import');
+  }
+
   // The real finance hook accepts the import before its separate history GET.
   // Neither an HTTP error nor a mismatched history revision may show green
   // success or permit stale Undo/Redo; recovery must not repeat the import.

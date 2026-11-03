@@ -79,6 +79,10 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let rejectNextHistoryMove=false;
   let rejectHistoryAfterSteps=0;
   let importHistoryCase:'read-failure'|'revision-mismatch'|null=null;
+  // Only the isolated hook QA can reject before advancing finance/history.
+  let importRejectOnce:'conflict'|'unavailable'|null=null;
+  let importAttempts=0;
+  let importCommits=0;
   type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
   const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
   let cursorIndex=0;
@@ -94,6 +98,9 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaRejectNextHistoryMove?:()=>boolean;
     __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
     __myfinhubQaImportHistoryCase?:(next:'read-failure'|'revision-mismatch')=>boolean;
+    __myfinhubQaRejectNextImport?:(next:'conflict'|'unavailable')=>boolean;
+    __myfinhubQaImportAttemptCount?:()=>number;
+    __myfinhubQaImportCommitCount?:()=>number;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -105,6 +112,9 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
   control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
   control.__myfinhubQaImportHistoryCase=next=>{importHistoryCase=next;return true};
+  control.__myfinhubQaRejectNextImport=next=>{if(!QA_HISTORY_HOOK_PROBE)return false;importRejectOnce=next;return true};
+  control.__myfinhubQaImportAttemptCount=()=>importAttempts;
+  control.__myfinhubQaImportCommitCount=()=>importCommits;
   const history=()=>QA_HISTORY_HOOK_PROBE?({
     available:true,generation:String(revision),financeRevision:String(revision),
     currentPointId:snapshots[cursorIndex]!.id,
@@ -145,7 +155,16 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
       return response;
     }
     if(url.pathname==='/api/import'&&init?.method==='POST'){
+      importAttempts+=1;
+      const rejected=importRejectOnce;
+      importRejectOnce=null;
+      if(QA_HISTORY_HOOK_PROBE&&rejected){
+        return new Response(JSON.stringify({code:rejected==='conflict'?'REVISION_CONFLICT':'QA_IMPORT_UNAVAILABLE',
+          error:rejected==='conflict'?'Synthetic pre-commit revision conflict':'Synthetic pre-commit import unavailable'}),
+          {status:rejected==='conflict'?409:503,headers:{'content-type':'application/json'}});
+      }
       backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      importCommits+=1;
       if(QA_HISTORY_HOOK_PROBE){
         snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
           state:structuredClone(backend.state),label:'QA import baseline'});

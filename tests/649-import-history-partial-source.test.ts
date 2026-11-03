@@ -36,6 +36,18 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(browser).toContain('committed import keeps finance revision, blocks stale history');
     expect(browser).toContain('recovery preserves acknowledged import without reposting finance');
   });
+  it('proves real-hook rejected imports do not commit, replay or unlock stale history',()=>{
+    const handler=fixture.slice(fixture.indexOf("if(url.pathname==='/api/import'"),fixture.indexOf("if(url.pathname==='/api/history'"));
+    expect(handler).toContain("if(QA_HISTORY_HOOK_PROBE&&rejected)");
+    expect(handler.indexOf("if(QA_HISTORY_HOOK_PROBE&&rejected)")).toBeLessThan(handler.indexOf("backend=JSON.parse"));
+    expect(fixture).toContain('__myfinhubQaRejectNextImport');
+    expect(fixture).toContain('__myfinhubQaImportAttemptCount');
+    expect(fixture).toContain('__myfinhubQaImportCommitCount');
+    expect(browser).toContain("for(const preCommitFailure of ['conflict','unavailable'])");
+    expect(browser).toContain('history-rejected-import-');
+    expect(browser).toContain('pre-commit rejection preserves exact confirmed finance without false success');
+    expect(browser).toContain('read-only recovery preserves prior finance and never replays rejected import');
+  });
   it('renders partial success as warning with reload, never a destructive import retry',()=>{
     expect(settings).toContain("result.status==='committed-history-unverified'");
     expect(settings).toContain("δεν επαληθεύτηκε το ιστορικό αλλαγών");
