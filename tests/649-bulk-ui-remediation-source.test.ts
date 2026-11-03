@@ -36,6 +36,13 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(accounts).toContain('<OperationFeedback className="account-management-message" tone={messageTone}>');
     expect(accounts).toContain(",'warning');return}");
   });
+  it('reuses equivalent Settings list, taxonomy and typography rules within the CSS budget',()=>{
+    const settingsCss=source('../src/pages/SettingsPage.css');
+    expect(settingsCss).toContain('.settings-app-list,.keyboard-shortcut-list{display:grid;border:1px solid var(--line)');
+    expect(settingsCss).toContain('.settings-icons-only .category-icons-workspace,.settings-categories-only .category-icons-workspace{display:grid;gap:10px;padding:14px}');
+    expect(settingsCss).toContain('.settings-general-appearance .text-size-picker button b,.keyboard-shortcut-row b,');
+    expect(settingsCss).toContain('.settings-app-list>div:first-child,.keyboard-shortcut-row:first-child{border-top:0}');
+  });
   it('captures full-page screenshots only once table/list content has finished painting',()=>{
     expect(screenshots).toContain('const waitForVisualPaint=async(page)');
     expect(screenshots).toContain("node.getAnimations()");
