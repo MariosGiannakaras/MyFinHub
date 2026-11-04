@@ -48,6 +48,10 @@ describe('top-edge save feedback ownership',()=>{
     const fixtures=read('src/qa.tsx');
     const runner=read('scripts/run-rendered-qa.mjs');
     expect(()=>execFileSync(process.execPath,['--check','scripts/save-progress-qa.mjs'],{stdio:'pipe'})).not.toThrow();
+    expect(qa).toContain("if(name.endsWith('-dark'))");
+    expect(qa).toContain("mod.applyThemePreference('dark')");
+    expect(qa).toContain("theme.colorScheme==='dark'&&theme.canvas===theme.expected");
+    expect(qa).toContain("theme.background.startsWith('linear-gradient(')");
     expect(qa).toContain('save-progress-pending-375-light');
     expect(qa).toContain('save-progress-success-375-light');
     expect(qa).toContain('save-progress-error-1440-dark');

@@ -26,7 +26,17 @@ try{
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<90;i++){if(await c.call(fn,args))return;await sleep(85)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async()=>{await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null}",'finance probe ready')};
-  const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+  // The isolated QA entrypoint does not initialize the app theme on navigation.
+  // Activate the real dark tokens before every screenshot labeled "-dark",
+  // then verify the computed visual theme rather than trusting the filename.
+  const shot=async name=>{
+    if(name.endsWith('-dark')){
+      const theme=await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const root=document.documentElement;const style=getComputedStyle(root);return {applied:root.dataset.theme,colorScheme:style.colorScheme,canvas:style.getPropertyValue('--canvas').trim(),expected:mod.DARK_THEME_TOKENS['--canvas'],background:getComputedStyle(document.body).backgroundImage}}");
+      assert(theme.applied==='dark'&&theme.colorScheme==='dark'&&theme.canvas===theme.expected&&theme.background.startsWith('linear-gradient('),'dark-labeled screenshot must use actual dark semantic theme: '+name+' '+JSON.stringify(theme));
+    }
+    const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});
+    writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'));
+  };
   const callMode=mode=>c.call("function(mode){globalThis.__myfinhubQaPersistenceMode(mode);return true}",[mode]);
   const mutate=()=>c.call("function(){const button=document.querySelector('[data-persistence-mutate]');button?.click();return Boolean(button)}");
   const release=()=>c.call("function(){return globalThis.__myfinhubQaReleaseSave?.()===true}");
