@@ -49,7 +49,7 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(browser).toContain("'rejected import never reports a confirmed receipt',[expectedState]");
     // CDP function strings are opaque to node --check; compile the actual
     // rejected-import projection before relying on a costly browser job.
-    const rejectedProjection=browser.match(/const rejected=await c\\.call\\("([^"]+)"\\)/)?.[1];
+    const rejectedProjection=browser.match(/const rejected=await c\.call\("([^"]+)"\)/)?.[1];
     expect(rejectedProjection).toBeDefined();
     expect(()=>new Function('return ('+rejectedProjection+')')()).not.toThrow();
     expect(browser).toContain('history-rejected-import-');
