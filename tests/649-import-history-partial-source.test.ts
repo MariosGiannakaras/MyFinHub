@@ -47,6 +47,11 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(browser).toContain('const waitFor=async(fn,label,args=[])=>');
     expect(browser).toContain('if(await c.call(fn,args))return;');
     expect(browser).toContain("'rejected import never reports a confirmed receipt',[expectedState]");
+    // CDP function strings are opaque to node --check; compile the actual
+    // rejected-import projection before relying on a costly browser job.
+    const rejectedProjection=browser.match(/const rejected=await c\\.call\\("([^"]+)"\\)/)?.[1];
+    expect(rejectedProjection).toBeDefined();
+    expect(()=>new Function('return ('+rejectedProjection+')')()).not.toThrow();
     expect(browser).toContain('history-rejected-import-');
     expect(browser).toContain('pre-commit rejection preserves exact confirmed finance without false success');
     expect(browser).toContain('read-only recovery preserves prior finance and never replays rejected import');
