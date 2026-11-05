@@ -26,7 +26,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .top-actions button{min-width:40px;min-height:40px}
 
 .persistence-notice{position:sticky;top:86px;z-index:24;margin:0 4px 12px;border-radius:14px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #cbd8e9;background:rgba(248,251,255,.97);box-shadow:0 10px 24px rgba(24,52,96,.09);font-size:11px}
-.persistence-notice>div{display:grid;gap:2px}.persistence-notice small{color:var(--muted);font-size:10px}.persistence-notice.error,.persistence-notice.conflict{border-color:#e4aeb7;background:#fff5f7;color:#8f2436}.persistence-notice.saving{border-color:#afc8f5;background:#f0f5ff;color:#174ea6}.persistence-notice .secondary{flex:0 0 auto}
+.persistence-notice>div{display:grid;gap:2px}.persistence-notice small{color:inherit;font-size:var(--ux-small-size)}.persistence-notice.error,.persistence-notice.conflict{border-color:#e4aeb7;background:#fff5f7;color:#8f2436}.persistence-notice.saving{border-color:#afc8f5;background:#f0f5ff;color:#174ea6}.persistence-notice .secondary{flex:0 0 auto}
 
 .workspace-error,.not-found{max-width:720px;margin:32px auto;text-align:center}.workspace-error h2,.not-found h1{margin:0 0 8px}.workspace-error p,.not-found p{color:var(--muted);line-height:1.6}.not-found .editor-actions{justify-content:center}
 

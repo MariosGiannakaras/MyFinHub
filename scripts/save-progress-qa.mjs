@@ -33,6 +33,9 @@ try{
     if(name.endsWith('-dark')){
       const theme=await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const root=document.documentElement;const style=getComputedStyle(root);return {applied:root.dataset.theme,colorScheme:style.colorScheme,canvas:style.getPropertyValue('--canvas').trim(),expected:mod.DARK_THEME_TOKENS['--canvas'],background:getComputedStyle(document.body).backgroundImage}}");
       assert(theme.applied==='dark'&&theme.colorScheme==='dark'&&theme.canvas===theme.expected&&theme.background.startsWith('linear-gradient('),'dark-labeled screenshot must use actual dark semantic theme: '+name+' '+JSON.stringify(theme));
+      // Protect the readable light error surface from dark-context muted tokens.
+      const noticeContrast=await c.call("function(){const el=document.querySelector('.persistence-notice.error small,.persistence-notice.conflict small');if(!el)return null;const notice=el.closest('.persistence-notice');const luminance=color=>{const rgb=color.match(/[0-9.]+/g).slice(0,3).map(Number).map(x=>{const v=x/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};const fg=getComputedStyle(el),bg=getComputedStyle(notice),a=luminance(fg.color),b=luminance(bg.backgroundColor),rect=notice.getBoundingClientRect();return {ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),fontSize:parseFloat(fg.fontSize),fits:rect.left>=-1&&rect.right<=innerWidth+1,overflows:notice.scrollWidth>notice.clientWidth+1,foreground:fg.color,background:bg.backgroundColor}}");
+      if(noticeContrast)assert(noticeContrast.ratio>=4.5&&noticeContrast.fontSize>=11.5&&noticeContrast.fits&&!noticeContrast.overflows,'readable error notice at '+name+': '+JSON.stringify(noticeContrast));
     }
     const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});
     writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'));
@@ -206,6 +209,9 @@ try{
     const rejected=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,outcome:document.querySelector('[data-persistence-import-outcome]')?.textContent,attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
     assert(rejected.budget===untouchedBudget+1&&rejected.state===expectedState&&rejected.outcome==='error'&&rejected.attempts===1&&rejected.commits===0&&rejected.undoDisabled&&rejected.redoDisabled&&rejected.progress==='error','pre-commit rejection preserves exact confirmed finance without false success, duplicate import or stale Undo: '+JSON.stringify(rejected));
     await shot('history-rejected-import-'+preCommitFailure+'-1440-dark');
+    await viewport(375,812);
+    await shot('history-rejected-import-'+preCommitFailure+'-375-dark');
+    await viewport(1440,900);
     assert(await press('[data-persistence-reload]'),'read-only reload after rejected import');
     await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'rejected import recovery by read-only reload');
     assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0&&globalThis.__myfinhubQaImportAttemptCount?.()===1}",[untouchedBudget+1]),'read-only recovery preserves prior finance and never replays rejected import');
