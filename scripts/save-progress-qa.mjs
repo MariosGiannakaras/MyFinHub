@@ -218,6 +218,24 @@ try{
     assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0&&globalThis.__myfinhubQaImportAttemptCount?.()===1}",[untouchedBudget+1]),'read-only recovery preserves prior finance and never replays rejected import');
   }
 
+  // A concurrent acknowledged save changes the server revision after this
+  // hook read its original revision. The web import's If-Match must reject
+  // before any destructive replacement, without relying on a forced 409.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'revision-guarded import baseline');
+  const staleBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await press('[data-persistence-mutate]'),'confirm a prior finance revision before simulating a competing writer');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${staleBudget+1}&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'confirmed baseline before stale-revision import');
+  assert(await c.call("function(){return globalThis.__myfinhubQaAdvanceRemoteRevision?.()===true}"),'simulate concurrent accepted remote revision');
+  assert(await press('[data-persistence-import]'),'submit revision-guarded stale import');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'server If-Match conflict rejects stale import');
+  const stale=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+  assert(stale.budget===staleBudget+1&&stale.attempts===1&&stale.commits===0&&stale.undoDisabled&&stale.redoDisabled&&stale.progress==='error','stale real If-Match conflict does not replace, replay or claim saved: '+JSON.stringify(stale));
+  await shot('history-stale-import-revision-conflict-1440-dark');
+  assert(await press('[data-persistence-reload]'),'read-only recovery after stale revision import');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'stale import recovery reload');
+  assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0}",[staleBudget+1]),'remote revision recovery never repeats stale import');
+
   // The real finance hook accepts the import before its separate history GET.
   // Neither an HTTP error nor a mismatched history revision may show green
   // success or permit stale Undo/Redo; recovery must not repeat the import.

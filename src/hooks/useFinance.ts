@@ -323,7 +323,7 @@ export function useFinance() {
     try {
       await coordinator.whenIdle();
       try {
-        const res = await importData(productData(incoming));
+        const res = await importData(productData(incoming), revisionRef.current);
         applyDataEnvelope(res);
         // Import is already committed when the server acknowledges its revision.
         // A failed history read must not invite a second destructive import.

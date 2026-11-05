@@ -101,6 +101,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaRejectNextImport?:(next:'conflict'|'unavailable')=>boolean;
     __myfinhubQaImportAttemptCount?:()=>number;
     __myfinhubQaImportCommitCount?:()=>number;
+    __myfinhubQaAdvanceRemoteRevision?:()=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -115,6 +116,9 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaRejectNextImport=next=>{if(!QA_HISTORY_HOOK_PROBE)return false;importRejectOnce=next;return true};
   control.__myfinhubQaImportAttemptCount=()=>importAttempts;
   control.__myfinhubQaImportCommitCount=()=>importCommits;
+  // Simulates another accepted session changing the server revision after
+  // this hook loaded its current revision, before its import confirmation.
+  control.__myfinhubQaAdvanceRemoteRevision=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;revision+=1;return true};
   const history=()=>QA_HISTORY_HOOK_PROBE?({
     available:true,generation:String(revision),financeRevision:String(revision),
     currentPointId:snapshots[cursorIndex]!.id,
@@ -162,6 +166,11 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
         return new Response(JSON.stringify({code:rejected==='conflict'?'REVISION_CONFLICT':'QA_IMPORT_UNAVAILABLE',
           error:rejected==='conflict'?'Synthetic pre-commit revision conflict':'Synthetic pre-commit import unavailable'}),
           {status:rejected==='conflict'?409:503,headers:{'content-type':'application/json'}});
+      }
+      // Exercise the actual browser If-Match header, not only a forced 409.
+      if(QA_HISTORY_HOOK_PROBE&&new Headers(init.headers).get('if-match')!==String(revision)){
+        return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'Synthetic stale import revision'}),
+          {status:409,headers:{'content-type':'application/json'}});
       }
       backend=JSON.parse(String(init.body||'{}')) as FinanceData;
       importCommits+=1;

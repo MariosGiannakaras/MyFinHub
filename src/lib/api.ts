@@ -240,10 +240,10 @@ export async function moveHistory(direction:'undo'|'redo',revision:string,histor
   }));
 }
 
-export async function importData(data: FinanceData): Promise<DataEnvelope> {
+export async function importData(data: FinanceData, revision: string): Promise<DataEnvelope> {
   return json(await apiRequest('/api/import', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace' },
+    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace', 'if-match': revision },
     body: JSON.stringify(data),
   }));
 }
