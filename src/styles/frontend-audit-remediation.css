@@ -52,7 +52,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .app-shell{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
   .mobile-nav{bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-bottom:max(6px,env(safe-area-inset-bottom,0px))}
   .mobile-more-menu{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
-  .persistence-notice{top:68px;margin-left:0;margin-right:0;align-items:flex-start}.persistence-notice .secondary{padding:8px 9px}
+  .persistence-notice{top:68px;margin-left:0;margin-right:0;align-items:flex-start;flex-direction:column}.persistence-notice>div{width:100%;min-width:0}.persistence-notice .secondary{padding:8px 9px;margin-left:auto}
   .month-toolbar{font-size:10px}
   .page-heading{gap:10px}.page-heading p{font-size:11px;line-height:1.45}
   .metric-grid{grid-template-columns:1fr 1fr}.metric-card small{font-size:9.5px}

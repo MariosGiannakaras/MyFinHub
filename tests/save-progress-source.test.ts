@@ -55,10 +55,15 @@ describe('top-edge save feedback ownership',()=>{
     const noticeCss=read('src/styles/frontend-audit-remediation.css');
     expect(noticeCss).toContain('.persistence-notice small{color:inherit;font-size:var(--ux-small-size)}');
     expect(noticeCss).not.toContain('.persistence-notice small{color:var(--muted)');
+    expect(noticeCss).toContain('align-items:flex-start;flex-direction:column');
+    expect(noticeCss).toContain('.persistence-notice>div{width:100%;min-width:0}');
+    expect(noticeCss).toContain('.persistence-notice .secondary{padding:8px 9px;margin-left:auto}');
     const noticeProbe=qa.match(/const noticeContrast=await c\.call\("([^"]+)"\)/)?.[1];
     expect(noticeProbe).toBeDefined();
     expect(()=>new Function('return ('+noticeProbe+')')()).not.toThrow();
     expect(qa).toContain('noticeContrast.ratio>=4.5&&noticeContrast.fontSize>=11.5');
+    expect(qa).toContain("name.includes('-375-')");
+    expect(qa).toContain('noticeContrast.textWidth>=260&&noticeContrast.stacked');
     expect(qa).toContain("await shot('history-rejected-import-'+preCommitFailure+'-375-dark')");
     expect(qa).toContain('save-progress-pending-375-light');
     expect(qa).toContain('save-progress-success-375-light');
