@@ -81,6 +81,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let importHistoryCase:'read-failure'|'revision-mismatch'|null=null;
   // Only the isolated hook QA can reject before advancing finance/history.
   let importRejectOnce:'conflict'|'unavailable'|null=null;
+  let loseNextImportReceipt=false;
   let importAttempts=0;
   let importCommits=0;
   type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
@@ -102,6 +103,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaImportAttemptCount?:()=>number;
     __myfinhubQaImportCommitCount?:()=>number;
     __myfinhubQaAdvanceRemoteRevision?:()=>boolean;
+    __myfinhubQaLoseNextImportReceipt?:()=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -116,6 +118,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaRejectNextImport=next=>{if(!QA_HISTORY_HOOK_PROBE)return false;importRejectOnce=next;return true};
   control.__myfinhubQaImportAttemptCount=()=>importAttempts;
   control.__myfinhubQaImportCommitCount=()=>importCommits;
+  control.__myfinhubQaLoseNextImportReceipt=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;loseNextImportReceipt=true;return true};
   // Simulates another accepted session changing the server revision after
   // this hook loaded its current revision, before its import confirmation.
   control.__myfinhubQaAdvanceRemoteRevision=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;revision+=1;return true};
@@ -180,6 +183,11 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
         cursorIndex=0; // Fixture reset, not Production import Undo semantics.
       }
       revision+=1;
+      if(QA_HISTORY_HOOK_PROBE&&loseNextImportReceipt){
+        loseNextImportReceipt=false;
+        // The database committed; only the HTTP acknowledgement was lost.
+        throw new TypeError('Synthetic network loss after committed import');
+      }
       return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){

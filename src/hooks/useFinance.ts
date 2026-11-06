@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
+import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
 import { reachableHistoryNavigation } from '../lib/historyView';
 import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
@@ -347,7 +347,10 @@ export function useFinance() {
       } catch (error) {
         lastSaveFailed.current = true;
         if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
-        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
+        else if(importOutcomeMayBeCommitted(error)){
+          setSaveErrorMessage('Η έκβαση της εισαγωγής δεν επιβεβαιώθηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση για να ελέγξεις αν πραγματοποιήθηκε.');
+          setCurrentSaveState('error');
+        }else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     } finally {

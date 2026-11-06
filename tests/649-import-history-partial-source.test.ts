@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
+import {ApiError,importOutcomeMayBeCommitted} from '../src/lib/api.js';
 
 const hook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
@@ -55,6 +56,24 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(browser).toContain('history-rejected-import-');
     expect(browser).toContain('pre-commit rejection preserves exact confirmed finance without false success');
     expect(browser).toContain('read-only recovery preserves prior finance and never replays rejected import');
+  });
+  it('classifies lost or 5xx import replies as unknown, but 4xx rejection as definitive',()=>{
+    expect(importOutcomeMayBeCommitted(new ApiError('timeout',0,'NETWORK_TIMEOUT'))).toBe(true);
+    expect(importOutcomeMayBeCommitted(new ApiError('unavailable',503,'DATA_UNAVAILABLE'))).toBe(true);
+    expect(importOutcomeMayBeCommitted(new ApiError('gateway timeout',504,'DATA_TIMEOUT'))).toBe(true);
+    expect(importOutcomeMayBeCommitted(new ApiError('revision conflict',409,'REVISION_CONFLICT'))).toBe(false);
+    expect(importOutcomeMayBeCommitted(new ApiError('invalid payload',400,'INVALID_DATA'))).toBe(false);
+  });
+  it('makes committed import response loss require reload instead of replay or false green',()=>{
+    expect(fixture).toContain('__myfinhubQaLoseNextImportReceipt');
+    expect(fixture.indexOf('importCommits+=1')).toBeLessThan(fixture.indexOf("throw new TypeError('Synthetic network loss after committed import')"));
+    expect(browser).toContain('history-committed-import-response-lost-1440-dark');
+    expect(browser).toContain('uncertain.attempts===1&&uncertain.commits===1');
+    expect(browser).toContain('response-loss recovery must never replay import');
+    expect(importPath).toContain('importOutcomeMayBeCommitted(error)');
+    expect(importPath).toContain('Μην επαναλάβεις την εισαγωγή');
+    expect(settings).toContain('if(importOutcomeMayBeCommitted(error))');
+    expect(settings).toContain("Φόρτωσε την τελευταία αποθηκευμένη έκδοση και έλεγξε τα δεδομένα πριν συνεχίσεις.','warning'");
   });
   it('renders partial success as warning with reload, never a destructive import retry',()=>{
     expect(settings).toContain("result.status==='committed-history-unverified'");

@@ -56,6 +56,11 @@ export class ApiError extends Error {
   }
 }
 
+// HTTP transport loss or 5xx does not prove an import never committed.
+export function importOutcomeMayBeCommitted(error:unknown):boolean {
+  return error instanceof ApiError&&(error.status===0||error.status>=500);
+}
+
 async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {

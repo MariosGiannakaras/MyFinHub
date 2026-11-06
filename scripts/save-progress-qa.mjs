@@ -236,6 +236,20 @@ try{
   await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'stale import recovery reload');
   assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0}",[staleBudget+1]),'remote revision recovery never repeats stale import');
 
+  // An import may commit while its HTTP reply disappears. Never invite replay.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'lost import receipt baseline');
+  const lostBase=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaLoseNextImportReceipt?.()===true}"),'arm committed import response loss');
+  assert(await press('[data-persistence-import]'),'submit import with lost HTTP reply');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent==='error'}",'lost import reply never claims success');
+  const uncertain=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),message:document.querySelector('.persistence-notice.error')?.textContent||'',attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+  assert(uncertain.budget===lostBase&&uncertain.attempts===1&&uncertain.commits===1&&uncertain.undoDisabled&&uncertain.redoDisabled&&uncertain.progress==='error'&&uncertain.message.includes('Μην επαναλάβεις την εισαγωγή'),'lost import reply never claims finance success or invites destructive replay: '+JSON.stringify(uncertain));
+  await shot('history-committed-import-response-lost-1440-dark');
+  assert(await press('[data-persistence-reload]'),'read-only recovery after unknown committed import');
+  await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${lostBase+13}`,'reload reconciles confirmed finance after unknown import');
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===1&&globalThis.__myfinhubQaImportCommitCount?.()===1}"),'response-loss recovery must never replay import');
+
   // The real finance hook accepts the import before its separate history GET.
   // Neither an HTTP error nor a mismatched history revision may show green
   // success or permit stale Undo/Redo; recovery must not repeat the import.

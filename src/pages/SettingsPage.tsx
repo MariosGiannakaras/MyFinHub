@@ -11,7 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { DesktopBackupPanel } from '../components/DesktopBackupPanel';
-import { loadData } from '../lib/api';
+import { importOutcomeMayBeCommitted, loadData } from '../lib/api';
 import { desktopBackupBridge } from '../lib/desktopBackups';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
@@ -277,7 +277,12 @@ export function SettingsPage({
         setOperationResult('Η εισαγωγή ολοκληρώθηκε και δημιουργήθηκε αυτόματο αντίγραφο ασφαλείας των προηγούμενων δεδομένων.');
       }
     } catch (error) {
-      setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'),'error');
+      if(importOutcomeMayBeCommitted(error)){
+        // Unknown commit status: require read-only reload, not another import.
+        setOperationResult('Δεν επιβεβαιώθηκε αν η εισαγωγή ολοκληρώθηκε στη βάση. Μην εισαγάγεις ξανά το αρχείο. Φόρτωσε την τελευταία αποθηκευμένη έκδοση και έλεγξε τα δεδομένα πριν συνεχίσεις.','warning');
+      }else{
+        setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'),'error');
+      }
     } finally {
       setBusy(false);
       setPendingImportFile(null);
