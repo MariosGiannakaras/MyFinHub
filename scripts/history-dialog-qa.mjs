@@ -6,15 +6,22 @@ const evidence=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-history-focu
 mkdirSync(evidence,{recursive:true});
 const browser=execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!browser)throw new Error('Chromium required for History focused QA');
-const port=9377,profile=`/tmp/myfinhub-history-focused-browser-${process.pid}`;
-rmSync(profile,{force:true,recursive:true});
-const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+let port=9377,profile='',child;
 let browserDiagnostics='',spawnFailure='';
-const appendDiagnostics=chunk=>{browserDiagnostics+=chunk.toString();if(browserDiagnostics.length>14000)browserDiagnostics=browserDiagnostics.slice(-14000)};
-child.stderr?.on('data',appendDiagnostics);
-child.stdout?.on('data',appendDiagnostics);
-child.on('error',error=>{spawnFailure=error instanceof Error?error.message:String(error)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const launch=attempt=>{
+  // A cold shared runner can fail to expose CDP even after a bounded startup.
+  // Retry one independent browser/profile/port, never relax rendered assertions.
+  port=9376+attempt;
+  profile=`/tmp/myfinhub-history-focused-browser-${process.pid}-${attempt}`;
+  rmSync(profile,{force:true,recursive:true});
+  browserDiagnostics='';spawnFailure='';
+  child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+  const appendDiagnostics=chunk=>{browserDiagnostics+=chunk.toString();if(browserDiagnostics.length>14000)browserDiagnostics=browserDiagnostics.slice(-14000)};
+  child.stderr?.on('data',appendDiagnostics);
+  child.stdout?.on('data',appendDiagnostics);
+  child.on('error',error=>{spawnFailure=error instanceof Error?error.message:String(error)});
+};
 const assert=(condition,label)=>{if(!condition)throw new Error(`History rendered QA: ${label}`)};
 async function ready(url){
   // Allow cold headless Chromium startup under a loaded hosted runner, but
@@ -36,7 +43,21 @@ class Cdp{
 }
 let c;
 try{
-  await ready(`http://127.0.0.1:${port}/json/version`);
+  let booted=false,lastStartupError;
+  for(let attempt=1;attempt<=2;attempt++){
+    launch(attempt);
+    try{
+      await ready(`http://127.0.0.1:${port}/json/version`);
+      booted=true;break;
+    }catch(error){
+      lastStartupError=error;
+      console.warn(`History Chromium bootstrap attempt ${attempt} failed: ${error instanceof Error?error.message:String(error)}`);
+      child?.kill('SIGTERM');
+      rmSync(profile,{force:true,recursive:true,maxRetries:6,retryDelay:150});
+      if(attempt<2)await sleep(500);
+    }
+  }
+  if(!booted)throw lastStartupError??new Error('History Chromium bootstrap unavailable');
   const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(r=>r.json());
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const waitFor=async(fn,label)=>{for(let i=0;i<100;i++){if(await c.call(fn))return;await sleep(85)}throw Error(`History browser timeout: ${label}`)};
@@ -172,4 +193,4 @@ try{
 
   console.log('History focused rendered QA passed: cursor, import guide, long Greek labels, Light/Dark responsive geometry, button states, focus/Escape and error/conflict.');
 }catch(error){console.error(error);process.exitCode=1}
-finally{c?.close();child.kill('SIGTERM');rmSync(profile,{force:true,recursive:true,maxRetries:6,retryDelay:150})}
+finally{c?.close();child?.kill('SIGTERM');if(profile)rmSync(profile,{force:true,recursive:true,maxRetries:6,retryDelay:150})}

@@ -115,7 +115,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
     // Legacy fixture is dated October 2026. Search honors selected reporting
     // month, whereas modern Quick Entry uses today's actual month.
-    const readPeriod=()=>c!.call<string>("function(){return document.querySelector('.period-control>span')?.textContent?.trim()||''}");
+    const readPeriod=()=>c!.call<string>("function(){return document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||''}");
     const selectPeriod=async(label:string,direction:'previous'|'next')=>{
       for(let step=0;step<120;step++){
         const current=await readPeriod();
@@ -123,7 +123,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
         if(current===label)return;
         const moved=await c!.call<boolean>("function(direction){const wanted=direction==='previous'?'Προηγούμενος μήνας':'Επόμενος μήνας';const button=[...document.querySelectorAll('.period-control button')].find(node=>node.getAttribute('aria-label')?.startsWith(wanted));if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}",[direction]);
         assert(moved,'Could not navigate reporting month from '+current+' to '+label);
-        await waitFor("function(previous){return (document.querySelector('.period-control>span')?.textContent?.trim()||'')!==previous}",'reporting period navigation',[current]);
+        await waitFor("function(previous){return (document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||'')!==previous}",'reporting period navigation',[current]);
       }
       throw new Error('Could not reach reporting month '+label+' within 120 calendar steps');
     };

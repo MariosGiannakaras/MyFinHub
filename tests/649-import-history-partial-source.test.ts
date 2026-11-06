@@ -57,6 +57,15 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(browser).toContain('pre-commit rejection preserves exact confirmed finance without false success');
     expect(browser).toContain('read-only recovery preserves prior finance and never replays rejected import');
   });
+  it('retries only a failed History CDP bootstrap with a fresh profile, not the UI assertions',()=>{
+    const historyBrowser=readFileSync(new URL('../scripts/history-dialog-qa.mjs',import.meta.url),'utf8');
+    expect(historyBrowser).toContain('attempt<=2');
+    expect(historyBrowser).toContain('port=9376+attempt');
+    expect(historyBrowser).toContain('History Chromium bootstrap attempt');
+    expect(historyBrowser).toContain('if(!booted)throw');
+    expect(historyBrowser).toContain("History browser timeout: ");
+    expect(historyBrowser).toContain('await waitFor("function(){return Boolean(document.querySelector');
+  });
   it('classifies lost or 5xx import replies as unknown, but 4xx rejection as definitive',()=>{
     expect(importOutcomeMayBeCommitted(new ApiError('timeout',0,'NETWORK_TIMEOUT'))).toBe(true);
     expect(importOutcomeMayBeCommitted(new ApiError('unavailable',503,'DATA_UNAVAILABLE'))).toBe(true);

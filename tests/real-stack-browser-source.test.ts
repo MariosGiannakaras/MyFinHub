@@ -55,7 +55,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("2026-10-01T00:00:00.000Z");
     expect(source).toContain("selectPeriod(seedPeriod,'previous')");
     expect(source).toContain("selectPeriod(previousPeriod,'next')");
-    expect(source).toContain("querySelector('.period-control>span')");
+    // The first direct span is Tooltip, not the month label.
+    expect(source).toContain("querySelector('.period-control>span:not(.app-tooltip)')");
+    expect(source).not.toContain("querySelector('.period-control>span')");
+    const monthControl=readFileSync('src/components/PeriodControl.tsx','utf8');
+    expect(monthControl).toContain('<Tooltip label="Προηγούμενος μήνας">');
+    expect(monthControl).toContain('<span>{monthLabel(month)}</span>');
     expect(source).toContain('reporting period navigation');
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');
