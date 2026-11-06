@@ -4,6 +4,8 @@ import {describe,expect,it} from 'vitest';
 const read=(path:string)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const migration=read('supabase/migrations/20261105204000_guard_stale_import_revision.sql');
 const importRoute=read('api/import.ts');
+const expressHost=read('server/index.ts');
+const expressImportRoute=expressHost.slice(expressHost.indexOf("app.post('/api/import'"),expressHost.indexOf("app.post('/api/backup'"));
 const storage=read('server/storage.ts');
 const client=read('src/lib/api.ts');
 const hook=read('src/hooks/useFinance.ts');
@@ -17,6 +19,15 @@ describe('#649 I18.04 guarded web import vs legacy native compatibility',()=>{
     expect(client).toContain("'if-match': revision");
     expect(importRoute).toContain("const revision=requestHeader(req,'if-match')");
     expect(importRoute).toContain('writeStore(body, revision||undefined, true, session.accessToken)');
+    // The local Node/Windows host is a second real entrypoint; it must never
+    // silently call the legacy unguarded RPC for a web If-Match import.
+    expect(expressImportRoute).toContain("requestHeader(req,'if-match')");
+    expect(expressImportRoute).toContain('writeStore(req.body, revision||undefined, true, session.accessToken)');
+    expect(expressImportRoute).not.toContain('writeStore(req.body, undefined, true');
+    expect(expressImportRoute).toContain('requireFinanceSession(req, res)');
+    expect(expressImportRoute).toContain('assertMutationSessionOrigin(req, session)');
+    expect(expressImportRoute).toContain("x-rheomiq-confirm-import");
+    expect(expressImportRoute).toContain('validateCompleteFinanceData(req.body)');
     expect(importRoute).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(importRoute).toContain("assertImportConfirmation(requestHeader(req, 'x-rheomiq-confirm-import'))");
     expect(importRoute).toContain('validateCompleteFinanceData(body)');
