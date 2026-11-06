@@ -322,6 +322,20 @@ async function main(){
     const initial=await primary.request('/api/data');
     expect(initial,200,undefined,'data-read');
     assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    // Distinct from the browser's early preview denial: the real API must
+    // still reject malformed payloads on its own, with finance untouched.
+    console.log('[real-stack] stage invalid-import-authoritative-validation');
+    const invalidApiImport=await primary.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(initial.body?.revision||'')},
+      body:{app:'RheomIQ',schemaVersion:3},
+    });
+    expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation');
+    const afterInvalidApiImport=await primary.request('/api/data');
+    expect(afterInvalidApiImport,200,undefined,'invalid-import-finance-unchanged');
+    assert(afterInvalidApiImport.body?.revision===initial.body?.revision
+      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(initial.body?.data),
+      'Authoritatively rejected import mutated confirmed finance.');
     const initialRevision=String(initial.body?.revision||'');
     console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');

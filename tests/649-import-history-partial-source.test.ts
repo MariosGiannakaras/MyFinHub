@@ -73,6 +73,13 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(importOutcomeMayBeCommitted(new ApiError('revision conflict',409,'REVISION_CONFLICT'))).toBe(false);
     expect(importOutcomeMayBeCommitted(new ApiError('invalid payload',400,'INVALID_DATA'))).toBe(false);
   });
+  it('compiles the exact lost-receipt reload CDP predicate and forwards its expected finance value',()=>{
+    const projection=browser.match(/await waitFor\("([^"]+)",'reload reconciles confirmed finance after unknown import',\[lostBase\+13\]\)/)?.[1];
+    expect(projection).toBeDefined();
+    expect(()=>new Function('return ('+projection+')')()).not.toThrow();
+    expect(projection).toContain("===expected}");
+    expect(browser).not.toContain("===${lostBase+13}`,'reload reconciles confirmed finance after unknown import'");
+  });
   it('makes committed import response loss require reload instead of replay or false green',()=>{
     expect(fixture).toContain('__myfinhubQaLoseNextImportReceipt');
     expect(fixture.indexOf('importCommits+=1')).toBeLessThan(fixture.indexOf("throw new TypeError('Synthetic network loss after committed import')"));

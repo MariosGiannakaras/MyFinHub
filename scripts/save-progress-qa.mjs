@@ -247,7 +247,7 @@ try{
   assert(uncertain.budget===lostBase&&uncertain.attempts===1&&uncertain.commits===1&&uncertain.undoDisabled&&uncertain.redoDisabled&&uncertain.progress==='error'&&uncertain.message.includes('Μην επαναλάβεις την εισαγωγή'),'lost import reply never claims finance success or invites destructive replay: '+JSON.stringify(uncertain));
   await shot('history-committed-import-response-lost-1440-dark');
   assert(await press('[data-persistence-reload]'),'read-only recovery after unknown committed import');
-  await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${lostBase+13}`,'reload reconciles confirmed finance after unknown import');
+  await waitFor("function(expected){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",'reload reconciles confirmed finance after unknown import',[lostBase+13]);
   assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===1&&globalThis.__myfinhubQaImportCommitCount?.()===1}"),'response-loss recovery must never replay import');
 
   // The real finance hook accepts the import before its separate history GET.

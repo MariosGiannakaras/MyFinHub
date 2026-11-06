@@ -130,7 +130,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Import boundary must disable unsafe history Undo.');
     expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
-    expect(source).toContain('400 /api/import');
+    expect(source).toContain('invalid import rejected in client preview before destructive confirmation');
+    expect(source).toContain("importResponsesAfter===importResponsesBefore");
+    expect(source).toContain('Malformed preview changed the canonical finance revision.');
+    expect(source).toContain('Malformed preview exposed an actionable import confirmation.');
+    expect(source).not.toContain('invalid import confirmation');
+    expect(source).not.toContain("expectedInvalidImport=true");
     expect(source).toContain('Imported QA Cash');
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');

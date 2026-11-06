@@ -83,7 +83,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     const runtimeErrors:string[]=[];const apiFailures:string[]=[];const apiResponses:string[]=[];
-    let expectedInvalidImport=false;
     c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));
     c.on('Network.responseReceived',params=>{
       const url=String(params.response?.url||'');const status=Number(params.response?.status||0);
@@ -91,7 +90,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       const pathname=new URL(url).pathname;apiResponses.push(`${status} ${pathname}`);
       if(status<400)return;
       if(status===401&&pathname==='/api/auth/session')return;
-      if(status===400&&pathname==='/api/import'&&expectedInvalidImport)return;
       apiFailures.push(`${status} ${pathname}`);
     });
     const waitFor=async(fn:string,label:string,args:any[]=[])=>{for(let i=0;i<160;i++){if(await c!.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
@@ -543,15 +541,18 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return (globalThis.__myfinhubQaDownloads||[]).some(name=>/^MyFinHub-backup-.*\\.json$/.test(name))}",'JSON export download');
     assert(apiResponses.includes('200 /api/backup'),'Backup action did not reach the real API successfully.');
 
+    // Deliberately malformed JSON must fail in the preview BEFORE opening
+    // the destructive confirmation and BEFORE a network import attempt.
+    // A separate real API test still proves authoritative server-side 400.
     const beforeInvalid=await currentRevision();assert(beforeInvalid,'Could not read the pre-validation revision.');
-    expectedInvalidImport=true;await importFile('invalid');
-    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'invalid import confirmation');
-    const priorMessage=await c.call<string>("function(){return document.querySelector('.logic-note[role=status]')?.textContent||''}");
-    await clickText('.app-confirm-dialog button','Εισαγωγή');
-    await waitFor("function(previous){const text=document.querySelector('.logic-note[role=status]')?.textContent||'';return Boolean(text&&text!==previous)}",'invalid import rejection',[priorMessage]);
-    const afterInvalid=await currentRevision();expectedInvalidImport=false;
-    assert(afterInvalid===beforeInvalid,'Rejected import changed the canonical revision.');
-    assert(apiResponses.includes('400 /api/import'),'Invalid import did not exercise the real validation rejection.');
+    const importResponsesBefore=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    await importFile('invalid');
+    await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&(document.querySelector('.logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')}",'invalid import rejected in client preview before destructive confirmation');
+    const afterInvalid=await currentRevision();
+    const importResponsesAfter=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    assert(afterInvalid===beforeInvalid,'Malformed preview changed the canonical finance revision.');
+    assert(importResponsesAfter===importResponsesBefore,'Malformed client preview contacted destructive import API.');
+    assert(await c.call<boolean>("function(){return !document.querySelector('.settings-import-preview')&&!document.querySelector('.app-confirm-dialog[role=alertdialog]')}"),'Malformed preview exposed an actionable import confirmation.');
 
     await importFile('valid');
     await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'valid import confirmation');

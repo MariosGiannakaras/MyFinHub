@@ -78,6 +78,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage auth-valid-password");
     expect(script).toContain("[real-stack] stage mfa-enroll");
     expect(script).toContain("[real-stack] stage import");
+    expect(script).toContain('[real-stack] stage invalid-import-authoritative-validation');
+    expect(script).toContain("expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation')");
+    expect(script).toContain('Authoritatively rejected import mutated confirmed finance.');
     expect(script).toContain("[real-stack] stage import-stale-revision-denial");
     expect(script).toContain("expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision')");
     expect(script).toContain("expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision')");
