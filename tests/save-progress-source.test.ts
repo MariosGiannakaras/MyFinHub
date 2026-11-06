@@ -45,6 +45,17 @@ describe('top-edge save feedback ownership',()=>{
   });
   it('includes real sequential-finance browser probes for pending, success, error, conflict and rapid save sequences',()=>{
     const qa=read('scripts/save-progress-qa.mjs');
+    const browserLaunch=read('scripts/qa-browser-cdp-startup.mjs');
+    const savings=read('scripts/savings-remediation-qa.mjs');
+    expect(browserLaunch).toContain('attempt<=2');
+    expect(browserLaunch).toContain('firstPort+attempt-1');
+    expect(browserLaunch).toContain('await stopChild(child)');
+    expect(browserLaunch).toContain('cleanupProfile(profile)');
+    expect(browserLaunch).toContain("'--disable-dev-shm-usage'");
+    expect(qa).toContain('launchQaBrowser({binary:chrome,firstPort:9287');
+    expect(savings).toContain('launchQaBrowser({binary:chrome,firstPort:9294');
+    expect(qa).not.toContain("const child=spawn(chrome");
+    expect(savings).not.toContain("const child=spawn(chrome");
     const fixtures=read('src/qa.tsx');
     const runner=read('scripts/run-rendered-qa.mjs');
     expect(()=>execFileSync(process.execPath,['--check','scripts/save-progress-qa.mjs'],{stdio:'pipe'})).not.toThrow();

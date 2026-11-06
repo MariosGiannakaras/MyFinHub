@@ -1,4 +1,5 @@
-import {execFileSync,spawn} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
+import {launchQaBrowser} from './qa-browser-cdp-startup.mjs';
 import {mkdirSync,writeFileSync} from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
@@ -6,10 +7,8 @@ const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-save-prog
 mkdirSync(evidenceDir,{recursive:true});
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium required for save-progress QA');
-const port=9287;
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/myfinhub-save-progress-qa-chrome','--no-sandbox','--disable-gpu','about:blank'],{stdio:'ignore'});
+let browserSession;
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<90;i++){try{const response=await fetch(url);if(response.ok)return;}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -19,7 +18,8 @@ class Cdp{
 }
 const assert=(value,label)=>{if(!value)throw new Error(`Save-progress QA assertion failed: ${label}`)};
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  browserSession=await launchQaBrowser({binary:chrome,firstPort:9287,profileBase:'/tmp/myfinhub-save-progress-qa-chrome'});
+  const {port}=browserSession;
   const url=new URL(baseUrl);url.searchParams.set('screen','persistence-probe');
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
@@ -272,4 +272,4 @@ try{
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}
-finally{child.kill('SIGTERM')}
+finally{await browserSession?.stop()}
