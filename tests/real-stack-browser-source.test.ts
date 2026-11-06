@@ -131,6 +131,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('invalid import rejected in client preview before destructive confirmation');
+    // Shared OperationFeedback maps error/warning to role=alert; success alone uses status.
+    expect(readFileSync('src/components/OperationFeedback.tsx','utf8')).toContain("role={failure?'alert':'status'}");
+    expect(source).toContain(".operation-feedback[data-feedback-tone=error][role=alert]");
+    expect(source).toContain('data-management-invalid-import-preview-rejected');
+    expect(source).not.toContain(".logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')");
     expect(source).toContain("importResponsesAfter===importResponsesBefore");
     expect(source).toContain('Malformed preview changed the canonical finance revision.');
     expect(source).toContain('Malformed preview exposed an actionable import confirmation.');

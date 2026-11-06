@@ -547,7 +547,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const beforeInvalid=await currentRevision();assert(beforeInvalid,'Could not read the pre-validation revision.');
     const importResponsesBefore=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
     await importFile('invalid');
-    await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&(document.querySelector('.logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')}",'invalid import rejected in client preview before destructive confirmation');
+    await waitFor("function(){const feedback=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&Boolean(feedback&&feedback.textContent?.includes('Δεν έγινε εισαγωγή'))}",'invalid import rejected in client preview before destructive confirmation');
+    await shot('data-management-invalid-import-preview-rejected');
     const afterInvalid=await currentRevision();
     const importResponsesAfter=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
     assert(afterInvalid===beforeInvalid,'Malformed preview changed the canonical finance revision.');
