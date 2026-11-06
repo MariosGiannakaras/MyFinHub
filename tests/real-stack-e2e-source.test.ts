@@ -78,6 +78,15 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage auth-valid-password");
     expect(script).toContain("[real-stack] stage mfa-enroll");
     expect(script).toContain("[real-stack] stage import");
+    expect(script).toContain("[real-stack] stage import-stale-revision-denial");
+    expect(script).toContain("expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision')");
+    expect(script).toContain("expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision')");
+    expect(script).toContain("Stale checked import replaced confirmed finance");
+    expect(script).toContain("Stale checked import moved the history cursor.");
+    expect(script).toContain("Stale checked import changed pre-import backup or audit history.");
+    expect(script).toContain("[real-stack] stage backup-restore revision-checked");
+    expect(script).toContain("Successful checked import did not atomically back up the prior confirmed revision.");
+    expect(workflow).toContain('supabase/migrations/20261105204000_guard_stale_import_revision.sql');
     expect(script).toContain("[real-stack] stage mutable-save");
     expect(script).toContain("kind:'lending_writeoff'");
     expect(script).toContain('Noncash writeoff did not round-trip through revisioned API and relational finance storage.');

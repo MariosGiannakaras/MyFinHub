@@ -10,6 +10,7 @@ on:
       - 'scripts/real-stack-browser-e2e.ts'
       - 'scripts/real-stack-fixture.ts'
       - 'scripts/migration-recovery-e2e.ts'
+      - 'supabase/migrations/20261105204000_guard_stale_import_revision.sql'
       - 'scripts/recovery-fixtures/**'
       - 'tests/real-stack-e2e-source.test.ts'
       - 'tests/real-stack-browser-source.test.ts'
