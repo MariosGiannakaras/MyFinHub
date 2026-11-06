@@ -89,6 +89,34 @@ describe('backend outage and rate-limit contracts',()=>{
     expect(result.data.schemaVersion).toBe(3);
     expect(result.data.state.migration?.fromSchema).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [path,request]=fetchMock.mock.calls[0]!;
+    expect(String(path)).toContain('/rpc/rheomiq_import_state');
+    expect(String(path)).not.toContain('rheomiq_import_state_checked');
+    expect(JSON.parse(String((request as RequestInit).body))).not.toHaveProperty('p_expected_revision');
+  });
+
+  it('routes a revision-bearing import to the additive checked RPC without rewriting the legacy contract',async()=>{
+    const legacy=legacyDocument(2);
+    const normalized=migrateProductData(legacy);
+    const fetchMock=vi.fn().mockResolvedValue(response(200,[{data:normalized,revision:8,updated_at:'2026-08-17T00:00:01.000Z'}]));
+    vi.stubGlobal('fetch',fetchMock);
+    const result=await writeStore(legacy,'7',true,'access-token');
+    expect(result.revision).toBe('8');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [path,request]=fetchMock.mock.calls[0]!;
+    expect(String(path)).toContain('/rpc/rheomiq_import_state_checked');
+    expect(JSON.parse(String((request as RequestInit).body))).toMatchObject({
+      p_expected_revision:7,
+      p_data:{schemaVersion:3},
+    });
+  });
+
+  it('fails a malformed revision before invoking either import RPC',async()=>{
+    const fetchMock=vi.fn();
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(writeStore(legacyDocument(3),'not-a-revision',true,'access-token'))
+      .rejects.toMatchObject({status:400,code:'INVALID_REVISION'});
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects unsupported future documents before any database request',async()=>{
@@ -142,7 +170,9 @@ describe('backend outage and rate-limit contracts',()=>{
 
   it('keeps the client import boundary ahead of migration so future schemas cannot be silently normalized',()=>{
     const check=useFinanceSource.indexOf('isSupportedFinanceSchemaVersion(incoming.schemaVersion)');
-    const migrate=useFinanceSource.indexOf('importData(productData(incoming))');
+    // The checked web import preserves the same schema gate, and must also
+    // bind the last acknowledged revision to the import request.
+    const migrate=useFinanceSource.indexOf('importData(productData(incoming), revisionRef.current)');
     expect(check).toBeGreaterThan(-1);
     expect(migrate).toBeGreaterThan(check);
     expect(useFinanceSource).toContain('νεότερη ή μη υποστηριζόμενη έκδοση');
