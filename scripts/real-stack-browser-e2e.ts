@@ -548,6 +548,9 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const importResponsesBefore=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
     await importFile('invalid');
     await waitFor("function(){const feedback=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&Boolean(feedback&&feedback.textContent?.includes('Δεν έγινε εισαγωγή'))}",'invalid import rejected in client preview before destructive confirmation');
+    const alertVisible=await c.call<boolean>("function(){const alert=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');if(!(alert instanceof HTMLElement))return false;alert.scrollIntoView({block:'center',behavior:'instant'});const rect=alert.getBoundingClientRect();return rect.width>220&&rect.height>20&&rect.top>=0&&rect.bottom<=window.innerHeight&&getComputedStyle(alert).visibility==='visible'}");
+    assert(alertVisible,'Malformed import rejection must be visibly painted within the screenshot viewport.');
+    await sleep(160);
     await shot('data-management-invalid-import-preview-rejected');
     const afterInvalid=await currentRevision();
     const importResponsesAfter=apiResponses.filter(item=>item.endsWith(' /api/import')).length;

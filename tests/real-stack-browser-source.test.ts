@@ -135,6 +135,8 @@ describe('actual-browser real-stack source contract',()=>{
     expect(readFileSync('src/components/OperationFeedback.tsx','utf8')).toContain("role={failure?'alert':'status'}");
     expect(source).toContain(".operation-feedback[data-feedback-tone=error][role=alert]");
     expect(source).toContain('data-management-invalid-import-preview-rejected');
+    expect(source).toContain('Malformed import rejection must be visibly painted within the screenshot viewport.');
+    expect(source).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
     expect(source).not.toContain(".logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')");
     expect(source).toContain("importResponsesAfter===importResponsesBefore");
     expect(source).toContain('Malformed preview changed the canonical finance revision.');
