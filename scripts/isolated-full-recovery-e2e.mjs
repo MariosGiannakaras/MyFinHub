@@ -118,7 +118,14 @@ try{
   console.log('[isolated-recovery] stage independent scratch database restore');
   db(['createdb','-U','postgres','-T','template0',scratch]);
   scratchCreated=true;
-  sql(scratch,'drop schema if exists public cascade;');
+  // PostgreSQL template0 has public in this Supabase image. pg_dump does NOT
+  // emit CREATE SCHEMA public for an inherited, unmodified default schema.
+  // Dropping it before pg_restore makes the very first public routine fail.
+  // Ensure it is present and restore everything from the independently copied
+  // archive; never prepopulate scratch with live finance tables/data.
+  sql(scratch,'create schema if not exists public;');
+  assert(sql(scratch,"select to_regnamespace('public') is not null;")==='t',
+    'Scratch restore requires an empty public schema from the database template.');
   db(['pg_restore','-U','postgres','-d',scratch,'--exit-on-error','--no-owner','--no-privileges',archiveRestore]);
   const restored=fingerprints(scratch);
   assert(JSON.stringify(restored)===JSON.stringify(source),

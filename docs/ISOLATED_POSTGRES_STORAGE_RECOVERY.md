@@ -14,7 +14,7 @@ The CI-only `npm run qa:isolated-recovery` command explicitly checks `CI=true` a
 
 1. Captures finance/backup/audit, auth, Storage metadata and migration checksums from synthetic **local** state; produces a PostgreSQL custom archive, copies it outside the database container and verifies its SHA-256 on transfer.
 2. Takes binary Storage objects into a separate temporary directory, saves per-object checksums and refuses a missing/incomplete or oversized synthetic snapshot.
-3. Restores the archive into a newly created **scratch PostgreSQL database** from `template0`. It verifies selected canonical row hashes, migration history and enabled RLS topology against the untouched original.
+3. Restores the archive into a newly created **scratch PostgreSQL database** from `template0`. It preserves the template-provided empty `public` namespace, which `pg_dump` does not recreate when it is the unmodified default schema. It never copies production/local source tables into scratch. It verifies selected canonical row hashes, migration history and enabled RLS topology against the untouched original.
 4. Uploads recovered binary assets into an isolated, temporary local Storage bucket, downloads them again and compares all SHA-256 hashes before removing that namespace.
 5. Removes the scratch database and temporary checkpoint bytes. The entire disposable local Supabase service is also stopped without backup by the existing workflow.
 

@@ -23,6 +23,10 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(script).toContain("'pg_dump'");
     expect(script).toContain("'-Fc'");
     expect(script).toContain("'template0',scratch");
+    expect(script).toContain("create schema if not exists public;");
+    expect(script).toContain("to_regnamespace('public')");
+    expect(script).not.toContain("drop schema if exists public cascade");
+    expect(script).not.toContain("'template1',scratch");
     expect(script).toContain("'--exit-on-error'");
     expect(script).toContain("archiveDigest");
     expect(script).toContain("fingerprints(scratch)");
