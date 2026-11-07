@@ -10,25 +10,74 @@ class Cdp{
   private listeners=new Map<string,Array<(params:any)=>void>>();
   private ws?:WebSocket;
   constructor(private readonly url:string){}
-  async open(){await new Promise<void>((resolve,reject)=>{
-    const ws=new WebSocket(this.url);this.ws=ws;
-    ws.onopen=()=>resolve();ws.onerror=()=>reject(new Error('Browser CDP connection failed.'));
-    ws.onmessage=event=>{const message=JSON.parse(String(event.data));
-      if(message.id){const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);return}
-      for(const listener of this.listeners.get(message.method)||[])listener(message.params);
-    };
-  })}
-  send(method:string,params:Record<string,unknown>={}){const id=++this.id;return new Promise<any>((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws?.send(JSON.stringify({id,method,params}))})}
-  on(method:string,listener:(params:any)=>void){const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list)}
+  private rejectAll(error:Error){for(const entry of this.pending.values())entry.reject(error);this.pending.clear()}
+  async open(){
+    await new Promise<void>((resolve,reject)=>{
+      const ws=new WebSocket(this.url);this.ws=ws;
+      let settled=false;
+      let timer:ReturnType<typeof setTimeout>;
+      const finish=(error?:Error)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        error?reject(error):resolve();
+      };
+      timer=setTimeout(()=>{
+        finish(new Error('Browser CDP WebSocket handshake timed out after 15s.'));
+        ws.close();
+      },15_000);
+      ws.onopen=()=>finish();
+      ws.onerror=()=>finish(new Error('Browser CDP WebSocket connection failed.'));
+      ws.onclose=()=>{
+        const error=new Error('Browser CDP connection closed.');
+        this.rejectAll(error);
+        finish(error);
+      };
+      ws.onmessage=event=>{
+        let message:any;
+        try{message=JSON.parse(String(event.data))}
+        catch{this.rejectAll(new Error('Invalid Browser CDP message.'));ws.close();return}
+        if(message.id){
+          const pending=this.pending.get(message.id);
+          if(!pending)return;
+          this.pending.delete(message.id);
+          message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);
+          return;
+        }
+        for(const listener of this.listeners.get(message.method)||[])listener(message.params);
+      };
+    });
+  }
+  send(method:string,params:Record<string,unknown>={}):Promise<any>{
+    if(!this.ws||this.ws.readyState!==WebSocket.OPEN){
+      return Promise.reject(new Error('Browser CDP is not connected: '+method));
+    }
+    const id=++this.id;
+    return new Promise<any>((resolve,reject)=>{
+      const timer=setTimeout(()=>{
+        this.pending.delete(id);
+        reject(new Error('Browser CDP command timed out after 25s: '+method));
+      },25_000);
+      this.pending.set(id,{
+        resolve:value=>{clearTimeout(timer);resolve(value)},
+        reject:error=>{clearTimeout(timer);reject(error)},
+      });
+      try{this.ws!.send(JSON.stringify({id,method,params}))}
+      catch(error){
+        this.pending.delete(id);clearTimeout(timer);
+        reject(error instanceof Error?error:new Error(String(error)));
+      }
+    });
+  }
+  on(method:string,listener:(params:any)=>void){
+    const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list);
+  }
   async call<T=any>(fn:string,args:any[]=[]):Promise<T>{
     const root=await this.send('Runtime.evaluate',{expression:'globalThis'});
     const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});
     if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Browser function call failed.');
     return result.result.value as T;
   }
-  close(){this.ws?.close()}
+  close(){this.rejectAll(new Error('Browser CDP closed by test harness.'));this.ws?.close()}
 }
-
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
 function trimDiagnostics(value:string){const text=value.trim();if(!text)return '(no Chromium diagnostics captured)';return text.length>6000?text.slice(-6000):text}
 async function stopBrowser(child:ReturnType<typeof spawn>|undefined){

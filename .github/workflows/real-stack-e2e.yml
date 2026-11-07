@@ -52,12 +52,10 @@ jobs:
         run: npx --yes supabase@2.119.0 start
       - name: Build real application bundle
         run: npm run build
-      - name: Run MyFinHub real-stack proof
-        run: npm run qa:real-stack
-      - name: Rehearse isolated PostgreSQL archive and Storage object restore
+      - name: Run MyFinHub real-stack proof and isolated restore before Chromium
         env:
           MYFINHUB_ISOLATED_RECOVERY: '1'
-        run: npm run qa:isolated-recovery
+        run: npm run qa:real-stack
       - name: Rehearse forward-only migration recovery
         run: npm run qa:migration-recovery
       - name: Upload actual-browser real-stack evidence

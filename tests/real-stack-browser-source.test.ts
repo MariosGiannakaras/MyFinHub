@@ -33,6 +33,14 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Chromium bootstrap attempt');
     expect(source).toContain('await stopBrowser(child)');
   });
+  it('bounds CDP WebSocket handshake and every command, rejecting stalled sessions before CI timeout',()=>{
+    expect(source).toContain('WebSocket handshake timed out after 15s');
+    expect(source).toContain('Browser CDP command timed out after 25s: ');
+    expect(source).toContain('this.rejectAll(error)');
+    expect(source).toContain('clearTimeout(timer)');
+    expect(source).toContain('this.ws.readyState!==WebSocket.OPEN');
+    expect(source).toContain('this.pending.delete(id)');
+  });
   it('covers modern and legacy durable mutation lifecycles across hard reload',()=>{
     expect(source).toContain('stage modern-create-reload');
     expect(source).toContain('stage modern-edit-delete-undo');

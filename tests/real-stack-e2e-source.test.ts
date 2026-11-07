@@ -73,6 +73,11 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'INVALID_PROVIDER_DATA'");
     expect(script).toContain("Failed provider asset registration left an orphan Storage object.");
     expect(script).toContain("[real-stack] stage actual-browser-ui");
+    expect(script).toContain("[real-stack] stage isolated-postgresql-storage-restore-before-browser");
+    expect(script.indexOf('stage isolated-postgresql-storage-restore-before-browser')).toBeLessThan(script.indexOf('stage actual-browser-ui'));
+    expect(script).toContain("process.env.MYFINHUB_ISOLATED_RECOVERY==='1'");
+    expect(script).toContain("execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs']");
+    expect(workflow).toContain("MYFINHUB_ISOLATED_RECOVERY: '1'");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
     expect(script).toContain("[real-stack] stage auth-valid-password");

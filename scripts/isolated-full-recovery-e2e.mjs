@@ -35,7 +35,9 @@ const archiveHost=join(tmp,'postgres.custom'),archiveOriginal='/tmp/myfinhub-ci-
 const archiveRestore='/tmp/myfinhub-ci-restore-'+process.pid+'.dump';
 const scratch='myfinhub_ci_restore_'+process.pid;
 const bucket='myfinhub-ci-recovery-'+process.pid;
+const sourceBucket='myfinhub-ci-source-'+process.pid;
 let scratchCreated=false,bucketCreated=false,cleanedBucket=false;
+let sourceBucketCreated=false,sourceBucketCleaned=false;
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const assert=(condition,message)=>{if(!condition)throw new Error(message)};
 function docker(args,options={}){
@@ -72,15 +74,31 @@ async function storageRequest(path,init={}){
   if(!result.ok)throw new Error('Disposable local Storage API rejected operation: HTTP '+result.status);
   return result;
 }
+async function cleanupBucketByName(name){
+  await storageRequest('/bucket/'+name+'/empty',{method:'POST'});
+  await storageRequest('/bucket/'+name,{method:'DELETE'});
+}
 async function cleanupBucket(){
   if(!bucketCreated||cleanedBucket)return;
-  try{
-    await storageRequest('/bucket/'+bucket+'/empty',{method:'POST'});
-    await storageRequest('/bucket/'+bucket,{method:'DELETE'});
-    cleanedBucket=true;
-  }catch(error){console.warn('[isolated-recovery] temporary Storage bucket cleanup failed; whole local project will be discarded');}
+  try{await cleanupBucketByName(bucket);cleanedBucket=true}
+  catch{console.warn('[isolated-recovery] replay Storage bucket cleanup failed; disposable local project will be discarded');}
+}
+async function cleanupSourceBucket(){
+  if(!sourceBucketCreated||sourceBucketCleaned)return;
+  try{await cleanupBucketByName(sourceBucket);sourceBucketCleaned=true}
+  catch{console.warn('[isolated-recovery] source Storage fixture cleanup failed; disposable local project will be discarded');}
 }
 try{
+  // Give the isolated exercise at least one real binary to capture/restore,
+  // even when the preceding API smoke has deleted its temporary asset.
+  const pristine=fingerprints('postgres');
+  await storageRequest('/bucket',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({id:sourceBucket,name:sourceBucket,public:false})});
+  sourceBucketCreated=true;
+  const fixture=Buffer.from('MyFinHub isolated Storage recovery synthetic checkpoint proof\n','utf8');
+  await storageRequest('/object/'+objectKey(sourceBucket,'checkpoint.txt'),{
+    method:'POST',headers:{'content-type':'text/plain','x-upsert':'false'},body:fixture,
+  });
   console.log('[isolated-recovery] stage immutable PostgreSQL+Storage checkpoint');
   const source=fingerprints('postgres');
   assert(source[0]&&sql('postgres','select count(*) from auth.users;')!=='0','Expected synthetic authenticated finance state is missing.');
@@ -104,7 +122,7 @@ try{
   for(const [index,item] of objects.entries()){
     assert(typeof item.bucket==='string'&&typeof item.name==='string'&&item.bucket&&!item.name.includes('..'),
       'Unsafe Storage object name in synthetic checkpoint.');
-    const response=await storageRequest('/object/'+objectKey(item.bucket,item.name));
+    const response=await storageRequest('/object/authenticated/'+objectKey(item.bucket,item.name));
     const bytes=Buffer.from(await response.arrayBuffer());
     total+=bytes.length;
     assert(total<=64*1024*1024,'Local recovery proof exceeds 64 MiB; do not treat a partial snapshot as a backup.');
@@ -145,17 +163,19 @@ try{
     await storageRequest('/object/'+objectKey(bucket,name),{
       method:'POST',headers:{'content-type':item.mime,'x-upsert':'false'},body:bytes,
     });
-    const verified=await storageRequest('/object/'+objectKey(bucket,name));
+    const verified=await storageRequest('/object/authenticated/'+objectKey(bucket,name));
     assert(sha(Buffer.from(await verified.arrayBuffer()))===item.hash,
       'Rehydrated Storage binary checksum mismatch.');
   }
   await cleanupBucket();
-  assert(cleanedBucket,'The isolated Storage replay namespace was not removed.');
-  assert(JSON.stringify(fingerprints('postgres'))===JSON.stringify(source),
-    'Local source finance/Storage metadata changed during scratch restore rehearsal.');
+  await cleanupSourceBucket();
+  assert(cleanedBucket&&sourceBucketCleaned,'An isolated Storage fixture namespace was not cleaned up.');
+  assert(JSON.stringify(fingerprints('postgres'))===JSON.stringify(pristine),
+    'Local source finance/Storage metadata changed after removing temporary recovery fixtures.');
   console.log('[isolated-recovery] PASS custom PostgreSQL dump transferred/restored into separate scratch DB, RLS and all selected state hashes equal, Storage bytes replayed with SHA-256 and original source unchanged');
 }finally{
   await cleanupBucket();
+  await cleanupSourceBucket();
   if(scratchCreated){
     try{db(['dropdb','-U','postgres','--if-exists',scratch])}
     catch{console.warn('[isolated-recovery] scratch DB cleanup failed; disposable local Supabase will be stopped by CI');}

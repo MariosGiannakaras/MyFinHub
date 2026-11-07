@@ -40,6 +40,12 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
   });
   it('replays every sampled Storage binary from a separate disk checkpoint into a disposable bucket with SHA-256 verification',()=>{
     expect(script).toContain("snapshot.push");
+    expect(script).toContain("const sourceBucket='myfinhub-ci-source-'+process.pid");
+    expect(script).toContain("sourceBucketCreated=true");
+    expect(script).toContain("sourceBucketCleaned");
+    expect(script).toContain("object/authenticated/");
+    expect(script).toContain("fingerprints('postgres'))===JSON.stringify(pristine)");
+    expect(script).toContain("await cleanupSourceBucket()");
     expect(script).toContain("writeFileSync(filename,bytes,{mode:0o600})");
     expect(script).toContain("total<=64*1024*1024");
     expect(script).toContain("arrayBuffer()");
@@ -50,7 +56,9 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
   it('is gated only by the existing disposable local Supabase CI workflow; distinguishes this proof from release authorization',()=>{
     expect(packageJson.scripts?.['qa:isolated-recovery']).toBe('node scripts/isolated-full-recovery-e2e.mjs');
     expect(flow).toContain('MYFINHUB_ISOLATED_RECOVERY:');
-    expect(flow).toContain('npm run qa:isolated-recovery');
+    expect(flow).toContain("MYFINHUB_ISOLATED_RECOVERY: '1'");
+    expect(flow).toContain('npm run qa:real-stack');
+    expect(read('scripts/real-stack-e2e.ts')).toContain('stage isolated-postgresql-storage-restore-before-browser');
     expect(flow).toContain('npx --yes supabase@2.119.0 start');
     expect(flow).toContain('stop --no-backup');
     expect(doc).toContain('production');

@@ -1078,6 +1078,14 @@ async function main(){
     const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
     assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
 
+    // Establish the isolated recovery result before a potentially stalled UI runner.
+    if(process.env.MYFINHUB_ISOLATED_RECOVERY==='1'){
+      assert(process.env.CI==='true','Full recovery rehearsal may run only in isolated CI.');
+      console.log('[real-stack] stage isolated-postgresql-storage-restore-before-browser');
+      execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs'],{
+        stdio:'inherit',env:process.env,timeout:120_000,
+      });
+    }
     console.log('[real-stack] stage actual-browser-ui');
     let browserPreviousCode=lastCode;
     await runRealStackBrowserProof({
