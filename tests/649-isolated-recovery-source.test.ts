@@ -28,6 +28,13 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(script).not.toContain("drop schema if exists public cascade");
     expect(script).not.toContain("'template1',scratch");
     expect(script).toContain("'--exit-on-error'");
+    expect(script).toContain("const scratchRestoreRole='supabase_admin'");
+    expect(script).toContain("current_setting('is_superuser')='on'");
+    expect(script).toContain("'Disposable local Supabase privileged restore role is unavailable.'");
+    expect(script).toContain("database===scratch?scratchRestoreRole:'postgres'");
+    expect(script).toContain("db(['pg_restore','-U',scratchRestoreRole,'-d',scratch,'--exit-on-error'");
+    expect(script).not.toContain("db(['pg_restore','-U','postgres','-d',scratch");
+    expect(script).not.toContain('alter role postgres');
     expect(script).toContain("archiveDigest");
     expect(script).toContain("fingerprints(scratch)");
     expect(script).toContain("fingerprints('postgres')");

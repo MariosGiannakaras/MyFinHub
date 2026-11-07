@@ -34,6 +34,11 @@ const tmp=mkdtempSync(join(tmpdir(),'myfinhub-isolated-recovery-'));
 const archiveHost=join(tmp,'postgres.custom'),archiveOriginal='/tmp/myfinhub-ci-pg-'+process.pid+'.dump';
 const archiveRestore='/tmp/myfinhub-ci-restore-'+process.pid+'.dump';
 const scratch='myfinhub_ci_restore_'+process.pid;
+// The local Supabase postgres role is deliberately not a superuser. Some
+// platform-owned archived routines (e.g. realtime.list_changes) set protected
+// PostgreSQL parameters and can only be restored by this local admin role.
+// Never use it against source finance state or a linked/production project.
+const scratchRestoreRole='supabase_admin';
 const bucket='myfinhub-ci-recovery-'+process.pid;
 const sourceBucket='myfinhub-ci-source-'+process.pid;
 let scratchCreated=false,bucketCreated=false,cleanedBucket=false;
@@ -44,8 +49,8 @@ function docker(args,options={}){
   return execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:20*1024*1024,...options}).trim();
 }
 const db=args=>docker(['exec','-i',container,...args]);
-function sql(database,statement){
-  return db(['psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database,'-Atq','-c',statement]);
+function sql(database,statement,user='postgres'){
+  return db(['psql','-X','-v','ON_ERROR_STOP=1','-U',user,'-d',database,'-Atq','-c',statement]);
 }
 const fingerprintTables=[
   ['public.rheomiq_app_state','id'],
@@ -57,10 +62,13 @@ const fingerprintTables=[
   ['supabase_migrations.schema_migrations','version'],
 ];
 function fingerprints(database){
+  // --no-owner/--no-acl makes restored objects owned by the local admin.
+  // Read scratch with that role, without modifying original source access.
+  const readRole=database===scratch?scratchRestoreRole:'postgres';
   return fingerprintTables.map(([table,orderBy])=>{
     const statement='select md5(coalesce(string_agg(to_jsonb(t)::text, '+
       "E'\\n' order by t."+orderBy+"::text),'')) from "+table+' t;';
-    return sql(database,statement);
+    return sql(database,statement,readRole);
   });
 }
 function storageHeaders(extra={}){return {apikey:key,authorization:'Bearer '+key,...extra}}
@@ -134,6 +142,11 @@ try{
     objects:snapshot.map(({bucket,name,hash})=>({bucket,name,sha256:hash}))}),{mode:0o600});
 
   console.log('[isolated-recovery] stage independent scratch database restore');
+  // Verify real local-role identity and superuser status rather than weakening
+  // pg_restore, excluding Realtime, or changing postgres role privileges.
+  const scratchAdmin=db(['psql','-X','-v','ON_ERROR_STOP=1','-U',scratchRestoreRole,'-d','postgres','-Atq','-c',
+    "select case when current_user='supabase_admin' and current_setting('is_superuser')='on' then 'ok' else 'no' end;"]);
+  assert(scratchAdmin==='ok','Disposable local Supabase privileged restore role is unavailable.');
   db(['createdb','-U','postgres','-T','template0',scratch]);
   scratchCreated=true;
   // PostgreSQL template0 has public in this Supabase image. pg_dump does NOT
@@ -144,7 +157,7 @@ try{
   sql(scratch,'create schema if not exists public;');
   assert(sql(scratch,"select to_regnamespace('public') is not null;")==='t',
     'Scratch restore requires an empty public schema from the database template.');
-  db(['pg_restore','-U','postgres','-d',scratch,'--exit-on-error','--no-owner','--no-privileges',archiveRestore]);
+  db(['pg_restore','-U',scratchRestoreRole,'-d',scratch,'--exit-on-error','--no-owner','--no-privileges',archiveRestore]);
   const restored=fingerprints(scratch);
   assert(JSON.stringify(restored)===JSON.stringify(source),
     'Independent PostgreSQL restore differs in finance, backup, audit, auth, Storage metadata or migration rows.');
