@@ -258,10 +258,17 @@ export async function writeStore(data: FinanceData, expectedRevision?: string, f
   const next = migrateProductData({ ...data, app: 'RheomIQ', updatedAt: new Date().toISOString() });
   validateCompleteFinanceData(next);
 
-  const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
-  const body = force
-    ? { p_data: next }
-    : { p_data: next, p_expected_revision: parseExpectedRevision(expectedRevision) };
+  // The checked import RPC locks and compares the revision atomically with
+  // the replacement; preserve the legacy no-header RPC for native clients.
+  const guardedImport=force&&expectedRevision!==undefined;
+  const path=force
+    ? guardedImport?'rpc/rheomiq_import_state_checked':'rpc/rheomiq_import_state'
+    : 'rpc/rheomiq_save_state';
+  const body=force
+    ? guardedImport
+      ? {p_data:next,p_expected_revision:parseExpectedRevision(expectedRevision)}
+      : {p_data:next}
+    : {p_data:next,p_expected_revision:parseExpectedRevision(expectedRevision)};
   const row = first(await supabase<StateRow[] | StateRow>(path, {
     method: 'POST',
     body: JSON.stringify(body),

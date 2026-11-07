@@ -194,6 +194,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   };
   const submit=async()=>{
     if(saving)return;
+    // A corrected retry must not carry an error from the prior attempt into
+    // the in-flight durable finance receipt.
+    setError('');
     try{
       if(linkedRecurringPayment&&(kind!=='expense'||multiFundingOpen))throw new Error('Η πληρωμή είναι συνδεδεμένη με πάγιο. Διατήρησε τον τύπο και τον έναν λογαριασμό της. Για νέα πληρωμή χρησιμοποίησε τα Πάγια.');
       const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
@@ -302,7 +305,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
         {error?<FormError id="quick-add-error">{error}</FormError>:null}
       </div>
-      <footer><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}><Check size={17}/> {saving?'Αποθήκευση…':initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
+      {/* The receipt launch is portalled into this footer: lock it too while the
+          finance revision receipt is pending, not only the main form fields. */}
+      <footer inert={saving}><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}><Check size={17}/> {saving?'Αποθήκευση…':initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
   </DialogShell>
   <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Αν κλείσεις τώρα την καταχώριση, αυτές οι αλλαγές θα χαθούν." confirmLabel="Απόρριψη" tone="destructive" motionMode={motionMode} onConfirm={confirmDiscard} onCancel={()=>setDiscardOpen(false)}/>
   </>;

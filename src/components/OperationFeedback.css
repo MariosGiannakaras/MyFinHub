@@ -1,0 +1,11 @@
+/* Operation result semantics are shared; page wrappers keep composition/spacing. */
+.operation-feedback[data-feedback-tone='error'] {
+  background:var(--error-bg);
+  color:var(--error);
+  border-color:var(--error);
+}
+.operation-feedback[data-feedback-tone='warning'] {
+  background:var(--warning-bg,var(--error-bg));
+  color:var(--warning,var(--error));
+  border-color:var(--warning,var(--error));
+}

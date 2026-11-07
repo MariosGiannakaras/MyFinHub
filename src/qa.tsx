@@ -12,10 +12,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
+import { ReceiptCleanupNotice } from './components/ReceiptCleanupNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { SaveProgressBar } from './components/SaveProgressBar';
 import { useSession } from './hooks/useSession';
+import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
@@ -76,6 +78,12 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let historyMoveCount=0;
   let rejectNextHistoryMove=false;
   let rejectHistoryAfterSteps=0;
+  let importHistoryCase:'read-failure'|'revision-mismatch'|null=null;
+  // Only the isolated hook QA can reject before advancing finance/history.
+  let importRejectOnce:'conflict'|'unavailable'|null=null;
+  let loseNextImportReceipt=false;
+  let importAttempts=0;
+  let importCommits=0;
   type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
   const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
   let cursorIndex=0;
@@ -90,6 +98,12 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaHistoryMoveCount?:()=>number;
     __myfinhubQaRejectNextHistoryMove?:()=>boolean;
     __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
+    __myfinhubQaImportHistoryCase?:(next:'read-failure'|'revision-mismatch')=>boolean;
+    __myfinhubQaRejectNextImport?:(next:'conflict'|'unavailable')=>boolean;
+    __myfinhubQaImportAttemptCount?:()=>number;
+    __myfinhubQaImportCommitCount?:()=>number;
+    __myfinhubQaAdvanceRemoteRevision?:()=>boolean;
+    __myfinhubQaLoseNextImportReceipt?:()=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -100,6 +114,14 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
   control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
   control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
+  control.__myfinhubQaImportHistoryCase=next=>{importHistoryCase=next;return true};
+  control.__myfinhubQaRejectNextImport=next=>{if(!QA_HISTORY_HOOK_PROBE)return false;importRejectOnce=next;return true};
+  control.__myfinhubQaImportAttemptCount=()=>importAttempts;
+  control.__myfinhubQaImportCommitCount=()=>importCommits;
+  control.__myfinhubQaLoseNextImportReceipt=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;loseNextImportReceipt=true;return true};
+  // Simulates another accepted session changing the server revision after
+  // this hook loaded its current revision, before its import confirmation.
+  control.__myfinhubQaAdvanceRemoteRevision=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;revision+=1;return true};
   const history=()=>QA_HISTORY_HOOK_PROBE?({
     available:true,generation:String(revision),financeRevision:String(revision),
     currentPointId:snapshots[cursorIndex]!.id,
@@ -140,17 +162,40 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
       return response;
     }
     if(url.pathname==='/api/import'&&init?.method==='POST'){
+      importAttempts+=1;
+      const rejected=importRejectOnce;
+      importRejectOnce=null;
+      if(QA_HISTORY_HOOK_PROBE&&rejected){
+        return new Response(JSON.stringify({code:rejected==='conflict'?'REVISION_CONFLICT':'QA_IMPORT_UNAVAILABLE',
+          error:rejected==='conflict'?'Synthetic pre-commit revision conflict':'Synthetic pre-commit import unavailable'}),
+          {status:rejected==='conflict'?409:503,headers:{'content-type':'application/json'}});
+      }
+      // Exercise the actual browser If-Match header, not only a forced 409.
+      if(QA_HISTORY_HOOK_PROBE&&new Headers(init.headers).get('if-match')!==String(revision)){
+        return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'Synthetic stale import revision'}),
+          {status:409,headers:{'content-type':'application/json'}});
+      }
       backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      importCommits+=1;
       if(QA_HISTORY_HOOK_PROBE){
         snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
           state:structuredClone(backend.state),label:'QA import baseline'});
         cursorIndex=0; // Fixture reset, not Production import Undo semantics.
       }
       revision+=1;
+      if(QA_HISTORY_HOOK_PROBE&&loseNextImportReceipt){
+        loseNextImportReceipt=false;
+        // The database committed; only the HTTP acknowledgement was lost.
+        throw new TypeError('Synthetic network loss after committed import');
+      }
       return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
-      return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
+      const caseToSimulate=importHistoryCase;
+      importHistoryCase=null;
+      if(caseToSimulate==='read-failure')return new Response(JSON.stringify({code:'QA_HISTORY_READ_UNAVAILABLE',error:'Synthetic history read failure after accepted import'}),{status:503,headers:{'content-type':'application/json'}});
+      const envelope=history();
+      return new Response(JSON.stringify(caseToSimulate==='revision-mismatch'?{...envelope,financeRevision:String(revision+1)}:envelope),{status:200,headers:{'content-type':'application/json'}});
     }
     if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST'){
       historyMoveCount+=1;
@@ -446,6 +491,7 @@ function QaWorkspace(){
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [qaCleanupPending,setQaCleanupPending]=useState(()=>params.get('save')==='cleanup-pending'?1:0);
+  const receiptCleanup=useReceiptCleanup();
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
@@ -505,6 +551,7 @@ function QaWorkspace(){
       (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
     });
     addEvent(event);
+    document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1);
   };
   const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
     const params=new URLSearchParams(location.search);
@@ -655,11 +702,12 @@ function QaWorkspace(){
   return <>
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
+      <ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }
@@ -670,6 +718,7 @@ function QaDesktopLockProbe(){
 
 function QaPersistenceProbe(){
   const finance=useFinance();
+  const [importOutcome,setImportOutcome]=useState('idle');
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
   const budget=finance.data.state.settings.monthlyBudget??0;
   return <><SaveProgressBar saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount}/><main className="boot-screen" data-persistence-probe="ready">
@@ -678,7 +727,8 @@ function QaPersistenceProbe(){
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
-    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
+    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}}).then(result=>setImportOutcome(result.status)).catch(()=>setImportOutcome('error'))}}>Synthetic import while GET pending</button>
+    <output data-persistence-import-outcome>{importOutcome}</output>
     {QA_HISTORY_HOOK_PROBE?<section aria-label="Synthetic history hook">
       <output data-persistence-undo-depth={finance.undoDepth}>{finance.undoDepth}</output>
       <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>

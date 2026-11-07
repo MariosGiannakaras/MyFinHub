@@ -10,6 +10,13 @@ on:
       - 'scripts/real-stack-browser-e2e.ts'
       - 'scripts/real-stack-fixture.ts'
       - 'scripts/migration-recovery-e2e.ts'
+      - 'scripts/isolated-full-recovery-e2e.mjs'
+      - 'tests/649-isolated-recovery-source.test.ts'
+      - 'supabase/migrations/20261105204000_guard_stale_import_revision.sql'
+      - 'server/index.ts'
+      - 'api/import.ts'
+      - 'server/storage.ts'
+      - 'src/lib/api.ts'
       - 'scripts/recovery-fixtures/**'
       - 'tests/real-stack-e2e-source.test.ts'
       - 'tests/real-stack-browser-source.test.ts'
@@ -41,11 +48,25 @@ jobs:
       - run: npm ci --prefer-offline --no-audit --no-fund
       - name: Verify pinned Supabase CLI
         run: npx --yes supabase@2.119.0 --version
+      - name: Restrict CI-only local services (no Studio or SMTP ports)
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          config=Path('supabase/config.toml')
+          data=config.read_text()
+          old='[studio]\nenabled = true'
+          assert data.count(old)==1, 'Unexpected Supabase local Studio configuration'
+          assert '[local_smtp]' not in data, 'CI local SMTP section was already configured'
+          config.write_text(data.replace(old,'[studio]\nenabled = false',1)
+                            +'\n[local_smtp]\nenabled = false\n')
+          PY
       - name: Start isolated local Supabase
         run: npx --yes supabase@2.119.0 start
       - name: Build real application bundle
         run: npm run build
-      - name: Run MyFinHub real-stack proof
+      - name: Run MyFinHub real-stack proof and isolated restore before Chromium
+        env:
+          MYFINHUB_ISOLATED_RECOVERY: '1'
         run: npm run qa:real-stack
       - name: Rehearse forward-only migration recovery
         run: npm run qa:migration-recovery

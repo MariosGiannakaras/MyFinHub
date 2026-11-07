@@ -5,6 +5,8 @@ import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
+import { copyTextWithFallback } from '../lib/copyTextWithFallback';
+import { OperationFeedback, type OperationFeedbackTone } from './OperationFeedback';
 import { CARD_TILT_REST, cardPointerTiltAllowed, cardPointerTiltTransform } from '../lib/cardPointerTilt';
 import type { CardBank, PaymentCard } from '../types';
 import './InteractivePaymentCard.css';
@@ -72,6 +74,7 @@ export function InteractivePaymentCard({
   const [revealed,setRevealed]=useState<Secrets>({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
+  const [messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
   const [deleteOpen,setDeleteOpen]=useState(false);
   const [deleteProgress,setDeleteProgress]=useState(0);
   const [deleteOffset,setDeleteOffset]=useState(0);
@@ -92,19 +95,19 @@ export function InteractivePaymentCard({
       // A missing server vault entry is not a successful reveal.
       const server=await revealCardSecret(card.id);
       if(!server.pan&&!server.expiry&&!server.cvv){
-        setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
+        setMessageTone('error');setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
         setRevealed({});
         return null;
       }
       setRevealed(server);return server;
-    }catch(error){setRevealed({});setMessage(cardVaultErrorMessage(error));return null}
+    }catch(error){setRevealed({});setMessageTone('error');setMessage(cardVaultErrorMessage(error));return null}
     finally{setBusy(false)}
   };
 
   const toggleReveal=async()=>{if(visible){setRevealed({});return}await loadSecrets()};
   const copy=async(field:keyof Secrets,label:string)=>{
     const current=revealed[field]||(await loadSecrets())?.[field];if(!current)return;
-    try{await navigator.clipboard.writeText(current);setMessage(`${label} αντιγράφηκε.`)}catch{setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    try{await copyTextWithFallback(current);setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}catch{setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
   const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
@@ -115,9 +118,9 @@ export function InteractivePaymentCard({
     try{
       if(cardRef.current)await playArchiveShred(cardRef.current);
       await onArchive(card);
-      setRevealed({});resetDelete();setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
+      setRevealed({});resetDelete();setMessageTone('success');setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
     }catch{
-      setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
+      setMessageTone('error');setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
       resetDelete();
     }finally{archivingRef.current=false;setBusy(false)}
   };
@@ -250,6 +253,6 @@ export function InteractivePaymentCard({
         </>
       </div>
     </article>}
-    {message?<div className="r-card-status" role="alert" aria-live="assertive">{message}</div>:null}
+    {message?<OperationFeedback className="r-card-status" tone={messageTone}>{message}</OperationFeedback>:null}
   </div>;
 }

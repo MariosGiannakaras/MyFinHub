@@ -26,6 +26,7 @@ import { BankBrandMark } from './BankBrandMark';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
 import { ConfirmDialog } from './ConfirmDialog';
+import { OperationFeedback, type OperationFeedbackTone } from './OperationFeedback';
 import './AccountManagementSettings.css';
 import './AccountManagementProvider.css';
 
@@ -120,6 +121,8 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const[editor,setEditor]=useState<EditorDraft|null>(null);
   const[editorError,setEditorError]=useState('');
   const[message,setMessage]=useState('');
+  const[messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
+  const notify=(text:string,tone:OperationFeedbackTone='success')=>{setMessageTone(tone);setMessage(text)};
   const[busy,setBusy]=useState(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
@@ -151,11 +154,11 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     });
   };
   const openNew=()=>{
-    setMessage('');setEditorError('');
+    notify('');setEditorError('');
     setEditor({id:'',source:'new',mode:'bank',originalKind:'bank',name:'',providerId:'',bankAccountCategory:'current',iban:'',cashType:'cash',defaultExpense:false,defaultIncome:false,defaultLoan:false});
   };
   const openEdit=(account:ProviderAccount)=>{
-    setMessage('');setEditorError('');
+    notify('');setEditorError('');
     const custom=Boolean((settings.customAccounts??[]).some(item=>item.id===account.id));
     setEditor({
       id:account.id,
@@ -241,7 +244,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       }catch{
         ibanWarning=' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
       }
-      setMessage((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning);
+      notify((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning,ibanWarning?'warning':'success');
       setEditor(null);
     }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
     finally{setBusy(false)}
@@ -249,10 +252,10 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
 
   const requestDelete=(account:ProviderAccount)=>{
     const custom=(settings.customAccounts??[]).some(item=>item.id===account.id);
-    if(!custom){setMessage('Οι αρχικοί λογαριασμοί διατηρούνται για να μην χαθεί το ιστορικό τους. Μπορείς να αλλάξεις όνομα και στοιχεία.');return}
+    if(!custom){notify('Οι αρχικοί λογαριασμοί διατηρούνται για να μην χαθεί το ιστορικό τους. Μπορείς να αλλάξεις όνομα και στοιχεία.','warning');return}
     const references=accountReferenceReasons(data,account.id);
-    if(references.length){setMessage(`Ο λογαριασμός δεν μπορεί να διαγραφεί, επειδή συνδέεται με: ${references.join(', ')}. Οι καταχωρίσεις διατηρούνται· δεν μεταφέρονται αυτόματα σε άλλο λογαριασμό.`);return}
-    setMessage('');setPendingDelete(account);
+    if(references.length){notify(`Ο λογαριασμός δεν μπορεί να διαγραφεί, επειδή συνδέεται με: ${references.join(', ')}. Οι καταχωρίσεις διατηρούνται· δεν μεταφέρονται αυτόματα σε άλλο λογαριασμό.`,'warning');return}
+    notify('');setPendingDelete(account);
   };
   const confirmDelete=async()=>{
     if(!pendingDelete||busy)return;
@@ -271,9 +274,9 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
         try{await saveAccountMetadata(id,'')}
         catch{metadataWarning=' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
       }
-      setMessage('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning);
+      notify('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning,metadataWarning?'warning':'success');
       setPendingDelete(null);
-    }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
+    }catch(error){notify(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'),'error')}
     finally{setBusy(false)}
   };
 
@@ -315,7 +318,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
           </div>;
         })}
       </div>
-      {message?<div className="account-management-message" role="status" aria-live="polite">{message}</div>:null}
+      {message?<OperationFeedback className="account-management-message" tone={messageTone}>{message}</OperationFeedback>:null}
     </section>
 
     <AnimatePresence>{editor?<motion.div className="account-management-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={closeEditor}>

@@ -1,4 +1,5 @@
-import {execFileSync,spawn} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
+import {launchQaBrowser} from './qa-browser-cdp-startup.mjs';
 import {mkdirSync,writeFileSync} from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
@@ -6,10 +7,8 @@ const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-save-prog
 mkdirSync(evidenceDir,{recursive:true});
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium required for save-progress QA');
-const port=9287;
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/myfinhub-save-progress-qa-chrome','--no-sandbox','--disable-gpu','about:blank'],{stdio:'ignore'});
+let browserSession;
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<90;i++){try{const response=await fetch(url);if(response.ok)return;}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -19,14 +18,29 @@ class Cdp{
 }
 const assert=(value,label)=>{if(!value)throw new Error(`Save-progress QA assertion failed: ${label}`)};
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  browserSession=await launchQaBrowser({binary:chrome,firstPort:9287,profileBase:'/tmp/myfinhub-save-progress-qa-chrome'});
+  const {port}=browserSession;
   const url=new URL(baseUrl);url.searchParams.set('screen','persistence-probe');
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
-  const waitFor=async(fn,label)=>{for(let i=0;i<90;i++){if(await c.call(fn))return;await sleep(85)}throw new Error(`Timed out waiting for ${label}`)};
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<90;i++){if(await c.call(fn,args))return;await sleep(85)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async()=>{await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null}",'finance probe ready')};
-  const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+  // The isolated QA entrypoint does not initialize the app theme on navigation.
+  // Activate the real dark tokens before every screenshot labeled "-dark",
+  // then verify the computed visual theme rather than trusting the filename.
+  const shot=async name=>{
+    if(name.endsWith('-dark')){
+      const theme=await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const root=document.documentElement;const style=getComputedStyle(root);return {applied:root.dataset.theme,colorScheme:style.colorScheme,canvas:style.getPropertyValue('--canvas').trim(),expected:mod.DARK_THEME_TOKENS['--canvas'],background:getComputedStyle(document.body).backgroundImage}}");
+      assert(theme.applied==='dark'&&theme.colorScheme==='dark'&&theme.canvas===theme.expected&&theme.background.startsWith('linear-gradient('),'dark-labeled screenshot must use actual dark semantic theme: '+name+' '+JSON.stringify(theme));
+      // Protect the readable light error surface from dark-context muted tokens.
+      const noticeContrast=await c.call("function(){const el=document.querySelector('.persistence-notice.error small,.persistence-notice.conflict small');if(!el)return null;const notice=el.closest('.persistence-notice');const luminance=color=>{const rgb=color.match(/[0-9.]+/g).slice(0,3).map(Number).map(x=>{const v=x/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};const fg=getComputedStyle(el),bg=getComputedStyle(notice),a=luminance(fg.color),b=luminance(bg.backgroundColor),rect=notice.getBoundingClientRect();return {ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),fontSize:parseFloat(fg.fontSize),fits:rect.left>=-1&&rect.right<=innerWidth+1,overflows:notice.scrollWidth>notice.clientWidth+1,foreground:fg.color,background:bg.backgroundColor,textWidth:notice.firstElementChild?.getBoundingClientRect().width??0,stacked:(notice.querySelector('button')?.getBoundingClientRect().top??-1)>=(notice.firstElementChild?.getBoundingClientRect().bottom??1)-1}}");
+      if(noticeContrast)assert(noticeContrast.ratio>=4.5&&noticeContrast.fontSize>=11.5&&noticeContrast.fits&&!noticeContrast.overflows,'readable error notice at '+name+': '+JSON.stringify(noticeContrast));
+      if(noticeContrast&&name.includes('-375-'))assert(noticeContrast.textWidth>=260&&noticeContrast.stacked,'mobile error notice must show full-width readable message above recovery action: '+name+' '+JSON.stringify(noticeContrast));
+    }
+    const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});
+    writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'));
+  };
   const callMode=mode=>c.call("function(mode){globalThis.__myfinhubQaPersistenceMode(mode);return true}",[mode]);
   const mutate=()=>c.call("function(){const button=document.querySelector('[data-persistence-mutate]');button?.click();return Boolean(button)}");
   const release=()=>c.call("function(){return globalThis.__myfinhubQaReleaseSave?.()===true}");
@@ -180,7 +194,82 @@ try{
   assert(partial.budget===partialBase+2&&partial.undo===2&&partial.redo===1&&await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===2&&Boolean(document.querySelector('[data-save-progress=error]'))}"),`failed second step retains exact first confirmed move and red bar: ${JSON.stringify(partial)}`);
   await shot('history-real-hook-jump-partial-conflict-1440-dark');
 
+  // Rejected before commit (409 or 503) is distinct from a committed import
+  // whose separate history read failed. Use the production finance hook and
+  // assert that no synthetic database mutation or replay has taken place.
+  for(const preCommitFailure of ['conflict','unavailable']){
+    await c.send('Page.navigate',{url:historyHookUrl.href});
+    await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'pre-commit import rejection probe initialized');
+    const untouchedBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+    assert(await press('[data-persistence-mutate]'),'establish confirmed finance/history before rejected import');
+    await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${untouchedBudget+1}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'pre-import acknowledged finance baseline');
+    assert(await c.call("function(mode){return globalThis.__myfinhubQaRejectNextImport?.(mode)===true}",[preCommitFailure]),'arm isolated pre-commit import '+preCommitFailure);
+    assert(await press('[data-persistence-import]'),'attempt rejected import with actual useFinance hook');
+    const expectedState=preCommitFailure==='conflict'?'conflict':'error';
+    await waitFor("function(state){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent===state}",'rejected import never reports a confirmed receipt',[expectedState]);
+    const rejected=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,outcome:document.querySelector('[data-persistence-import-outcome]')?.textContent,attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+    assert(rejected.budget===untouchedBudget+1&&rejected.state===expectedState&&rejected.outcome==='error'&&rejected.attempts===1&&rejected.commits===0&&rejected.undoDisabled&&rejected.redoDisabled&&rejected.progress==='error','pre-commit rejection preserves exact confirmed finance without false success, duplicate import or stale Undo: '+JSON.stringify(rejected));
+    await shot('history-rejected-import-'+preCommitFailure+'-1440-dark');
+    await viewport(375,812);
+    await shot('history-rejected-import-'+preCommitFailure+'-375-dark');
+    await viewport(1440,900);
+    assert(await press('[data-persistence-reload]'),'read-only reload after rejected import');
+    await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'rejected import recovery by read-only reload');
+    assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0&&globalThis.__myfinhubQaImportAttemptCount?.()===1}",[untouchedBudget+1]),'read-only recovery preserves prior finance and never replays rejected import');
+  }
+
+  // A concurrent acknowledged save changes the server revision after this
+  // hook read its original revision. The web import's If-Match must reject
+  // before any destructive replacement, without relying on a forced 409.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'revision-guarded import baseline');
+  const staleBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await press('[data-persistence-mutate]'),'confirm a prior finance revision before simulating a competing writer');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${staleBudget+1}&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'confirmed baseline before stale-revision import');
+  assert(await c.call("function(){return globalThis.__myfinhubQaAdvanceRemoteRevision?.()===true}"),'simulate concurrent accepted remote revision');
+  assert(await press('[data-persistence-import]'),'submit revision-guarded stale import');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'server If-Match conflict rejects stale import');
+  const stale=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+  assert(stale.budget===staleBudget+1&&stale.attempts===1&&stale.commits===0&&stale.undoDisabled&&stale.redoDisabled&&stale.progress==='error','stale real If-Match conflict does not replace, replay or claim saved: '+JSON.stringify(stale));
+  await shot('history-stale-import-revision-conflict-1440-dark');
+  assert(await press('[data-persistence-reload]'),'read-only recovery after stale revision import');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'stale import recovery reload');
+  assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&globalThis.__myfinhubQaImportCommitCount?.()===0}",[staleBudget+1]),'remote revision recovery never repeats stale import');
+
+  // An import may commit while its HTTP reply disappears. Never invite replay.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'lost import receipt baseline');
+  const lostBase=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaLoseNextImportReceipt?.()===true}"),'arm committed import response loss');
+  assert(await press('[data-persistence-import]'),'submit import with lost HTTP reply');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'&&document.querySelector('[data-persistence-state]')?.textContent==='error'}",'lost import reply never claims success');
+  const uncertain=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),message:document.querySelector('.persistence-notice.error')?.textContent||'',attempts:globalThis.__myfinhubQaImportAttemptCount?.(),commits:globalThis.__myfinhubQaImportCommitCount?.(),undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+  assert(uncertain.budget===lostBase&&uncertain.attempts===1&&uncertain.commits===1&&uncertain.undoDisabled&&uncertain.redoDisabled&&uncertain.progress==='error'&&uncertain.message.includes('Μην επαναλάβεις την εισαγωγή'),'lost import reply never claims finance success or invites destructive replay: '+JSON.stringify(uncertain));
+  await shot('history-committed-import-response-lost-1440-dark');
+  assert(await press('[data-persistence-reload]'),'read-only recovery after unknown committed import');
+  await waitFor("function(expected){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",'reload reconciles confirmed finance after unknown import',[lostBase+13]);
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===1&&globalThis.__myfinhubQaImportCommitCount?.()===1}"),'response-loss recovery must never replay import');
+
+  // The real finance hook accepts the import before its separate history GET.
+  // Neither an HTTP error nor a mismatched history revision may show green
+  // success or permit stale Undo/Redo; recovery must not repeat the import.
+  for(const historyFailure of ['read-failure','revision-mismatch']){
+    await c.send('Page.navigate',{url:historyHookUrl.href});
+    await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'import history negative probe initialized');
+    const beforeImport=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+    const armed=await c.call("function(mode){return globalThis.__myfinhubQaImportHistoryCase?.(mode)===true}",[historyFailure]);
+    assert(armed,'synthetic post-commit history '+historyFailure+' armed');
+    assert(await press('[data-persistence-import]'),'committed synthetic import started');
+    await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='committed-history-unverified'&&document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'committed import reports unverified history rather than full success');
+    const outcome=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),outcome:document.querySelector('[data-persistence-import-outcome]')?.textContent,state:document.querySelector('[data-persistence-state]')?.textContent,notice:document.querySelector('.persistence-notice.conflict')?.textContent||'',undoDisabled:document.querySelector('[data-persistence-undo]')?.disabled,redoDisabled:document.querySelector('[data-persistence-redo]')?.disabled,progress:document.querySelector('[data-save-progress]')?.getAttribute('data-save-progress')}}");
+    assert(outcome.budget===beforeImport+13&&outcome.outcome==='committed-history-unverified'&&outcome.state==='conflict'&&outcome.notice.includes('Η εισαγωγή επιβεβαιώθηκε')&&outcome.notice.includes('Μην επαναλάβεις την εισαγωγή')&&outcome.undoDisabled&&outcome.redoDisabled&&outcome.progress==='error','committed import keeps finance revision, blocks stale history and displays truthful recovery: '+JSON.stringify(outcome));
+    await shot('history-committed-import-'+historyFailure+'-1440-dark');
+    assert(await press('[data-persistence-reload]'),'reload accepted imported finance after unverified history');
+    await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'read-only reload recovered imported finance and history');
+    assert(await c.call("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",[beforeImport+13]),'recovery preserves acknowledged import without reposting finance');
+  }
+
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}
-finally{child.kill('SIGTERM')}
+finally{await browserSession?.stop()}

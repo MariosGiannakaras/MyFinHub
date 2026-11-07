@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
+import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
 import { reachableHistoryNavigation } from '../lib/historyView';
 import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
@@ -323,18 +323,34 @@ export function useFinance() {
     try {
       await coordinator.whenIdle();
       try {
-        const res = await importData(productData(incoming));
+        const res = await importData(productData(incoming), revisionRef.current);
         applyDataEnvelope(res);
-        const nextHistory=await loadHistory();
-        const consistent=historyMatchesRevision(nextHistory,res.revision);
-        applyHistory(consistent?nextHistory:{...nextHistory,available:false});
-        setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
-        if(consistent&&nextHistory.available)setSaveReceiptCount(count=>count+1);
+        // Import is already committed when the server acknowledges its revision.
+        // A failed history read must not invite a second destructive import.
+        const nextHistory=await loadHistory().catch(()=>null);
+        const consistent=nextHistory!==null&&historyMatchesRevision(nextHistory,res.revision);
+        const verified=Boolean(consistent&&nextHistory?.available);
+        const unavailableHistory:HistoryEnvelope=nextHistory
+          ? {...nextHistory,available:false}
+          : {available:false,generation:historyGenerationRef.current,financeRevision:res.revision,
+            currentPointId:null,canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,points:[]};
+        applyHistory(verified?nextHistory!:unavailableHistory);
+        if(verified){
+          setCurrentSaveState('saved');
+          setSaveReceiptCount(count=>count+1);
+        }else{
+          setSaveErrorMessage('Η εισαγωγή επιβεβαιώθηκε στη βάση, αλλά το ιστορικό δεν επαληθεύτηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
+          setCurrentSaveState('conflict');
+        }
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
+        return verified?{status:'complete' as const}:{status:'committed-history-unverified' as const};
       } catch (error) {
         lastSaveFailed.current = true;
         if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
-        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
+        else if(importOutcomeMayBeCommitted(error)){
+          setSaveErrorMessage('Η έκβαση της εισαγωγής δεν επιβεβαιώθηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση για να ελέγξεις αν πραγματοποιήθηκε.');
+          setCurrentSaveState('error');
+        }else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     } finally {

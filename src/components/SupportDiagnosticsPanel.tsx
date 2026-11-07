@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { FinanceData } from '../types';
 import { allAccounts, effectiveLegacyTransactions } from '../lib/domain';
 import { Button } from './Button';
+import { OperationFeedback } from './OperationFeedback';
 
 type Props={
   data:FinanceData;
@@ -39,12 +40,16 @@ function diagnostics(data:FinanceData,filePath:string,lastSavedAt:string|null){
 
 export function SupportDiagnosticsPanel({data,filePath,lastSavedAt}:Props){
   const[message,setMessage]=useState('');
+  const[copyError,setCopyError]=useState(false);
   const snapshot=diagnostics(data,filePath,lastSavedAt);
   const copy=async()=>{
+    setMessage('');
     try{
       await navigator.clipboard.writeText(JSON.stringify(snapshot,null,2));
+      setCopyError(false);
       setMessage('Τα ασφαλή διαγνωστικά αντιγράφηκαν.');
     }catch{
+      setCopyError(true);
       setMessage('Δεν ήταν δυνατή η αντιγραφή διαγνωστικών.');
     }
   };
@@ -65,6 +70,6 @@ export function SupportDiagnosticsPanel({data,filePath,lastSavedAt}:Props){
       <span><small>Last save</small><b>{snapshot.lastSavedAt?new Date(snapshot.lastSavedAt).toLocaleString('el-GR'):'—'}</b></span>
     </div>
     <div className="editor-actions"><Button type="button" variant="secondary" onClick={()=>void copy()}><ClipboardCopy size={15}/> Αντιγραφή ασφαλών διαγνωστικών</Button></div>
-    {message?<div className="logic-note compact" role="status" aria-live="polite">{message}</div>:null}
+    {message?<OperationFeedback className="logic-note compact" tone={copyError?'error':'success'}>{message}</OperationFeedback>:null}
   </section>;
 }

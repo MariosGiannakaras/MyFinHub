@@ -10,25 +10,74 @@ class Cdp{
   private listeners=new Map<string,Array<(params:any)=>void>>();
   private ws?:WebSocket;
   constructor(private readonly url:string){}
-  async open(){await new Promise<void>((resolve,reject)=>{
-    const ws=new WebSocket(this.url);this.ws=ws;
-    ws.onopen=()=>resolve();ws.onerror=()=>reject(new Error('Browser CDP connection failed.'));
-    ws.onmessage=event=>{const message=JSON.parse(String(event.data));
-      if(message.id){const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);return}
-      for(const listener of this.listeners.get(message.method)||[])listener(message.params);
-    };
-  })}
-  send(method:string,params:Record<string,unknown>={}){const id=++this.id;return new Promise<any>((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws?.send(JSON.stringify({id,method,params}))})}
-  on(method:string,listener:(params:any)=>void){const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list)}
+  private rejectAll(error:Error){for(const entry of this.pending.values())entry.reject(error);this.pending.clear()}
+  async open(){
+    await new Promise<void>((resolve,reject)=>{
+      const ws=new WebSocket(this.url);this.ws=ws;
+      let settled=false;
+      let timer:ReturnType<typeof setTimeout>;
+      const finish=(error?:Error)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        error?reject(error):resolve();
+      };
+      timer=setTimeout(()=>{
+        finish(new Error('Browser CDP WebSocket handshake timed out after 15s.'));
+        ws.close();
+      },15_000);
+      ws.onopen=()=>finish();
+      ws.onerror=()=>finish(new Error('Browser CDP WebSocket connection failed.'));
+      ws.onclose=()=>{
+        const error=new Error('Browser CDP connection closed.');
+        this.rejectAll(error);
+        finish(error);
+      };
+      ws.onmessage=event=>{
+        let message:any;
+        try{message=JSON.parse(String(event.data))}
+        catch{this.rejectAll(new Error('Invalid Browser CDP message.'));ws.close();return}
+        if(message.id){
+          const pending=this.pending.get(message.id);
+          if(!pending)return;
+          this.pending.delete(message.id);
+          message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);
+          return;
+        }
+        for(const listener of this.listeners.get(message.method)||[])listener(message.params);
+      };
+    });
+  }
+  send(method:string,params:Record<string,unknown>={}):Promise<any>{
+    if(!this.ws||this.ws.readyState!==WebSocket.OPEN){
+      return Promise.reject(new Error('Browser CDP is not connected: '+method));
+    }
+    const id=++this.id;
+    return new Promise<any>((resolve,reject)=>{
+      const timer=setTimeout(()=>{
+        this.pending.delete(id);
+        reject(new Error('Browser CDP command timed out after 25s: '+method));
+      },25_000);
+      this.pending.set(id,{
+        resolve:value=>{clearTimeout(timer);resolve(value)},
+        reject:error=>{clearTimeout(timer);reject(error)},
+      });
+      try{this.ws!.send(JSON.stringify({id,method,params}))}
+      catch(error){
+        this.pending.delete(id);clearTimeout(timer);
+        reject(error instanceof Error?error:new Error(String(error)));
+      }
+    });
+  }
+  on(method:string,listener:(params:any)=>void){
+    const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list);
+  }
   async call<T=any>(fn:string,args:any[]=[]):Promise<T>{
     const root=await this.send('Runtime.evaluate',{expression:'globalThis'});
     const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});
     if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Browser function call failed.');
     return result.result.value as T;
   }
-  close(){this.ws?.close()}
+  close(){this.rejectAll(new Error('Browser CDP closed by test harness.'));this.ws?.close()}
 }
-
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
 function trimDiagnostics(value:string){const text=value.trim();if(!text)return '(no Chromium diagnostics captured)';return text.length>6000?text.slice(-6000):text}
 async function stopBrowser(child:ReturnType<typeof spawn>|undefined){
@@ -83,7 +132,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     const runtimeErrors:string[]=[];const apiFailures:string[]=[];const apiResponses:string[]=[];
-    let expectedInvalidImport=false;
     c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));
     c.on('Network.responseReceived',params=>{
       const url=String(params.response?.url||'');const status=Number(params.response?.status||0);
@@ -91,7 +139,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       const pathname=new URL(url).pathname;apiResponses.push(`${status} ${pathname}`);
       if(status<400)return;
       if(status===401&&pathname==='/api/auth/session')return;
-      if(status===400&&pathname==='/api/import'&&expectedInvalidImport)return;
       apiFailures.push(`${status} ${pathname}`);
     });
     const waitFor=async(fn:string,label:string,args:any[]=[])=>{for(let i=0;i<160;i++){if(await c!.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
@@ -113,6 +160,21 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const waitExpenseCategory=async(name:string,subcategory:string|null=null,present=true)=>waitFor("async function(name,subcategory,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const tree=payload.data?.state?.settings?.expenseCategoryTree||[];const category=tree.find(item=>item.name===name);if(!present)return !category;if(!category)return false;return subcategory?Array.isArray(category.subcategories)&&category.subcategories.includes(subcategory):true}",present?'persisted category '+name:'retired category '+name,[name,subcategory,present]);
     const waitIconChoice=async(choice:string)=>waitFor("async function(choice){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return Object.values(payload.data?.state?.settings?.categoryIcons||{}).includes(choice)}",'persisted icon '+choice,[choice]);
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
+    // Legacy fixture is dated October 2026. Search honors selected reporting
+    // month, whereas modern Quick Entry uses today's actual month.
+    const readPeriod=()=>c!.call<string>("function(){return document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||''}");
+    const selectPeriod=async(label:string,direction:'previous'|'next')=>{
+      for(let step=0;step<120;step++){
+        const current=await readPeriod();
+        assert(Boolean(current),'Reporting month selector is missing.');
+        if(current===label)return;
+        const moved=await c!.call<boolean>("function(direction){const wanted=direction==='previous'?'Προηγούμενος μήνας':'Επόμενος μήνας';const button=[...document.querySelectorAll('.period-control button')].find(node=>node.getAttribute('aria-label')?.startsWith(wanted));if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}",[direction]);
+        assert(moved,'Could not navigate reporting month from '+current+' to '+label);
+        await waitFor("function(previous){return (document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||'')!==previous}",'reporting period navigation',[current]);
+      }
+      throw new Error('Could not reach reporting month '+label+' within 120 calendar steps');
+    };
+    const seedPeriod=(()=>{const label=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date('2026-10-01T00:00:00.000Z'));return label.charAt(0).toUpperCase()+label.slice(1)})();
     const waitApiEvent=async(note:string,present:boolean)=>waitFor("async function(note,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=(payload.data?.state?.events||[]).some(item=>item.note===note);return present?exists:!exists}",'persisted event '+note,[note,present]);
     const waitApiEventKind=async(note:string,kind:string)=>waitFor("async function(note,kind){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.events||[]).some(item=>item.note===note&&item.kind===kind)}",'persisted '+kind+' event '+note,[note,kind]);
     const waitAttentionDecision=async(id:string,status:string|null)=>waitFor("async function(id,status){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const decision=payload.data?.state?.attentionDecisions?.[id];return status===null?!decision:decision?.status===status}",status===null?'cleared attention decision '+id:'persisted '+status+' attention decision '+id,[id,status]);
@@ -198,16 +260,19 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after undo');await search('Real Browser Expense Edited');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense Edited'))}",'modern undo persisted');await shot('modern-transaction-persisted');
 
     console.log('[real-browser] stage legacy-edit-delete-undo');
+    const previousPeriod=await readPeriod();
+    await selectPeriod(seedPeriod,'previous');
     await search('Synthetic real-stack seed income');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income'))}",'legacy seed row');
     const editLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(editLegacy,'Legacy edit action is missing.');
     await waitFor("function(){return Boolean(document.querySelector('.legacy-transaction-editor[role=dialog]'))}",'legacy editor');await setByLabel('Ποσό ιστορικής κίνησης','101.25');await setByLabel('Περιγραφή ιστορικής κίνησης','Synthetic real-stack seed income override');await clickText('.legacy-transaction-editor button','Αποθήκευση override');await waitLegacy('Synthetic real-stack seed income override',false);
-    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy edit');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy override after reload');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy edit');await selectPeriod(seedPeriod,'previous');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy override after reload');
     const deleteLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income override'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(deleteLegacy,'Legacy delete action is missing.');
     await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'legacy delete confirm');await clickText('[role=alertdialog] button','Διαγραφή');await waitLegacy('Synthetic real-stack seed income override',true);
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy delete');
     const undoLegacy=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}");assert(undoLegacy,'Durable legacy undo is unavailable after reload.');await waitLegacy('Synthetic real-stack seed income override',false);
-    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy undo');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy undo persisted');await shot('legacy-transaction-persisted');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy undo');await selectPeriod(seedPeriod,'previous');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy undo persisted');await shot('legacy-transaction-persisted');
 
+    await selectPeriod(previousPeriod,'next');
     console.log('[real-browser] stage credit-purchase-payment-reload');
     await clickText('.sidebar nav button','Πιστωτική');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit workspace');
@@ -525,15 +590,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return (globalThis.__myfinhubQaDownloads||[]).some(name=>/^MyFinHub-backup-.*\\.json$/.test(name))}",'JSON export download');
     assert(apiResponses.includes('200 /api/backup'),'Backup action did not reach the real API successfully.');
 
+    // Deliberately malformed JSON must fail in the preview BEFORE opening
+    // the destructive confirmation and BEFORE a network import attempt.
+    // A separate real API test still proves authoritative server-side 400.
     const beforeInvalid=await currentRevision();assert(beforeInvalid,'Could not read the pre-validation revision.');
-    expectedInvalidImport=true;await importFile('invalid');
-    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'invalid import confirmation');
-    const priorMessage=await c.call<string>("function(){return document.querySelector('.logic-note[role=status]')?.textContent||''}");
-    await clickText('.app-confirm-dialog button','Εισαγωγή');
-    await waitFor("function(previous){const text=document.querySelector('.logic-note[role=status]')?.textContent||'';return Boolean(text&&text!==previous)}",'invalid import rejection',[priorMessage]);
-    const afterInvalid=await currentRevision();expectedInvalidImport=false;
-    assert(afterInvalid===beforeInvalid,'Rejected import changed the canonical revision.');
-    assert(apiResponses.includes('400 /api/import'),'Invalid import did not exercise the real validation rejection.');
+    const importResponsesBefore=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    await importFile('invalid');
+    await waitFor("function(){const feedback=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&Boolean(feedback&&feedback.textContent?.includes('Δεν έγινε εισαγωγή'))}",'invalid import rejected in client preview before destructive confirmation');
+    const alertVisible=await c.call<boolean>("function(){const alert=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');if(!(alert instanceof HTMLElement))return false;alert.scrollIntoView({block:'center',behavior:'instant'});const rect=alert.getBoundingClientRect();return rect.width>220&&rect.height>20&&rect.top>=0&&rect.bottom<=window.innerHeight&&getComputedStyle(alert).visibility==='visible'}");
+    assert(alertVisible,'Malformed import rejection must be visibly painted within the screenshot viewport.');
+    await sleep(160);
+    await shot('data-management-invalid-import-preview-rejected');
+    const afterInvalid=await currentRevision();
+    const importResponsesAfter=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    assert(afterInvalid===beforeInvalid,'Malformed preview changed the canonical finance revision.');
+    assert(importResponsesAfter===importResponsesBefore,'Malformed client preview contacted destructive import API.');
+    assert(await c.call<boolean>("function(){return !document.querySelector('.settings-import-preview')&&!document.querySelector('.app-confirm-dialog[role=alertdialog]')}"),'Malformed preview exposed an actionable import confirmation.');
 
     await importFile('valid');
     await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'valid import confirmation');
