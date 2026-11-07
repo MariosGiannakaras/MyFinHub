@@ -54,11 +54,11 @@ jobs:
           from pathlib import Path
           config=Path('supabase/config.toml')
           data=config.read_text()
-          old='[studio]\\nenabled = true'
+          old='[studio]\nenabled = true'
           assert data.count(old)==1, 'Unexpected Supabase local Studio configuration'
           assert '[local_smtp]' not in data, 'CI local SMTP section was already configured'
-          config.write_text(data.replace(old,'[studio]\\nenabled = false',1)
-                            +'\\n[local_smtp]\\nenabled = false\\n')
+          config.write_text(data.replace(old,'[studio]\nenabled = false',1)
+                            +'\n[local_smtp]\nenabled = false\n')
           PY
       - name: Start isolated local Supabase
         run: npx --yes supabase@2.119.0 start

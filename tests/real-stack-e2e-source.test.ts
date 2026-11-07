@@ -15,8 +15,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(workflow).toContain('supabase@2.119.0 start');
     expect(workflow).toContain('supabase@2.119.0 stop --no-backup');
     expect(workflow).toContain('Restrict CI-only local services (no Studio or SMTP ports)');
-    expect(workflow).toContain("old='[studio]\\\\nenabled = true'");
-    expect(workflow).toContain("+'\\\\n[local_smtp]\\\\nenabled = false\\\\n'");
+    expect(workflow).toContain("old='[studio]\\nenabled = true'");
+    expect(workflow).not.toContain("old='[studio]\\\\nenabled = true'");
+    expect(workflow).toContain("+'\\n[local_smtp]\\nenabled = false\\n'");
     expect(workflow.indexOf('Restrict CI-only local services')).toBeLessThan(workflow.indexOf('Start isolated local Supabase'));
     expect(supabaseConfig).toContain('[auth.mfa.totp]');
     expect(supabaseConfig).toContain('verify_enabled = true');
