@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
 const generic=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
+const receiptAware=readFileSync(new URL('../src/components/ReceiptAwareQuickAdd.tsx',import.meta.url),'utf8');
 const inbox=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 const contextualQa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
 const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
@@ -22,6 +23,20 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
     expect(contextual).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
 
+  });
+  it('confirms a dirty Quick Entry draft before switching to the local receipt inbox',()=>{
+    expect(generic).toContain('onDraftDirtyChange?.(open&&dirty)');
+    expect(generic).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
+    expect(receiptAware).toContain('onDraftDirtyChange={setQuickDirty}');
+    expect(receiptAware).toContain('externalConfirmationOpen={receiptSwitchConfirmOpen}');
+    expect(receiptAware).toContain('if (quickDirty) { setReceiptSwitchConfirmOpen(true); return; }');
+    expect(receiptAware).toContain('onClick={requestReceiptOpen}');
+    expect(receiptAware).toContain('<ConfirmDialog open={receiptSwitchConfirmOpen}');
+    expect(receiptAware).toContain('onCancel={() => setReceiptSwitchConfirmOpen(false)}');
+    expect(receiptAware).toContain('onConfirm={launchReceipt}');
+    expect(receiptAware).toContain('setReceiptOpen(true);');
+    expect(receiptQa).toContain('dirty Quick Entry receipt-switch confirmation preserves edited draft on cancel');
+    expect(receiptQa).toContain('receipt-local-mobile-switch-unsaved-confirm');
   });
   it('keeps Quick Entry portalled receipt launch inert and retry errors honest until acknowledged finance receipt',()=>{
     expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);

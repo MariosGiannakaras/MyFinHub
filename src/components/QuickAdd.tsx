@@ -59,7 +59,7 @@ const intentStyle=(intent:EntryIntent)=>({'--quick-intent-bg':intentTones[intent
 const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.intent]}));
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
-export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, onCreateLinkedTransfer }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>Promise<void>; onCreateLinkedTransfer?:(principal:FinanceEvent,fee:FinanceEvent|null)=>Promise<void>; currentBalance:(accountId:string)=>number }) {
+export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', externalConfirmationOpen=false, onDraftDirtyChange, onClose, onCreate, onCreateLinkedTransfer }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; externalConfirmationOpen?:boolean; onDraftDirtyChange?:(dirty:boolean)=>void; onClose:()=>void; onCreate:(event:FinanceEvent)=>Promise<void>; onCreateLinkedTransfer?:(principal:FinanceEvent,fee:FinanceEvent|null)=>Promise<void>; currentBalance:(accountId:string)=>number }) {
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
   const quickAccounts = accounts.filter(account=>account.showInQuickChoices!==false);
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
@@ -100,6 +100,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
+  // Notify the receipt launcher so switching editors cannot silently discard changes.
+  useEffect(()=>{onDraftDirtyChange?.(open&&dirty)},[open,dirty,onDraftDirtyChange]);
   const categoryKind=kind==='income'?'income':'expense';
   const splitStatus=useMemo(()=>kind==='split'?splitAllocation(parts):null,[kind,parts]);
 
@@ -269,7 +271,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     return current&&!poolIds.has(current)?<><option value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>{pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
   };
 
-  return <><DialogShell open={open} busy={saving} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
+  return <><DialogShell open={open} busy={saving} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen&&!externalConfirmationOpen} onRequestClose={requestClose}>
       <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Τις πληρωμές παγίων τις καταχωρίζεις στα «Πάγια», τις δόσεις στα «Δάνεια» και την πιστωτική στην οθόνη της. Εδώ καταγράφεις τις υπόλοιπες πραγματικές κινήσεις.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}><X/></IconButton></header>
       {linkedRecurringPayment?<p className="logic-note compact" role="note" data-linked-recurring-payment>Επεξεργάζεσαι πραγματική πληρωμή παγίου. Η σύνδεσή της με το πάγιο διατηρείται. Νέα πληρωμή παγίου γίνεται μόνο από τη σελίδα «Πάγια».</p>:null}
       {!linkedRecurringPayment&&genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" inert={saving} role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}

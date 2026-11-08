@@ -6,6 +6,7 @@ import { receiptSplitParts } from '../lib/receiptItemReview';
 import { saveFinanceThenCleanupReceipt } from '../lib/receiptPostSave';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
 import { QuickAdd, type QuickPrefill } from './QuickAdd';
+import { ConfirmDialog } from './ConfirmDialog';
 const ReceiptInbox=lazy(async()=>({default:(await import('./ReceiptInbox')).ReceiptInbox}));
 
 export function ReceiptAwareQuickAdd({
@@ -40,6 +41,8 @@ export function ReceiptAwareQuickAdd({
   const [receiptProposal, setReceiptProposal] = useState<ReceiptProposal | null>(null);
   const [receiptSession, setReceiptSession] = useState(0);
   const [receiptHost, setReceiptHost] = useState<HTMLElement | null>(null);
+  const [quickDirty, setQuickDirty] = useState(false);
+  const [receiptSwitchConfirmOpen, setReceiptSwitchConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -47,6 +50,8 @@ export function ReceiptAwareQuickAdd({
       setReceiptDraftId(null);
       setReceiptProposal(null);
       setReceiptHost(null);
+      setQuickDirty(false);
+      setReceiptSwitchConfirmOpen(false);
     }
   }, [open]);
 
@@ -70,6 +75,16 @@ export function ReceiptAwareQuickAdd({
       parts:receiptProposal?.reviewedSplit?receiptSplitParts(receiptProposal,data.state.settings)??undefined:undefined,
     };
   }, [receiptDraftId, receiptProposal,data.state.settings]);
+
+  const launchReceipt = () => {
+    setReceiptSwitchConfirmOpen(false);
+    setQuickDirty(false);
+    setReceiptOpen(true);
+  };
+  const requestReceiptOpen = () => {
+    if (quickDirty) { setReceiptSwitchConfirmOpen(true); return; }
+    launchReceipt();
+  };
 
   const applyReceipt = (draftId: string, proposal: ReceiptProposal) => {
     if(proposal.reviewedSplit&&!receiptSplitParts(proposal,data.state.settings))throw new Error('Η κατανομή δεν συμφωνεί με τα ελεγμένα ποσά και τις τρέχουσες κατηγορίες.');
@@ -111,13 +126,16 @@ export function ReceiptAwareQuickAdd({
         initialKind={receiptDraftId ? (receiptProposal?.reviewedSplit?'split':'expense') : initialKind}
         prefill={receiptDraftId ? receiptPrefill : prefill}
         motionMode={motionMode}
+        externalConfirmationOpen={receiptSwitchConfirmOpen}
+        onDraftDirtyChange={setQuickDirty}
         onClose={onClose}
         onCreate={create}
         onCreateLinkedTransfer={createLinked}
         currentBalance={currentBalance}
       />
-      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
+      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={requestReceiptOpen}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
     </> : null}
+    <ConfirmDialog open={receiptSwitchConfirmOpen} title="Απόρριψη αλλαγών πριν από τη σάρωση απόδειξης;" description="Οι μη αποθηκευμένες αλλαγές στην καταχώριση θα χαθούν αν μεταβείς στις αποδείξεις. Καμία οικονομική κίνηση δεν θα καταχωριστεί." confirmLabel="Απόρριψη αλλαγών" tone="destructive" motionMode={motionMode} onConfirm={launchReceipt} onCancel={() => setReceiptSwitchConfirmOpen(false)}/>
     {receiptOpen?<Suspense fallback={<div className="modal-backdrop receipt-inbox-backdrop" role="status" aria-live="polite">Φόρτωση αποδείξεων…</div>}><ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/></Suspense>:null}
   </>;
 }
