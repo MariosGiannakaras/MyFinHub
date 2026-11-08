@@ -33,9 +33,14 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(source).toContain('desktop-backup-retry-initial-error-');
     expect(source).toContain("DBUS_SESSION_BUS_ADDRESS:''");
     expect(source).toContain('Desktop backup Chromium CDP bootstrap failed');
+    expect(source).toContain("MYFINHUB_BACKUP_BROWSER_ATTEMPT==='2'?2:1");
+    expect(source).toContain('const port=9271+browserAttempt');
+    expect(source).toContain('detached:true');
+    expect(source).toContain("process.kill(-child.pid,'SIGTERM')");
     const workflow=readFileSync('.github/workflows/desktop-backup-focused-qa.yml','utf8');
     expect(workflow).toContain("grep -q 'Desktop backup Chromium CDP bootstrap failed'");
     expect(workflow).toContain('for attempt in 1 2; do');
+    expect(workflow).toContain('MYFINHUB_BACKUP_BROWSER_ATTEMPT="$attempt" node');
     expect(source).toContain('native status refresh clears transient error');
     expect(source).toContain('invalidOnlyAlert');
     expect(source).toContain("viewport.name==='mobile'");

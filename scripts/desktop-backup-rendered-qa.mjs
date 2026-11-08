@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 
 // Deterministic visual QA: Electron-only Settings with synthetic bridge.
 // No real filesystem, backend credentials, owner data or Production requests.
@@ -9,9 +9,10 @@ mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v chromium || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chromium is required for Desktop Backup rendered QA.');
-const port=9272;
-const profile='/tmp/myfinhub-desktop-backup-qa-chrome';
-const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-port='+port,'--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','pipe','pipe'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:''}});
+const browserAttempt=process.env.MYFINHUB_BACKUP_BROWSER_ATTEMPT==='2'?2:1;
+const port=9271+browserAttempt;
+const profile='/tmp/myfinhub-desktop-backup-qa-chrome-'+browserAttempt;
+const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-port='+port,'--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','pipe','pipe'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:''},detached:true});
 let chromiumDiagnostics='';
 for(const stream of [child.stdout,child.stderr])stream?.on('data',chunk=>{chromiumDiagnostics+=String(chunk);if(chromiumDiagnostics.length>6000)chromiumDiagnostics=chromiumDiagnostics.slice(-6000)});
 child.on('error',error=>{chromiumDiagnostics+='; spawn error: '+error.message});
@@ -112,4 +113,12 @@ try{
     }
   }
   console.log('Desktop backup rendered QA passed: 15 responsive native panel states, 3 error-to-retry screenshots, 2 dark-theme states, corruption-only warning, failure recovery and destructive restore confirmation.');
-}finally{c?.close();child.kill('SIGTERM')}
+}finally{
+  c?.close();
+  // Chromium wrappers can leave grandchildren holding the CDP port after the
+  // parent exits. The QA process group is detached from this Node runner.
+  if(child.pid){try{process.kill(-child.pid,'SIGTERM')}catch{child.kill('SIGTERM')}}
+  else child.kill('SIGTERM');
+  await delay(350);
+  rmSync(profile,{recursive:true,force:true,maxRetries:6,retryDelay:150});
+}
