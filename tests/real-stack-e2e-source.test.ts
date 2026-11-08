@@ -11,6 +11,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
 
   it('uses only a pinned local Supabase CLI on the standard public GitHub runner',()=>{
     expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('ready_for_review');
+    expect(workflow).toContain("github.event.pull_request.draft == false");
+    expect(workflow).toContain('<!-- run-real-stack-e2e -->');
     expect(workflow).toContain('runs-on: ubuntu-latest');
     expect(workflow).toContain('supabase@2.119.0 start');
     expect(workflow).toContain('supabase@2.119.0 stop --no-backup');

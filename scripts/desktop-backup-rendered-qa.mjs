@@ -48,7 +48,13 @@ function injectNativeBackupFixture(){
       return status;
     },saveLocalBackup:async()=>({name:good.name,createdAt:good.createdAt,revision:'465',verified:true}),
     reportBackupFailure:async()=>true,chooseBackupFolder:async()=>status,openBackupFolder:async()=>true,
-    getRestoreCandidate:async()=>({app:'RheomIQ',schemaVersion:3,updatedAt:good.createdAt,seed:{},state:{}})
+    // Restore Candidate must pass the same non-destructive client preview as
+    // genuine FinanceData before a destructive confirmation is possible.
+    getRestoreCandidate:async()=>({
+      app:'RheomIQ',schemaVersion:3,updatedAt:good.createdAt,
+      seed:{accounts:[],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},
+      state:{settings:{},events:[]},
+    })
   }});
 }
 let c;
@@ -104,7 +110,14 @@ try{
       if(mode==='populated'&&viewport.name==='desktop'){
         const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Επαληθευμένο (SHA-256)'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
         assert(opened,'valid restore action enabled');
-        await wait("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'destructive restore confirmation');
+        try{
+          await wait("function(){return Boolean(document.querySelector('[role=alertdialog]')&&document.querySelector('.settings-import-preview'))}",'destructive restore confirmation with validated JSON preview');
+        }catch(error){
+          const diagnostic=await c.call("function(){return {preview:document.querySelector('.settings-import-preview')?.textContent||'',feedback:[...document.querySelectorAll('.operation-feedback')].map(node=>node.textContent||''),dialog:Boolean(document.querySelector('[role=alertdialog]'))}}");
+          const failed=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+          writeFileSync(evidenceDir+'/desktop-backup-restore-diagnostic-desktop.png',Buffer.from(failed.data,'base64'));
+          throw new Error('Desktop backup restore preview/confirmation failed: '+JSON.stringify(diagnostic),{cause:error});
+        }
         const text=await c.call("function(){return document.querySelector('[role=alertdialog]')?.textContent||''}");
         assert(text.includes('Εισαγωγή')&&text.includes('αντικαθιστά'),'restore must require destructive import confirmation');
         const dialog=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});

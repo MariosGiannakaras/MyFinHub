@@ -3,7 +3,7 @@ name: Desktop Backup Focused Rendered QA
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
       - 'src/components/DesktopBackupPanel.tsx'
       - 'src/hooks/useDesktopAutoBackup.ts'
@@ -23,6 +23,14 @@ concurrency:
 
 jobs:
   backup-rendered:
+    # Path filters compare the entire cumulative PR diff. On a long-lived
+    # Draft PR the opt-in marker avoids re-rendering 15 states on every commit.
+    # Ready-for-review and manual runs remain mandatory/available.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event.pull_request.draft == false ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+           contains(github.event.pull_request.body, '<!-- run-desktop-backup-focused-qa -->')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
