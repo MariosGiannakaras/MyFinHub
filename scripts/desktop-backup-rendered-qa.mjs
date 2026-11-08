@@ -11,10 +11,13 @@ const chrome=configured||execFileSync('bash',['-lc','command -v chromium || comm
 if(!chrome)throw new Error('Chromium is required for Desktop Backup rendered QA.');
 const port=9272;
 const profile='/tmp/myfinhub-desktop-backup-qa-chrome';
-const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--remote-debugging-port='+port,'--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
+const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','--remote-debugging-port='+port,'--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','pipe','pipe'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:''}});
+let chromiumDiagnostics='';
+for(const stream of [child.stdout,child.stderr])stream?.on('data',chunk=>{chromiumDiagnostics+=String(chunk);if(chromiumDiagnostics.length>6000)chromiumDiagnostics=chromiumDiagnostics.slice(-6000)});
+child.on('error',error=>{chromiumDiagnostics+='; spawn error: '+error.message});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(value,label)=>{if(!value)throw new Error('Desktop backup rendered QA: '+label)};
-async function ready(url){for(let i=0;i<120;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await delay(150)}throw new Error('Timed out waiting for '+url)}
+async function ready(url){for(let i=0;i<120;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await delay(150)}throw new Error('Desktop backup Chromium CDP bootstrap failed: '+url+'; diagnostics: '+(chromiumDiagnostics.slice(-2500)||'(no stderr)'))}
 class Cdp {
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}

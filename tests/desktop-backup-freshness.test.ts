@@ -31,6 +31,11 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(source).toContain("['empty','populated','failure','invalid-only','retry']");
     expect(source).toContain("transientStatusFailure=mode==='retry'");
     expect(source).toContain('desktop-backup-retry-initial-error-');
+    expect(source).toContain("DBUS_SESSION_BUS_ADDRESS:''");
+    expect(source).toContain('Desktop backup Chromium CDP bootstrap failed');
+    const workflow=readFileSync('.github/workflows/desktop-backup-focused-qa.yml','utf8');
+    expect(workflow).toContain("grep -q 'Desktop backup Chromium CDP bootstrap failed'");
+    expect(workflow).toContain('for attempt in 1 2; do');
     expect(source).toContain('native status refresh clears transient error');
     expect(source).toContain('invalidOnlyAlert');
     expect(source).toContain("viewport.name==='mobile'");
