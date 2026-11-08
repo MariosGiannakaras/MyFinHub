@@ -91,7 +91,7 @@ export function DesktopBackupPanel({
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div className="settings-data-action-copy">
           <strong>{stateText}</strong>
-          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}` : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
+          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
         </div>
       </div>
       <div className="settings-app-list desktop-backup-facts">

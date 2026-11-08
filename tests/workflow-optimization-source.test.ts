@@ -34,15 +34,18 @@ describe('CI workflow optimization contracts',()=>{
     expect(ci).toContain('if [ "$failures" -gt 0 ]; then exit 1; fi');
   });
 
-  it('uses original pinned CodeQL and browser jobs as reusable, without duplicate PR/push triggers',()=>{
+  it('keeps pinned CodeQL reusable in CI and weekly standalone without duplicating PR scans',()=>{
     expect(ci).toContain('uses: ./.github/workflows/codeql.yml');
     expect(ci).toContain('uses: ./.github/workflows/cross-engine-smoke.yml');
     expect(ci).toContain('uses: ./.github/workflows/performance-smoke.yml');
     expect(codeql).toContain('workflow_call:');
     expect(codeql).toContain("cron: '17 4 * * 1'");
     expect(codeql).toContain('security-events: write');
-    expect(codeql).toContain('  pull_request:');
-    expect(codeql).toContain('    branches: [main, develop]');
+    // The develop/main rulesets require CodeQL code scanning; the mandatory
+    // CI workflow calls this reusable scanner on every PR head already.
+    // A second direct PR event would duplicate the same security analysis.
+    expect(codeql).not.toMatch(/^\s*pull_request:/m);
+    expect(codeql).not.toContain('    branches: [main, develop]');
     for(const reusable of [cross,performance]){
       expect(reusable).toContain('workflow_call:');
       expect(reusable).not.toContain('  pull_request:');

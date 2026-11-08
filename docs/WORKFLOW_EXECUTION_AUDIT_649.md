@@ -33,3 +33,9 @@
 - The current change is a *workflow/performance* reconciliation and a correction of the focused desktop backup synthetic QA fixture.
 - Run the focused 15-state visual matrix **once** on the coherent current head, inspect all PNGs, and classify I18.03/I18.06 only after the actual proof passes. The 2c94fdb isolated local PostgreSQL+Storage rehearsal is verified but **does not** establish a separately hosted, production-grade recovery environment for I18.02.
 - Track implementation completion **separately** from pending review-head CI and merge; use the active #649 branch checkpoint for counters. Do not auto-merge a Draft PR or apply production migrations.
+
+## 2026-11-08 focused follow-up to the whole-workflow audit
+
+- Existing `tests/workflow-optimization-source.test.ts` was still asserting the old **duplicate direct PR CodeQL** scan. The global workflow now relies on mandatory CI's reusable CodeQL for PR scan + weekly scheduled standalone CodeQL; update the legacy guard rather than restoring duplicate cost. The actual GitHub rulesets explicitly require `validate` and CodeQL code-scanning analysis, not two scans.
+- The 15-state Windows backup proof reached real rendered Restore confirmation but exposed a **QA-only StrictMode race** in its single-use synthetic failure. Keep failure until a deliberate retry action; then verify the visible error disappears. Partial evidence artifact #13610211853 was reviewed; final tablet/mobile/retry acceptance is still pending.
+- A corrupt-only catalog must not show first-install copy below its red warning. Fix the copy based on real screenshot and lock source and rendered assertions. Capture the restore modal only after motion settles so the visual artifact is an accurate review image.

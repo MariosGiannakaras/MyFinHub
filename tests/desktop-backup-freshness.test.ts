@@ -25,11 +25,15 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(source).toContain('Boolean(error) || failed || overdue || invalidOnly');
     expect(source).toContain("role={invalidOnly ? 'alert' : 'status'}");
     expect(source).toContain("'Αναμονή πρώτου αντιγράφου'");
+    expect(source).toContain('κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256');
   });
   it('renders corrupt-only, retry and healthy states on actual desktop/tablet/mobile',()=>{
     const source=readFileSync('scripts/desktop-backup-rendered-qa.mjs','utf8');
     expect(source).toContain("['empty','populated','failure','invalid-only','retry']");
     expect(source).toContain("transientStatusFailure=mode==='retry'");
+    expect(source).toContain('window.__myfinhubQaEnableBackupStatusRetry=()=>{transientStatusFailure=false}');
+    expect(source).toContain("if(transientStatusFailure)throw new Error('synthetic transient status failure')");
+    expect(source).toContain('enable();button.click()');
     expect(source).toContain('desktop-backup-retry-initial-error-');
     expect(source).toContain("DBUS_SESSION_BUS_ADDRESS:''");
     expect(source).toContain('Desktop backup Chromium CDP bootstrap failed');

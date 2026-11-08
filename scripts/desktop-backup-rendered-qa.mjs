@@ -35,7 +35,10 @@ function injectNativeBackupFixture(){
     backups:empty?[]:mode==='invalid-only'?[invalid]:[good,invalid],
     lastValidBackupAt:empty||mode==='invalid-only'?null:good.createdAt,
     lastFailureAt:mode==='failure'?'2026-10-24T12:30:00.000Z':null};
+  // React StrictMode can run effects twice; preserve the synthetic failure
+  // until the QA explicitly activates recovery and clicks the real Refresh.
   let transientStatusFailure=mode==='retry';
+  window.__myfinhubQaEnableBackupStatusRetry=()=>{transientStatusFailure=false};
   Object.defineProperty(window,'myFinHubDesktop',{configurable:false,writable:false,value:{
     getInfo:async()=>({productName:'MyFinHub',version:'1.6.0',packaged:true}),
     getUpdateState:async()=>({supported:true,currentVersion:'1.6.0',status:'up-to-date',availableVersion:null,progress:100,message:'Ενημερωμένη'}),
@@ -44,7 +47,7 @@ function injectNativeBackupFixture(){
     installUpdate:async()=>({supported:false,currentVersion:'1.6.0',status:'unsupported',availableVersion:null,progress:0,message:''}),
     onUpdateState:()=>()=>{},
     getBackupStatus:async()=>{
-      if(transientStatusFailure){transientStatusFailure=false;throw new Error('synthetic transient status failure')}
+      if(transientStatusFailure)throw new Error('synthetic transient status failure')
       return status;
     },saveLocalBackup:async()=>({name:good.name,createdAt:good.createdAt,revision:'465',verified:true}),
     reportBackupFailure:async()=>true,chooseBackupFolder:async()=>status,openBackupFolder:async()=>true,
@@ -78,7 +81,7 @@ try{
         await wait("function(){return (document.querySelector('.desktop-backup-error[role=alert]')?.textContent||'').includes('κατάσταση των τοπικών αντιγράφων')}",'native transient status failure');
         const errorShot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
         writeFileSync(evidenceDir+'/desktop-backup-retry-initial-error-'+viewport.name+'.png',Buffer.from(errorShot.data,'base64'));
-        const triggered=await c.call("function(){const button=[...document.querySelectorAll('.desktop-backup-controls button')].find(el=>(el.textContent||'').includes('Ανανέωση κατάστασης'));if(!button||button.disabled)return false;button.click();return true}");
+        const triggered=await c.call("function(){const enable=globalThis.__myfinhubQaEnableBackupStatusRetry;const button=[...document.querySelectorAll('.desktop-backup-controls button')].find(el=>(el.textContent||'').includes('Ανανέωση κατάστασης'));if(typeof enable!=='function'||!button||button.disabled)return false;enable();button.click();return true}");
         assert(triggered,'native backup retry button must be available after a failed status read');
         await wait("function(){const panel=document.querySelector('.desktop-backup-panel');return Boolean(panel?.querySelector('.desktop-backup-health')?.textContent?.includes('Αναμονή πρώτου αντιγράφου')&&!panel.querySelector('.desktop-backup-error[role=alert]'))}",'native status refresh clears transient error');
       }
@@ -96,6 +99,7 @@ try{
       assert(result.disabledRestore===expectedInvalid,viewport.name+'/'+mode+': damaged restore not blocked');
       assert(result.hasFailure===(mode==='failure'),viewport.name+'/'+mode+': failure state inaccurate');
       assert(result.invalidOnlyAlert===(mode==='invalid-only'),viewport.name+'/'+mode+': invalid-only alert mismatch');
+      if(mode==='invalid-only')assert(await c.call("function(){return (document.querySelector('.desktop-backup-health')?.textContent||'').includes('κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256')&&!document.querySelector('.desktop-backup-health')?.textContent?.includes('Δεν έχει δημιουργηθεί ακόμη τοπικό backup')}"),viewport.name+'/'+mode+': corrupted catalog falsely announced first install');
       if(viewport.name==='mobile')assert(result.missingTouch.length===0,'mobile '+mode+': touch targets <40px '+JSON.stringify(result.missingTouch));
       const dims=await c.call("function(){const root=document.documentElement;return {width:innerWidth,height:Math.min(2800,Math.ceil(Math.max(root.scrollHeight,document.body.scrollHeight)))}}");
       const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:dims.width,height:dims.height,scale:1}});
@@ -120,6 +124,8 @@ try{
         }
         const text=await c.call("function(){return document.querySelector('[role=alertdialog]')?.textContent||''}");
         assert(text.includes('Εισαγωγή')&&text.includes('αντικαθιστά'),'restore must require destructive import confirmation');
+        // Capture the fully visible modal, not its intermediate Framer entry frame.
+        await delay(440);
         const dialog=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
         writeFileSync(evidenceDir+'/desktop-backup-restore-confirm-desktop.png',Buffer.from(dialog.data,'base64'));
       }
