@@ -7,6 +7,14 @@ import type { SaveState } from './useFinance';
 const INTERVAL_MS = 60 * 60 * 1000;
 const DAILY_MS = 24 * INTERVAL_MS;
 
+// A future timestamp after a clock adjustment must never indefinitely block
+// the next authenticated and checksum-verified Windows snapshot.
+export function desktopBackupIsRecent(lastValidBackupAt:string|null,now=Date.now()):boolean {
+  const last=lastValidBackupAt?Date.parse(lastValidBackupAt):NaN;
+  const age=now-last;
+  return Number.isFinite(last)&&age>=0&&age<DAILY_MS;
+}
+
 export function useDesktopAutoBackup(saveState: SaveState) {
   const saveStateRef = useRef(saveState);
   saveStateRef.current = saveState;
@@ -21,8 +29,7 @@ export function useDesktopAutoBackup(saveState: SaveState) {
       try {
         const status = await bridge.getBackupStatus();
         if (disposed || saveStateRef.current !== 'saved') return;
-        const last = status.lastValidBackupAt ? Date.parse(status.lastValidBackupAt) : 0;
-        if (Number.isFinite(last) && Date.now() - last < DAILY_MS) return;
+        if (desktopBackupIsRecent(status.lastValidBackupAt)) return;
         // Native main fetches the authoritative document through the owner+AAL2 backend.
         await bridge.saveLocalBackup();
       } catch {

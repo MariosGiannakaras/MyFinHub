@@ -63,12 +63,15 @@ export function DesktopBackupPanel({
   const newestFailure = status?.lastFailureAt ? Date.parse(status.lastFailureAt) : NaN;
   const failed = Number.isFinite(newestFailure) && (!Number.isFinite(lastValid) || newestFailure > lastValid);
   const overdue = Number.isFinite(lastValid) && Date.now() - lastValid > 36 * HOUR_MS;
+  // Damaged existing backups are not equivalent to a healthy first install.
+  const invalidOnly = Boolean(status?.backups.length && status.backups.every(item => !item.valid));
   const stateText = !status ? (error ? 'Ο έλεγχος κατάστασης απέτυχε' : 'Έλεγχος κατάστασης') : failed
     ? 'Η τελευταία προσπάθεια απέτυχε'
+    : invalidOnly ? 'Δεν υπάρχει έγκυρο τοπικό αντίγραφο'
     : !Number.isFinite(lastValid)
       ? 'Αναμονή πρώτου αντιγράφου'
       : overdue ? 'Απαιτείται νέο αντίγραφο' : 'Υπάρχει επαληθευμένο αντίγραφο';
-  const statusAttention = Boolean(error) || failed || overdue;
+  const statusAttention = Boolean(error) || failed || overdue || invalidOnly;
   const nextEligible = Number.isFinite(lastValid)
     ? Date.now() >= lastValid + 24 * HOUR_MS
       ? 'Έτοιμο για νέο backup όταν η εφαρμογή είναι συνδεδεμένη'
@@ -84,7 +87,7 @@ export function DesktopBackupPanel({
         </div>
         <HardDriveDownload size={20} aria-hidden="true" />
       </div>
-      <div className={`logic-note compact desktop-backup-health${statusAttention ? ' is-error' : ''}`} role="status" aria-live="polite">
+      <div className={`logic-note compact desktop-backup-health${statusAttention ? ' is-error' : ''}`} role={invalidOnly ? 'alert' : 'status'} aria-live={invalidOnly ? 'assertive' : 'polite'}>
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div className="settings-data-action-copy">
           <strong>{stateText}</strong>

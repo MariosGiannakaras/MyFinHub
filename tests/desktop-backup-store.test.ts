@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,7 +25,7 @@ function setup() {
 }
 const data = { app: 'RheomIQ', schemaVersion: 3, updatedAt: '2026-10-24T10:00:00Z', seed: { accounts: [], months: [], transactions: [], snapshots: [], recurring: [], subscriptions: [], loans: [], lending: [], stats: {} }, state: { settings: {}, events: [] } };
 
-afterEach(() => { for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
+afterEach(() => { vi.useRealTimers(); for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
 describe('desktop automatic backup store', () => {
   it('creates an empty local catalog on first install, idempotently', () => {
@@ -75,6 +75,43 @@ describe('desktop automatic backup store', () => {
     expect(() => store.save({ data: { app: 'RheomIQ', state: {} }, revision: '465' })).toThrow();
     expect(() => store.restoreCandidate('../secret.json')).toThrow();
     expect(store.status().backups).toEqual([]);
+  });
+
+  it('falls back to the latest valid snapshot when the most recent archive is corrupt', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-04T12:00:00.000Z'));
+    const { store }=setup();store.initialize();
+    const older=store.save({data,revision:'464'});
+    vi.setSystemTime(new Date('2026-11-05T12:00:00.000Z'));
+    const newer=store.save({data,revision:'465'});
+    fs.appendFileSync(path.join(store.status().folder,newer.name),'\\ncorrupt');
+    expect(store.status().backups).toMatchObject([{revision:'465',valid:false},{revision:'464',valid:true}]);
+    expect(store.status().lastValidBackupAt).toBe('2026-11-04T12:00:00.000Z');
+    expect(store.restoreCandidate(older.name)).toEqual(data);
+    expect(()=>store.restoreCandidate(newer.name)).toThrow();
+  });
+
+  it('enforces both 45-file and 30-day retention without touching unrelated files', () => {
+    vi.useFakeTimers();
+    const {store}=setup();store.initialize();
+    const unrelated=path.join(store.status().folder,'unrelated-owner.json');
+    fs.writeFileSync(unrelated,'preserve');
+    let first='',last='';
+    for(let i=0;i<47;i+=1){
+      vi.setSystemTime(new Date(Date.UTC(2026,10,1,12,i)));
+      const receipt=store.save({data,revision:String(100+i)});
+      if(i===0)first=receipt.name;
+      last=receipt.name;
+    }
+    expect(store.status().backups).toHaveLength(45);
+    expect(store.status().backups[0].name).toBe(last);
+    expect(store.status().backups.every(item=>item.valid)).toBe(true);
+    expect(fs.existsSync(path.join(store.status().folder,first))).toBe(false);
+    vi.setSystemTime(new Date('2026-12-04T12:00:00.000Z'));
+    const newest=store.save({data,revision:'200'});
+    expect(store.status().backups.map(item=>item.name)).toEqual([newest.name]);
+    expect(store.restoreCandidate(newest.name)).toEqual(data);
+    expect(fs.readFileSync(unrelated,'utf8')).toBe('preserve');
   });
 
   it('switches to an explicitly selected folder without erasing old backups', () => {
