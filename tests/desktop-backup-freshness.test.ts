@@ -1,6 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
-import {desktopBackupIsRecent} from '../src/hooks/useDesktopAutoBackup.js';
+import {desktopBackupIsRecent} from '../src/lib/desktopBackupFreshness.js';
 
 const now=Date.parse('2026-11-08T12:00:00.000Z');
 describe('#649 I18.03/I18.06 local Windows backups',()=>{
@@ -17,6 +17,8 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(desktopBackupIsRecent(new Date(now).toISOString(),now)).toBe(true);
   });
   it('announces corrupt-only existing backups distinctly from a first install',()=>{
+    const hook=readFileSync('src/hooks/useDesktopAutoBackup.ts','utf8');
+    expect(hook).toContain("import { desktopBackupIsRecent } from '../lib/desktopBackupFreshness'");
     const source=readFileSync('src/components/DesktopBackupPanel.tsx','utf8');
     expect(source).toContain('status.backups.every(item => !item.valid)');
     expect(source).toContain("invalidOnly ? 'Δεν υπάρχει έγκυρο τοπικό αντίγραφο'");

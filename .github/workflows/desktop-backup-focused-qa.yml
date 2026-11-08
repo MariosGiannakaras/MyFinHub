@@ -7,6 +7,7 @@ on:
     paths:
       - 'src/components/DesktopBackupPanel.tsx'
       - 'src/hooks/useDesktopAutoBackup.ts'
+      - 'src/lib/desktopBackupFreshness.ts'
       - 'desktop/backup-store.cjs'
       - 'scripts/desktop-backup-rendered-qa.mjs'
       - 'tests/desktop-backup-store.test.ts'

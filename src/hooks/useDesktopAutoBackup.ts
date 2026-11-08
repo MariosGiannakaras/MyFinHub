@@ -1,19 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { desktopBackupBridge } from '../lib/desktopBackups';
+import { desktopBackupIsRecent } from '../lib/desktopBackupFreshness';
 import type { SaveState } from './useFinance';
 
 // Local snapshots are collected only after owner+AAL2 /api/data succeeds,
 // never from an optimistic unsaved React state or unauthenticated timer.
 const INTERVAL_MS = 60 * 60 * 1000;
-const DAILY_MS = 24 * INTERVAL_MS;
-
-// A future timestamp after a clock adjustment must never indefinitely block
-// the next authenticated and checksum-verified Windows snapshot.
-export function desktopBackupIsRecent(lastValidBackupAt:string|null,now=Date.now()):boolean {
-  const last=lastValidBackupAt?Date.parse(lastValidBackupAt):NaN;
-  const age=now-last;
-  return Number.isFinite(last)&&age>=0&&age<DAILY_MS;
-}
 
 export function useDesktopAutoBackup(saveState: SaveState) {
   const saveStateRef = useRef(saveState);
