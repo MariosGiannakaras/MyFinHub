@@ -180,33 +180,49 @@ try{
   await viewport(375,812,true);assert(await applyTheme('dark')==='dark','mobile create flow follows dark app theme');await noOverflow('new provider mobile');await shot('provider-create-branding-dark-mobile');
   await viewport(1440,1000,false);await fullShot('provider-editor-branding-full-desktop');
 
-  console.log('Provider branding task-flow QA: partial create/upload failure recovery');
-  await c.call(`function(){
-    globalThis.__myfinhubOriginalFetch=globalThis.fetch;
-    let count=0;
+  console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
+  await c.call(`async function(){
+    const original=globalThis.fetch.bind(globalThis);
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,assetKey:'qa-new-provider-shared'};
+    globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
-      const url=String(input);const method=String(init?.method||'GET');
-      if(url.startsWith('/api/account-metadata?resource=financial-providers')&&method==='POST'){
-        count+=1;
+      const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      const url=new URL(raw,location.href);
+      const method=String(init?.method||'GET').toUpperCase();
+      const resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&(method==='POST'||method==='PATCH')){
+        if(method==='POST')provider.creates+=1;else provider.updates+=1;
         return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
       }
-      if(url.includes('/api/account-metadata?')&&url.includes('resource=financial-provider-assets')&&method==='PUT'){
-        count+=1;
-        return new Response(JSON.stringify({error:'Synthetic provider asset upload failure'}),{status:503,headers:{'content-type':'application/json'}});
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
+        provider.uploads+=1;
+        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E',fileName:'qa-new-provider.svg'};
+        return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
       }
-      return globalThis.__myfinhubOriginalFetch(input,init);
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
+        provider.bindings+=1;
+        if(provider.bindings===1)return new Response(JSON.stringify({error:'Synthetic binding rejection after durable provider and binary'}),{status:503,headers:{'content-type':'application/json'}});
+        return new Response(JSON.stringify({binding:{}}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      return original(input,init);
     };
     return true;
   }`);
   await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
-  await waitFor("function(){const error=document.querySelector('.provider-editor-error');return Boolean(error)&&(error.textContent||'').includes('Synthetic provider asset upload failure')}",'partial provider failure error state');
-  const partialFailure=await c.call("function(){return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(document.querySelector('.provider-editor-footer .primary')?.textContent||document.querySelector('.provider-editor-footer button:last-child')?.textContent||'').trim(),error:(document.querySelector('.provider-editor-error')?.textContent||'').trim()}}");
+  await waitFor("function(){const warning=document.querySelector('.provider-editor-warning[data-feedback-tone=\"warning\"]');return Boolean(warning)&&(warning.textContent||'').includes('Τα στοιχεία του παρόχου αποθηκεύτηκαν')}",'partial provider warning state after binding rejection');
+  const partialFailure=await c.call("function(){const mock=globalThis.__qaNewProvider;const notice=document.querySelector('.provider-editor-warning');return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(document.querySelector('.provider-editor-footer button:last-child')?.textContent||'').trim(),warning:(notice?.textContent||'').trim(),role:notice?.getAttribute('role'),uploads:mock?.uploads,creates:mock?.creates,bindings:mock?.bindings,hasError:Boolean(document.querySelector('.provider-editor-error'))}}");
   assert(partialFailure.editorOpen,'partial provider failure keeps the editor recoverable');
-  assert(!partialFailure.success,'partial provider failure never emits a false all-success message');
-  assert(partialFailure.error.includes('Synthetic provider asset upload failure'),'partial provider failure surfaces the actionable task-local error');
+  assert(!partialFailure.success&&!partialFailure.hasError,'acknowledged metadata save is announced as partial warning, not all success or initial rejection');
+  assert(partialFailure.role==='alert','partially saved provider operation is announced accessibly');
+  assert(partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===1,'provider write and binary each acknowledged exactly once before binding rejection');
   assert(partialFailure.saveLabel.includes('Αποθήκευση'),'new provider is treated as existing after the provider row was already created');
-  await shot('provider-create-partial-upload-error-desktop');
-  await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch}return true}");
+  await shot('provider-create-partial-binding-warning-desktop');
+  await clickText('.provider-editor-footer button','Αποθήκευση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'retry completes provider bindings without retransmitting uploaded file');
+  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings>=3,'acknowledged upload is not duplicated after binding retry');
+  assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
+  await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
 
   console.log('Provider branding task-flow QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

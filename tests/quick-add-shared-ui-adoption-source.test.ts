@@ -43,7 +43,7 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd).toContain("from './DialogShell'");
     expect(quickAdd).toContain('<DialogShell open={open}');
     expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
     expect(quickAdd).toContain('onRequestClose={requestClose}');
     expect(quickAdd).not.toContain('useModalFocus');
     expect(quickAdd).toContain('const requestClose=()=>{if(saving)return;if(dirty){setDiscardOpen(true);return}onClose()}');

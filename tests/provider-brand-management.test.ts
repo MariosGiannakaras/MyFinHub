@@ -192,6 +192,20 @@ describe('provider branding management',()=>{
     expect(settingsStyles).toContain('font-size:var(--ux-tiny-size)');
   });
 
+  it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{
+    expect(settings).toContain('let metadataCommitted=false;');
+    expect(settings).toContain('metadataCommitted=true;');
+    expect(settings).toContain('pendingAssets:current.pendingAssets.map(item=>item.ref===pending.ref?{...item,uploadedKey:asset.assetKey}:item)');
+    expect(settings).not.toContain('pending.uploadedKey=asset.assetKey');
+    expect(settings).toContain('if(metadataCommitted){');
+    expect(settings).toContain('if(reloaded.error){');
+    expect(settings).toContain('setEditorWarning(');
+    expect(settings).toContain('<OperationFeedback tone="warning"');
+    expect(settings).toContain('Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.');
+    expect(providerBrandingQaSource).toContain('partial provider metadata commit must not look like a failed initial write');
+    expect(providerBrandingQaSource).toContain('acknowledged upload is not duplicated after binding retry');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
+  });
   it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';

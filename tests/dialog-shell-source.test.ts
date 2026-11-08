@@ -74,7 +74,7 @@ describe('DialogShell source contract',()=>{
     expect(quickAdd).toContain('ariaLabelledBy="quick-add-title"');
     expect(quickAdd).toContain('ariaDescribedBy="quick-add-description"');
     expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
     expect(quickAdd).toContain('onRequestClose={requestClose}');
     expect(quickAdd).not.toContain("from 'framer-motion'");
     expect(quickAdd).not.toContain('useModalFocus');
