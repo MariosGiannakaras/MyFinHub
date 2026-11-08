@@ -47,7 +47,6 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(source).toContain('destructive restore confirmation with validated JSON preview');
     expect(source).toContain('seed:{accounts:[],months:[],transactions:[]');
     expect(source).toContain('desktop-backup-restore-diagnostic-desktop.png');
-    const workflow=readFileSync('.github/workflows/desktop-backup-focused-qa.yml','utf8');
     expect(workflow).toContain('ready_for_review');
     expect(workflow).toContain("github.event.pull_request.draft == false");
     expect(workflow).toContain('<!-- run-desktop-backup-focused-qa -->');
