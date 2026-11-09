@@ -87,7 +87,8 @@ try{
  assert(!longLabels.missing.length,'Reports long-label stress fixture contains all category, merchant, income and account lists: '+JSON.stringify(longLabels));
  assert(longLabels.rows.every(row=>row.overflowWrap==='anywhere'&&row.scroll<=row.client+2&&row.height>0),'Reports labels wrap without truncated Greek names or element overflow: '+JSON.stringify(longLabels));
  assert(longLabels.pageOverflow<=2,'320px Reports long labels do not create horizontal page overflow: '+JSON.stringify(longLabels));
- await c.call("function(){document.querySelector('.report-counterparty-list')?.scrollIntoView({block:'start',behavior:'instant'});return true}");
+ const longLabelShot=await c.call("function(){const title=document.querySelector('.report-counterparty-list .report-entry-copy b'),nav=document.querySelector('.report-section-nav'),bar=document.querySelector('.topbar');if(!title||!nav)return {visible:false};title.textContent='Πολυαναλυτική κατηγορία εξόδων με ιδιαίτερα μεγάλο ελληνικό όνομα για έλεγχο αναδίπλωσης';title.scrollIntoView({block:'center',behavior:'instant'});const rect=title.getBoundingClientRect(),sticky=nav.getBoundingClientRect(),toolbar=bar?.getBoundingClientRect(),offset=Math.max(sticky.bottom,toolbar?.bottom??0)+8;return {visible:rect.top>=offset&&rect.bottom<=innerHeight-76&&title.scrollWidth<=title.clientWidth+2,top:rect.top,bottom:rect.bottom,stickyBottom:offset,width:title.clientWidth,scroll:title.scrollWidth}}");
+ assert(longLabelShot.visible,'Reports 320px long-label screenshot stays clear of sticky headers and bottom navigation: '+JSON.stringify(longLabelShot));
  await sleep(200);
  shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
  writeFileSync(`${evidenceDir}/reports-long-greek-labels-mobile-320.png`,Buffer.from(shot.data,'base64'));

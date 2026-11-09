@@ -29,6 +29,7 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(visual).toContain('reports-long-greek-labels-mobile-320.png');
     expect(visual).toContain('row.scroll<=row.client+2');
     expect(visual).toContain('longLabels.pageOverflow<=2');
+    expect(visual).toContain('Reports 320px long-label screenshot stays clear of sticky headers and bottom navigation');
   });
 
   it('defers private six-month account-history scans until reveal without losing chart data',()=>{
