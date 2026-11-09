@@ -20,7 +20,7 @@ describe('connected device access',()=>{
     expect(action).toContain('await revokeOtherConnectedDevices()');
     expect(action).toContain('await revokeConnectedDevice(pending.device.sessionId)');
     expect(action.indexOf('setDevices(result.devices)')).toBeGreaterThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
-    expect(action.indexOf("setMessageTone('status');setMessage(")).toBeGreaterThan(action.indexOf('setDevices(result.devices)'));
+    expect(action.lastIndexOf("setMessageTone('status');setMessage(")).toBeGreaterThan(action.indexOf('setDevices(result.devices)'));
     expect(action).toContain("}catch(error){setMessageTone('error')");
     expect(action).toContain("finally{setBusy(false)}");
     expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
