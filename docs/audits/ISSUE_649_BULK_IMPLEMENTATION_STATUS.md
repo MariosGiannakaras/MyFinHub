@@ -1,6 +1,14 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
-## 2026-11-09 — staged I16.02 account-history race closure and Actions orchestration blocker (latest)
+## 2026-11-09 — recovered CodeQL and bounded account + Quick Entry browser acceptance (latest)
+
+**Authoritative progress: Implementations 5/23 completed · Sub-implementations 34/132 completed.** Exact source head `fc8f6f0` [CI #42672945395](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42672945395) **SUCCESS on targeted failed-jobs-only rerun attempt 2**: original `validate` 1668/1668 tests PASS, unchanged CSS 559.9/560.0 KiB, previously abandoned CodeQL restarted and **SUCCESS**, and required Unified gate **SUCCESS**. No security threshold bypass. This is source/gate acceptance, **not browser evidence** of the newer I19.05 focus or I16.02 stale-delete race. Previous `#42671527293` focused QA failed before any job was created, therefore no rendered assertion evidence exists for these two candidates.
+
+**Current minimal QA orchestration change (not yet accepted):** Add Draft-only exact marker `<!-- run-649-account-quick-qa -->` to existing `fb-focused-rendered-qa.yml`, selecting **only `account-metadata budget-rules`**, the two already-implemented scripts proving delayed account-delete historical reference and Quick Entry rejected-receipt focused error. Avoid rerunning unchanged Reports/Lending/Loans/Provider/Settings/Quick Entry broad suites. Keep strict source/backend/CodeQL gates and all browser assertions intact. Trigger marker once after CI preflight on the coherent head, download artifact, inspect the race-warning screenshot and rejection-focus logs. Only then count I16.02/I19.05 if broad original plan item acceptance is supported, otherwise leave partial. Keep #654 Draft; no production, Android, destructive finance writes or merge.
+
+---
+
+## 2026-11-09 — staged I16.02 account-history race closure and Actions orchestration blocker (historical)
 
 **Source progress: Implementations 5/23 completed · Sub-implementations 34/132 completed.** The previous `4ebcd6f` Quick Entry error-focus batch passed source `CI/validate` 1667/1667 and CodeQL on [CI #42671175973](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42671175973), but the overall run reported FAILURE while the required Unified gate and other expected jobs were **not created** (no failing source/CodeQL job). [Focused browser #42671527293](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42671527293) reported FAILURE **before any jobs were created** (`jobs.total_count=0`, no artifacts). This is an unverified GitHub Actions run-level failure; do not call it a failed UI assertion or claim I19.05 Chromium PASS. The Draft opt-in marker was removed from #654 to avoid repeat work. Final cause and next safe launch remain unresolved. No CI/security threshold was weakened, no merge.
 

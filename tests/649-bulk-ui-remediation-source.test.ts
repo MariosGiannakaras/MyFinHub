@@ -8,6 +8,14 @@ const settingsQa=source('../scripts/settings-tabs-qa.mjs');
 const roving=source('../src/lib/rovingTabDestination.ts');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
+  it('selects only the two changed-surface suites for I16.02 and I19.05 verification',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-account-quick-qa -->');
+    expect(workflow).toContain("'account-metadata budget-rules'");
+    expect(source('../scripts/account-metadata-qa.mjs')).toContain('account-delete-late-reference-blocked-desktop');
+    expect(source('../scripts/budget-rules-qa.mjs')).toContain('rejected Quick Entry focuses the visible error without losing draft');
+  });
+
   it('does not conceal Greek account provider labels behind single-line ellipses (#649 I16.01)',()=>{
     const providerCss=source('../src/components/AccountManagementProvider.css');
     expect(providerCss).toContain('button small{overflow-wrap:anywhere}');
