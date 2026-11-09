@@ -7,6 +7,20 @@ const rendered=readFileSync(new URL('../scripts/loans-remediation-qa.mjs',import
 const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 
 describe('Loans post-v1.4 remediation contracts',()=>{
+  it('covers narrow mobile installment controls and honest completed/empty lifecycle (#649 I09)',()=>{
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(qa).toContain("params.get('state')==='loans-completed'");
+    expect(qa).toContain("paidCount:params.get('state')==='loans-completed'?120:60");
+    expect(rendered).toContain('loans-long-mobile-320');
+    expect(rendered).toContain('loans-long-mobile-375');
+    expect(rendered).toContain('loans-empty-mobile-320');
+    expect(rendered).toContain('loans-completed-mobile-320');
+    expect(rendered).toContain("mobile.touch.every(size=>size>=40)");
+    expect(rendered).toContain("completed.found&&completed.expanded&&completed.active===0");
+    expect(workflow).toContain('<!-- run-649-loans-qa -->');
+    expect(workflow).toContain("'loans-remediation'");
+  });
+
   it('uses proportional capped progress rather than comparing visual index directly with paid installments',()=>{
     expect(page).toContain('loanVisualInstallmentProgress(loan.installments,paid)');
     expect(page).toContain('data-visual-segments={visualProgress.segments}');

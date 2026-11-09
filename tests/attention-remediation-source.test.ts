@@ -7,6 +7,25 @@ const refinement=readFileSync(new URL('../src/styles/attention-approved-refineme
 const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
 
 describe('Attention post-v1.4 remediation contracts',()=>{
+  it('retains previously accepted #649 I13 urgent/due/privacy/action proof without new page forks',()=>{
+    const model=readFileSync(new URL('../src/lib/attention.ts',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    for(const scenario of [
+      'desktop hierarchy, privacy and deterministic queue',
+      'legacy review keep semantics never mutate reports implicitly',
+      'exact recurring and loan deep actions',
+      'exact credit statement context',
+      'exact scheduled completion is atomic',
+      'snooze, undo, empty state and responsive accessibility',
+    ])expect(qa).toContain(scenario);
+    expect(qa).toContain("navigate('attention','extreme',375,812)");
+    expect(qa).toContain("touchTargets('attention mobile extreme')");
+    expect(qa).toContain("assertActionLabelContained");
+    expect(qa).toContain("noUnnamed('attention mobile extreme')");
+    expect(model).toContain('allAttentionItems');
+    expect(app).toContain('attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision }');
+  });
+
   it('offers group expansion only when rows are actually truncated',()=>{
     expect(page).toContain('const canExpand=items.length>4');
     expect(page).toContain('{canExpand?<Button');
