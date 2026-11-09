@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-provider-brand-management-qa';
@@ -9,6 +9,8 @@ const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome ||
 if(!chrome)throw new Error('Chrome/Chromium is required for provider branding QA.');
 const port=9263;
 const profile='/tmp/myfinhub-provider-brand-management-qa-chrome';
+// As in receipt QA, never inherit Chromium's possibly locked transient profile.
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
