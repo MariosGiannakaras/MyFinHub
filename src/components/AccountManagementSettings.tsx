@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -19,6 +19,7 @@ import {
 } from '../lib/financialProviders';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import { userErrorMessage } from '../lib/userMessage';
+import { rovingTabDestination } from '../lib/rovingTabDestination';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -143,6 +144,18 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});
   const closeEditor=()=>{if(busy)return;setEditor(null);setEditorError('')};
+  const providerTabStop=providers.find(item=>item.id===editor?.providerId)?.id??providers[0]?.id;
+  const onProviderKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+    if(!editor||busy||!providers.length)return;
+    const key=event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft':event.key;
+    const next=rovingTabDestination(key,index,providers.length);
+    if(next===null)return;
+    event.preventDefault();
+    const target=providers[next];
+    if(!target)return;
+    setEditor({...editor,providerId:target.id});
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+  };
   const setMode=(mode:AccountMode)=>{
     if(!editor)return;
     setEditor({
@@ -328,7 +341,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
           {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
           {editor.mode==='bank'?<>
-            <fieldset className="account-management-provider-picker"><legend>{editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'}</legend><div role="radiogroup" aria-label="Τράπεζα ή πάροχος">{providers.map(provider=><button type="button" role="radio" aria-checked={editor.providerId===provider.id} className={editor.providerId===provider.id?'active':''} key={provider.id} onClick={()=>setEditor({...editor,providerId:provider.id})}><BankBrandMark id={provider.id} name={provider.displayName}/><span><b>{provider.displayName}</b><small>{provider.kindLabel}</small></span></button>)}</div>{providerCatalog.error?<small className="account-management-provider-fallback" role="status">{providerCatalog.error}</small>:null}</fieldset>
+            <fieldset className="account-management-provider-picker"><legend>{editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'}</legend><div role="radiogroup" aria-label="Τράπεζα ή πάροχος">{providers.map((provider,index)=><button type="button" role="radio" aria-checked={editor.providerId===provider.id} tabIndex={provider.id===providerTabStop?0:-1} disabled={busy} onKeyDown={event=>onProviderKeyDown(event,index)} className={editor.providerId===provider.id?'active':''} key={provider.id} onClick={()=>setEditor({...editor,providerId:provider.id})}><BankBrandMark id={provider.id} name={provider.displayName}/><span><b>{provider.displayName}</b><small>{provider.kindLabel}</small></span></button>)}</div>{providerCatalog.error?<small className="account-management-provider-fallback" role="status">{providerCatalog.error}</small>:null}</fieldset>
             <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
             <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
             <label className="account-management-field"><span>IBAN</span><AppTextInput inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>

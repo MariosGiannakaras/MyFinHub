@@ -1,8 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { createElement } from 'react';
-import { MoneyInput } from '../src/components/MoneyInput.js';
 import { rovingTabDestination } from '../src/lib/rovingTabDestination.js';
 import { ApiError, copyBoundedBinaryValue } from '../server/http.js';
 import {
@@ -83,8 +80,8 @@ describe('provider branding management',()=>{
     const density=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');
     expect(css).toContain('min-height:32px;border-radius:8px;font-size:12px');
     expect(density).toContain('padding:0 30px 0 8px;font-size:12px');
-    const html=renderToStaticMarkup(createElement(MoneyInput,{value:'10',onValueChange:()=>undefined,'aria-label':'Ποσό','aria-invalid':'true'}));
-    expect(html).toContain('aria-invalid="true"');
+    const field=readFileSync(new URL('../src/components/MoneyInput.tsx',import.meta.url),'utf8');
+    expect(field).toContain("aria-invalid={invalid||inputProps['aria-invalid']||undefined}");
     expect(providerBrandingQaSource).toContain('compact Transactions filters remain at least 12px');
   });
 

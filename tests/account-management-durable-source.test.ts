@@ -8,6 +8,18 @@ const qa=readFileSync('src/qa.tsx','utf8');
 const rendered=readFileSync('scripts/account-metadata-qa.mjs','utf8');
 
 describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
+  it('uses accessible account provider radios with Arrow/Home/End roving focus and no save mutation (#649 I16.05/I23.03)',()=>{
+    expect(component).toContain('const providerTabStop=providers.find');
+    expect(component).toContain("event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft'");
+    expect(component).toContain('rovingTabDestination(key,index,providers.length)');
+    expect(component).toContain('tabIndex={provider.id===providerTabStop?0:-1}');
+    expect(component).toContain('disabled={busy} onKeyDown={event=>onProviderKeyDown(event,index)}');
+    expect(rendered).toContain('Account provider radio group supports roving keyboard');
+    for(const key of ['ArrowRight','ArrowUp','Home','End'])expect(rendered).toContain("await press('"+key+"'");
+    expect(rendered).toContain('state.stops===1');
+    expect(rendered).toContain('original provider restored');
+  });
+
   it('routes account create/edit/delete through the existing revisioned finance receipt',()=>{
     expect(app).toContain('onFinanceDurably={finance.updateDurably}');
     expect(settings).toContain('onChangeDurably={(next)=>onFinanceDurably(current=>');
