@@ -94,6 +94,8 @@ try{
           assert(['auto','scroll'].includes(geometry.bodyOverflow),'Mobile account editor body is the scroll container');
           assert(geometry.providerColumns>=2,'Provider picker stays compact with two columns on normal phones');
           assert(geometry.targets.every(target=>target.h>=40&&target.w>=40),`Mobile provider touch targets too small: ${JSON.stringify(geometry.targets)}`);
+          const labels=await c.call("function(){const nodes=[...document.querySelectorAll('.account-management-provider-picker button b,.account-management-provider-picker button small')];return nodes.map(node=>({wrap:getComputedStyle(node).overflowWrap,nowrap:getComputedStyle(node).whiteSpace==='nowrap',scroll:node.scrollWidth,client:node.clientWidth}))}");
+          assert(labels.length>=12&&labels.every(row=>row.wrap==='anywhere'&&!row.nowrap&&row.scroll<=row.client+1),`Long bank/provider names are legible and wrap within 375px mobile picker: ${JSON.stringify(labels)}`);
           await screenshot('settings-accounts-provider-picker-mobile');
           const closed=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-new');const button=modal?.querySelector('button[aria-label=\"Κλείσιμο\"]');button?.click();return Boolean(button)}");assert(closed,'Mobile new account modal closes');
           await waitFor("function(){return !document.querySelector('.account-management-modal')}",'mobile account modal close');

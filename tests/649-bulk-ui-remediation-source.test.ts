@@ -8,6 +8,13 @@ const settingsQa=source('../scripts/settings-tabs-qa.mjs');
 const roving=source('../src/lib/rovingTabDestination.ts');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
+  it('does not conceal Greek account provider labels behind single-line ellipses (#649 I16.01)',()=>{
+    const providerCss=source('../src/components/AccountManagementProvider.css');
+    expect(providerCss).toContain('button small{overflow-wrap:anywhere}');
+    expect(providerCss).not.toContain('button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}');
+    expect(settingsQa).toContain("labels.every(row=>row.wrap==='anywhere'");
+  });
+
   it('uses action-scoped message tone so import, backup and taxonomy errors cannot inherit stale success',()=>{
     expect(settings).toContain("const [operationFeedback,setOperationFeedback] = useState");
     expect(settings).not.toContain('backupMessageIsError');

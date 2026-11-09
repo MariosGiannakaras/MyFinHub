@@ -1,6 +1,14 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
-## 2026-11-09 — shared controls, keyboard and feedback owner batch (latest)
+## 2026-11-09 — accepted shared controls and visual sibling follow-up (latest)
+
+**Authoritative progress until exact-head visual evidence: Implementations 5/23 completed · Sub-implementations 32/132 completed.** [CI #42639292388](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42639292388) **SUCCESS** including CodeQL, 1661/1661 tests and CSS 559.8/560.0 KiB; [focused Chromium #42639497551](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42639497551) **SUCCESS** across provider branding, account metadata, Settings tabs and Quick Entry. Artifact #13684148989 downloaded; directly inspected partial provider save mobile, account bank picker 375px, provider editor details 1440px and Transactions finance controls. No failed product assertion. Strict security/finance boundaries unchanged.
+
+**New bounded sibling source candidate, NOT counted:** Provider ID label/read-only key/help appeared as touching inline text in the existing-provider editor because `.provider-id-field` had no layout rule. The 375px bank selection picker truncated Greek provider names with ellipses rather than wrapping. Extend existing grid typography, change radio label overflow to wrapping, keep overall CSS within unchanged hard limit. Append actual-geometry provider-ID and mobile long-label assertions plus mobile evidence screenshot to already accepted provider/Settings browser scripts; only one new focused batch. Candidate I16.01 + I16.05 and shared I02.02/.04/I23.03. Count only fully verified scoped items after CI and screenshot review; do not declare entire I02/I23 completed based on these shared improvements. Draft opt-in OFF while editing. No production or Android mutation, no merge.
+
+---
+
+## 2026-11-09 — shared controls, keyboard and feedback owner batch (historical)
 
 **Authoritative progress: Implementations 5/23 completed · Sub-implementations 32/132 completed.** I09 Loans is **source/QA complete**: [CI #42634490372](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42634490372) SUCCESS including CodeQL, [focused Loans Chromium #42634528545](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42634528545) SUCCESS. Artifact #13681463482 downloaded and `loans-mobile-actions-320.png`/`loans-completed-mobile-320.png` directly inspected: active paid-count ARIA and payment buttons, full historical loan card and empty state correctly in-view. Earlier 4/23 · 27/132 checkpoints below are historical.
 

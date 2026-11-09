@@ -75,6 +75,16 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('Provider editor keyboard arrows wrap and preserve labelled panels');
     expect(providerBrandingQaSource).toContain('new provider cannot bypass validation by keyboard');
   });
+  it('separates Provider ID label/value/help and untruncates long bank names (#649 I16.01/I02.04)',()=>{
+    expect(settingsStyles).toContain('.provider-details-grid label,.provider-id-field{display:grid;gap:5px}');
+    expect(settingsStyles).toContain('.provider-id-field{min-width:0;overflow-wrap:anywhere}');
+    const pickerCss=readFileSync(new URL('../src/components/AccountManagementProvider.css',import.meta.url),'utf8');
+    expect(pickerCss).toContain('.account-management-provider-picker button b,.account-management-provider-picker button small{overflow-wrap:anywhere}');
+    expect(providerBrandingQaSource).toContain('Provider ID label, read-only key and help are separate readable rows');
+    expect(providerBrandingQaSource).toContain('provider-editor-details-light-mobile');
+    const settingsTabsQa=readFileSync(new URL('../scripts/settings-tabs-qa.mjs',import.meta.url),'utf8');
+    expect(settingsTabsQa).toContain('Long bank/provider names are legible and wrap within 375px mobile picker');
+  });
   it('keeps compact owned finance filters legible and external MoneyInput aria-invalid intact',()=>{
     const css=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
     const density=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');

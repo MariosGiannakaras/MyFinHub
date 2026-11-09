@@ -140,7 +140,10 @@ try{
   await press('ArrowLeft','ArrowLeft',37);await verifyEditorTab('branding');
   await press('End','End',35);await verifyEditorTab('branding');
   await press('Home','Home',36);await verifyEditorTab('details');
+  const providerIdLayout=await c.call("function(){const root=document.querySelector('.provider-id-field'),label=root?.querySelector('span'),key=root?.querySelector('code'),hint=root?.querySelector('small');if(!root||!label||!key||!hint)return null;const a=label.getBoundingClientRect(),b=key.getBoundingClientRect(),c=hint.getBoundingClientRect();return {display:getComputedStyle(root).display,wrap:getComputedStyle(root).overflowWrap,spaced:a.bottom+2<=b.top&&b.bottom+2<=c.top,overflow:root.scrollWidth-root.clientWidth}}");
+  assert(providerIdLayout?.display==='grid'&&providerIdLayout.wrap==='anywhere'&&providerIdLayout.spaced&&providerIdLayout.overflow<=1,'Provider ID label, read-only key and help are separate readable rows: '+JSON.stringify(providerIdLayout));
   await shot('provider-editor-details-light-desktop');
+  await viewport(375,812,true);await noOverflow('provider details mobile');await shot('provider-editor-details-light-mobile');await viewport(1440,1000,false);
   await openBranding();
   const brandingState=await c.call(`function(){const groups=[...document.querySelectorAll('.provider-brand-group>header h4')].map(node=>(node.textContent||'').trim());const text=document.querySelector('.provider-branding-panel')?.textContent||'';return {groups,slots:document.querySelectorAll('.provider-slot-card').length,text}}`);
   assert(brandingState.slots===9,'branding editor exposes nine semantic slots');
