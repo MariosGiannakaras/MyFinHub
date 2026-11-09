@@ -10,6 +10,16 @@ const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',impor
 const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
+  it('captures contextual mobile only after full surface/ancestor opacity and 320px large-text generic layout (#649 I19.07)',()=>{
+    const referenceQa=readFileSync(new URL('../scripts/quick-entry-reference-qa.mjs',import.meta.url),'utf8');
+    expect(budgetQa).toContain('contextual Quick Entry opaque ancestor and surface paint settled');
+    expect(budgetQa).toContain('opacity>=.995&&alpha>=.995');
+    expect(referenceQa).toContain('320px large-text mobile guard');
+    expect(referenceQa).toContain('quick-entry-large-text-mobile-320');
+    expect(referenceQa).toContain('narrow.actions.every(rect=>rect.height>=44)');
+    expect(referenceQa).toContain('await noOverflow(`${theme} 320px large-text Quick Entry`)');
+  });
+
   it('locks both finance submission owners before any async import or React repaint (#649 I19.02)',()=>{
     for(const owner of [generic,contextual]){
       const start=owner.indexOf('const submit=async()=>{');

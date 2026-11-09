@@ -86,6 +86,16 @@ try{
     assert(mobile.modal&&mobile.modal.width>=359&&mobile.modal.width<=362,`mobile modal respects 7px side gutters: ${JSON.stringify(mobile.modal)}`);assert(mobile.kindDisplay==='flex','mobile intent chooser becomes horizontal strip');assert(mobile.kindFirst&&mobile.kindFirst.width>=138&&mobile.kindFirst.width<=142,'mobile intent cards use 140px reference basis');assert(mobile.formColumns.split(' ').length===1,'mobile form becomes one column');assert(mobile.receipt&&mobile.footer&&mobile.receipt.width>=mobile.footer.width-27,'mobile receipt action spans footer content width');assert(!mobile.receiptSmallVisible,'mobile receipt subtitle is hidden');assert(!mobile.footerOverlap,'mobile footer actions never overlap');assert(!mobile.frequentLabelVisible,'mobile frequent strip has no persistent section label');assert(mobile.actions.length>=2&&approx(mobile.actions[0].top,mobile.actions[1].top,2),'mobile footer actions share one row');for(const action of mobile.actions)assert(action.height>=44,'mobile footer actions meet touch target');await noOverflow(`${theme} mobile`);await shot(`${theme}-quick-entry-mobile`);
 
     const mobileDate=await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.click();return Boolean(input)}");assert(mobileDate,'mobile date field opens picker');await waitFor("function(){return Boolean(document.querySelector('.owned-date-popover'))}",'mobile date picker');const mobilePop=await c.call("function(){const node=document.querySelector('.owned-date-popover');const r=node?.getBoundingClientRect();const s=node?getComputedStyle(node):null;return r&&s?{left:r.left,right:r.right,bottom:r.bottom,width:r.width,radius:s.borderTopLeftRadius}:null}");assert(mobilePop&&mobilePop.left<=1&&mobilePop.right>=374&&mobilePop.radius==='20px',`mobile date picker is full-width bottom sheet: ${JSON.stringify(mobilePop)}`);await shot(`${theme}-quick-entry-date-mobile`);await c.call("function(){document.querySelector('.owned-date-popover button[aria-label=\"Κλείσιμο ημερολογίου\"]')?.click();return true}");await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'mobile date picker close');await closeQuick();
+
+    console.log(`Quick Entry reference QA: ${theme} 320px large-text mobile guard`);
+    await viewport(320,700,true);await navigate();await applyTheme(theme);await openQuick();
+    await c.call("function(){document.documentElement.dataset.textSize='large';return true}");
+    const narrow=await modalMetrics();
+    assert(narrow.modal&&narrow.modal.left>=-1&&narrow.modal.right<=321&&narrow.modal.bottom<=701,'320px large-text modal stays inside viewport: '+JSON.stringify(narrow.modal));
+    assert(narrow.actions.length>=2&&narrow.actions.every(rect=>rect.height>=44)&&!narrow.footerOverlap,'320px large-text footer actions and receipt remain separate, hittable and visible');
+    await noOverflow(`${theme} 320px large-text Quick Entry`);
+    await shot(`${theme}-quick-entry-large-text-mobile-320`);
+    await closeQuick();
   }
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);

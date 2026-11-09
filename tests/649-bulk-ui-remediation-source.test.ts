@@ -8,6 +8,12 @@ const settingsQa=source('../scripts/settings-tabs-qa.mjs');
 const roving=source('../src/lib/rovingTabDestination.ts');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
+  it('targets only contextual paint and narrow text-size Quick Entry visual suites',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-quick-layout-qa -->');
+    expect(workflow).toContain("'quick-entry-reference budget-rules'");
+  });
+
   it('selects only the two related finance-entry browser suites for same-turn double-submit QA',()=>{
     const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
     expect(workflow).toContain('<!-- run-649-finance-entry-qa -->');

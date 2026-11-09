@@ -342,6 +342,11 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal input[role=combobox]'))}",'mobile contextual bank-savings state');
   assert(await c.call("function(){const input=[...document.querySelectorAll('.contextual-quick-modal label')].find(el=>(el.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'))?.querySelector('input[role=combobox]');return input?.value==='Ταμιευτηρίου'}"),'mobile destination retains bank-savings account');
   await noOverflow('bank savings contextual mobile');
+  // A prior capture showed the background through the contextual modal. This
+  // may be an ancestor entrance-opacity race; prove effective final paint.
+  await waitFor("function(){const modal=document.querySelector('.contextual-quick-modal');if(!modal)return false;let opacity=1;for(let node=modal;node;node=node.parentElement){const value=Number(getComputedStyle(node).opacity);if(Number.isFinite(value))opacity*=value;}const bg=getComputedStyle(modal).backgroundColor;const alpha=bg==='transparent'?0:bg.startsWith('rgba(')?Number(bg.split(',').at(-1)?.replace(')','')):1;return opacity>=.995&&alpha>=.995}",'contextual Quick Entry opaque ancestor and surface paint settled');
+  const surfaceProof=await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const r=modal?.getBoundingClientRect(),bg=modal?getComputedStyle(modal).backgroundColor:'';return {background:bg,left:r?.left,right:r?.right,top:r?.top,bottom:r?.bottom,viewportWidth:innerWidth,viewportHeight:innerHeight}}");
+  assert(surfaceProof.left>=-1&&surfaceProof.right<=innerWidth+1&&surfaceProof.top>=-1&&surfaceProof.bottom<=innerHeight+1,'contextual Quick Entry mobile surface stays fully contained: '+JSON.stringify(surfaceProof));
   await screenshot('savings-bank-typed-target-contextual-mobile');
   await clickAria('Κλείσιμο contextual καταχώρισης');
 
