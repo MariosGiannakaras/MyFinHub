@@ -14,6 +14,22 @@ afterEach(()=>{
 });
 
 describe('connected device access',()=>{
+  it('keeps device registry revocation and error/success announcements in their correct receipt order (#649 I18.05)',()=>{
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    const action=ui.slice(ui.indexOf('const confirm=async()=>'),ui.indexOf('const saveName=async()=>'));
+    expect(action).toContain('await revokeOtherConnectedDevices()');
+    expect(action).toContain('await revokeConnectedDevice(pending.device.sessionId)');
+    expect(action.indexOf('setDevices(result.devices)')).toBeGreaterThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
+    expect(action.indexOf("setMessageTone('status');setMessage(")).toBeGreaterThan(action.indexOf('setDevices(result.devices)'));
+    expect(action).toContain("}catch(error){setMessageTone('error')");
+    expect(action).toContain("finally{setBusy(false)}");
+    expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
+    expect(ui).toContain("aria-live={messageTone==='error'?'assertive':'polite'}");
+    expect(ui).toContain('disabled={busy}');
+    expect(ui).toContain('<ConfirmDialog open={Boolean(pending)}');
+    expect(ui).toContain('tone="destructive" busy={busy}');
+  });
+
   it('accepts only exact device revoke payloads with canonical session ids',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});

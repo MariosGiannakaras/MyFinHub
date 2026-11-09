@@ -24,6 +24,21 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
   expect(netWorth(d,'2026-08-17')).toBeCloseTo(before-30.25,2);
   expect(()=>validateCompleteFinanceSemantics(d)).not.toThrow();
  });
+ it('keeps lending cash movement and the matching receivable asset neutral to net worth and operating flow (#649 I10.02)',()=>{
+  const d=fixture(),before=netWorth(d,'2026-08-17');
+  const lent=createEvent({kind:'lending',date:'2026-08-12',person:'Alex',amount:40,note:'Owner recorded lending',accountId:'cash'});
+  const repaid=createEvent({kind:'repayment',date:'2026-08-13',person:'Alex',amount:25,note:'Owner recorded repayment',accountId:'cash'});
+  expect(lent.legs).toEqual([{accountId:'cash',amount:-40}]);
+  expect(lent.receivableDelta).toBe(40);
+  expect(repaid.legs).toEqual([{accountId:'cash',amount:25}]);
+  expect(repaid.receivableDelta).toBe(-25);
+  d.state.events=[lent,repaid];
+  expect(accountBalances(d,'2026-08-17').cash).toBe(485);
+  expect(lendingOutstandingFor(d,'Alex','2026-08-17')).toBe(115);
+  expect(netWorth(d,'2026-08-17')).toBe(before);
+  expect(monthlyFlow(d,'2026-08')).toMatchObject({income:0,expense:0,net:0});
+  expect(()=>validateCompleteFinanceSemantics(d)).not.toThrow();
+ });
  it('rejects over-writeoff and malformed cash/delta tampering',()=>{
   const d=fixture(),item=createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'Alex',amount:95,note:'Partial'});
   d.state.events=[item,createEvent({kind:'repayment',date:'2026-08-12',person:'Alex',amount:10,note:'repayment',accountId:'cash'})];

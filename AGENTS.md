@@ -52,6 +52,13 @@
 - UI motion must respect `prefers-reduced-motion`; interaction state cannot be conveyed only by motion or color.
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
 
+### Proportionate security and approval boundaries
+
+- **Protection is mandatory; repeated process is not.** Owner UID, MFA/AAL2, active-session provenance, RLS, server-held card secrets, revision/history integrity, token isolation, CSRF safeguards and non-destructive finance history remain fail-closed. A user-selected privacy PIN adds a conditional lock only when configured; do not turn it into an unapproved mandatory new login factor. Do not loosen these checks merely to speed implementation.
+- **No unnecessary owner approval for safe repository work.** Source edits, code reviews, source/unit tests, synthetic QA, disposable loopback-only PostgreSQL/Storage recovery rehearsals and non-destructive documentation may proceed under the existing task authorization. A production-changing database operation, destructive data rewrite/reset, credential/key rotation, expanded auth/RLS privilege boundary, actual production release or genuine unresolved product decision remains explicitly approval-gated. A proposed migration in Git is not authorization to apply it to production.
+- **Code completion and operational evidence are different gates.** Once a bounded recovery feature has source, safety guards, a disposable isolated restore proof and an accurate production runbook, its repository implementation may be counted complete even if independent hosted/production-grade disaster-recovery rehearsal needs separate owner credentials/approval. Do not claim production recoverability from the disposable proof; keep the hosted evidence/release gate plainly pending.
+- Treat hosted credentials, paid-only security-advisor suggestions, physical device access, duplicate scanners and repeated full screenshot matrices as **non-default dependencies** unless a concrete finding, supported configuration or approved release plan requires them. Never disable mandatory CI/CodeQL, weaken endpoint authorization or skip relevant focused negative tests to remove friction.
+
 ## Cross-chat execution and progress rules
 
 - A chat is not assigned a permanent implementation role by issue #266. Active ownership is task-scoped and must be recovered from the current issue/PR/plan/branch state.
