@@ -5,6 +5,32 @@ const page=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),
 const css=readFileSync(new URL('../src/pages/ReportsPage.css',import.meta.url),'utf8');
 
 describe('Reports post-v1.4 remediation contracts',()=>{
+  it('preserves source-of-truth period, positive-only distribution and budget management contracts (#649 I14.01/.03/.05)',()=>{
+    const visual=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain('operationalReportSnapshot(data,month,asOf)');
+    expect(page).toContain('reportingPeriodEndDate(month,asOf)');
+    expect(page).toContain('categoryMomentum(data,month,100,asOf)');
+    expect(page).toContain('accountBalances(data,periodEndDate)');
+    expect(page).toContain('.filter(row=>row.balance>.005)');
+    expect(page).toContain('Θετικά υπόλοιπα');
+    expect(page).toContain('const budgetRows=useMemo(()=>budgetProgress(data,month,asOf)');
+    expect(page).toContain('<BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/>');
+    expect(visual).toContain('future-dated expense and savings events do not mutate realized current-month Reports totals');
+    expect(visual).toContain('Reports period moves to July 2026');
+    expect(budgetQa).toContain('Budget');
+  });
+  it('protects 320px long Greek labels across category, counterparty, income and account lists (#649 I14.04)',()=>{
+    const visual=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(css).toContain('.report-category-list .semantic-list-title{overflow-wrap:anywhere}');
+    for(const selector of ['.report-counterparty-list .report-entry-copy b','.report-income-list .report-entry-copy b','.report-account-distribution-list b']){
+      expect(css).toContain(selector+'{overflow-wrap:anywhere}');
+    }
+    expect(visual).toContain('reports-long-greek-labels-mobile-320.png');
+    expect(visual).toContain('row.scroll<=row.client+2');
+    expect(visual).toContain('longLabels.pageOverflow<=2');
+  });
+
   it('defers private six-month account-history scans until reveal without losing chart data',()=>{
     expect(page).toContain("const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data])");
     expect(page).toContain("const accountIds=useMemo(()=>accounts.slice(0,4).map(account=>account.id),[accounts])");
