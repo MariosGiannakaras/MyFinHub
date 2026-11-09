@@ -199,6 +199,7 @@ describe('provider branding management',()=>{
     expect(settings).toContain('metadataCommitted=true;');
     expect(settings).toContain('pendingAssets:current.pendingAssets.map(item=>item.ref===pending.ref?{...item,uploadedKey:asset.assetKey}:item)');
     expect(settings).not.toContain('pending.uploadedKey=asset.assetKey');
+    expect(settings).toContain('originalAssignments:{...current.originalAssignments,[slot.id]:finalKey}');
     expect(settings).toContain('if(metadataCommitted){');
     expect(settings).toContain('if(reloaded.error){');
     expect(settings).toContain('setEditorWarning(');
@@ -207,6 +208,9 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('partial provider metadata commit must not look like a failed initial write');
     expect(providerBrandingQaSource).toContain('acknowledged upload is not duplicated after binding retry');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
+    expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
+    expect(settings).toContain('<div className="provider-editor-feedback">');
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
     expect(focusedQaWorkflow).toContain('PASS after Chromium bootstrap retry: $suite');

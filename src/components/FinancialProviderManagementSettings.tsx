@@ -257,6 +257,11 @@ export function FinancialProviderManagementSettings(){
         const original=editor.originalAssignments[slot.id];
         if(finalKey!==original){
           await setFinancialProviderAssetBinding({providerId:editor.id,role:slot.role,variant:slot.variant,assetKey:finalKey,refreshCatalog:false});
+          // Commit the per-slot acknowledgement to the retry snapshot. If a
+          // subsequent slot fails, the already written slot must not repeat.
+          setEditor(current=>current?.id===editor.id?{
+            ...current,originalAssignments:{...current.originalAssignments,[slot.id]:finalKey},
+          }:current);
         }
       }
       const reloaded=await refreshFinancialProviders(true);
@@ -346,15 +351,19 @@ export function FinancialProviderManagementSettings(){
             {library.length?<section className="provider-library"><header><div><h4>Βιβλιοθήκη εικόνων</h4><p>Όλα τα ήδη ανεβασμένα assets του παρόχου. Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.</p></div></header><div className="provider-library-strip">{library.map(asset=><div className="provider-library-item" key={asset.ref}><span><img src={asset.url} alt="" draggable={false}/></span><div><b title={asset.name}>{asset.name}</b><small>{usageCount(asset.ref)} {usageCount(asset.ref)===1?'χρήση':'χρήσεις'}</small></div></div>)}</div></section>:null}
           </div>}
 
-          {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
-          {editorWarning?<OperationFeedback tone="warning" className="logic-note compact provider-editor-warning">{editorWarning}</OperationFeedback>:null}
         </div>
 
         <footer className="provider-editor-footer">
-          <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
-          {editor.source==='new'&&editor.tab==='details'
-            ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
-            :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+          {editorError||editorWarning?<div className="provider-editor-feedback">
+            {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
+            {editorWarning?<OperationFeedback tone="warning" className="logic-note compact provider-editor-warning">{editorWarning}</OperationFeedback>:null}
+          </div>:null}
+          <div className="provider-editor-actions">
+            <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
+            {editor.source==='new'&&editor.tab==='details'
+              ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
+              :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+          </div>
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>

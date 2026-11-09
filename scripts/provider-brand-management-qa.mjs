@@ -185,7 +185,7 @@ try{
   console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
   await c.call(`async function(){
     const original=globalThis.fetch.bind(globalThis);
-    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,assetKey:'qa-new-provider-shared'};
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared'};
     globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
       const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -203,7 +203,11 @@ try{
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
         provider.bindings+=1;
-        if(provider.bindings===1)return new Response(JSON.stringify({error:'Synthetic binding rejection after durable provider and binary'}),{status:503,headers:{'content-type':'application/json'}});
+        const data=JSON.parse(String(init?.body||'{}'));
+        provider.bindingSlots.push(data.role+':'+data.variant);
+        // First logo binding is durable, second wordmark binding fails.
+        // Retry must not repeat the already acknowledged logo mutation.
+        if(provider.bindings===2)return new Response(JSON.stringify({error:'Synthetic wordmark binding rejection after durable provider, upload and logo binding'}),{status:503,headers:{'content-type':'application/json'}});
         return new Response(JSON.stringify({binding:{}}),{status:200,headers:{'content-type':'application/json'}});
       }
       return original(input,init);
@@ -212,17 +216,26 @@ try{
   }`);
   await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
   await waitFor("function(){const warning=document.querySelector('.provider-editor-warning[data-feedback-tone=\"warning\"]');return Boolean(warning)&&(warning.textContent||'').includes('Τα στοιχεία του παρόχου αποθηκεύτηκαν')}",'partial provider warning state after binding rejection');
-  const partialFailure=await c.call("function(){const mock=globalThis.__qaNewProvider;const notice=document.querySelector('.provider-editor-warning');return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(document.querySelector('.provider-editor-footer button:last-child')?.textContent||'').trim(),warning:(notice?.textContent||'').trim(),role:notice?.getAttribute('role'),uploads:mock?.uploads,creates:mock?.creates,bindings:mock?.bindings,hasError:Boolean(document.querySelector('.provider-editor-error'))}}");
+  const partialFailure=await c.call("function(){const mock=globalThis.__qaNewProvider;const notice=document.querySelector('.provider-editor-warning'),footer=document.querySelector('.provider-editor-footer'),save=footer?.querySelector('button:last-child');const nr=notice?.getBoundingClientRect(),sr=save?.getBoundingClientRect();return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(save?.textContent||'').trim(),warning:(notice?.textContent||'').trim(),role:notice?.getAttribute('role'),inFooter:Boolean(notice?.closest('.provider-editor-footer')),visible:Boolean(nr&&nr.top>=0&&nr.bottom<=innerHeight&&sr&&sr.bottom<=innerHeight),uploads:mock?.uploads,creates:mock?.creates,bindings:mock?.bindings,slots:mock?.bindingSlots,hasError:Boolean(document.querySelector('.provider-editor-error'))}}");
   assert(partialFailure.editorOpen,'partial provider failure keeps the editor recoverable');
   assert(!partialFailure.success&&!partialFailure.hasError,'acknowledged metadata save is announced as partial warning, not all success or initial rejection');
   assert(partialFailure.role==='alert','partially saved provider operation is announced accessibly');
-  assert(partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===1,'provider write and binary each acknowledged exactly once before binding rejection');
+  assert(partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===2,'provider and binary each acknowledged once, first binding committed before second rejected');
+  assert(JSON.stringify(partialFailure.slots)===JSON.stringify(['logo:universal','wordmark:universal']),'provider writes the logo before rejecting wordmark');
+  assert(partialFailure.inFooter&&partialFailure.visible,'partial save warning and retry remain visibly anchored above the actions');
   assert(partialFailure.saveLabel.includes('Αποθήκευση'),'new provider is treated as existing after the provider row was already created');
   await shot('provider-create-partial-binding-warning-desktop');
+  await viewport(375,812,true);
+  await noOverflow('provider partial save warning mobile');
+  const mobileWarning=await c.call("function(){const notice=document.querySelector('.provider-editor-warning'),button=document.querySelector('.provider-editor-actions button:last-child');const a=notice?.getBoundingClientRect(),b=button?.getBoundingClientRect();return Boolean(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=innerHeight&&b.bottom<=innerHeight)}");
+  assert(mobileWarning,'375px partial save warning and retry button stay visible without scrolling the branding gallery');
+  await shot('provider-create-partial-binding-warning-mobile');
+  await viewport(1440,1000,false);
   await clickText('.provider-editor-footer button','Αποθήκευση');
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'retry completes provider bindings without retransmitting uploaded file');
-  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
-  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings>=3,'acknowledged upload is not duplicated after binding retry');
+  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,slots:p.bindingSlots,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings===3,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
+  assert(JSON.stringify(settled.slots)===JSON.stringify(['logo:universal','wordmark:universal','wordmark:universal']),'only rejected wordmark binding is retried');
   assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
   await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
 
