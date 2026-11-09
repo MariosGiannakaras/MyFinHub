@@ -512,6 +512,10 @@ try {
   assert(attemptedSwitch,'receipt launcher remains available with edited Quick Entry draft');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'dirty Quick Entry receipt-switch confirmation');
   assert(await c.call("function(value){return !document.querySelector('.receipt-inbox')&&document.querySelector('.quick-modal:not(.contextual-quick-modal) input[placeholder=\"Σύντομη περιγραφή μόνο αν χρειάζεται\"]')?.value===value}",[dirtyReceiptNote]),'dirty Quick Entry remains mounted and retains unsaved note before owner decision');
+  // Portal mount precedes the 180ms dialog entrance; screenshot must depict
+  // the fully settled foreground, never a translucent intermediate animation.
+  await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const overlay=dialog?.closest('.modal-backdrop');return Boolean(dialog&&overlay&&Number(getComputedStyle(dialog).opacity)>=.995&&Number(getComputedStyle(overlay).opacity)>=.995)}",'receipt switch confirmation has settled at full opacity');
+  await sleep(80);
   await screenshot('receipt-local-mobile-switch-unsaved-confirm');
   const canceledReceiptSwitch=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const cancel=[...dialog?.querySelectorAll('button')||[]].find(button=>(button.textContent||'').trim()==='Ακύρωση');cancel?.click();return Boolean(cancel)}");
   assert(canceledReceiptSwitch,'dirty receipt-switch confirmation cancellation exists');

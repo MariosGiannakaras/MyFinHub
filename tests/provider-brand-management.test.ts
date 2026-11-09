@@ -22,6 +22,8 @@ const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',imp
 const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
 const financialProviderClientSource=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const providerBrandingQaSource=readFileSync(new URL('../scripts/provider-brand-management-qa.mjs',import.meta.url),'utf8');
+const focusedQaWorkflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+const receiptQaSource=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
 
 function provider():FinancialProvider{
   return {
@@ -205,6 +207,10 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('partial provider metadata commit must not look like a failed initial write');
     expect(providerBrandingQaSource).toContain('acknowledged upload is not duplicated after binding retry');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
+    expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
+    expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
+    expect(receiptQaSource).toContain("'receipt switch confirmation has settled at full opacity'");
+    expect(receiptQaSource).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
   });
   it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';

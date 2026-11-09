@@ -20,15 +20,18 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       (contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
-       contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->'))
+       contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-provider-receipt-qa -->'))
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') &&
-          'reports-visual' ||
-          (contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') &&
-           'action-center-context receipt-local-ocr settings-tabs savings-remediation card-vault-runtime account-metadata' ||
-           'quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette') }}
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-provider-receipt-qa -->') &&
+          'provider-brand-management receipt-local-ocr' ||
+          (contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') &&
+           'reports-visual' ||
+           (contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') &&
+            'action-center-context receipt-local-ocr settings-tabs savings-remediation card-vault-runtime account-metadata' ||
+            'quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
