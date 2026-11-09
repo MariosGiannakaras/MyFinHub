@@ -54,6 +54,8 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd).toContain('await onCreate(event);');
     expect(quickAdd).toContain('reset();onClose();');
     expect(quickAdd.indexOf('await onCreate(event);')).toBeLessThan(quickAdd.indexOf('reset();onClose();'));
-    expect(quickAdd).toContain('finally{setSaving(false)}');
+    expect(quickAdd).toContain('if(saving||submitInFlight.current)return;');
+    expect(quickAdd).toContain('submitInFlight.current=true;setSaving(true);');
+    expect(quickAdd).toContain('finally{submitInFlight.current=false;setSaving(false)}');
   });
 });

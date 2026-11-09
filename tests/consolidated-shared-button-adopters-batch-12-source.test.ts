@@ -38,7 +38,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.indexOf("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);")).toBeLessThan(contextual.indexOf("onClose();return;"));
     expect(contextual).toContain('await onCreate(event);');
     expect(contextual).toContain('setSaving(true);');
-    expect(contextual).toContain('finally{setSaving(false)}');
+    expect(contextual).toContain('if(saving||submitInFlight.current)return;');
+    expect(contextual).toContain('submitInFlight.current=true;setSaving(true);');
+    expect(contextual).toContain('finally{submitInFlight.current=false;setSaving(false)}');
     expect(contextual.indexOf('await onCreate(event);')).toBeLessThan(contextual.indexOf('onClose();\n    }catch(reason)'));
     expect(contextual).toContain("event.savingSource=context.savingSource??'manual_transfer'");
   });
