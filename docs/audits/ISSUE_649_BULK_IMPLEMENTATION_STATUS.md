@@ -1,6 +1,14 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
-## 2026-11-09 — accepted shared controls and visual sibling follow-up (latest)
+## 2026-11-09 — accepted shared-control visual evidence and I19.04 finance/metadata duplicate-submit prevention (latest)
+
+**Source progress: Implementations 5/23 completed · Sub-implementations 33/132 completed.** I16.01 is accepted as a real code+visual remediation of the originally K-classified provider summary/technical ID and long Greek names: exact-head [CI/CodeQL #42641005743](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42641005743) SUCCESS (1663 tests), [focused 4-suite Chromium #42641337211](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42641337211) SUCCESS. Artifact #13686485461 downloaded and desktop/mobile provider details and mobile account picker screenshots directly inspected. Name, code and description no longer crowd; 375px long bank names fully wrap. I16.05, I02.02 and I23.03 still have broader unsatisfied coverage and are **not** closed merely by this slice. The previous 5/23 · 32/132 heading below is historical.
+
+**New coherent cross-store single-flight batch (source candidate, NOT YET COUNTED):** Provider brand metadata→asset→binding retry already acknowledges each step independently; account finance revision→IBAN metadata already distinguishes a durable finance commit from secondary metadata failure. Both editors relied on React `busy` state alone to reject synchronous duplicate invocation before the busy repaint. Add a synchronous `useRef` in-flight latch for provider save, account save, and account delete, release unconditionally in `finally`, without modifying backend accounting or auth. Production QA fixture counts revision receipts, existing combined provider/account Chromium suites now double-click in one JavaScript turn and assert exactly one provider POST and one revisioned account mutation, with same partial-binding failure/retry and no duplicate logo upload. Shared I19.04 source acceptance remains PENDING exact-head CI/CodeQL and focused browser QA; no unsupported claim of full I19 completion. Combined Draft marker must be enabled once on coherent candidate, then disabled after inspected evidence. No Android, production database/Storage, or merge actions.
+
+---
+
+## 2026-11-09 — accepted shared controls and visual sibling follow-up (historical)
 
 **Authoritative progress until exact-head visual evidence: Implementations 5/23 completed · Sub-implementations 32/132 completed.** [CI #42639292388](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42639292388) **SUCCESS** including CodeQL, 1661/1661 tests and CSS 559.8/560.0 KiB; [focused Chromium #42639497551](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42639497551) **SUCCESS** across provider branding, account metadata, Settings tabs and Quick Entry. Artifact #13684148989 downloaded; directly inspected partial provider save mobile, account bank picker 375px, provider editor details 1440px and Transactions finance controls. No failed product assertion. Strict security/finance boundaries unchanged.
 

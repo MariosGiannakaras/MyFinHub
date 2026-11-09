@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -125,6 +125,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const[messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
   const notify=(text:string,tone:OperationFeedbackTone='success')=>{setMessageTone(tone);setMessage(text)};
   const[busy,setBusy]=useState(false);
+  const mutationInFlight=useRef(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
   useEffect(()=>{
@@ -190,13 +191,13 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   };
 
   const save=async()=>{
-    if(!editor||busy)return;
+    if(!editor||busy||mutationInFlight.current)return;
     const name=editor.name.trim();
     if(!name){setEditorError('Συμπλήρωσε όνομα λογαριασμού.');return}
     if(editor.mode==='bank'&&!editor.providerId){setEditorError('Επίλεξε τράπεζα ή πάροχο.');return}
     if(editor.mode==='bank'&&!editor.bankAccountCategory){setEditorError('Επίλεξε κατηγορία λογαριασμού.');return}
     if(editor.mode==='bank'&&editor.iban.trim()&&!isValidIban(editor.iban)){setEditorError('Έλεγξε το IBAN.');return}
-    setBusy(true);setEditorError('');
+    mutationInFlight.current=true;setBusy(true);setEditorError('');
     try{
       const isCustom=editor.source==='new'||editor.source==='custom';
       const id=editor.source==='new'?newAccountId(editor.mode,editor.providerId):editor.id;
@@ -260,7 +261,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       notify((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning,ibanWarning?'warning':'success');
       setEditor(null);
     }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
-    finally{setBusy(false)}
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const requestDelete=(account:ProviderAccount)=>{
@@ -271,8 +272,8 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     notify('');setPendingDelete(account);
   };
   const confirmDelete=async()=>{
-    if(!pendingDelete||busy)return;
-    setBusy(true);
+    if(!pendingDelete||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;setBusy(true);
     try{
       const id=pendingDelete.id;
       const remaining=(settings.customAccounts??[]).filter(item=>item.id!==id);
@@ -290,7 +291,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       notify('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning,metadataWarning?'warning':'success');
       setPendingDelete(null);
     }catch(error){notify(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'),'error')}
-    finally{setBusy(false)}
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const defaultOptions=(current:string)=>{

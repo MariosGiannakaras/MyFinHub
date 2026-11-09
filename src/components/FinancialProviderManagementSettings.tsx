@@ -127,6 +127,7 @@ export function FinancialProviderManagementSettings(){
   const providers=catalog.providers;
   const[editor,setEditor]=useState<ProviderEditor|null>(null);
   const[busy,setBusy]=useState(false);
+  const mutationInFlight=useRef(false);
   const[message,setMessage]=useState('');
   const[editorError,setEditorError]=useState('');
   const[editorWarning,setEditorWarning]=useState('');
@@ -229,12 +230,12 @@ export function FinancialProviderManagementSettings(){
     requestAnimationFrame(()=>document.getElementById(`provider-editor-tab-${tab}`)?.focus());
   };
   const save=async()=>{
-    if(!editor||busy||!validateDetails())return;
+    if(!editor||busy||mutationInFlight.current||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
       setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
     }
-    setBusy(true);setEditorError('');setEditorWarning('');
+    mutationInFlight.current=true;setBusy(true);setEditorError('');setEditorWarning('');
     let metadataCommitted=false;
     try{
       const payload:FinancialProviderWriteInput={
@@ -294,7 +295,7 @@ export function FinancialProviderManagementSettings(){
       }else{
         setEditorError(userErrorMessage(error,'Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.'));
       }
-    }finally{setBusy(false)}
+    }finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const pickerSlot=editor?.pickerSlot?SLOT_BY_ID.get(editor.pickerSlot):undefined;

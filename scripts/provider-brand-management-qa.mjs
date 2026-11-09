@@ -253,7 +253,9 @@ try{
     };
     return true;
   }`);
-  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  console.log('Provider save single-flight blocks same-tick double click before React busy state');
+  const doubleProviderCreate=await c.call("function(){const button=[...document.querySelectorAll('.provider-editor-footer button')].find(el=>(el.textContent||'').includes('Δημιουργία παρόχου'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleProviderCreate,'provider create can be activated twice synchronously in synthetic probe');
   await waitFor("function(){const warning=document.querySelector('.provider-editor-warning[data-feedback-tone=\"warning\"]');return Boolean(warning)&&(warning.textContent||'').includes('Τα στοιχεία του παρόχου αποθηκεύτηκαν')}",'partial provider warning state after binding rejection');
   const partialFailure=await c.call("function(){const mock=globalThis.__qaNewProvider;const notice=document.querySelector('.provider-editor-warning'),footer=document.querySelector('.provider-editor-footer'),save=footer?.querySelector('button:last-child');const nr=notice?.getBoundingClientRect(),sr=save?.getBoundingClientRect();return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(save?.textContent||'').trim(),warning:(notice?.textContent||'').trim(),role:notice?.getAttribute('role'),inFooter:Boolean(notice?.closest('.provider-editor-feedback')),visible:Boolean(nr&&nr.top>=0&&nr.bottom<=innerHeight&&sr&&sr.bottom<=innerHeight&&nr.bottom<=sr.top),uploads:mock?.uploads,creates:mock?.creates,bindings:mock?.bindings,slots:mock?.bindingSlots,hasError:Boolean(document.querySelector('.provider-editor-error'))}}");
   assert(partialFailure.editorOpen,'partial provider failure keeps the editor recoverable');

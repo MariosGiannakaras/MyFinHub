@@ -8,6 +8,17 @@ const qa=readFileSync('src/qa.tsx','utf8');
 const rendered=readFileSync('scripts/account-metadata-qa.mjs','utf8');
 
 describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
+  it('rejects same-tick duplicate account save/delete while preserving revision-first metadata ordering (#649 I19.04)',()=>{
+    expect(component).toContain('const mutationInFlight=useRef(false)');
+    expect(component).toContain('if(!editor||busy||mutationInFlight.current)return;');
+    expect(component).toContain('if(!pendingDelete||busy||mutationInFlight.current)return;');
+    expect(component.match(/mutationInFlight.current=true;setBusy(true)/g)).toHaveLength(2);
+    expect(component.match(/finally\{mutationInFlight.current=false;setBusy(false)\}/g)).toHaveLength(2);
+    expect(rendered).toContain('same-tick double activation produces one durable account settings revision, not two');
+    expect(qa).toContain('qaSettingsDurableWrites');
+    expect(app).not.toContain('qaSettingsDurableWrites');
+  });
+
   it('uses accessible account provider radios with Arrow/Home/End roving focus and no save mutation (#649 I16.05/I23.03)',()=>{
     expect(component).toContain('const providerTabStop=providers.find');
     expect(component).toContain("event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft'");

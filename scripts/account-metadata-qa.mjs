@@ -97,8 +97,12 @@ try{
   await waitFor("function(index){const nodes=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')];return nodes[index]?.getAttribute('aria-checked')==='true'}",'original provider restored',[originalRadio.index]);
   assert((await currentEditIban()).includes('GR16'),'Account Management loads the current payroll IBAN');
   await editIban('GB82 WEST 1234 5698 7654 32');
-  const saved=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');if(!button)return false;button.click();return true}");assert(saved,'Account Management saves edited IBAN');
+  console.log('Account durable save single-flight blocks same-tick repeated submit before React busy re-render');
+  const beforeDurable=await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}");
+  const saved=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');if(!button)return false;button.click();button.click();return true}");assert(saved,'Account Management saves edited IBAN once on repeated activation');
   await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&((document.querySelector('.account-management-message')?.textContent||'').includes('Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.'))}",'Account Management save confirmation');
+  const afterDurable=await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}");
+  assert(afterDurable===beforeDurable+1,'same-tick double activation produces one durable account settings revision, not two: '+JSON.stringify({beforeDurable,afterDurable}));
   await openPayrollEditor();assert((await currentEditIban())==='GB82 WEST 1234 5698 7654 32','saved IBAN stays normalized and human-readable');
   const providerChanged=await c.call("function(){const button=[...document.querySelectorAll('.account-management-modal.is-edit .account-management-provider-picker [role=radio]')].find(item=>(item.textContent||'').includes('Alpha Bank'));button?.click();return Boolean(button)}");assert(providerChanged,'existing account provider can be corrected');
   const saveProvider=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');button?.click();return Boolean(button)}");assert(saveProvider,'provider correction saves');

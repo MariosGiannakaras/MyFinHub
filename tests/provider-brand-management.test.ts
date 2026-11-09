@@ -54,6 +54,16 @@ function provider():FinancialProvider{
 }
 
 describe('provider branding management',()=>{
+  it('serializes provider metadata and asset binding attempts before state repaint (#649 I19.04)',()=>{
+    expect(settings).toContain('const mutationInFlight=useRef(false)');
+    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||!validateDetails())return;');
+    expect(settings).toContain('mutationInFlight.current=true;setBusy(true)');
+    expect(settings).toContain('finally{mutationInFlight.current=false;setBusy(false)}');
+    expect(providerBrandingQaSource).toContain('Provider save single-flight blocks same-tick double click');
+    expect(providerBrandingQaSource).toContain('button.click();button.click()');
+    expect(providerBrandingQaSource).toContain('partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===2');
+  });
+
   it('uses shared Arrow/Home/End roving tabs and guards incomplete provider creation (#649 I02.02/I16.05/I23.03)',()=>{
     expect(rovingTabDestination('ArrowRight',0,2)).toBe(1);
     expect(rovingTabDestination('ArrowRight',1,2)).toBe(0);
