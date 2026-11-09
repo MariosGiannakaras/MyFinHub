@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
@@ -7,13 +8,34 @@ mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for provider branding QA.');
-const port=9263;
+// Reserve a free loopback CDP port rather than assuming a fixed one is idle.
+const port=await new Promise((resolve,reject)=>{
+  const listener=createServer();
+  listener.once('error',reject);
+  listener.listen(0,'127.0.0.1',()=>{
+    const address=listener.address();
+    listener.close(error=>{
+      if(error)reject(error);
+      else if(!address||typeof address==='string')reject(new Error('Provider QA could not reserve a local Chromium port.'));
+      else resolve(address.port);
+    });
+  });
+});
 const profile='/tmp/myfinhub-provider-brand-management-qa-chrome';
 // As in receipt QA, never inherit Chromium's possibly locked transient profile.
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:['ignore','ignore','pipe']});
+let chromiumDiagnostics='';
+child.stderr?.on('data',chunk=>{chromiumDiagnostics=(chromiumDiagnostics+chunk.toString()).slice(-4096)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+async function waitHttp(url){
+  for(let i=0;i<120;i++){
+    try{const response=await fetch(url);if(response.ok)return}catch{}
+    if(child.exitCode!==null)throw new Error(`Chromium exited before CDP was ready (code ${child.exitCode}): ${chromiumDiagnostics}`);
+    await sleep(150);
+  }
+  throw new Error(`Timed out waiting for ${url} (Chrome exit: ${child.exitCode??'running'}) ${chromiumDiagnostics}`);
+}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Provider branding QA assertion failed: ${message}`)};
 let c=null;

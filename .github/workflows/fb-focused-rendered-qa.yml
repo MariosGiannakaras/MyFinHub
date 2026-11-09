@@ -73,7 +73,7 @@ jobs:
             echo "Running changed surface: $suite"
             if node "scripts/$suite-qa.mjs" >"$RUNNER_TEMP/fb-focused/logs/$suite.log" 2>&1; then
               echo "PASS: $suite"
-            elif grep -Eq 'Timed out waiting for http://127[.]0[.]0[.]1:9[0-9]{3}/json/version' "$RUNNER_TEMP/fb-focused/logs/$suite.log"; then
+            elif grep -Eq 'Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version' "$RUNNER_TEMP/fb-focused/logs/$suite.log"; then
               # One bounded retry only for an isolated Chromium CDP bootstrap.
               # All browser assertions remain strict; preserve both log attempts.
               echo "Chromium bootstrap failed for $suite; retrying once with a clean script-owned profile."

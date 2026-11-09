@@ -214,8 +214,12 @@ describe('provider branding management',()=>{
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
     expect(focusedQaWorkflow).toContain('PASS after Chromium bootstrap retry: $suite');
-    expect(focusedQaWorkflow).toContain("grep -Eq 'Timed out waiting for http://127[.]0[.]0[.]1:9[0-9]{3}/json/version'");
+    expect(focusedQaWorkflow).toContain("grep -Eq 'Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version'");
     expect(providerBrandingQaSource).toContain('rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});');
+    expect(providerBrandingQaSource).toContain("listener.listen(0,'127.0.0.1'");
+    expect(providerBrandingQaSource).toContain("child.stderr?.on('data'");
+    expect(providerBrandingQaSource).toContain("if(child.exitCode!==null)throw new Error");
+    expect(receiptQaSource).toContain("const port = 9253;");
     expect(receiptQaSource).toContain("'receipt switch confirmation has settled at full opacity'");
     expect(receiptQaSource).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
   });
