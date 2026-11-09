@@ -387,6 +387,7 @@ try{
   await setLabelInput('Σχόλιο','QA Failed Durable Entry');
   await clickText('.generic-quick-modal footer button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected Quick Entry receipt error');
+  await waitFor("function(){const error=document.getElementById('quick-add-error');return Boolean(error&&error.tabIndex===-1&&document.activeElement===error)}",'rejected Quick Entry focuses the visible error without losing draft');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&[...document.querySelectorAll('.generic-quick-modal label')].some(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Σχόλιο')&&label.querySelector('input')?.value==='QA Failed Durable Entry')}"),'rejected receipt keeps current unsaved Quick Entry draft');
   const rejectedUndo=await c.call("function(){const undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return {writeCount:Number(document.documentElement.dataset.qaFinanceWrites||0),undoDisabled:undo?.disabled===true,modalOpen:Boolean(document.querySelector('.generic-quick-modal'))}}");
   assert(rejectedUndo.writeCount===0&&rejectedUndo.undoDisabled&&rejectedUndo.modalOpen,'rejected finance receipt cannot create a finance write or unlock synthetic Undo: '+JSON.stringify(rejectedUndo));

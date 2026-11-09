@@ -2,8 +2,16 @@ import {describe,expect,it} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {OperationFeedback} from '../src/components/OperationFeedback.js';
 import {MoneyInput} from '../src/components/MoneyInput.js';
+import {FormError} from '../src/components/FormError.js';
 
 describe('#649 shared operation feedback contract',()=>{
+  it('renders rejection text as a programmatically focusable alert, never a normal Tab stop',()=>{
+    const html=renderToStaticMarkup(<FormError id="quick-add-error">Η αποθήκευση απορρίφθηκε.</FormError>);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain('id="quick-add-error"');
+  });
+
   it('preserves external aria-invalid on MoneyInput and explicit invalid override',()=>{
     const announced=renderToStaticMarkup(<MoneyInput value="10" onValueChange={()=>undefined} aria-label="Ποσό" aria-invalid="true"/>);
     const invalid=renderToStaticMarkup(<MoneyInput value="20" onValueChange={()=>undefined} aria-label="Ποσό" invalid/>);

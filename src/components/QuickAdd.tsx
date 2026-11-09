@@ -97,6 +97,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [reconciliationConfirmed,setReconciliationConfirmed]=useState(false);
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},{id:'p2',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0}]);
   const [error,setError]=useState('');
+  // Announcing a failed finance save is not enough for keyboard users: the
+  // rejected operation's visible error becomes the recoverable focus target.
+  useEffect(()=>{if(open&&error)document.getElementById('quick-add-error')?.focus({preventScroll:true})},[open,error]);
   const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);

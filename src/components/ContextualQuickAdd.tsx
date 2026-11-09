@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, CreditCard, HandCoins, Landmark, PiggyBank, ReceiptText, X } from 'lucide-react';
 import { type QuickPrefill } from './QuickAdd';
 import { ReceiptAwareQuickAdd } from './ReceiptAwareQuickAdd';
@@ -105,6 +105,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [person,setPerson]=useState(context.mode==='lending'?(context.person??''):'');
   const [expectedReturnDate,setExpectedReturnDate]=useState(context.mode==='lending'&&context.action==='lend'?(context.expectedReturnDate??''):'');
   const [error,setError]=useState('');
+  useEffect(()=>{if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})},[error]);
   const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);

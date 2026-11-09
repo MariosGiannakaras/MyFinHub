@@ -10,6 +10,16 @@ const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',impor
 const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
+  it('focuses the actual rejection alert in generic and contextual Quick Entry without making it a Tab stop (#649 I19.05)',()=>{
+    const formError=readFileSync(new URL('../src/components/FormError.tsx',import.meta.url),'utf8');
+    expect(formError).toContain('role="alert" aria-live="assertive" tabIndex={-1}');
+    expect(generic).toContain("if(open&&error)document.getElementById('quick-add-error')?.focus({preventScroll:true})");
+    expect(contextual).toContain("if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})");
+    expect(budgetQa).toContain('rejected Quick Entry focuses the visible error without losing draft');
+    expect(generic).toContain('<FormError id="quick-add-error">{error}</FormError>');
+    expect(contextual).toContain('<FormError id="context-quick-error">{error}</FormError>');
+  });
+
   it('guards contextual cancel, header, escape and backdrop without altering confirmed saves',()=>{
     expect(contextual).toContain('const [discardOpen,setDiscardOpen]=useState(false)');
     expect(contextual).toContain('if(dirty){setDiscardOpen(true);return}');
