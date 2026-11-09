@@ -12,8 +12,8 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(component).toContain('const mutationInFlight=useRef(false)');
     expect(component).toContain('if(!editor||busy||mutationInFlight.current)return;');
     expect(component).toContain('if(!pendingDelete||busy||mutationInFlight.current)return;');
-    expect(component.match(/mutationInFlight.current=true;setBusy(true)/g)).toHaveLength(2);
-    expect(component.match(/finally\{mutationInFlight.current=false;setBusy(false)\}/g)).toHaveLength(2);
+    expect(component.split('mutationInFlight.current=true;setBusy(true)').length-1).toBe(2);
+    expect(component.split('finally{mutationInFlight.current=false;setBusy(false)}').length-1).toBe(2);
     expect(rendered).toContain('same-tick double activation produces one durable account settings revision, not two');
     expect(qa).toContain('qaSettingsDurableWrites');
     expect(app).not.toContain('qaSettingsDurableWrites');
