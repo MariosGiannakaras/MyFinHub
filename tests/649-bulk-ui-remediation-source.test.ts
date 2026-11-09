@@ -5,6 +5,7 @@ const settings=source('../src/pages/SettingsPage.tsx');
 const accounts=source('../src/components/AccountManagementSettings.tsx');
 const screenshots=source('../scripts/ui-ux-visual-evidence-qa.mjs');
 const settingsQa=source('../scripts/settings-tabs-qa.mjs');
+const roving=source('../src/lib/rovingTabDestination.ts');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
   it('uses action-scoped message tone so import, backup and taxonomy errors cannot inherit stale success',()=>{
@@ -17,7 +18,8 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(settings).toContain('<OperationFeedback className="logic-note compact" tone={operationFeedback.tone}>');
   });
   it('implements ARIA tablist arrow, Home and End plus one sequential Tab stop',()=>{
-    for(const key of ["ArrowRight","ArrowLeft","Home","End"])expect(settings).toContain(key);
+    for(const key of ["ArrowRight","ArrowLeft","Home","End"])expect(roving).toContain(key);
+    expect(settings).toContain("rovingTabDestination(event.key,index,SETTINGS_TABS.length)");
     expect(settings).toContain("tabIndex={activeTab===tab.id?0:-1}");
     expect(settings).toContain("onKeyDown={event=>onTabKeyDown(event,index)}");
     expect(settings).toContain("aria-controls={`settings-panel-${tab.id}`}");

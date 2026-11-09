@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import {
@@ -20,6 +20,7 @@ import { Button } from './Button';
 import { IconButton } from './IconButton';
 import './FinancialProviderManagementSettings.css';
 import { userErrorMessage } from '../lib/userMessage';
+import { rovingTabDestination } from '../lib/rovingTabDestination';
 
 type SlotVariant='universal'|'light'|'dark';
 type SlotId=
@@ -217,6 +218,16 @@ export function FinancialProviderManagementSettings(){
     if(!validateDetails())return;
     setEditorError('');setEditor(current=>current?{...current,tab:'branding'}:current);
   };
+  const onEditorTabKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+    if(!editor||busy)return;
+    const next=rovingTabDestination(event.key,index,2);
+    if(next===null)return;
+    event.preventDefault();
+    const tab=next===0?'details':'branding';
+    if(tab==='branding'&&editor.source==='new'&&!validateDetails())return;
+    if(tab!==editor.tab){setEditor({...editor,tab,pickerSlot:null});setEditorError('')}
+    requestAnimationFrame(()=>document.getElementById(`provider-editor-tab-${tab}`)?.focus());
+  };
   const save=async()=>{
     if(!editor||busy||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
@@ -323,12 +334,12 @@ export function FinancialProviderManagementSettings(){
         </header>
 
         <div className="provider-editor-tabs" role="tablist" aria-label="Επεξεργασία παρόχου">
-          <button type="button" role="tab" aria-selected={editor.tab==='details'} className={editor.tab==='details'?'active':''} onClick={()=>setEditor({...editor,tab:'details',pickerSlot:null})}>Στοιχεία</button>
-          <button type="button" role="tab" aria-selected={editor.tab==='branding'} className={editor.tab==='branding'?'active':''} onClick={()=>{if(editor.source==='new'&&!validateDetails())return;setEditor({...editor,tab:'branding',pickerSlot:null});setEditorError('')}}>Εικόνες</button>
+          <button type="button" role="tab" id="provider-editor-tab-details" aria-controls="provider-editor-panel-details" aria-selected={editor.tab==='details'} tabIndex={editor.tab==='details'?0:-1} disabled={busy} onKeyDown={event=>onEditorTabKeyDown(event,0)} className={editor.tab==='details'?'active':''} onClick={()=>setEditor({...editor,tab:'details',pickerSlot:null})}>Στοιχεία</button>
+          <button type="button" role="tab" id="provider-editor-tab-branding" aria-controls="provider-editor-panel-branding" aria-selected={editor.tab==='branding'} tabIndex={editor.tab==='branding'?0:-1} disabled={busy} onKeyDown={event=>onEditorTabKeyDown(event,1)} className={editor.tab==='branding'?'active':''} onClick={()=>{if(editor.source==='new'&&!validateDetails())return;setEditor({...editor,tab:'branding',pickerSlot:null});setEditorError('')}}>Εικόνες</button>
         </div>
 
         <div className="provider-editor-body">
-          {editor.tab==='details'?<div className="provider-details-panel" role="tabpanel">
+          {editor.tab==='details'?<div id="provider-editor-panel-details" aria-labelledby="provider-editor-tab-details" className="provider-details-panel" role="tabpanel">
             <div className="provider-details-grid">
               <label><span>Όνομα</span><AppTextInput data-autofocus="true" value={editor.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
               <label><span>Σύντομο όνομα</span><AppTextInput value={editor.shortName} onChange={event=>setEditor({...editor,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
@@ -336,7 +347,7 @@ export function FinancialProviderManagementSettings(){
               <label><span>Χώρα (ISO)</span><AppTextInput maxLength={2} value={editor.countryCode} onChange={event=>setEditor({...editor,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
             </div>
             <div className="provider-id-field"><span>Provider ID</span>{editor.source==='new'?<AppTextInput value={editor.id} onChange={event=>setEditor({...editor,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/>:<code>{editor.id}</code>}<small>{editor.source==='new'?'Σταθερό τεχνικό αναγνωριστικό. Μετά τη δημιουργία δεν αλλάζει.':'Το Provider ID παραμένει σταθερό ώστε να μη σπάνε λογαριασμοί και κάρτες.'}</small></div>
-          </div>:<div className="provider-branding-panel" role="tabpanel">
+          </div>:<div id="provider-editor-panel-branding" aria-labelledby="provider-editor-tab-branding" className="provider-branding-panel" role="tabpanel">
             <div className="provider-branding-intro"><div><h3>Εικόνες παρόχου</h3><p>Ανέβασε κάθε αρχείο μία φορά και χρησιμοποίησέ το σε όσες θέσεις χρειάζεται. Οι ειδικές εικόνες ανά θέμα ή κάρτα είναι προαιρετικές.</p></div><span className="provider-library-count"><Images size={15}/>{library.length} στη βιβλιοθήκη</span></div>
 
             {GROUPS.map(group=><section className="provider-brand-group" key={group.title}>

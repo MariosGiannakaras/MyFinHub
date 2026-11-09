@@ -45,6 +45,7 @@ try{
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+  const press=async(key,code,vk)=>{await c.send('Input.dispatchKeyEvent',{type:'rawKeyDown',key,code,windowsVirtualKeyCode:vk});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk})};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const applyTheme=preference=>c.call(`async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}`,[preference]);
   const clickAccounts=async()=>{const ok=await c.call("function(){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()==='Λογαριασμοί');if(!node)return false;node.click();return true}");assert(ok,'Accounts tab is available');await waitFor("function(){return !!document.querySelector('.provider-management')&&document.querySelectorAll('.provider-list-row').length>=8}",'compact provider list')};
@@ -131,6 +132,14 @@ try{
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'provider editor');
   const tabs=await c.call("function(){return [...document.querySelectorAll('.provider-editor-tabs [role=tab]')].map(node=>(node.textContent||'').trim())}");
   assert(JSON.stringify(tabs)===JSON.stringify(['Στοιχεία','Εικόνες']),'provider editor has Details and Images tabs');
+  console.log('Provider editor keyboard arrows wrap and preserve labelled panels');
+  assert(await c.call("function(){const tab=document.querySelector('#provider-editor-tab-details');tab?.focus();return document.activeElement===tab}"),'Details tab receives keyboard focus');
+  const verifyEditorTab=async id=>{await waitFor("function(id){const tabs=[...document.querySelectorAll('.provider-editor-tabs [role=tab]')],selected=tabs.filter(tab=>tab.getAttribute('aria-selected')==='true'),active=selected[0],panel=document.querySelector('.provider-editor-body [role=tabpanel]');return selected.length===1&&tabs.filter(tab=>tab.tabIndex===0).length===1&&active?.id==='provider-editor-tab-'+id&&document.activeElement===active&&panel?.id==='provider-editor-panel-'+id&&panel.getAttribute('aria-labelledby')===active.id}",'provider keyboard selects '+id,[id])};
+  await press('ArrowRight','ArrowRight',39);await verifyEditorTab('branding');
+  await press('Home','Home',36);await verifyEditorTab('details');
+  await press('ArrowLeft','ArrowLeft',37);await verifyEditorTab('branding');
+  await press('End','End',35);await verifyEditorTab('branding');
+  await press('Home','Home',36);await verifyEditorTab('details');
   await shot('provider-editor-details-light-desktop');
   await openBranding();
   const brandingState=await c.call(`function(){const groups=[...document.querySelectorAll('.provider-brand-group>header h4')].map(node=>(node.textContent||'').trim());const text=document.querySelector('.provider-branding-panel')?.textContent||'';return {groups,slots:document.querySelectorAll('.provider-slot-card').length,text}}`);
@@ -186,6 +195,11 @@ try{
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'existing editor closes');
   await clickText('.provider-management button','Νέος πάροχος');
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'new provider editor');
+  console.log('Provider new provider cannot bypass validation by keyboard');
+  assert(await c.call("function(){const tab=document.querySelector('#provider-editor-tab-details');tab?.focus();return document.activeElement===tab}"),'new provider starts on Details tab');
+  await press('ArrowRight','ArrowRight',39);
+  await waitFor("function(){return Boolean(document.querySelector('.provider-editor-error'))}",'new provider validation error');
+  assert(await c.call("function(){return Boolean(document.querySelector('.provider-details-panel'))&&!document.querySelector('.provider-branding-panel')&&document.activeElement?.id==='provider-editor-tab-details'}"),'new provider cannot bypass validation by keyboard');
   const details=await c.call(`function(){const set=(placeholder,value)=>{const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.getAttribute('placeholder')===placeholder);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true};return set('π.χ. Νέα Τράπεζα','QA Bank')}`);
   assert(details,'new-provider details are editable through app-owned controls');
   await sleep(100);
@@ -261,5 +275,13 @@ try{
   assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
   await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
 
+  console.log('Shared compact Transactions filters remain at least 12px');
+  const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');
+  await viewport(1440,1000,false);
+  await c.send('Page.navigate',{url:transactionUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.transaction-filter-controls .owned-input'))}",'Transactions owned filters');
+  const filters=await c.call("function(){const nodes=[...document.querySelectorAll('.transaction-filter-controls .owned-input')].filter(node=>node.getClientRects().length);if(!nodes.length)return {present:false};nodes[0].scrollIntoView({block:'center',behavior:'instant'});return {present:true,fontSizes:nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(filters.present&&filters.fontSizes.every(size=>size>=12)&&filters.overflow<=1,'compact Transactions filters remain at least 12px without document overflow: '+JSON.stringify(filters));
+  await shot('shared-compact-transaction-filters-desktop');
   console.log('Provider branding task-flow QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

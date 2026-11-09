@@ -6,6 +6,7 @@ import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { Button } from '../components/Button';
+import { rovingTabDestination } from '../lib/rovingTabDestination';
 import { OperationFeedback, type OperationFeedbackTone } from '../components/OperationFeedback';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -155,10 +156,7 @@ export function SettingsPage({
   const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   // ARIA tablists use one Tab stop; arrows/Home/End move focus and activate a tab.
   const onTabKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
-    const count=SETTINGS_TABS.length;
-    const next=event.key==='Home'?0:event.key==='End'?count-1:
-      event.key==='ArrowRight'?(index+1)%count:
-      event.key==='ArrowLeft'?(index+count-1)%count:null;
+    const next=rovingTabDestination(event.key,index,SETTINGS_TABS.length);
     if(next===null)return;
     event.preventDefault();
     selectTab(SETTINGS_TABS[next].id);

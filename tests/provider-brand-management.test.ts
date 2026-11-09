@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MoneyInput } from '../src/components/MoneyInput.js';
+import { rovingTabDestination } from '../src/lib/rovingTabDestination.js';
 import { ApiError, copyBoundedBinaryValue } from '../server/http.js';
 import {
   parseFinancialProviderWrite,
@@ -53,6 +56,37 @@ function provider():FinancialProvider{
 }
 
 describe('provider branding management',()=>{
+  it('uses shared Arrow/Home/End roving tabs and guards incomplete provider creation (#649 I02.02/I16.05/I23.03)',()=>{
+    expect(rovingTabDestination('ArrowRight',0,2)).toBe(1);
+    expect(rovingTabDestination('ArrowRight',1,2)).toBe(0);
+    expect(rovingTabDestination('ArrowLeft',0,2)).toBe(1);
+    expect(rovingTabDestination('Home',1,2)).toBe(0);
+    expect(rovingTabDestination('End',0,2)).toBe(1);
+    expect(rovingTabDestination('Tab',0,2)).toBeNull();
+    expect(rovingTabDestination('ArrowRight',0,0)).toBeNull();
+    expect(settings).toContain('onKeyDown={event=>onEditorTabKeyDown(event,0)}');
+    expect(settings).toContain('onKeyDown={event=>onEditorTabKeyDown(event,1)}');
+    expect(settings).toContain("tabIndex={editor.tab==='details'?0:-1}");
+    expect(settings).toContain("tabIndex={editor.tab==='branding'?0:-1}");
+    expect(settings).toContain('aria-controls="provider-editor-panel-details"');
+    expect(settings).toContain('aria-controls="provider-editor-panel-branding"');
+    expect(settings).toContain('aria-labelledby="provider-editor-tab-details"');
+    expect(settings).toContain('aria-labelledby="provider-editor-tab-branding"');
+    expect(settings).toContain("if(tab==='branding'&&editor.source==='new'&&!validateDetails())return");
+    expect(settings).toContain('disabled={busy} onKeyDown={event=>onEditorTabKeyDown');
+    expect(providerBrandingQaSource).toContain('Provider editor keyboard arrows wrap and preserve labelled panels');
+    expect(providerBrandingQaSource).toContain('new provider cannot bypass validation by keyboard');
+  });
+  it('keeps compact owned finance filters legible and external MoneyInput aria-invalid intact',()=>{
+    const css=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
+    const density=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');
+    expect(css).toContain('min-height:32px;border-radius:8px;font-size:12px');
+    expect(density).toContain('padding:0 30px 0 8px;font-size:12px');
+    const html=renderToStaticMarkup(<MoneyInput value="10" onValueChange={()=>undefined} aria-label="Ποσό" aria-invalid="true"/>);
+    expect(html).toContain('aria-invalid="true"');
+    expect(providerBrandingQaSource).toContain('compact Transactions filters remain at least 12px');
+  });
+
   const originalUrl=process.env.SUPABASE_URL;
   const originalKey=process.env.SUPABASE_PUBLISHABLE_KEY;
   afterEach(()=>{
