@@ -11,10 +11,14 @@ describe('Loans post-v1.4 remediation contracts',()=>{
     const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
     expect(qa).toContain("params.get('state')==='loans-completed'");
     expect(qa).toContain("paidCount:params.get('state')==='loans-completed'?120:60");
-    expect(rendered).toContain('loans-long-mobile-320');
-    expect(rendered).toContain('loans-long-mobile-375');
+    expect(rendered).toContain('for(const [width,height] of [[375,812],[320,700]])');
+    expect(rendered).toContain('loans-long-mobile-${width}');
+    expect(rendered).toContain('loans-mobile-actions-320');
+    expect(rendered).toContain('activeVisible.visible');
+    expect(rendered).toContain('actionVisible.visible');
     expect(rendered).toContain('loans-empty-mobile-320');
     expect(rendered).toContain('loans-completed-mobile-320');
+    expect(rendered).toContain('completedVisible.visible');
     expect(rendered).toContain("mobile.touch.every(size=>size>=40)");
     expect(rendered).toContain("completed.found&&completed.expanded&&completed.active===0");
     expect(workflow).toContain('<!-- run-649-loans-qa -->');
