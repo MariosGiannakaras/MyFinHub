@@ -146,8 +146,13 @@ try{
   assert(await c.call("function(){return Boolean(document.querySelector('[data-attention-id=\"scheduled:qa-scheduled-transfer\"]'))}"),'scheduled attention item exists before completion');
   await clickAttention('scheduled:qa-scheduled-transfer');await waitModal('Ολοκλήρωση προγραμματισμένης');
   assert(await c.call("function(){return (document.querySelector('.contextual-quick-modal')?.textContent||'').includes('Μεταφορά στον στόχο')}") ,'scheduled context identifies exact item');
-  await clickText('.contextual-quick-modal .save-button','Ολοκλήρωση');
+  console.log('Contextual Quick Entry blocks same-tick duplicate scheduled payment');
+  const beforeScheduled=await c.call("function(){return Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)}");
+  const doubleScheduled=await c.call("function(){const button=[...document.querySelectorAll('.contextual-quick-modal .save-button')].find(node=>(node.textContent||'').includes('Ολοκλήρωση'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleScheduled,'contextual scheduled completion submitted twice in one browser turn');
   await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'scheduled completion close');
+  const afterScheduled=await c.call("function(){return Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)}");
+  assert(afterScheduled===beforeScheduled+1,'same-turn contextual Quick Entry starts exactly one scheduled finance write');
   await waitFor("function(){return !document.querySelector('[data-attention-id=\"scheduled:qa-scheduled-transfer\"]')}",'completed scheduled attention removal');
   assert(await c.call("function(){return Boolean(document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]'))}"),'undo remains available after atomic completion');
 

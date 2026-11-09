@@ -10,6 +10,21 @@ const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',impor
 const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
+  it('locks both finance submission owners before any async import or React repaint (#649 I19.02)',()=>{
+    for(const owner of [generic,contextual]){
+      const start=owner.indexOf('const submit=async()=>{');
+      const lock=owner.indexOf('submitInFlight.current=true;setSaving(true);',start);
+      const firstAwait=owner.indexOf('await ',start);
+      expect(owner).toContain('const submitInFlight=useRef(false)');
+      expect(owner).toContain('if(saving||submitInFlight.current)return;');
+      expect(lock).toBeGreaterThan(start);
+      expect(lock).toBeLessThan(firstAwait);
+      expect(owner).toContain('finally{submitInFlight.current=false;setSaving(false)}');
+    }
+    expect(budgetQa).toContain('same-turn generic Quick Entry starts exactly one durable finance write');
+    expect(contextualQa).toContain('same-turn contextual Quick Entry starts exactly one scheduled finance write');
+  });
+
   it('focuses the actual rejection alert in generic and contextual Quick Entry without making it a Tab stop (#649 I19.05)',()=>{
     const formError=readFileSync(new URL('../src/components/FormError.tsx',import.meta.url),'utf8');
     expect(formError).toContain('role="alert" aria-live="assertive" tabIndex={-1}');
@@ -30,7 +45,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual).not.toContain('onClick={onClose}');
     expect(contextual.match(/setDirty\(true\)/g)?.length).toBeGreaterThanOrEqual(12);
     expect(contextual).toContain('onClose();return;');
-    expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\)return;[\s\S]*?setError\(''\);\s*try\{/);
     expect(contextual).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
 
   });
@@ -49,7 +64,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(receiptQa).toContain('receipt-local-mobile-switch-unsaved-confirm');
   });
   it('keeps Quick Entry portalled receipt launch inert and retry errors honest until acknowledged finance receipt',()=>{
-    expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\)return;[\s\S]*?setError\(''\);\s*try\{/);
     expect(generic).toContain('<footer inert={saving}>');
     expect(generic).toContain('await onCreate(event);');
     expect(generic).toContain('reset();onClose();');

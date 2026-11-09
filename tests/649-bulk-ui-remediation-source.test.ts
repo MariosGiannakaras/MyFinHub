@@ -8,6 +8,14 @@ const settingsQa=source('../scripts/settings-tabs-qa.mjs');
 const roving=source('../src/lib/rovingTabDestination.ts');
 
 describe('#649 cohesive Settings and rendered evidence regression',()=>{
+  it('selects only the two related finance-entry browser suites for same-turn double-submit QA',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-finance-entry-qa -->');
+    expect(workflow).toContain("'budget-rules action-center-context'");
+    expect(source('../scripts/budget-rules-qa.mjs')).toContain('same-turn generic Quick Entry starts exactly one durable finance write');
+    expect(source('../scripts/action-center-context-qa.mjs')).toContain('same-turn contextual Quick Entry starts exactly one scheduled finance write');
+  });
+
   it('selects only the two changed-surface suites for I16.02 and I19.05 verification',()=>{
     const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
     expect(workflow).toContain('<!-- run-649-account-quick-qa -->');

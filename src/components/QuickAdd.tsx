@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
-import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -101,6 +101,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   // rejected operation's visible error becomes the recoverable focus target.
   useEffect(()=>{if(open&&error)document.getElementById('quick-add-error')?.focus({preventScroll:true})},[open,error]);
   const [saving,setSaving]=useState(false);
+  const submitInFlight=useRef(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
   // Notify the receipt launcher so switching editors cannot silently discard changes.
@@ -198,7 +199,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
   };
   const submit=async()=>{
-    if(saving)return;
+    if(saving||submitInFlight.current)return;
+    // Acquire before async validation/import and before React's busy repaint.
+    submitInFlight.current=true;setSaving(true);
     // A corrected retry must not carry an error from the prior attempt into
     // the in-flight durable finance receipt.
     setError('');
@@ -252,7 +255,6 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       }else delete event.counterpartyId;
       if(kind!=='split')event.subcategory=subcategory||undefined;
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial)}
-      setSaving(true);
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');
@@ -266,7 +268,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       }
       reset();onClose();
     }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
-    finally{setSaving(false)}
+    finally{submitInFlight.current=false;setSaving(false)}
   };
 
   const accountOptions=(current:string,pool=accounts)=>{

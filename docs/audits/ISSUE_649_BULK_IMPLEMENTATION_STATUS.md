@@ -1,6 +1,14 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
-## 2026-11-09 — recovered CodeQL and bounded account + Quick Entry browser acceptance (latest)
+## 2026-11-09 — accepted I19.05 and generic/contextual finance single-flight batch (latest)
+
+**Source progress: Implementations 5/23 completed · Sub-implementations 35/132 completed.** [CI #42677303995](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42677303995) **SUCCESS** including CodeQL/Unified gate, 1669 tests, CSS 559.9/560.0 KiB raw. [Two-suite Chromium #42677490034](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42677490034) **SUCCESS**. Artifact #13700158832 downloaded, and desktop account deletion block plus desktop/mobile Quick Entry rejected-receipt focus screenshots directly inspected. Real keyboard focus lands on error; draft preserved and Undo disabled. A new finance reference inserted after the Delete confirmation opens prevents stale account deletion with warning and zero settings writes. **I19.05 accepted +1 subitem**; I16.02 stale-delete slice accepted but broader account reorder/deactivate/create/delete eligibility remains PARTIAL. No production/Android/merge.
+
+**Next uncounted coherent I19.02 finance invariant candidate:** Both generic `QuickAdd` and specialized `ContextualQuickAdd` previously gated writes only with React `saving` after validation; same-turn repeat submit or async linked fee/import could run a duplicate finance callback. Acquire `useRef` submission lock synchronously before any awaited work and update pending state immediately; release in unconditional `finally`. Add QA-only call counters and double-click simulations for generic pending expense and contextual scheduled payment using already owned `budget-rules` + `action-center-context` Chromium suites. The new Draft-only selector `<!-- run-649-finance-entry-qa -->` runs only those two suites. Keep domain ledger semantics, receipt protection, accessibility and immutable history unchanged, no CI/security/bundle threshold relaxation. Await exact-head CI/CodeQL + browser QA and inspect relevant screenshots before counting I19.02 or closing I19.
+
+---
+
+## 2026-11-09 — recovered CodeQL and bounded account + Quick Entry browser acceptance (historical)
 
 **Authoritative progress: Implementations 5/23 completed · Sub-implementations 34/132 completed.** Exact source head `fc8f6f0` [CI #42672945395](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42672945395) **SUCCESS on targeted failed-jobs-only rerun attempt 2**: original `validate` 1668/1668 tests PASS, unchanged CSS 559.9/560.0 KiB, previously abandoned CodeQL restarted and **SUCCESS**, and required Unified gate **SUCCESS**. No security threshold bypass. This is source/gate acceptance, **not browser evidence** of the newer I19.05 focus or I16.02 stale-delete race. Previous `#42671527293` focused QA failed before any job was created, therefore no rendered assertion evidence exists for these two candidates.
 

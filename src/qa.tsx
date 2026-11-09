@@ -566,6 +566,7 @@ function QaWorkspace(){
     update(current=>withConfirmedLendingPlan(current,draft,true));
   };
   const addEventDurably=async(event:FinanceEvent)=>{
+    document.documentElement.dataset.qaQuickEventAttempts=String(Number(document.documentElement.dataset.qaQuickEventAttempts||0)+1);
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
     if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
@@ -619,7 +620,10 @@ function QaWorkspace(){
     commit();
   };
   const upsertScheduledDurably=(item:ScheduledTransaction)=>withScheduledReceipt(()=>upsertScheduled(item));
-  const completeScheduledDurably=(item:ScheduledTransaction,event:FinanceEvent)=>withScheduledReceipt(()=>completeScheduled(item,event));
+  const completeScheduledDurably=(item:ScheduledTransaction,event:FinanceEvent)=>{
+    document.documentElement.dataset.qaScheduledCompletionAttempts=String(Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)+1);
+    return withScheduledReceipt(()=>completeScheduled(item,event));
+  };
   const upsertBudget=async(budget:MonthlyBudget)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');

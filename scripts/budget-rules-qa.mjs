@@ -403,10 +403,14 @@ try{
   await clickText('.generic-quick-modal footer button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'initial Quick Entry validation error');
   await setLabelInput('Ποσό','26');
-  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  console.log('Generic Quick Entry blocks same-tick duplicate finance receipts');
+  const doubleClick=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal footer button')].find(item=>(item.textContent||'').includes('Καταχώριση'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleClick,'generic Quick Entry submitted twice in one browser turn for regression');
   await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal[aria-busy=true]');const save=[...(dialog?.querySelectorAll('footer button')||[])].find(button=>(button.textContent||'').includes('Αποθήκευση…'));return Boolean(globalThis.__myfinhubQaCompleteQuickEventReceipt)&&Boolean(save?.disabled)}",'pending Quick Entry receipt locks exact finance-save action');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&document.querySelector('.generic-quick-modal header button[aria-label]')?.disabled===true}"),'Quick Entry remains open while receipt is pending');
   const pendingEntry=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal'),footer=dlg?.querySelector('footer'),receipt=footer?.querySelector('.receipt-quick-launch'),undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');const box=receipt?.getBoundingClientRect();return {footerInert:footer?.inert===true,receiptVisible:Boolean(box&&box.width>0&&box.height>0),receiptCoords:box?{x:box.x+box.width/2,y:box.y+box.height/2}:null,previousErrorCleared:!dlg?.querySelector('#quick-add-error'),undoDisabled:undo?.disabled===true,financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0)}}");
+  const attemptCount=await c.call("function(){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)}");
+  assert(attemptCount===1,'same-turn generic Quick Entry starts exactly one durable finance write: '+attemptCount);
   assert(pendingEntry.footerInert&&pendingEntry.receiptVisible&&pendingEntry.previousErrorCleared&&pendingEntry.undoDisabled&&pendingEntry.financeWrites===0,'pending generic finance receipt locks portalled receipt launch and clears stale validation without premature Undo: '+JSON.stringify(pendingEntry));
   assert(pendingEntry.receiptCoords.x>=0&&pendingEntry.receiptCoords.x<1440&&pendingEntry.receiptCoords.y>=0&&pendingEntry.receiptCoords.y<1000,'receipt launch must be onscreen for real pointer blocked-interaction probe');
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',...pendingEntry.receiptCoords});

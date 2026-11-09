@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, CreditCard, HandCoins, Landmark, PiggyBank, ReceiptText, X } from 'lucide-react';
 import { type QuickPrefill } from './QuickAdd';
 import { ReceiptAwareQuickAdd } from './ReceiptAwareQuickAdd';
@@ -107,6 +107,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [error,setError]=useState('');
   useEffect(()=>{if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})},[error]);
   const [saving,setSaving]=useState(false);
+  const submitInFlight=useRef(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
   const requestClose=()=>{
@@ -122,7 +123,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
   const submit=async()=>{
-    if(saving)return;
+    if(saving||submitInFlight.current)return;
+    // All scheduled, credit, loan, lending, recurring and savings writes share one in-flight receipt.
+    submitInFlight.current=true;setSaving(true);
     // New attempts must not retain feedback from an earlier rejected receipt.
     setError('');
     try{
@@ -179,7 +182,6 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         if(!scheduled)throw new Error('Η προγραμματισμένη κίνηση δεν είναι πλέον εκκρεμής ή διαθέσιμη.');
         if(!onCompleteScheduled)throw new Error('Η ολοκλήρωση προγραμματισμένης κίνησης δεν είναι διαθέσιμη από αυτή την οθόνη.');
         event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId});
-        setSaving(true);
         await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);
         onClose();return;
       }else if(context.mode==='recurring'){
@@ -195,7 +197,6 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||'Μεταφορά στην άκρη',fromAccountId,toAccountId});
         event.savingSource=context.savingSource??'manual_transfer';
       }
-      setSaving(true);
       if(context.mode==='credit'&&context.action==='payment'&&paymentFee.trim()){
         const feeValue=Number(paymentFee.replace(',','.'));
         if(!isSafeMoneyValue(feeValue)||feeValue<0)throw new Error('Η προμήθεια χρειάζεται έγκυρο ποσό σε ευρώ και λεπτά.');
@@ -208,7 +209,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
       }
       onClose();
     }catch(reason){setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
-    finally{setSaving(false)}
+    finally{submitInFlight.current=false;setSaving(false)}
   };
 
   const title=context.mode==='credit'?(context.action==='payment'?(selectedStatement?'Πληρωμή δήλωσης πιστωτικής':'Πληρωμή πιστωτικής'):'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='writeoff'?'Διαγραφή απαίτησης':context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';
