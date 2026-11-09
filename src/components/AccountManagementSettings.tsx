@@ -276,6 +276,18 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     mutationInFlight.current=true;setBusy(true);
     try{
       const id=pendingDelete.id;
+      // The account may have become referenced after its confirmation opened.
+      // Recheck the live finance snapshot immediately before the durable write.
+      const stillCustom=(settings.customAccounts??[]).some(item=>item.id===id);
+      const newReferences=accountReferenceReasons(data,id);
+      if(!stillCustom||newReferences.length){
+        notify(!stillCustom
+          ?'Ο λογαριασμός δεν είναι πλέον διαθέσιμος για διαγραφή.'
+          :`Η διαγραφή ακυρώθηκε: ο λογαριασμός συνδέεται πλέον με ${newReferences.join(', ')}. Οι οικονομικές κινήσεις διατηρούνται.`,
+          'warning');
+        setPendingDelete(null);
+        return;
+      }
       const remaining=(settings.customAccounts??[]).filter(item=>item.id!==id);
       const names={...settings.accountNames};delete names[id];
       const overrides={...(settings.accountOverrides??{})};delete overrides[id];

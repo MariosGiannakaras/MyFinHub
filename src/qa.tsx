@@ -470,6 +470,11 @@ function buildQaData(params:URLSearchParams){
       category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
       alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
   }
+  if(params.get('state')==='account-delete-race'){
+    next.state.settings.customAccounts=[...(next.state.settings.customAccounts??[]),{
+      id:'qa-account-delete-race',name:'QA λογαριασμός για έλεγχο διαγραφής',kind:'bank',providerId:'alpha',provider:'Alpha Bank',custom:true,showInQuickChoices:true,
+    }];
+  }
   return next;
 }
 
@@ -528,6 +533,22 @@ function QaWorkspace(){
 
   const recordHistory=(kind:ChangeHistoryEntry['kind'],label:string)=>{const entry:ChangeHistoryEntry={id:`qa-history-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,kind,label,at:new Date().toISOString()};setChangeHistory(items=>[entry,...items].slice(0,20))};
   const update=(recipe:(current:FinanceData)=>FinanceData)=>{const current=data;const next=recipe(current);if(next===current)return;setUndoStack(stack=>[...stack.slice(-19),current]);setRedoStack([]);recordHistory('change',financeChangeLabel(current,next));setData(next)};
+  // Synthetic race only: simulate another finance writer referencing the
+  // deletion candidate after the owner opened the confirmation dialog.
+  useEffect(()=>{
+    if(params.get('state')!=='account-delete-race')return;
+    const control=globalThis as typeof globalThis & {__myfinhubQaInjectAccountReference?:()=>boolean};
+    control.__myfinhubQaInjectAccountReference=()=>{
+      setData(current=>{
+        const event=createEvent({kind:'expense',date:'2026-08-16',amount:1,note:'QA concurrent account reference',accountId:'qa-account-delete-race'});
+        event.id='qa-account-delete-reference';
+        return {...current,state:{...current.state,events:[...(current.state.events??[]),event]}};
+      });
+      return true;
+    };
+    document.documentElement.dataset.qaAccountReferenceApplied=(data.state.events??[]).some(event=>event.id==='qa-account-delete-reference')?'true':'false';
+    return()=>{delete control.__myfinhubQaInjectAccountReference;delete document.documentElement.dataset.qaAccountReferenceApplied};
+  },[data]);
   const undo=()=>{const previous=undoStack.at(-1);if(!previous)return;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));recordHistory('undo','Αναίρεση τελευταίας αλλαγής');setData(previous)};
   const redo=()=>{const next=redoStack[0];if(!next)return;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');setData(next)};
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};

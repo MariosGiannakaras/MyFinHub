@@ -128,6 +128,25 @@ try{
   assert((await currentEditIban())===beforeFailedSave,'failed finance write did not mutate IBAN metadata');
   await closeEditor();
 
+  console.log('Account metadata QA: stale delete confirmation cannot erase newly referenced finance account');
+  const deleteRaceUrl=new URL(baseUrl);deleteRaceUrl.searchParams.set('page','settings');deleteRaceUrl.searchParams.set('state','account-delete-race');
+  await c.send('Page.navigate',{url:deleteRaceUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'account deletion race Settings');
+  await clickText('.settings-tablist button','Λογαριασμοί');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-row[data-account-id=\"qa-account-delete-race\"]'))}",'custom account still unreferenced');
+  const deleteOpened=await c.call("function(){const button=document.querySelector('.account-management-row[data-account-id=\"qa-account-delete-race\"] button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
+  assert(deleteOpened,'custom unreferenced account can request confirmation before a concurrent write');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'unreferenced delete confirmation');
+  const beforeDeleteWrites=await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}");
+  const injected=await c.call("function(){return globalThis.__myfinhubQaInjectAccountReference?.()===true}");
+  assert(injected,'QA-only concurrent reference injection exists');
+  await waitFor("function(){return document.documentElement.dataset.qaAccountReferenceApplied==='true'}",'late finance reference applied before confirm');
+  await clickText('.app-confirm-dialog button','Διαγραφή');
+  await waitFor("function(){return !document.querySelector('.app-confirm-dialog')&&Boolean(document.querySelector('.account-management-message[data-feedback-tone=warning]'))}",'stale confirm rejected without deleting referenced account');
+  const blockedDelete=await c.call("function(){const warning=document.querySelector('.account-management-message[data-feedback-tone=warning]');return {warning:(warning?.textContent||'').trim(),role:warning?.getAttribute('role'),accountPresent:Boolean(document.querySelector('.account-management-row[data-account-id=\"qa-account-delete-race\"]')),durableWrites:Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}}");
+  assert(blockedDelete.role==='alert'&&blockedDelete.warning.includes('οικονομικές κινήσεις')&&blockedDelete.accountPresent&&blockedDelete.durableWrites===beforeDeleteWrites,'late-referenced account remains intact, warning announces blocked deletion, no second finance write: '+JSON.stringify(blockedDelete));
+  await scrollTo('.account-management-message');await screenshot('account-delete-late-reference-blocked-desktop');
+
   console.log('Account metadata QA: mobile Dashboard keeps masked IBAN and copy target');
   await viewport(375,812);await navigate('dashboard');await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'mobile dashboard IBAN');
   await scrollTo('.primary-balance-grid');await noOverflow('account metadata dashboard mobile');await touchTargets('account metadata dashboard mobile','.primary-balance-grid .account-iban-copy',48);

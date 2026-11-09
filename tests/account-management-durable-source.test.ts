@@ -31,6 +31,21 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(rendered).toContain('original provider restored');
   });
 
+  it('rechecks latest historical references at confirmation, preventing stale account delete (#649 I16.02)',()=>{
+    const confirm=component.slice(component.indexOf('const confirmDelete=async()=>'),component.indexOf('const defaultOptions='));
+    const refCheck=confirm.indexOf('const newReferences=accountReferenceReasons(data,id)');
+    const commit=confirm.indexOf('await onChangeDurably(next)');
+    expect(refCheck).toBeGreaterThan(0);
+    expect(commit).toBeGreaterThan(refCheck);
+    expect(confirm).toContain('const stillCustom=(settings.customAccounts??[]).some(item=>item.id===id)');
+    expect(confirm).toContain('if(!stillCustom||newReferences.length)');
+    expect(confirm).toContain("setPendingDelete(null);");
+    expect(confirm).toContain("'warning'");
+    expect(rendered).toContain('stale delete confirmation cannot erase newly referenced finance account');
+    expect(rendered).toContain('account-delete-late-reference-blocked-desktop');
+    expect(qa).toContain("__myfinhubQaInjectAccountReference");
+    expect(app).not.toContain("__myfinhubQaInjectAccountReference");
+  });
   it('routes account create/edit/delete through the existing revisioned finance receipt',()=>{
     expect(app).toContain('onFinanceDurably={finance.updateDurably}');
     expect(settings).toContain('onChangeDurably={(next)=>onFinanceDurably(current=>');
