@@ -32,7 +32,7 @@ jobs:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
       FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->') &&
-          'quick-entry-reference budget-rules' ||
+          'budget-rules' ||
           (contains(github.event.pull_request.body, '<!-- run-649-finance-entry-qa -->') &&
           'budget-rules action-center-context' ||
           (contains(github.event.pull_request.body, '<!-- run-649-account-quick-qa -->') &&

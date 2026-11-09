@@ -17,6 +17,9 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(mobile).not.toContain('background:var(--surface-translucent)');
     expect(budgetQa).toContain('contextual Quick Entry opaque ancestor and surface paint settled');
     expect(budgetQa).toContain('savings-bank-typed-target-contextual-mobile');
+    expect(budgetQa).toContain('surfaceProof.right<=surfaceProof.viewportWidth+1');
+    expect(budgetQa).toContain('surfaceProof.bottom<=surfaceProof.viewportHeight+1');
+    expect(budgetQa).not.toContain('surfaceProof.right<=innerWidth+1');
   });
 
   it('captures contextual mobile only after full surface/ancestor opacity and 320px large-text generic layout (#649 I19.07)',()=>{
