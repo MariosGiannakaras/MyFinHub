@@ -210,7 +210,7 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
     expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
-    expect(settings).toContain('<div className="provider-editor-feedback">');
+    expect(settings).toContain('<div className="provider-editor-body provider-editor-feedback">');
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
     expect(focusedQaWorkflow).toContain('PASS after Chromium bootstrap retry: $suite');

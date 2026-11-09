@@ -353,17 +353,15 @@ export function FinancialProviderManagementSettings(){
 
         </div>
 
+        {editorError||editorWarning?<div className="provider-editor-body provider-editor-feedback">
+          {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
+          {editorWarning?<OperationFeedback tone="warning" className="logic-note compact provider-editor-warning">{editorWarning}</OperationFeedback>:null}
+        </div>:null}
         <footer className="provider-editor-footer">
-          {editorError||editorWarning?<div className="provider-editor-feedback">
-            {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
-            {editorWarning?<OperationFeedback tone="warning" className="logic-note compact provider-editor-warning">{editorWarning}</OperationFeedback>:null}
-          </div>:null}
-          <div className="provider-editor-actions">
-            <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
-            {editor.source==='new'&&editor.tab==='details'
-              ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
-              :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
-          </div>
+          <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
+          {editor.source==='new'&&editor.tab==='details'
+            ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
+            :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>
