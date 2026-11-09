@@ -23,6 +23,11 @@ describe('mobile Reports/Settings semantic theme surfaces',()=>{
     expect(mobile).toContain('background:var(--surface-elevated)');
     expect(mobile).toContain('background:var(--control-bg)!important');
     expect(mobile).toContain('border:1px solid var(--control-border)!important');
-    expect(mobile).toContain('background:var(--surface-translucent)!important');
+    // Finance-entry sheets must never expose sensitive content behind the editor,
+    // even in lightweight QA documents before the semantic-theme bootstrap.
+    expect(mobile).toContain('.quick-modal{border-radius:22px 22px 0 0!important;background:var(--surface-elevated,var(--surface))!important}');
+    expect(mobile).toContain('.quick-modal>header{position:sticky;top:0;z-index:4;background:var(--surface-elevated,var(--surface))');
+    expect(mobile).toContain('background:var(--surface-elevated,var(--surface))');
+    expect(mobile).not.toContain('.quick-modal{border-radius:22px 22px 0 0!important;background:var(--surface-translucent)!important');
   });
 });

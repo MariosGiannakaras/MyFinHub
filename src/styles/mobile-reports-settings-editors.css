@@ -104,13 +104,13 @@
   /* Shared phone editor anatomy, including Quick Add: clear header, scroll body and persistent action zone. */
   .modal-backdrop{box-sizing:border-box;padding-left:10px;padding-right:10px}
   .quick-modal{width:100%;max-width:100%;box-sizing:border-box}
-  .quick-modal{border-radius:22px 22px 0 0!important;background:var(--surface-translucent)!important}
+  .quick-modal{border-radius:22px 22px 0 0!important;background:var(--surface-elevated,var(--surface))!important}
   .quick-modal:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:var(--border-strong);margin:8px auto 2px}
-  .quick-modal>header{position:sticky;top:0;z-index:4;background:var(--surface-translucent);padding-top:10px!important;padding-bottom:9px!important}
+  .quick-modal>header{position:sticky;top:0;z-index:4;background:var(--surface-elevated,var(--surface));padding-top:10px!important;padding-bottom:9px!important}
   .quick-modal>header h2{font-size:14px;letter-spacing:-.02em}
   .quick-modal>header p{line-height:1.35}
   .entry-body{padding-top:12px;padding-bottom:12px;background:var(--surface-inset)}
-  .quick-modal>footer{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;padding-top:9px!important;padding-bottom:calc(11px + env(safe-area-inset-bottom,0px))!important;background:var(--surface-translucent)}
+  .quick-modal>footer{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;padding-top:9px!important;padding-bottom:calc(11px + env(safe-area-inset-bottom,0px))!important;background:var(--surface-elevated,var(--surface))}
   .quick-modal>footer button{min-height:47px!important;width:100%;border-radius:12px;justify-content:center}
 
   /* Phone interaction polish is response-oriented, never ambient. */

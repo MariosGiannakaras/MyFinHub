@@ -10,6 +10,15 @@ const receiptQa=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',impor
 const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
 
 describe('#649 unsaved Quick Entry/receipt review protection',()=>{
+  it('keeps the mobile generic and contextual finance entry sheet opaque in every theme (#649 I19.07)',()=>{
+    const mobile=readFileSync(new URL('../src/styles/mobile-reports-settings-editors.css',import.meta.url),'utf8');
+    const opaque='background:var(--surface-elevated,var(--surface))';
+    expect(mobile.split(opaque).length-1).toBe(3);
+    expect(mobile).not.toContain('background:var(--surface-translucent)');
+    expect(budgetQa).toContain('contextual Quick Entry opaque ancestor and surface paint settled');
+    expect(budgetQa).toContain('savings-bank-typed-target-contextual-mobile');
+  });
+
   it('captures contextual mobile only after full surface/ancestor opacity and 320px large-text generic layout (#649 I19.07)',()=>{
     const referenceQa=readFileSync(new URL('../scripts/quick-entry-reference-qa.mjs',import.meta.url),'utf8');
     expect(budgetQa).toContain('contextual Quick Entry opaque ancestor and surface paint settled');
