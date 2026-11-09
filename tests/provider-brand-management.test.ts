@@ -206,7 +206,7 @@ describe('provider branding management',()=>{
     expect(settings).toContain('<OperationFeedback tone="warning"');
     expect(settings).toContain('Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.');
     expect(providerBrandingQaSource).toContain('partial provider metadata commit must not look like a failed initial write');
-    expect(providerBrandingQaSource).toContain('acknowledged upload is not duplicated after binding retry');
+    expect(providerBrandingQaSource).toContain('acknowledged upload and logo binding are not duplicated after later wordmark failure');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
     expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
