@@ -1,4 +1,4 @@
-import { Archive, ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
+import { Archive, ArrowDown, ArrowUp, ChevronDown, MoveRight, Pencil, Plus, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { categoryTree } from '../lib/categories';
 import { CATEGORY_ICON_PACKS, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
@@ -162,8 +162,9 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
             <div className="category-icon-picker-block"><CategoryIconPicker value={parentKey} selectedPack={view==='icons'?iconPack:undefined} showPackSwitcher={view!=='icons'} onChange={iconKey=>onChange(withCategoryIcon(normalized,kind,category.name,iconKey))}/></div>
           </details>:null}
 
-          <div className="taxonomy-subcategory-section">
-            <div className="taxonomy-subcategory-heading"><div><b>Υποκατηγορίες</b><small>{view==='taxonomy'?'Διαχειρίσου τη δομή και τη σειρά των υποκατηγοριών.':'Κληρονομούν το εικονίδιο της κατηγορίας εκτός αν ορίσεις override.'}</small></div></div>
+          <details className="taxonomy-subcategory-section taxonomy-subcategory-disclosure">
+            <summary className="taxonomy-subcategory-heading"><div><b>Υποκατηγορίες · {category.subcategories.length}</b><small>{view==='taxonomy'?'Άνοιγμα διαχείρισης και σειράς υποκατηγοριών':'Άνοιγμα υποκατηγοριών και επιλογών εικονιδίων'}</small></div><ChevronDown size={16} aria-hidden="true"/></summary>
+            <div className="taxonomy-subcategory-content">
             {showTaxonomy?<div className="taxonomy-add-row taxonomy-add-subcategory" role="group" aria-label={`Νέα υποκατηγορία στην ${category.name}`}>
               <label><span className="sr-only">Νέα υποκατηγορία στην {category.name}</span><AppTextInput value={subcategoryDrafts[categoryId]??''} onChange={event=>setSubcategoryDrafts(current=>({...current,[categoryId]:event.target.value}))} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addSubcategory(categoryId)}}} placeholder={`Νέα υποκατηγορία στην «${category.name}»`}/></label>
               <Button type="button" variant="secondary" onClick={()=>addSubcategory(categoryId)}><Plus size={15} aria-hidden="true"/> Προσθήκη</Button>
@@ -198,7 +199,8 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
                 </article>;
               })}
             </div>:<p className="empty-inline">Η κατηγορία δεν έχει υποκατηγορίες.</p>}
-          </div>
+            </div>
+          </details>
         </article>;
       })}
     </div>

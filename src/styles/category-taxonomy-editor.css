@@ -30,3 +30,14 @@
 .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1/-1}
 .taxonomy-move-editor{grid-template-columns:minmax(180px,1fr) auto 40px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .taxonomy-move-editor .owned-select-shell{width:100%;min-width:0}
+
+/* Progressive disclosure keeps category-level actions visible while preserving
+   the full existing, keyboard-operable subcategory editor when expanded. */
+.taxonomy-subcategory-disclosure{display:block;min-width:0}
+.taxonomy-subcategory-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-inset);cursor:pointer;list-style:none}
+.taxonomy-subcategory-disclosure>summary::-webkit-details-marker{display:none}
+.taxonomy-subcategory-disclosure>summary svg{flex:0 0 auto;transition:transform .15s ease}
+.taxonomy-subcategory-disclosure[open]>summary svg{transform:rotate(180deg)}
+.taxonomy-subcategory-disclosure>summary:focus-visible{outline:2px solid var(--blue-3);outline-offset:2px}
+.taxonomy-subcategory-content{display:grid;gap:6px;min-width:0;padding-top:7px}
+@media (prefers-reduced-motion:reduce){.taxonomy-subcategory-disclosure>summary svg{transition:none}}
