@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { ensureCategoryIdentities, resolveCategoryIdentity } from '../src/lib/categoryIdentity.js';
 import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE, prepareApprovedOwnerTaxonomy } from '../src/lib/ownerApprovedTaxonomy.js';
+import { categoryKey } from '../src/lib/categories.js';
 import type { CategoryDefinition } from '../src/types.js';
 
 const oldExpense=['Φαγητό','Καφές','Σούπερ μάρκετ','Τσιγάρα','Ψιλικά','Μετακίνηση','Όχημα','Λογαριασμοί','Τηλεπικοινωνίες','Συνδρομές','Αγορές','Σπίτι','Υγεία','Ταξίδια','Ψυχαγωγία','Δώρα / οικογένεια','Δόσεις / δάνεια','Άλλο'];
@@ -26,6 +27,49 @@ function fixture(){
 }
 
 describe('owner-approved taxonomy staging (pure and history-preserving)',()=>{
+  it('locks the exact 20 expense, 6 income and 71 ordered subcategories without normalization collisions (#649 I17.01)',()=>{
+    expect(OWNER_EXPENSE_TREE).toHaveLength(20);
+    expect(OWNER_INCOME_TREE).toHaveLength(6);
+    const expenseSubcategories=OWNER_EXPENSE_TREE.reduce((sum,item)=>sum+item.subcategories.length,0);
+    const incomeSubcategories=OWNER_INCOME_TREE.reduce((sum,item)=>sum+item.subcategories.length,0);
+    expect(expenseSubcategories).toBe(52);
+    expect(incomeSubcategories).toBe(19);
+    expect(expenseSubcategories+incomeSubcategories).toBe(71);
+    for(const tree of [OWNER_EXPENSE_TREE,OWNER_INCOME_TREE]){
+      const normalizedNames=tree.map(item=>categoryKey(item.name));
+      expect(new Set(normalizedNames).size).toBe(normalizedNames.length);
+      for(const category of tree){
+        const normalizedSubs=category.subcategories.map(categoryKey);
+        expect(new Set(normalizedSubs).size).toBe(normalizedSubs.length);
+        expect(normalizedSubs.every(Boolean)).toBe(true);
+      }
+    }
+  });
+
+  it('preserves legacy category aliases after approved renames instead of rewriting historical identities (#649 I17.01)',()=>{
+    const initial=fixture();
+    const prior=structuredClone(initial);
+    const next=prepareApprovedOwnerTaxonomy(initial,'2026-10-23');
+    const renamed:[kind:'expense'|'income',oldName:string,newName:string][]=[
+      ['expense','Αγορές','Αγορά'],
+      ['expense','Λογαριασμοί','Λογαριασμός κατοικίας'],
+      ['expense','Ταξίδια','Ταξίδι'],
+      ['income','Μισθός','Μισθοδοσία & Εργασία'],
+      ['income','Άλλο έσοδο','Άλλο πραγματικό έσοδο'],
+    ];
+    for(const [kind,oldName,newName] of renamed){
+      const oldIdentity=resolveCategoryIdentity(prior.state.settings,kind,oldName);
+      const renamedIdentity=resolveCategoryIdentity(next.state.settings,kind,newName);
+      expect(oldIdentity?.id).toBeTruthy();
+      expect(renamedIdentity?.id).toBe(oldIdentity?.id);
+      expect(resolveCategoryIdentity(next.state.settings,kind,oldName)?.id).toBe(oldIdentity?.id);
+    }
+    expect(initial).toEqual(prior);
+    expect(next.seed.transactions).toEqual(prior.seed.transactions);
+    expect(next.state.events).toEqual(prior.state.events);
+    expect(next.state.overrides).toEqual(prior.state.overrides);
+  });
+
   it('stages all 20/6 names and exact subcategory ordering',()=>{
     const input=fixture();
     const before=structuredClone(input);
