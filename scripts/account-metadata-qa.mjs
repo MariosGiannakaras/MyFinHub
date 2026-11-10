@@ -180,6 +180,25 @@ try{
   await openPayrollEditor();await noOverflow('account metadata edit modal mobile');await touchTargets('account metadata edit modal mobile','.account-management-modal.is-edit button,.account-management-modal.is-edit .account-management-field input');await screenshot('account-metadata-settings-mobile');await closeEditor();
   await viewport(320,700);await scrollTo('.account-management-settings');await noOverflow('account metadata settings narrow mobile');await touchTargets('account metadata settings narrow mobile','.account-management-settings button,.account-management-settings [role=combobox]');
 
+  console.log('Account metadata QA: 320px account editor keeps keyboard, invalid IBAN error and actions contained');
+  await openPayrollEditor();await noOverflow('account metadata edit modal narrow mobile');
+  const narrowBounds=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-edit'),r=modal?.getBoundingClientRect();return {x:r?.left??-1,right:r?.right??999,width:r?.width??0,focused:Boolean(modal?.contains(document.activeElement)),viewport:innerWidth}}");
+  assert(narrowBounds.x>=-1&&narrowBounds.right<=narrowBounds.viewport+1&&narrowBounds.width>=260&&narrowBounds.focused,'320px account form stays in viewport with initial focus inside: '+JSON.stringify(narrowBounds));
+  await press('Tab','Tab',9);
+  assert(await c.call("function(){return Boolean(document.querySelector('.account-management-modal.is-edit')?.contains(document.activeElement))}"),'320px account editor Tab retains focus within the modal');
+  const narrowBeforeWrites=await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}");
+  await editIban('INVALID-IBAN-000');
+  await clickText('.account-management-modal.is-edit button','Αποθήκευση');
+  await waitFor("function(){return (document.querySelector('.account-management-modal.is-edit [role=alert]')?.textContent||'').includes('Έλεγξε το IBAN')}","320px invalid IBAN validation alert");
+  const narrowInvalid=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-edit'),alert=modal?.querySelector('[role=alert]'),footer=modal?.querySelector('.account-management-modal-footer');alert?.scrollIntoView({block:'center'});const r=alert?.getBoundingClientRect(),m=modal?.getBoundingClientRect(),f=footer?.getBoundingClientRect();return {error:alert?.textContent||'',alertVisible:Boolean(r&&m&&f&&r.top>=m.top-1&&r.bottom<=f.top+1),footerVisible:Boolean(f&&f.top>=0&&f.bottom<=innerHeight+1),modalBounded:Boolean(m&&m.left>=-1&&m.right<=innerWidth+1),writeCount:Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}}");
+  assert(narrowInvalid.error.includes('Έλεγξε το IBAN')&&narrowInvalid.alertVisible&&narrowInvalid.footerVisible&&narrowInvalid.modalBounded&&narrowInvalid.writeCount===narrowBeforeWrites,'320px invalid form remains readable, no save receipt or overflow: '+JSON.stringify(narrowInvalid));
+  assert((await currentEditIban())==='INVALID-IBAN-000','320px invalid form preserves unsaved IBAN draft');
+  await screenshot('account-metadata-invalid-iban-mobile-320');
+  await press('Escape','Escape',27);
+  await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')}","Escape closes 320px invalid account editor without finance write");
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}"))===narrowBeforeWrites,'Escape discard does not commit invalid account draft');
+
+
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
   c.close();console.log('Account metadata rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

@@ -32,6 +32,16 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(app).not.toContain('qaSettingsDurableWrites');
   });
 
+  it('checks narrow 320px account editor focus, invalid IBAN error, and no false save receipt (#649 I16.05)',()=>{
+    expect(rendered).toContain('320px account editor keeps keyboard, invalid IBAN error and actions contained');
+    expect(rendered).toContain('account-metadata-invalid-iban-mobile-320');
+    expect(rendered).toContain('narrowBounds.focused');
+    expect(rendered).toContain("await press('Tab','Tab',9)");
+    expect(rendered).toContain('narrowInvalid.alertVisible&&narrowInvalid.footerVisible&&narrowInvalid.modalBounded');
+    expect(rendered).toContain('narrowInvalid.writeCount===narrowBeforeWrites');
+    expect(rendered).toContain('320px invalid form preserves unsaved IBAN draft');
+    expect(rendered).toContain("await press('Escape','Escape',27)");
+  });
   it('uses accessible account provider radios with Arrow/Home/End roving focus and no save mutation (#649 I16.05/I23.03)',()=>{
     expect(component).toContain('const providerTabStop=providers.find');
     expect(component).toContain("event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft'");
