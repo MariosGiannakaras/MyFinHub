@@ -147,6 +147,26 @@ try{
   assert(blockedDelete.role==='alert'&&blockedDelete.warning.includes('οικονομικές κινήσεις')&&blockedDelete.accountPresent&&blockedDelete.durableWrites===beforeDeleteWrites,'late-referenced account remains intact, warning announces blocked deletion, no second finance write: '+JSON.stringify(blockedDelete));
   await scrollTo('.account-management-message');await screenshot('account-delete-late-reference-blocked-desktop');
 
+  console.log('Account metadata QA: pending account save locks every editor/default/list control');
+  await viewport(375,812);
+  const pendingUrl=new URL(baseUrl);pendingUrl.searchParams.set('page','settings');pendingUrl.searchParams.set('account-save-pending','1');
+  await c.send('Page.navigate',{url:pendingUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'pending account save Settings fixture');
+  await clickText('.settings-tablist button','Λογαριασμοί');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'pending account settings');
+  await scrollTo('.account-management-settings');await openPayrollEditor();
+  await editIban('GB82 WEST 1234 5698 7654 32');
+  const pendingBefore=await currentEditIban();
+  await clickText('.account-management-modal.is-edit button','Αποθήκευση');
+  await waitFor("function(){return Boolean(globalThis.__myfinhubQaCompleteAccountReceipt&&document.querySelector('.account-management-modal.is-edit .save-button:disabled'))}",'pending durable account save');
+  const pendingLock=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-edit'),actions=document.querySelector('.account-management-list-head .account-management-create'),editor=[...(modal?.querySelectorAll('input,button')||[])],defaults=[...document.querySelectorAll('.account-management-default-grid .owned-select-shell input')],rows=[...document.querySelectorAll('.account-management-row-actions button')],iban=[...(modal?.querySelectorAll('.account-management-field input')||[])].find(input=>input.value.includes('GB82'));return {editorCount:editor.length,editorDisabled:editor.every(node=>node.disabled),defaults:defaults.length,defaultsDisabled:defaults.every(node=>node.disabled),rows:rows.length,rowsDisabled:rows.every(node=>node.disabled),addDisabled:actions?.disabled===true,iban:iban?.value||'',writeCount:Number(document.documentElement.dataset.qaSettingsDurableWrites||0),overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}}");
+  assert(pendingLock.editorCount>=7&&pendingLock.editorDisabled&&pendingLock.defaults===3&&pendingLock.defaultsDisabled&&pendingLock.rows>0&&pendingLock.rowsDisabled&&pendingLock.addDisabled,'pending account receipt locks all editor/default/list controls: '+JSON.stringify(pendingLock));
+  assert(pendingLock.iban===pendingBefore&&pendingLock.writeCount===0&&pendingLock.overflow<=1,'pending account save leaves actual draft and finance revision unchanged at 375px: '+JSON.stringify(pendingLock));
+  await screenshot('account-metadata-pending-locked-mobile-375');
+  const released=await c.call("function(){const complete=globalThis.__myfinhubQaCompleteAccountReceipt;if(typeof complete!=='function')return false;delete globalThis.__myfinhubQaCompleteAccountReceipt;complete();return true}");
+  assert(released,'one pending finance acknowledgment released');
+  await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&Number(document.documentElement.dataset.qaSettingsDurableWrites||0)===1}",'single pending account revision acknowledged');
+  assert((await c.call("function(){return (document.querySelector('.account-management-message')?.textContent||'').includes('Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')}")),'account success reported only after pending revision');
   console.log('Account metadata QA: mobile Dashboard keeps masked IBAN and copy target');
   await viewport(375,812);await navigate('dashboard');await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'mobile dashboard IBAN');
   await scrollTo('.primary-balance-grid');await noOverflow('account metadata dashboard mobile');await touchTargets('account metadata dashboard mobile','.primary-balance-grid .account-iban-copy',48);

@@ -8,6 +8,19 @@ const qa=readFileSync('src/qa.tsx','utf8');
 const rendered=readFileSync('scripts/account-metadata-qa.mjs','utf8');
 
 describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
+  it('locks all account editor and list mutations during unacknowledged durable finance receipt (#649 I16.02)',()=>{
+    const settingsDefaultRoles=['εξόδων','εσόδων','πληρωμής δόσεων'];
+    for(const role of settingsDefaultRoles)expect(component).toContain('aria-label="Προεπιλεγμένος λογαριασμός '+role+'" disabled={busy}');
+    for(const label of ['className="account-management-create" disabled={busy}','className="account-management-edit" disabled={busy}','className="danger-text" disabled={busy}','aria-label="Κατηγορία λογαριασμού" disabled={busy}','<AppTextInput disabled={busy}','<input type="checkbox" disabled={busy}'])
+      expect(component).toContain(label);
+    expect(qa).toContain("account-save-pending");
+    expect(qa).toContain('__myfinhubQaCompleteAccountReceipt');
+    expect(rendered).toContain('pending account save locks every editor/default/list control');
+    expect(rendered).toContain('account-metadata-pending-locked-mobile-375');
+    expect(rendered).toContain('pendingLock.editorCount>=7&&pendingLock.editorDisabled');
+    expect(rendered).toContain('pendingLock.iban===pendingBefore&&pendingLock.writeCount===0');
+    expect(rendered).toContain("pending account revision acknowledged");
+  });
   it('rejects same-tick duplicate account save/delete while preserving revision-first metadata ordering (#649 I19.04)',()=>{
     expect(component).toContain('const mutationInFlight=useRef(false)');
     expect(component).toContain('if(!editor||busy||mutationInFlight.current)return;');
