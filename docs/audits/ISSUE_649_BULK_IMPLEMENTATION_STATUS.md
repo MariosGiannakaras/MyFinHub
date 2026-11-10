@@ -1,5 +1,13 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — code batch: shared clipboard focus and diagnostic fallback (candidate)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Scoped **I20.06** code follow-up: the existing native-then-legacy `copyTextWithFallback` now restores the initiating keyboard focus after legacy copy success, rejection or exception, and always clears/removes the temporary sensitive-value field. Production SupportDiagnosticsPanel now uses this same reviewed copy owner instead of duplicating a native-only clipboard path. Existing PAN/CVV/IBAN copy consumers already share that helper; actual secret reveal/finance data handling is unchanged. Added focused Vitest success, fallback-false and exception cases and a diagnostic source regression guard. No change to clipboard success semantics (false copy still rejects), authentication, finance writes, Card Vault server encryption, RLS, database, Android or production.
+
+**Validation/CI:** code candidate not counted until source CI and appropriate keyboard/rendered evidence on the coherent head; earlier commit source CI was running when this independent batch was prepared, so no PASS is claimed. **Integration/merge:** PR #654 remains Draft and unmerged. **Production/release:** not started. Next: inspect the combined exact-head source CI and resolve genuine failures in a grouped correction batch before invoking optional rendered QA.
+
+---
+
 ## 2026-11-10 — code batch: device-revocation modal errors and writeoff confirmation freshness (candidate)
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Source implementation is staged for **I18.05 / I20.02**: a rejected single-device or revoke-others request now leaves the confirmation open and announces the real backend failure *inside* the shared alertdialog; retry and Cancel remain accessible, and new requests clear stale modal errors. The revoke-others text correctly describes all other devices, not one singular session. Existing owner+AAL2, RLS and revocation API semantics are unchanged. **I19.05 / I10.03:** changing the writeoff amount invalidates the previously checked destructive confirmation even if the amount is later restored; person/date already invalidated it. Focused source regression guards were extended in the existing device-access and lending-writeoff suites. No finance event builder, persistence, migrations, credentials, Android, database, or production changes.

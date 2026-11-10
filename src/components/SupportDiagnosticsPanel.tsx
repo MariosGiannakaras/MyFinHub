@@ -2,6 +2,7 @@ import { ClipboardCopy, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import type { FinanceData } from '../types';
 import { allAccounts, effectiveLegacyTransactions } from '../lib/domain';
+import { copyTextWithFallback } from '../lib/copyTextWithFallback';
 import { Button } from './Button';
 import { OperationFeedback } from './OperationFeedback';
 
@@ -45,7 +46,7 @@ export function SupportDiagnosticsPanel({data,filePath,lastSavedAt}:Props){
   const copy=async()=>{
     setMessage('');
     try{
-      await navigator.clipboard.writeText(JSON.stringify(snapshot,null,2));
+      await copyTextWithFallback(JSON.stringify(snapshot,null,2));
       setCopyError(false);
       setMessage('Τα ασφαλή διαγνωστικά αντιγράφηκαν.');
     }catch{
