@@ -1,5 +1,13 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — code batch: device-revocation modal errors and writeoff confirmation freshness (candidate)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Source implementation is staged for **I18.05 / I20.02**: a rejected single-device or revoke-others request now leaves the confirmation open and announces the real backend failure *inside* the shared alertdialog; retry and Cancel remain accessible, and new requests clear stale modal errors. The revoke-others text correctly describes all other devices, not one singular session. Existing owner+AAL2, RLS and revocation API semantics are unchanged. **I19.05 / I10.03:** changing the writeoff amount invalidates the previously checked destructive confirmation even if the amount is later restored; person/date already invalidated it. Focused source regression guards were extended in the existing device-access and lending-writeoff suites. No finance event builder, persistence, migrations, credentials, Android, database, or production changes.
+
+**Acceptance:** code candidate only, not counted until exact-head mandatory source CI and consolidated assistant-owned rendered/keyboard/rejected-receipt checks at the user-ordered QA phase. The earlier unescaped-test-title correction also needs verification on the new source head. PR #654 stays DRAFT, optional expensive QA markers OFF. **Integration/merge:** pending. **Production/release:** not started. Next: continue independent safe code items in the active #649 plan, then run a grouped preflight and QA sweep before Ready integration.
+
+---
+
 ## 2026-11-10 — source hygiene syntax correction within the bulk code batch
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** The initial coherent shared-focus/Settings batch at `364fdda6aef147c11b3ecb77c04ee73047a4967d` triggered mandatory (non-optional) draft [CI #42839809372](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42839809372). `validate` **FAILED at hygiene:unused** before tests because newly added test title contained an unescaped apostrophe (`launcher's`) in a single-quoted TypeScript string; this is a source test typo, not a confirmed product runtime failure. Corrected the test title to `original opener` without changing functionality, guard strictness, or QA thresholds. Verify entire exact head with mandatory source CI when the next code-phase checkpoint is pushed; do not enable expensive Draft five-suite QA until Phase 2. CodeQL status on the superseded run does not establish this head's acceptance. No I20.01 count yet; no merge/release.

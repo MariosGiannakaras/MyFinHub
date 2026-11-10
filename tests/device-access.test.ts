@@ -30,6 +30,21 @@ describe('connected device access',()=>{
     expect(ui).toContain('tone="destructive" busy={busy}');
   });
 
+  it('keeps failed revocation visible inside the open confirmation and scopes all-device wording (#649 I18.05/I20.02)',()=>{
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    const action=ui.slice(ui.indexOf('const confirm=async()=>'),ui.indexOf('const saveName=async()=>'));
+    expect(ui).toContain("const[confirmationError,setConfirmationError]=useState('')");
+    expect(ui).toContain("const requestRevoke=(target:Exclude<PendingAction,null>)=>{setConfirmationError('');setPending(target)}");
+    expect(ui).toContain('error={confirmationError}');
+    expect(ui).toContain("pending?.kind==='others'?'Θα ανακληθεί η πρόσβαση σε όλες τις άλλες συσκευές.");
+    expect(ui).toContain('Καθεμία θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.');
+    expect(action).toContain('setConfirmationError(failureMessage)');
+    expect(action).toContain("setConfirmationError('');setPending(null)");
+    expect(action.indexOf('setPending(null)')).toBeLessThan(action.indexOf('}catch(error)'));
+    expect(action.slice(action.indexOf('}catch(error)')).not.toContain('setPending(null)');
+    expect(ui).toContain("onCancel={()=>{if(!busy){setConfirmationError('');setPending(null)}}}");
+  });
+
   it('accepts only exact device revoke payloads with canonical session ids',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});

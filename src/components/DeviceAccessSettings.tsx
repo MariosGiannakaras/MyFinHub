@@ -46,6 +46,7 @@ export function DeviceAccessSettings(){
   const[message,setMessage]=useState('');
   const[messageTone,setMessageTone]=useState<'status'|'error'>('status');
   const[pending,setPending]=useState<PendingAction>(null);
+  const[confirmationError,setConfirmationError]=useState('');
   const[renaming,setRenaming]=useState<string|null>(null);
   const[nameDraft,setNameDraft]=useState('');
 
@@ -58,17 +59,25 @@ export function DeviceAccessSettings(){
 
   useEffect(()=>{void load()},[load]);
 
+  const requestRevoke=(target:Exclude<PendingAction,null>)=>{setConfirmationError('');setPending(target)};
+
   const confirm=async()=>{
     if(!pending||busy)return;
-    setBusy(true);setMessageTone('status');setMessage('');
+    setBusy(true);setConfirmationError('');setMessageTone('status');setMessage('');
     try{
       const result=pending.kind==='others'
         ?await revokeOtherConnectedDevices()
         :await revokeConnectedDevice(pending.device.sessionId);
       setDevices(result.devices);
       setMessageTone('status');setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
-      setPending(null);
-    }catch(error){setMessageTone('error');setMessage(error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'?'Η συσκευή δεν είναι πλέον ενεργή.':'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.')}
+      setConfirmationError('');setPending(null);
+    }catch(error){setMessageTone('error');
+      const failureMessage=error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'
+        ?'Η συσκευή δεν είναι πλέον ενεργή.'
+        :'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.';
+      setMessage(failureMessage);
+      setConfirmationError(failureMessage);
+    }
     finally{setBusy(false)}
   };
 
@@ -116,7 +125,7 @@ export function DeviceAccessSettings(){
           </form>:null}
         </div>
         <div className="device-access-row-actions">
-          {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
+          {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>requestRevoke({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
           {renaming!==device.sessionId?<Button type="button" variant="secondary" disabled={busy} onClick={()=>{setRenaming(device.sessionId);setNameDraft(device.nickname||'')}}>Μετονομασία</Button>:null}
         </div>
       </div>)}
@@ -125,9 +134,9 @@ export function DeviceAccessSettings(){
     {devices.length&&message?<div className="device-access-message" role={messageTone==='error'?'alert':'status'} aria-live={messageTone==='error'?'assertive':'polite'}>{message}</div>:null}
     <div className="device-access-footer">
       <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης. Μετά την αφαίρεση, η συνεδρία απορρίπτεται τόσο από το API όσο και από τα προστατευμένα δεδομένα.</span>
-      {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
+      {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>requestRevoke({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
     </div>
 
-    <ConfirmDialog open={Boolean(pending)} title={pending?.kind==='others'?'Αφαίρεση πρόσβασης από όλες τις άλλες συσκευές;':`Αφαίρεση πρόσβασης από ${pending?.kind==='single'?pending.device.label:'τη συσκευή'};`} description="Η συγκεκριμένη πρόσβαση στο MyFinHub θα ανακληθεί. Η συσκευή θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA για να ξαναμπεί." confirmLabel="Αφαίρεση πρόσβασης" tone="destructive" busy={busy} motionMode="full" onConfirm={()=>void confirm()} onCancel={()=>{if(!busy)setPending(null)}}/>
+    <ConfirmDialog open={Boolean(pending)} title={pending?.kind==='others'?'Αφαίρεση πρόσβασης από όλες τις άλλες συσκευές;':`Αφαίρεση πρόσβασης από ${pending?.kind==='single'?pending.device.label:'τη συσκευή'};`} description={pending?.kind==='others'?'Θα ανακληθεί η πρόσβαση σε όλες τις άλλες συσκευές. Καθεμία θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.':'Η πρόσβαση της συγκεκριμένης συσκευής θα ανακληθεί. Θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.'} error={confirmationError} confirmLabel="Αφαίρεση πρόσβασης" tone="destructive" busy={busy} motionMode="full" onConfirm={()=>void confirm()} onCancel={()=>{if(!busy){setConfirmationError('');setPending(null)}}}/>
   </section>;
 }
