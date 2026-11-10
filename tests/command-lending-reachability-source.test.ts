@@ -24,6 +24,9 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain("setPeopleQuery('')");
    expect(page).toContain('setHistoryFilter(\'all\')');
    expect(page).toContain("'.lending-people-panel .lending-person-row[aria-pressed=\"true\"]'");
+   expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
+   expect(page).toContain('cancelAnimationFrame(secondFrame)');
+   expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson))');
    expect(page).toContain('selected?.focus({preventScroll:true})');
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{

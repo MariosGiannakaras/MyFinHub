@@ -52,12 +52,19 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   },[commandPerson,commandPersonKey,rows]);
   useEffect(()=>{
     if(!commandPerson||selectedPerson!==commandPerson)return;
+    // Route transitions and closing Command Palette can restore the opener
+    // after the first paint. Focus the exact selected person after route layout
+    // settles, as for Account Management, without changing its finance state.
+    let secondFrame=0;
     const frame=requestAnimationFrame(()=>{
-      const selected=document.querySelector<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]');
-      selected?.scrollIntoView({block:'nearest',behavior:'auto'});
-      selected?.focus({preventScroll:true});
+      secondFrame=requestAnimationFrame(()=>{
+        const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+          .find(row=>row.textContent?.includes(commandPerson));
+        selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+        selected?.focus({preventScroll:true});
+      });
     });
-    return()=>cancelAnimationFrame(frame);
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
   },[commandPerson,commandPersonKey,selectedPerson]);
 
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);
