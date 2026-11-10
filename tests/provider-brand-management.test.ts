@@ -71,7 +71,7 @@ describe('provider branding management',()=>{
         expect(owner).toContain(primitive);
       }
       expect(owner).toContain('useModalFocus');
-      expect(owner).not.toMatch(/<select(?:\\s|>)/);
+      expect(owner).not.toMatch(/<select(?:\s|>)/);
     }
     // The provider artwork grid and the account bank-radio card have unique
     // interaction semantics; neither may fork the generic select/input owner.
@@ -301,7 +301,7 @@ describe('provider branding management',()=>{
     const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input);const method=String(init?.method||'GET');calls.push({url,method});
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===2)return new Response(JSON.stringify({message:'temporary registration failure'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===4)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected provider asset request');
@@ -311,7 +311,7 @@ describe('provider branding management',()=>{
     await expect(uploadFinancialProviderAsset({
       providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:true,
       content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
-    },'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
+    },'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
 
     expect(calls).toHaveLength(4);
     expect(calls[0]).toMatchObject({method:'POST'});
@@ -347,6 +347,52 @@ describe('provider branding management',()=>{
     expect(calls.some(call=>call.method==='DELETE')).toBe(false);
   });
 
+  it('never deletes after an ambiguous 503 despite an initially empty registry read (late commit race)',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'timeout or gateway error before response'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('ambiguous transaction must not trigger Storage DELETE');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset reconciliation]',expect.objectContaining({status:'ambiguous-register-response'}));
+    }finally{log.mockRestore()}
+  });
+
+  it('never deletes after a malformed successful registration reply with an empty read-back',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push(String(init?.method||'GET'));
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('invalid registration reply must not authorize DELETE');
+    }));
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls).toEqual(['POST','POST','GET']);
+    }finally{log.mockRestore()}
+  });
+
   it('does not delete a possibly committed provider asset when registry read-back is unavailable',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
@@ -372,7 +418,7 @@ describe('provider branding management',()=>{
     const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===2)return new Response(JSON.stringify({message:'registration rejected'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===4)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
       if(calls.length===5)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
@@ -381,7 +427,7 @@ describe('provider branding management',()=>{
     vi.stubGlobal('fetch',fetchMock);
     const log=vi.spyOn(console,'error').mockImplementation(()=>{});
     try{
-      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
+      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
       expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
       expect(calls[3].url).toBe(calls[0].url);
       expect(calls[4].url).toBe(calls[0].url);
@@ -396,7 +442,7 @@ describe('provider branding management',()=>{
     const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===2)return new Response(JSON.stringify({message:'registration failed'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length<=5)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
       throw new Error('unexpected unbounded or unrelated Storage cleanup');

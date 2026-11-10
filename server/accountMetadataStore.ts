@@ -423,8 +423,20 @@ export async function uploadFinancialProviderAsset(input:{
       throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
     }
 
-    // Only a confirmed-absent registry row permits cleanup of this new,
-    // server-generated Storage object. Never delete an older provider image.
+    // A 5xx, timeout or invalid response may precede a still-running COMMIT:
+    // one empty read-back is not proof that no row will later appear. Only a
+    // definite PostgreSQL validation/key rejection permits compensating DELETE.
+    const definiteRejection=error instanceof ApiError&&(
+      error.status===400&&error.code==='INVALID_PROVIDER_DATA'||
+      error.status===409&&error.code==='PROVIDER_ASSET_CONFLICT'
+    );
+    if(!definiteRejection){
+      console.error('[RheomIQ provider asset reconciliation]',{assetKey,status:'ambiguous-register-response'});
+      throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+    }
+
+    // Only a confirmed rejected transaction and a verified-absent registry
+    // permit deleting this new, server-generated object. Never purge old keys.
     let cleaned=false;
     for(let attempt=1;attempt<=2;attempt++){
       try{
