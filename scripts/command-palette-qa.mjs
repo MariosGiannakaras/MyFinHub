@@ -45,6 +45,29 @@ try{
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command navigates with focus on editor summary');
  await screenshot('command-budget-editor-from-dashboard');
 
+ console.log('Command Palette QA: exact existing rule editor focus, same-route selection, and Reports rules link');
+ const rulesUrl=new URL(baseUrl);rulesUrl.searchParams.set('page','reports');rulesUrl.searchParams.set('state','rules-priority-boundary');
+ await c.send('Page.navigate',{url:rulesUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'rule command source route');
+ await ctrlK();await setSearch('QA Priority First');await activateExactTitle('Επεξεργασία κανόνα · QA Priority First');await press('Enter');
+ await waitFor("function(){return document.querySelector('#settings-tab-rules')?.getAttribute('aria-selected')==='true'&&Boolean(document.querySelector('.rules-editor'))}",'rule editor opens in owning Settings tab');
+ await waitFor("function(){const modal=document.querySelector('.rules-editor');return Boolean(modal&&[...modal.querySelectorAll('input')].some(input=>input.value==='QA Priority First')&&modal.contains(document.activeElement))}",'exact rule draft and keyboard focus in Settings editor');
+ assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&Number(document.documentElement.dataset.qaSettingsDurableWrites||0)===0}"),'rule navigation never creates a finance write');
+ await screenshot('command-rule-editor-from-reports');
+ await escape();await waitFor("function(){return !document.querySelector('.rules-editor')}",'rule editor Escape close');
+ await ctrlK();await setSearch('QA Priority Max');await activateExactTitle('Επεξεργασία κανόνα · QA Priority Max');await press('Enter');
+ await waitFor("function(){const modal=document.querySelector('.rules-editor');return Boolean(modal&&[...modal.querySelectorAll('input')].some(input=>input.value==='QA Priority Max')&&modal.contains(document.activeElement))}",'same-route command focuses different exact rule');
+ await screenshot('command-rule-editor-same-route');
+ await escape();await waitFor("function(){return !document.querySelector('.rules-editor')}",'second rule editor Escape close');
+ await viewport(375,812);
+ await c.send('Page.navigate',{url:rulesUrl.href});
+ await waitFor("function(){return Boolean(document.querySelector('.report-rules-link'))}",'Reports rules owning link');
+ assert(await c.call("function(){const link=document.querySelector('.report-rules-link');link?.click();return Boolean(link)}"),'Reports links to existing Settings rule editor');
+ await waitFor("function(){return document.querySelector('#settings-tab-rules')?.getAttribute('aria-selected')==='true'&&Boolean(document.querySelector('.rules-new-button'))}",'Reports link opens Settings Rules tab');
+ await noOverflow('Reports to Rules 375px mobile');
+ assert(await c.call("function(){return !document.querySelector('.rules-editor')&&Number(document.documentElement.dataset.qaSettingsDurableWrites||0)===0}"),'Reports link does not create a new editor or finance write');
+ await screenshot('reports-to-settings-rules-mobile-375');
+
  console.log('Command Palette QA: exact named recurring item focus');
  const recurringUrl=new URL(baseUrl);recurringUrl.searchParams.set('page','reports');recurringUrl.searchParams.set('state','recurring-rich');
  await c.send('Page.navigate',{url:recurringUrl.href});

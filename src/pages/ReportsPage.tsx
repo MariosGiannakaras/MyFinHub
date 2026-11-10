@@ -31,7 +31,7 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number;destination?:'credit';cardId?:string};
 
-export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onOpenCreditCard}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;onOpenCreditCard?:(cardId?:string)=>void}){
+export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onOpenRules,onOpenCreditCard}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;onOpenRules?:()=>void;onOpenCreditCard?:(cardId?:string)=>void}){
  useEffect(()=>{
    const url=new URL(location.href);
    if(url.searchParams.get('reportSection')!=='budgets')return;
@@ -214,6 +214,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
     </div>
    </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό ή ανά κατηγορία όριο μόνο αν θέλεις να παρακολουθείς budget για αυτή την περίοδο.</span></div>}
    <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/></details>
+   {onOpenRules?<Button type="button" variant="secondary" className="report-rules-link" onClick={onOpenRules}>Διαχείριση κανόνων αυτόματης ταξινόμησης στις Ρυθμίσεις</Button>:null}
   </section>
 
 

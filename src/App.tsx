@@ -93,6 +93,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
   const [commandAccountId,setCommandAccountId]=useState<string|null>(null);
   const [commandAccountKey,setCommandAccountKey]=useState(0);
+  const [commandRuleId,setCommandRuleId]=useState<string|null>(null);
+  const [commandRuleKey,setCommandRuleKey]=useState(0);
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
   const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
@@ -324,6 +326,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
     if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(key=>key+1);navigateSettingsTab('accounts');return}
+    if(action.type==='rule_focus'){setCommandRuleId(action.ruleId);setCommandRuleKey(key=>key+1);navigateSettingsTab('rules');return}
     if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);navigate('cards');return}
     if(action.type==='credit_card_focus'){
       setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit');return;
@@ -386,8 +389,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(value=>value+1)}navigate('credit')}}/>
-    : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
+    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenRules={()=>navigateSettingsTab('rules')} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(value=>value+1)}navigate('credit')}}/>
+    : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} onNavigateHistory={finance.goToHistoryPoint} canUndo={finance.canUndo} canRedo={finance.canRedo} undoDepth={finance.undoDepth} redoDepth={finance.redoDepth} historyAvailable={finance.historyAvailable} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>

@@ -103,6 +103,8 @@ export function SettingsPage({
   currentEmail,
   accountFocusId,
   accountFocusKey,
+  ruleFocusId,
+  ruleFocusKey,
   activeTab:controlledTab,
   onActiveTabChange,
   onImport,
@@ -118,6 +120,8 @@ export function SettingsPage({
   currentEmail?: string | null;
   accountFocusId?:string|null;
   accountFocusKey?:number;
+  ruleFocusId?:string|null;
+  ruleFocusKey?:number;
   activeTab?:SettingsTab;
   onActiveTabChange?:(tab:SettingsTab)=>void;
   onImport: (d: FinanceData) => Promise<void|{status:'complete'|'committed-history-unverified'}>;
@@ -373,7 +377,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
+            <TransactionRulesWorkspace data={data} focusRuleId={ruleFocusId} focusRuleKey={ruleFocusKey} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
             <CounterpartyDirectorySettings data={data} onSave={record=>onFinanceDurably(current=>withCounterparty(current,record))}/>
           </div>
         ) : null}
