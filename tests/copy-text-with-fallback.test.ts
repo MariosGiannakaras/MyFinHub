@@ -33,7 +33,8 @@ describe('owner-initiated clipboard copy and keyboard focus (#649 I20.06)',()=>{
     vi.stubGlobal('navigator',{clipboard:{writeText}});
     vi.stubGlobal('document',{createElement});
     await expect(copyTextWithFallback('sensitive value')).resolves.toBeUndefined();
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('sensitive value');
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith('sensitive value');
     expect(createElement).not.toHaveBeenCalled();
   });
 
@@ -42,10 +43,12 @@ describe('owner-initiated clipboard copy and keyboard focus (#649 I20.06)',()=>{
     await expect(copyTextWithFallback('GR00 1234')).resolves.toBeUndefined();
     expect(appendChild).toHaveBeenCalledOnce();
     expect(field.select).toHaveBeenCalledOnce();
-    expect(execCommand).toHaveBeenCalledExactlyOnceWith('copy');
+    expect(execCommand).toHaveBeenCalledTimes(1);
+    expect(execCommand).toHaveBeenCalledWith('copy');
     expect(field.value).toBe('');
     expect(field.remove).toHaveBeenCalledOnce();
-    expect(previousFocus.focus).toHaveBeenCalledExactlyOnceWith({preventScroll:true});
+    expect(previousFocus.focus).toHaveBeenCalledTimes(1);
+    expect(previousFocus.focus).toHaveBeenCalledWith({preventScroll:true});
   });
 
   it('does not report a false successful copy when the fallback returns false',async()=>{
@@ -53,7 +56,8 @@ describe('owner-initiated clipboard copy and keyboard focus (#649 I20.06)',()=>{
     await expect(copyTextWithFallback('secret')).rejects.toThrow('COPY_FAILED');
     expect(field.value).toBe('');
     expect(field.remove).toHaveBeenCalledOnce();
-    expect(previousFocus.focus).toHaveBeenCalledExactlyOnceWith({preventScroll:true});
+    expect(previousFocus.focus).toHaveBeenCalledTimes(1);
+    expect(previousFocus.focus).toHaveBeenCalledWith({preventScroll:true});
   });
 
   it('clears the temporary field and restores focus when the fallback throws',async()=>{
@@ -61,6 +65,7 @@ describe('owner-initiated clipboard copy and keyboard focus (#649 I20.06)',()=>{
     await expect(copyTextWithFallback('secret')).rejects.toThrow('Clipboard unavailable');
     expect(field.value).toBe('');
     expect(field.remove).toHaveBeenCalledOnce();
-    expect(previousFocus.focus).toHaveBeenCalledExactlyOnceWith({preventScroll:true});
+    expect(previousFocus.focus).toHaveBeenCalledTimes(1);
+    expect(previousFocus.focus).toHaveBeenCalledWith({preventScroll:true});
   });
 });

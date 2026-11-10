@@ -1,5 +1,11 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — source gate diagnosis and test-only syntax correction
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Mandatory source CI on `6a2f509d62e74707ebb79f692c8f1b4ae81d965d` ([run #42902398120](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42902398120)) and `ce8400047789ee4626f234966e47c420ee34cb0b` ([run #42903022543](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42903022543)) both reached `hygiene:unused` and failed with **TS1005: ')' expected at `tests/device-access.test.ts:44`**, a parenthesis typo in a newly added source regression assertion. Repaired the missing parenthesis without weakening the assertion and standardized the new clipboard Vitest assertions to supported `toHaveBeenCalledTimes` / `toHaveBeenCalledWith` matchers. The prior run's CodeQL PASS does not validate the new head; do not claim a subsequent source or rendered gate passed until its exact result is inspected. No runtime/finance code changes in this correction. Draft PR #654, optional browser marker OFF; no merge, release or Android changes.
+
+---
+
 ## 2026-11-10 — code batch: shared clipboard focus and diagnostic fallback (candidate)
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Scoped **I20.06** code follow-up: the existing native-then-legacy `copyTextWithFallback` now restores the initiating keyboard focus after legacy copy success, rejection or exception, and always clears/removes the temporary sensitive-value field. Production SupportDiagnosticsPanel now uses this same reviewed copy owner instead of duplicating a native-only clipboard path. Existing PAN/CVV/IBAN copy consumers already share that helper; actual secret reveal/finance data handling is unchanged. Added focused Vitest success, fallback-false and exception cases and a diagnostic source regression guard. No change to clipboard success semantics (false copy still rejects), authentication, finance writes, Card Vault server encryption, RLS, database, Android or production.

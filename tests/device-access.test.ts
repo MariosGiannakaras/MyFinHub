@@ -41,7 +41,7 @@ describe('connected device access',()=>{
     expect(action).toContain('setConfirmationError(failureMessage)');
     expect(action).toContain("setConfirmationError('');setPending(null)");
     expect(action.indexOf('setPending(null)')).toBeLessThan(action.indexOf('}catch(error)'));
-    expect(action.slice(action.indexOf('}catch(error)')).not.toContain('setPending(null)');
+    expect(action.slice(action.indexOf('}catch(error)'))).not.toContain('setPending(null)');
     expect(ui).toContain("onCancel={()=>{if(!busy){setConfirmationError('');setPending(null)}}}");
   });
 
