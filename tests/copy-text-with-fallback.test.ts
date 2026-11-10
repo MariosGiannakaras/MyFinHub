@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { copyTextWithFallback } from '../src/lib/copyTextWithFallback';
+import { copyTextWithFallback } from '../src/lib/copyTextWithFallback.js';
 
 afterEach(()=>vi.unstubAllGlobals());
 

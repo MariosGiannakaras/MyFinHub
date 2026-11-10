@@ -1,5 +1,11 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — exact-head TypeScript ESM test import correction
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Mandatory [CI #42903498362](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42903498362) at `6cc3a714374259d6fc1b2edf4d903110501349a5` progressed past the prior unmatched-parenthesis error but `validate/hygiene:unused` **FAILED** on **TS2835**: the new `tests/copy-text-with-fallback.test.ts` imported the helper without the explicit `.js` ESM specifier required by this repository's `tsconfig.node.json` NodeNext resolution. Corrected that one import to `../src/lib/copyTextWithFallback.js` (matching existing Node tests). This is test/tooling correction only; no change to actual clipboard implementation or test expectations. Await exact current-head source CI/CodeQL before asserting PASS. Draft PR #654; no merge, production, Android or optional expensive QA.
+
+---
+
 ## 2026-11-10 — source gate diagnosis and test-only syntax correction
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Mandatory source CI on `6a2f509d62e74707ebb79f692c8f1b4ae81d965d` ([run #42902398120](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42902398120)) and `ce8400047789ee4626f234966e47c420ee34cb0b` ([run #42903022543](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42903022543)) both reached `hygiene:unused` and failed with **TS1005: ')' expected at `tests/device-access.test.ts:44`**, a parenthesis typo in a newly added source regression assertion. Repaired the missing parenthesis without weakening the assertion and standardized the new clipboard Vitest assertions to supported `toHaveBeenCalledTimes` / `toHaveBeenCalledWith` matchers. The prior run's CodeQL PASS does not validate the new head; do not claim a subsequent source or rendered gate passed until its exact result is inspected. No runtime/finance code changes in this correction. Draft PR #654, optional browser marker OFF; no merge, release or Android changes.
