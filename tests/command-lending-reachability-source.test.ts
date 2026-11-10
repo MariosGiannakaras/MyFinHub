@@ -26,7 +26,8 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain("'.lending-people-panel .lending-person-row[aria-pressed=\"true\"]'");
    expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
    expect(page).toContain('cancelAnimationFrame(secondFrame)');
-   expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson))');
+   expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson)&&row.getClientRects().length>0)');
+   expect(page).toContain("row.querySelector('h3')?.textContent?.trim()===commandPerson&&row.getClientRects().length>0");
    expect(page).toContain('const selected=desktop??mobile;');
    expect(page).toContain('.receivable-person-grid > article[tabindex="-1"]');
    expect(page).toContain('tabIndex={-1} key={row.person}');
