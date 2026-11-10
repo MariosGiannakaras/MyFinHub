@@ -1,5 +1,11 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — I17.05 source guard adapts to exact non-null selected target (latest)
+
+**Progress: Implementations 5/23 completed · Sub-implementations 50/132 completed (unchanged).** [Source CI #42818492737](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42818492737) validate **FAIL** at one stale source-text assertion: `tests/command-lending-reachability-source.test.ts` expected the obsolete literal `selected?.focus({preventScroll:true})` while the new visible/selected/non-null guarded code now correctly uses `selected.focus({preventScroll:true})`. No runtime assertion was weakened; the source guard now pins the exact non-null call and continues to require routeOpacity, modal absence, observer cleanup and the strict rendered focus checks. All other 1698 unit/source tests passed. This change is source-test/checkpoint only; rerun exact-head validate/CodeQL, then one opt-in `command-palette icon-packs` focused QA if source succeeds. Keep `<!-- run-649-rules-icon-qa -->` OFF until source CI passes. No product CSS, finance, RLS, device, data or migration changes.
+
+---
+
 ## 2026-11-10 — I17.05 exact page-entry focus gating candidate after second browser regression (latest)
 
 **Progress: Implementations 5/23 completed · Sub-implementations 50/132 completed (unchanged).** [Exact source CI #42816655699](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42816655699) **SUCCESS** at `3e186e31f33577e7db21f47cae5c72198725670e`, but [combined Chromium #42817253108](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42817253108) **PARTIAL FAILURE**: `icon-packs` PASS, `taxonomy-management` PASS, `command-palette` FAIL again at exact Lending keyboard focus after the named rule editor and Reports link scenarios had passed. The actual selected Lending row was `aria-pressed=true` and search modal gone, but `document.activeElement===body`. A dialog-unmount observer alone is not sufficient: AppShell also uses `AnimatePresence mode="wait"` with a new route entering at opacity 0→1. A focus attempt before both animations finish can be lost.

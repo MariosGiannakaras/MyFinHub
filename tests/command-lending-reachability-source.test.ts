@@ -33,7 +33,7 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
    expect(page).toContain('cancelAnimationFrame(secondFrame)');
    expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson))');
-   expect(page).toContain('selected?.focus({preventScroll:true})');
+   expect(page).toContain('selected.focus({preventScroll:true})');
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{
    expect(browser).toContain('command-exact-lending-person');
