@@ -82,9 +82,9 @@ describe('category management',()=>{
     expect(workspaceSource).toContain("type:'add-subcategory'");
     // Progressive disclosure groups the existing editor without removing
     // native keyboard access or weakening any taxonomy mutation contract.
-    expect(workspaceSource).toContain('<details className="taxonomy-subcategory-section taxonomy-subcategory-disclosure">');
+    expect(workspaceSource).toContain('<details className="taxonomy-icon-disclosure taxonomy-subcategory-disclosure">');
     expect(workspaceSource).toContain('Υποκατηγορίες · {category.subcategories.length}');
-    expect(workspaceSource).toContain('className="taxonomy-subcategory-content"');
+    expect(workspaceSource).toContain('className="taxonomy-subcategory-section taxonomy-subcategory-content"');
     expect(taxonomyQa).toContain('taxonomy-subcategory-disclosure-expanded-mobile-375');
 
     expect(workspaceSource).toContain("type:'rename-category'");
