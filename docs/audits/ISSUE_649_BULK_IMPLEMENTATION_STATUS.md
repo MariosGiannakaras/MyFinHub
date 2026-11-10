@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — I16.04 ambiguous provider asset registration safety (candidate, validation pending)
+
+**Progress: Implementations 5/23 completed · Sub-implementations 44/132 completed (unchanged).** Existing provider logo upload uses owner+AAL2/RLS-bound Storage POST then a separate invoker registration RPC. Prior failure handling unconditionally deleted the just-uploaded Storage object on any RPC error, even if an upstream error occurred *after commit*. This can destroy a legitimately registered file. Conversely if the registration definitively fails and Storage DELETE also fails, an orphan may remain. This is a confirmed two-store receipt/reconciliation failure class.
+
+**Candidate source/guard batch:** in `server/accountMetadataStore.ts`, use exact random asset-key owner-scoped PostgreSQL registry read-back after ambiguous/failed registration response. If the verified existing row matches provider, role, variant, bucket and precise path, return that acknowledged asset without DELETE; if the registry is positively empty, attempt at most two Storage DELETEs for **only this newly generated upload** and propagate the original registration error once cleanup succeeds. If registry reconciliation is unavailable/malformed/mismatched, fail closed with `PROVIDER_ASSET_REGISTRATION_UNVERIFIED` and do **not** delete a possibly committed object. If confirmed-absent cleanup cannot be acknowledged, return explicit `PROVIDER_ASSET_CLEANUP_PENDING` and bounded server diagnostics. No blanket provider-asset purge or historical provider mutation. `tests/provider-brand-management.test.ts` now covers confirmed-absent cleanup, committed-after-503 reconciliation, unreadable registry (zero DELETE), transient cleanup failure with bounded retry. **Source validation/CodeQL REQUIRED on exact new head; do not count I16.04 complete** until outcomes are observed, and remain explicit that persistent orphan recovery/asset-binding retry/partial-success and hosted storage are separate acceptance needs.
+
+**Execution boundary:** PR #654 remains Draft; no UI/CSS, no RLS/migration or finance edits, no Android, production DB/Storage action, merge, release, or expensive full Ready matrix. Use narrow source CI and existing provider focused browser only if user-visible behavior changes or its contracts are affected. After passing CI, reconcile the current checkpoint and remaining I16.04 orphan lifecycle plan.
+
+---
+
 ## 2026-11-10 — accepted I16.01 / I16.05 keyboard and narrow-editor evidence (latest)
 
 **Progress: Implementations 5/23 completed · Sub-implementations 44/132 completed.** +2 fully accepted subitems since the last 42/132 checkpoint: **I16.01 verified-existing** and **I16.05 completed**. I16 whole area is **PARTIAL**: I16.04 remains incomplete for end-to-end asset rollback/orphan handling and I16.06 remains a shared ownership/consistency audit requiring specific proof. Do not count either merely from a passing related provider page. I16.02/03 are accepted in prior checkpoints, without altering security contracts.

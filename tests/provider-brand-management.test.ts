@@ -283,7 +283,8 @@ describe('provider branding management',()=>{
       const url=String(input);const method=String(init?.method||'GET');calls.push({url,method});
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response(JSON.stringify({message:'temporary registration failure'}),{status:503,headers:{'content-type':'application/json'}});
-      if(calls.length===3)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===4)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected provider asset request');
     });
     vi.stubGlobal('fetch',fetchMock);
@@ -293,13 +294,79 @@ describe('provider branding management',()=>{
       content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
     },'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
 
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(4);
     expect(calls[0]).toMatchObject({method:'POST'});
     expect(calls[0].url).toContain('/storage/v1/object/financial-provider-assets/providers/demo-bank/');
     expect(calls[1]).toMatchObject({method:'POST'});
     expect(calls[1].url).toContain('/rest/v1/rpc/rheomiq_register_financial_provider_asset');
-    expect(calls[2]).toMatchObject({method:'DELETE'});
-    expect(calls[2].url).toBe(calls[0].url);
+    expect(calls[2]).toMatchObject({method:'GET'});
+    expect(calls[2].url).toContain('/rheomiq_financial_provider_assets?select=');
+    expect(calls[3]).toMatchObject({method:'DELETE'});
+    expect(calls[3].url).toBe(calls[0].url);
+  });
+
+
+  it('reconciles a committed registration after a 503 response without deleting its Storage object',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'upstream response lost after commit'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3){
+        const assetKey=decodeURIComponent(url.match(/asset_key=eq\.([^&]+)/)?.[1]||'');
+        const storagePath=new URL(calls[0].url).pathname.split('/financial-provider-assets/')[1];
+        return new Response(JSON.stringify([{asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',variant:'light',file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',storage_path:storagePath,size_bytes:10,updated_at:'2026-11-10T00:00:00Z',active:true}]),{status:200,headers:{'content-type':'application/json'}});
+      }
+      throw new Error('unexpected destructive provider asset request');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const asset=await uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token');
+    expect(asset.assetKey).toContain('demo-bank-asset-');
+    expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+    expect(calls.some(call=>call.method==='DELETE')).toBe(false);
+  });
+
+  it('does not delete a possibly committed provider asset when registry read-back is unavailable',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:string[]=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push(String(init?.method||'GET'));
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      return new Response(JSON.stringify({message:'metadata temporarily unavailable'}),{status:503,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls).toEqual(['POST','POST','GET']);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset reconciliation]',expect.objectContaining({status:'unverified'}));
+    }finally{log.mockRestore()}
+  });
+
+  it('retries bounded cleanup of a confirmed unregistered provider object without touching provider bindings',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'registration rejected'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===4)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===5)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('unexpected third cleanup attempt');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
+      expect(calls[3].url).toBe(calls[0].url);
+      expect(calls[4].url).toBe(calls[0].url);
+    }finally{log.mockRestore()}
   });
 
 });
