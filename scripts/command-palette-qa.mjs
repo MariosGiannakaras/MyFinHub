@@ -110,6 +110,22 @@ try{
  await waitFor("function(){return document.activeElement===document.querySelector('.lending-person-row[aria-pressed=true]')}",'same-route Lending keyboard focus');
  await screenshot('command-exact-lending-person-same-route');
 
+ // Run a separate real mobile route to assert focus goes to the visible
+ // person card, never the desktop-only hidden Lending sidebar.
+ await viewport(375,812);
+ await c.send('Page.navigate',{url:lendingUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'mobile Lending source');
+ await ctrlK();await setSearch('Άννα Παπαδοπούλου');await activateExactTitle('Άννα Παπαδοπούλου');await press('Enter');
+ await waitFor("function(){const card=[...document.querySelectorAll('.receivable-person-grid>article')].find(node=>node.querySelector('h3')?.textContent?.trim()==='Άννα Παπαδοπούλου');return Boolean(card&&card.getClientRects().length>0&&document.activeElement===card&&!document.querySelector('.command-palette'))}",'mobile Lending visible exact-person focus');
+ await noOverflow('exact Lending mobile command');
+ assert(await c.call("function(){return document.activeElement?.matches('.receivable-person-grid>article[tabindex=\"-1\"]')&&!document.querySelector('.contextual-quick-modal')&&Number(document.documentElement.dataset.qaSettingsDurableWrites||0)===0}"),'mobile exact-person navigation does not write finance or open payment');
+ await screenshot('command-exact-lending-person-mobile-375');
+ await ctrlK();await setSearch('Γιώργος Νικολάου');await activateExactTitle('Γιώργος Νικολάου');await press('Enter');
+ await waitFor("function(){const card=[...document.querySelectorAll('.receivable-person-grid>article')].find(node=>node.querySelector('h3')?.textContent?.trim()==='Γιώργος Νικολάου');return Boolean(card&&card.getClientRects().length>0&&document.activeElement===card&&!document.querySelector('.command-palette'))}",'same-route second mobile Lending person focus');
+ await screenshot('command-exact-lending-person-mobile-same-route-375');
+ await viewport(1440,1000);
+
+
  console.log('Command Palette QA: precise debit/prepaid card selection without vault reveal');
  const debitUrl=new URL(baseUrl);debitUrl.searchParams.set('page','reports');debitUrl.searchParams.set('state','cards-rich');
  await c.send('Page.navigate',{url:debitUrl.href});

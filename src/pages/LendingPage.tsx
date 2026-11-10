@@ -58,8 +58,14 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
     let secondFrame=0;
     const frame=requestAnimationFrame(()=>{
       secondFrame=requestAnimationFrame(()=>{
-        const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
-          .find(row=>row.textContent?.includes(commandPerson));
+        // Command results target the visible route variant. The desktop
+        // person list is display:none on phones; focus the matching mobile
+        // article instead of a hidden desktop button.
+        const desktop=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+          .find(row=>row.textContent?.includes(commandPerson)&&row.getClientRects().length>0);
+        const mobile=[...document.querySelectorAll<HTMLElement>('.receivable-person-grid > article[tabindex="-1"]')]
+          .find(row=>row.querySelector('h3')?.textContent?.trim()===commandPerson&&row.getClientRects().length>0);
+        const selected=desktop??mobile;
         selected?.scrollIntoView({block:'nearest',behavior:'auto'});
         selected?.focus({preventScroll:true});
       });
@@ -131,7 +137,7 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
 
     <PageHeader className="lending-mobile-only" eyebrow="ΔΑΝΕΙΚΑ / ΟΦΕΙΛΕΣ" title="Δανεικά / Οφειλές" description={<p>Πλήρες ιστορικό για όσα πλήρωσες για άλλους και όσα σου επέστρεψαν. Δεν θεωρούνται προσωπικό έξοδο όσο παραμένουν απαίτηση.</p>} actions={<><Button variant="secondary" type="button" className="privacy-toggle" aria-pressed={privacyVisible} onClick={()=>onPrivacyVisibleChange(!privacyVisible)}>{privacyVisible?<EyeOff size={17}/>:<Eye size={17}/>} {privacyVisible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'}</Button><Button variant="primary" type="button" onClick={()=>start('lending')}><HandCoins size={17}/> Νέα κίνηση</Button></>}/>
     <section className="credit-hero receivable-hero surface-raised lending-mobile-only"><div><span>Συνολικά προς είσπραξη</span><b><AnimatedAmount value={total} hidden={!privacyVisible}/></b><small>{rows.length} πρόσωπα με ιστορικό</small></div><HandCoins size={54}/></section>
-    <section className="receivable-person-grid lending-mobile-only" data-content-entrance="grid">{rows.map(row=><article className="panel surface-raised" key={row.person}><div className="loan-title"><span className="account-mark"><UserRound/></span><div><h3 className={!privacyVisible?'private-text':''}>{row.person}</h3><small>{row.events} καταγεγραμμένες κινήσεις</small></div><b className={row.outstanding>0?'positive':''}><AnimatedAmount value={row.outstanding} hidden={!privacyVisible}/></b></div><div className="receivable-person-actions"><span>{row.outstanding>0?'Εκκρεμεί':'Εξοφλημένο'}</span><Button variant="ghost" type="button" onClick={()=>startForPerson('lending',row.person)}><Plus size={14}/> Νέο</Button>{row.outstanding>0?<Button variant="ghost" type="button" onClick={()=>startForPerson('repayment',row.person)}><RotateCcw size={14}/> Επιστροφή</Button>:null}
+    <section className="receivable-person-grid lending-mobile-only" data-content-entrance="grid">{rows.map(row=><article className="panel surface-raised" tabIndex={-1} key={row.person}><div className="loan-title"><span className="account-mark"><UserRound/></span><div><h3 className={!privacyVisible?'private-text':''}>{row.person}</h3><small>{row.events} καταγεγραμμένες κινήσεις</small></div><b className={row.outstanding>0?'positive':''}><AnimatedAmount value={row.outstanding} hidden={!privacyVisible}/></b></div><div className="receivable-person-actions"><span>{row.outstanding>0?'Εκκρεμεί':'Εξοφλημένο'}</span><Button variant="ghost" type="button" onClick={()=>startForPerson('lending',row.person)}><Plus size={14}/> Νέο</Button>{row.outstanding>0?<Button variant="ghost" type="button" onClick={()=>startForPerson('repayment',row.person)}><RotateCcw size={14}/> Επιστροφή</Button>:null}
     {row.outstanding>0&&onQuickAdd?<Button variant="ghost" type="button" onClick={()=>onQuickAdd({mode:'lending',action:'writeoff',person:row.person,amount:row.outstanding})}>Διαγραφή απαίτησης</Button>:null}
 {row.outstanding>0&&onSaveLendingPlan?<Button variant="ghost" type="button" onClick={()=>{setSelectedPerson(row.person);setSettlementOpen(true)}}>Πρόγραμμα επιστροφής</Button>:null}</div>
 {(data.state.lendingPlans??[]).some(plan=>plan.person===row.person)?<small className={!privacyVisible?'private-text':''}>Υπάρχει επιβεβαιωμένο πρόγραμμα επιστροφής · δεν έχει καταχωριστεί αυτόματη είσπραξη.</small>:null}</article>)}</section>

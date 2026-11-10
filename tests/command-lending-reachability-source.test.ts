@@ -27,6 +27,9 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
    expect(page).toContain('cancelAnimationFrame(secondFrame)');
    expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson))');
+   expect(page).toContain('const selected=desktop??mobile;');
+   expect(page).toContain('.receivable-person-grid > article[tabindex="-1"]');
+   expect(page).toContain('tabIndex={-1} key={row.person}');
    expect(page).toContain('selected?.focus({preventScroll:true})');
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{
@@ -39,5 +42,9 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(browser).toContain('visible desktop Lending person target');
    expect(browser).toContain('focusTrace:globalThis.__qaFocusTrace||[]');
    expect(browser).toContain('lendingRouteOpacity:');
+   expect(browser).toContain('mobile Lending visible exact-person focus');
+   expect(browser).toContain('same-route second mobile Lending person focus');
+   expect(browser).toContain('command-exact-lending-person-mobile-375');
+   expect(browser).toContain('command-exact-lending-person-mobile-same-route-375');
  });
 });
