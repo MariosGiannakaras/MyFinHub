@@ -189,6 +189,21 @@ try{
   assert(travelInView,'approved mobile Travel row reachable');
   await screenshot('approved-taxonomy-icons-mobile-375');
 
+  console.log('Approved owner icon picker QA: 320px dark, Greek search, ARIA and focus');
+  const dark=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");
+  assert(dark==='dark','dark theme must be active in 320px icon picker QA');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:320,height:700,deviceScaleFactor:1,mobile:true});
+  await openRow('Ταξίδι');
+  const stress=await c.call("function(){const panel=document.querySelector('.settings-icons-only [data-icon-selection-panel]'),search=panel?.querySelector('input[aria-label=\"Αναζήτηση εικονιδίου\"]'),r=panel?.getBoundingClientRect(),labels=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-main b')];search?.scrollIntoView({block:'center'});return {theme:document.documentElement.dataset.theme,within:Boolean(r&&r.left>=-1&&r.right<=innerWidth+1),inputAccessible:Boolean(search&&search.getAttribute('aria-label')==='Αναζήτηση εικονιδίου'),totalLabels:labels.length,options:[...panel?.querySelectorAll('.category-icon-option')||[]].filter(button=>button.getClientRects().length>0).every(button=>button.tagName==='BUTTON'&&button.getAttribute('aria-pressed')!==null),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(stress.theme==='dark'&&stress.within&&stress.inputAccessible&&stress.totalLabels>=20&&stress.options&&stress.overflow<=1,'320px dark icon picker retains labels, ARIA and bounded geometry: '+JSON.stringify(stress));
+  const focusSearch=await c.call("function(){const search=document.querySelector('.settings-icons-only [data-icon-selection-panel] input[aria-label=\"Αναζήτηση εικονιδίου\"]');search?.focus();return Boolean(search&&document.activeElement===search)}");
+  assert(focusSearch,'320px picker search receives keyboard focus');
+  await c.send('Input.insertText',{text:'σπίτι'});
+  await waitFor("function(){const search=document.querySelector('.settings-icons-only [data-icon-selection-panel] input[aria-label=\"Αναζήτηση εικονιδίου\"]');return search?.value==='σπίτι'&&Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-options [aria-pressed]'))}",'Greek icon search resolves with native selectable buttons');
+  await noOverflow('approved 320px dark Greek icon picker');
+  await screenshot('approved-taxonomy-icon-picker-dark-mobile-320');
+
+
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
