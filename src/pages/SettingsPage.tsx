@@ -26,7 +26,7 @@ import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE, prepareApprovedOwnerTaxonomy } f
 import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { previewFinanceImport, type FinanceImportPreview } from '../lib/importPreview';
-import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
+import type { TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
 import type { SettingsTabId } from '../lib/routing';
 import type { FinanceData, FinanceSettings, TransactionRule } from '../types';
@@ -203,12 +203,11 @@ export function SettingsPage({
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
 
   const runTaxonomyOperation = async (operation: TaxonomyOperation) => {
-    // Update the visible taxonomy only after the owner+AAL2 revisioned receipt.
+    // The durable finance update is the *single* application of this operation.
+    // Replaying it on draftRef after receipt can reorder twice or duplicate an
+    // already-added category. The data.state.settings effect owns draft sync.
     setOperationResult('');
     await onTaxonomyOperation(operation);
-    const next = cloneSettings(taxonomyOperationPreview(draftRef.current, operation));
-    draftRef.current = next;
-    setDraft(next);
     // The canonical top-line receipt owns success, never an optimistic toast.
   };
 

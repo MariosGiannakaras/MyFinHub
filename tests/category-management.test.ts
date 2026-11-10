@@ -22,6 +22,8 @@ describe('category management',()=>{
   it('awaits the revisioned receipt and locks overlapping taxonomy mutations (#649 I17.04)',()=>{
     expect(appSource).toContain('await finance.updateDurably(current=>applyTaxonomyOperation(current,operation,today))');
     expect(settingsSource).toContain('await onTaxonomyOperation(operation);');
+    expect(settingsSource).not.toContain('taxonomyOperationPreview(draftRef.current, operation)');
+    expect(settingsSource).toContain('The data.state.settings effect owns draft sync.');
     expect(settingsSource).not.toContain('Η απόσυρση ολοκληρώθηκε.');
     expect(workspaceSource).toContain('const operationRef=useRef(false);');
     expect(workspaceSource).toContain('if(operationRef.current)return false;');
