@@ -197,7 +197,9 @@ describe('shared finance UI adoption contracts',()=>{
     expect(modalFocus).toContain('element.tabIndex>=0');
     expect(modalFocus).toContain('const currentIndex=current?items.indexOf(current):-1');
     expect(modalFocus).toContain("document.querySelectorAll<HTMLElement>('[aria-modal=\"true\"]')");
-    expect(modalFocus).toContain('opener.current?.focus');
+    expect(modalFocus).toContain('if(opener.current?.isConnected)opener.current.focus');
+    expect(modalFocus).toContain('const hasDestination=focused instanceof HTMLElement');
+    expect(modalFocus).toContain('requestAnimationFrame(()=>{');
     expect(modalFocus).toContain(".form-error[role=\"alert\"]");
   });
 

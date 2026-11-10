@@ -68,7 +68,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual.match(/setDirty\(true\)/g)?.length).toBeGreaterThanOrEqual(12);
     expect(contextual).toContain('onClose();return;');
     expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\)return;[\s\S]*?setError\(''\);\s*try\{/);
-    expect(contextual).toContain("onValueChange={value=>{setAmount(value);setDirty(true);setError('')}}");
+    expect(contextual).toContain("onValueChange={value=>{setAmount(value);setWriteoffConfirmed(false);setDirty(true);setError('')}}");
 
   });
   it('confirms a dirty Quick Entry draft before switching to the local receipt inbox',()=>{

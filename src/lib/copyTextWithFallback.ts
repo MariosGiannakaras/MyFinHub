@@ -28,7 +28,7 @@ export async function copyTextWithFallback(value:string):Promise<void>{
     field.remove();
     // The legacy select() temporarily focuses a hidden field. Return focus to
     // the invoking control, including after a rejected or throwing copy.
-    if(previousFocus instanceof HTMLElement&&previousFocus.isConnected){
+    if(typeof HTMLElement!=='undefined'&&previousFocus instanceof HTMLElement&&previousFocus.isConnected){
       previousFocus.focus({preventScroll:true});
     }
   }

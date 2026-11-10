@@ -1,5 +1,13 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — consolidated source-test reconciliation after 1,707-test run
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** The exact-head mandatory [CI #42903886254](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42903886254) at `9788f2660a40f22f7ff2ea50f8e0a04f371cb3b1` passed hygiene/TypeScript and executed 1,707 tests: **1,699 PASS, 8 FAIL (7 files)**. Failures traced to three shared causes, corrected as one batch: (1) Node-only clipboard mocks have no global `HTMLElement`; the production fallback now checks `typeof HTMLElement!=='undefined'` before optional DOM focus restoration, keeping legacy copy cleanup and rejection unchanged; two prior tests now exercise the intended exception/success paths. (2) Three older source tests asserted an obsolete exact contextual amount handler; updated to assert the stronger handler which invalidates writeoff consent on amount edits. (3) Three older modal-focus source tests expected immediate `opener.current?.focus` despite the existing guarded connected-opener/intentional-route-destination deferred restoration; updated to lock the newer safety behavior including `hasDestination` and `requestAnimationFrame`. No tests removed, cases skipped, or thresholds weakened. All eight original failure cases remain tested; rerun exact-head `check`/mandatory CI to verify outcome. Separate owner-led full rendered QA remains Phase 2.
+
+**Validation/CI:** prior run FAILED as above; current batched corrections unverified until exact new head. **Integration/merge:** PR #654 Draft; unmerged. **Production/release:** not started. Security/financial persistence unchanged; Android untouched.
+
+---
+
 ## 2026-11-10 — exact-head TypeScript ESM test import correction
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Mandatory [CI #42903498362](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42903498362) at `6cc3a714374259d6fc1b2edf4d903110501349a5` progressed past the prior unmatched-parenthesis error but `validate/hygiene:unused` **FAILED** on **TS2835**: the new `tests/copy-text-with-fallback.test.ts` imported the helper without the explicit `.js` ESM specifier required by this repository's `tsconfig.node.json` NodeNext resolution. Corrected that one import to `../src/lib/copyTextWithFallback.js` (matching existing Node tests). This is test/tooling correction only; no change to actual clipboard implementation or test expectations. Await exact current-head source CI/CodeQL before asserting PASS. Draft PR #654; no merge, production, Android or optional expensive QA.
