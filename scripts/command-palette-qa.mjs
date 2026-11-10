@@ -69,6 +69,10 @@ try{
  await noOverflow('Reports to Rules 375px mobile');
  assert(await c.call("function(){return !document.querySelector('.rules-editor')&&Number(document.documentElement.dataset.qaSettingsDurableWrites||0)===0}"),'Reports link does not create a new editor or finance write');
  await screenshot('reports-to-settings-rules-mobile-375');
+ // Restore desktop for the preexisting exact-recurring/loan/Lending cases.
+ // The Lending sidebar is display:none below 1100px; focusing it on 375px
+ // silently fails even though its hidden aria-pressed row updates correctly.
+ await viewport(1440,1000);
 
  console.log('Command Palette QA: exact named recurring item focus');
  const recurringUrl=new URL(baseUrl);recurringUrl.searchParams.set('page','reports');recurringUrl.searchParams.set('state','recurring-rich');
@@ -90,12 +94,15 @@ try{
  await screenshot('command-exact-loan-row');
 
  console.log('Command Palette QA: named Lending result focuses the exact person, including a repeated same-route selection');
- await c.call("function(){window.__qaFocusTrace=[];document.addEventListener('focusin',event=>{const target=event.target;window.__qaFocusTrace.push({tag:target?.tagName,klass:typeof target?.className==='string'?target.className.slice(0,65):'',pressed:target?.getAttribute?.('aria-pressed')||null});window.__qaFocusTrace=window.__qaFocusTrace.slice(-20)},true);return true}");
+
  const lendingUrl=new URL(baseUrl);lendingUrl.searchParams.set('page','reports');lendingUrl.searchParams.set('state','lending-rich');
  await c.send('Page.navigate',{url:lendingUrl.href});
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'Lending command source');
+ await c.call("function(){window.__qaFocusTrace=[];document.addEventListener('focusin',event=>{const target=event.target;window.__qaFocusTrace.push({tag:target?.tagName,klass:typeof target?.className==='string'?target.className.slice(0,65):'',pressed:target?.getAttribute?.('aria-pressed')||null});window.__qaFocusTrace=window.__qaFocusTrace.slice(-20)},true);return true}");
+ assert(await c.call("function(){return innerWidth===1440}"),'Lending command scenario is explicitly desktop after mobile Reports scenario');
  await ctrlK();await setSearch('Άννα Παπαδοπούλου');await activateOption('Άννα ΠαπαδοπούλουΔανεικά / επιστροφές');await press('Enter');
  await waitFor("function(){return (document.querySelector('.lending-person-row[aria-pressed=true]')?.textContent||'').includes('Άννα Παπαδοπούλου')}",'exact Lending person selected');
+ assert(await c.call("function(){const row=document.querySelector('.lending-person-row[aria-pressed=true]');return Boolean(row&&row.getClientRects().length>0&&getComputedStyle(document.querySelector('.lending-approved-desktop')).display!=='none')}"),'visible desktop Lending person target');
  await waitFor("function(){return document.activeElement===document.querySelector('.lending-person-row[aria-pressed=true]')}",'Lending command keyboard focus');
  await screenshot('command-exact-lending-person');
  await ctrlK();await setSearch('Γιώργος Νικολάου');await activateOption('Γιώργος ΝικολάουΔανεικά / επιστροφές');await press('Enter');

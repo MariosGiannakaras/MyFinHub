@@ -52,45 +52,19 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   },[commandPerson,commandPersonKey,rows]);
   useEffect(()=>{
     if(!commandPerson||selectedPerson!==commandPerson)return;
-    // Two independent animations can outlive the original navigation:
-    // Command Palette exits and AppShell's new route enters. Do not focus a
-    // hidden/in-transition row or let modal opener cleanup steal its focus.
-    let frame=0;
+    // Route transitions and closing Command Palette can restore the opener
+    // after the first paint. Focus the exact selected person after route layout
+    // settles, as for Account Management, without changing its finance state.
     let secondFrame=0;
-    let disposed=false;
-    let scheduled=false;
-    let readinessChecks=0;
-    const focusAfterCommandExit=()=>{
-      if(disposed||document.querySelector('.command-palette'))return;
-      const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
-        .find(row=>row.textContent?.includes(commandPerson));
-      const routeLayer=selected?.closest<HTMLElement>('#main-workspace > div');
-      const routeOpacity=routeLayer?Number.parseFloat(getComputedStyle(routeLayer).opacity):1;
-      if(!selected||!selected.getClientRects().length||routeOpacity<0.999){
-        if(readinessChecks++<90)scheduleFocusCheck();
-        return;
-      }
-      observer.disconnect();
+    const frame=requestAnimationFrame(()=>{
       secondFrame=requestAnimationFrame(()=>{
-        if(disposed||document.querySelector('.command-palette'))return;
-        selected.scrollIntoView({block:'nearest',behavior:'auto'});
-        selected.focus({preventScroll:true});
+        const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+          .find(row=>row.textContent?.includes(commandPerson));
+        selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+        selected?.focus({preventScroll:true});
       });
-    };
-    const scheduleFocusCheck=()=>{
-      if(disposed||scheduled)return;
-      scheduled=true;
-      frame=requestAnimationFrame(()=>{scheduled=false;focusAfterCommandExit()});
-    };
-    const observer=new MutationObserver(scheduleFocusCheck);
-    observer.observe(document.body,{childList:true,subtree:true});
-    scheduleFocusCheck();
-    return()=>{
-      disposed=true;
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-      cancelAnimationFrame(secondFrame);
-    };
+    });
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
   },[commandPerson,commandPersonKey,selectedPerson]);
 
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);

@@ -24,21 +24,19 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain("setPeopleQuery('')");
    expect(page).toContain('setHistoryFilter(\'all\')');
    expect(page).toContain("'.lending-people-panel .lending-person-row[aria-pressed=\"true\"]'");
-   expect(page).toContain('const observer=new MutationObserver(scheduleFocusCheck)');
-   expect(page).toContain("document.querySelector('.command-palette')");
-   expect(page).toContain("selected?.closest<HTMLElement>('#main-workspace > div')");
-   expect(page).toContain('routeOpacity<0.999');
-   expect(page).toContain('selected.focus({preventScroll:true})');
-   expect(page).toContain('observer.disconnect()');
    expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
    expect(page).toContain('cancelAnimationFrame(secondFrame)');
    expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson))');
-   expect(page).toContain('selected.focus({preventScroll:true})');
+   expect(page).toContain('selected?.focus({preventScroll:true})');
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{
    expect(browser).toContain('command-exact-lending-person');
    expect(browser).toContain('same-route second Lending person selected');
    expect(browser).toContain('same-route Lending keyboard focus');
+   // The immediately preceding Reports → Rules case uses a 375px viewport.
+   // The Lending selector is a desktop-only surface and must be tested visibly.
+   expect(browser).toContain('await viewport(1440,1000);');
+   expect(browser).toContain('visible desktop Lending person target');
    expect(browser).toContain('focusTrace:globalThis.__qaFocusTrace||[]');
    expect(browser).toContain('lendingRouteOpacity:');
  });
