@@ -24,8 +24,11 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain("setPeopleQuery('')");
    expect(page).toContain('setHistoryFilter(\'all\')');
    expect(page).toContain("'.lending-people-panel .lending-person-row[aria-pressed=\"true\"]'");
-   expect(page).toContain('const observer=new MutationObserver(focusAfterCommandExit)');
+   expect(page).toContain('const observer=new MutationObserver(scheduleFocusCheck)');
    expect(page).toContain("document.querySelector('.command-palette')");
+   expect(page).toContain("selected?.closest<HTMLElement>('#main-workspace > div')");
+   expect(page).toContain('routeOpacity<0.999');
+   expect(page).toContain('selected.focus({preventScroll:true})');
    expect(page).toContain('observer.disconnect()');
    expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
    expect(page).toContain('cancelAnimationFrame(secondFrame)');
@@ -36,5 +39,7 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(browser).toContain('command-exact-lending-person');
    expect(browser).toContain('same-route second Lending person selected');
    expect(browser).toContain('same-route Lending keyboard focus');
+   expect(browser).toContain('focusTrace:globalThis.__qaFocusTrace||[]');
+   expect(browser).toContain('lendingRouteOpacity:');
  });
 });

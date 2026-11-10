@@ -52,27 +52,39 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   },[commandPerson,commandPersonKey,rows]);
   useEffect(()=>{
     if(!commandPerson||selectedPerson!==commandPerson)return;
-    // An exiting search dialog restores its opener after the next paint.
-    // Wait for actual unmount instead of racing an arbitrary frame count.
+    // Two independent animations can outlive the original navigation:
+    // Command Palette exits and AppShell's new route enters. Do not focus a
+    // hidden/in-transition row or let modal opener cleanup steal its focus.
     let frame=0;
     let secondFrame=0;
     let disposed=false;
+    let scheduled=false;
+    let readinessChecks=0;
     const focusAfterCommandExit=()=>{
       if(disposed||document.querySelector('.command-palette'))return;
+      const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+        .find(row=>row.textContent?.includes(commandPerson));
+      const routeLayer=selected?.closest<HTMLElement>('#main-workspace > div');
+      const routeOpacity=routeLayer?Number.parseFloat(getComputedStyle(routeLayer).opacity):1;
+      if(!selected||!selected.getClientRects().length||routeOpacity<0.999){
+        if(readinessChecks++<90)scheduleFocusCheck();
+        return;
+      }
       observer.disconnect();
-      frame=requestAnimationFrame(()=>{
-        secondFrame=requestAnimationFrame(()=>{
-          if(disposed||document.querySelector('.command-palette'))return;
-          const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
-            .find(row=>row.textContent?.includes(commandPerson));
-          selected?.scrollIntoView({block:'nearest',behavior:'auto'});
-          selected?.focus({preventScroll:true});
-        });
+      secondFrame=requestAnimationFrame(()=>{
+        if(disposed||document.querySelector('.command-palette'))return;
+        selected.scrollIntoView({block:'nearest',behavior:'auto'});
+        selected.focus({preventScroll:true});
       });
     };
-    const observer=new MutationObserver(focusAfterCommandExit);
+    const scheduleFocusCheck=()=>{
+      if(disposed||scheduled)return;
+      scheduled=true;
+      frame=requestAnimationFrame(()=>{scheduled=false;focusAfterCommandExit()});
+    };
+    const observer=new MutationObserver(scheduleFocusCheck);
     observer.observe(document.body,{childList:true,subtree:true});
-    focusAfterCommandExit();
+    scheduleFocusCheck();
     return()=>{
       disposed=true;
       observer.disconnect();
