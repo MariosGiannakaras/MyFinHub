@@ -18,6 +18,7 @@ const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.
 const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+const accountManager=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const settingsStyles=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.css',import.meta.url),'utf8');
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
 const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
@@ -62,6 +63,24 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('Provider save single-flight blocks same-tick double click');
     expect(providerBrandingQaSource).toContain('button.click();button.click()');
     expect(providerBrandingQaSource).toContain('partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===2');
+  });
+
+  it('keeps Accounts and Providers on one shared input/action/feedback ownership contract (#649 I16.06)',()=>{
+    for(const owner of [accountManager,settings]){
+      for(const primitive of ['<AppSelectInput','<AppTextInput','<Button','<IconButton','<OperationFeedback']){
+        expect(owner).toContain(primitive);
+      }
+      expect(owner).toContain('useModalFocus');
+      expect(owner).not.toMatch(/<select(?:\\s|>)/);
+    }
+    // The provider artwork grid and the account bank-radio card have unique
+    // interaction semantics; neither may fork the generic select/input owner.
+    expect(accountManager).toContain('role="radiogroup"');
+    expect(settings).toContain('className="provider-asset-picker"');
+    expect(accountManager).toContain('rovingRadioTypeaheadDestination');
+    expect(settings).toContain('rovingTabDestination');
+    expect(providerBrandingQaSource).toContain('Provider editor keyboard arrows wrap');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
   });
 
   it('uses shared Arrow/Home/End roving tabs and guards incomplete provider creation (#649 I02.02/I16.05/I23.03)',()=>{
@@ -366,6 +385,34 @@ describe('provider branding management',()=>{
       expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
       expect(calls[3].url).toBe(calls[0].url);
       expect(calls[4].url).toBe(calls[0].url);
+    }finally{log.mockRestore()}
+  });
+
+
+  it('stops after two failed cleanup attempts and reports the unregistered object as pending recovery',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'registration failed'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length<=5)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
+      throw new Error('unexpected unbounded or unrelated Storage cleanup');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_CLEANUP_PENDING'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
+      expect(calls[3].url).toBe(calls[0].url);
+      expect(calls[4].url).toBe(calls[0].url);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset cleanup]',expect.objectContaining({status:503,attempt:2}));
     }finally{log.mockRestore()}
   });
 
