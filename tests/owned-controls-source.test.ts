@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
@@ -20,6 +22,10 @@ const accountStyles=readFileSync(new URL('../src/components/AccountManagementSet
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
 describe('app-owned entry controls',()=>{
+  it('preflights the actual owned-controls browser suite syntax before costly Chromium startup (#649)',()=>{
+    expect(()=>execFileSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/owned-controls-qa.mjs',import.meta.url))],{stdio:'pipe'})).not.toThrow();
+  });
+
   it('keeps centralized Escape dismissal, portal rendering and focus restoration infrastructure',()=>{
     for(const source of [selectSource,dateSource]){
       expect(source).toContain('createPortal');

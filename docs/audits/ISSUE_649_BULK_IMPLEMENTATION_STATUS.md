@@ -1,5 +1,10 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — bounded shared-controls browser preflight correction
+
+**Progress unchanged: Implementations 5/23 completed · Sub-implementations 39/132 completed.** The candidate head `92d202e` [CI/validate #42772756920](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42772756920) source tests PASS, but [focused shared-controls #42773022115](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42773022115) **FAIL before browser startup**: the new date-selection QA helper embedded double quotes inside a double-quoted JS string. No evidence of runtime product failure and no browser acceptance. The Draft marker was turned OFF immediately. Correct the helper using a literal attribute getter and add a cheap Node `--check` regression to the relevant source-test suite so syntax errors cannot recur unnoticed until the browser runner. **Next:** exact-head source CI/CodeQL and one focused five-suite retry, inspect actual 320px synthetic disabled-control screenshot and all sibling-suite outcomes, then accept only proven I02/I19 scoped subitems. Do not relax browser assertion, finance semantics, owner+AAL2 or release gates.
+
+
 ## 2026-11-10 — shared owned entry control disabled-state batching candidate (newest code checkpoint)
 
 **Current implemented progress: Implementations 5/23 completed · Sub-implementations 39/132 completed.** I19.03 K was accepted in source CI [#42722211530](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42722211530) SUCCESS (1677 tests, CodeQL, Unified Gate), as recorded in PR #654. The earlier 38/132 heading and I19.03 pending paragraph below are historical. This candidate does **not** increment additional counts until its shared behavior and sibling browser evidence are accepted.

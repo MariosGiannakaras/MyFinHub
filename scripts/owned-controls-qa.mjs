@@ -103,7 +103,7 @@ try{
       await waitFor("function(popup){return Boolean(document.querySelector(popup))}",kind+' reopened',[popup]);
       const pick=kind==='select'
         ?await c.call("function(){const node=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>node.textContent.includes('Νέος λογαριασμός'));node?.click();return Boolean(node)}")
-        :await c.call("function(){const node=document.querySelector('.owned-date-popover [data-date="2026-08-18"]');node?.click();return Boolean(node&&!node.disabled)}");
+        :await c.call("function(){const node=[...document.querySelectorAll('.owned-date-popover [data-date]')].find(item=>item.getAttribute('data-date')==='2026-08-18');node?.click();return Boolean(node&&!node.disabled)}");
       assert(pick,kind+' makes a valid selection only after reenabled');
       await waitFor("function(popup){return !document.querySelector(popup)}",kind+' closes after successful choice',[popup]);
       const after=await c.call("function(selector){return document.querySelector(selector)?.textContent||''}",[valueSelector]);
