@@ -164,6 +164,31 @@ try{
   assert(mobileGeometry.targets.every(target=>target.h>=40),`mobile icon color targets too small: ${JSON.stringify(mobileGeometry.targets)}`);
   await screenshot('icon-family-color-mobile');
 
+  console.log('Approved owner taxonomy: actual Greek glyph previews on desktop/mobile');
+  const approvedUrl=new URL(url.href);approvedUrl.searchParams.set('state','approved-icon-taxonomy');
+  await c.send('Page.navigate',{url:approvedUrl.href});
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'approved taxonomy Settings');
+  await clickText('.settings-tablist button','Εικονίδια');
+  await waitFor("function(){return [...document.querySelectorAll('.settings-icons-only .category-icon-unified-main b')].some(el=>(el.textContent||'').trim()==='Ταξίδι')}",'approved Ταξίδι icon');
+  const expectedApproved={
+    'Ταξίδι':'lucide:icon/luggage',
+    'Ψηφιακή υπηρεσία':'lucide:icon/repeat',
+    'Χρηματοοικονομικά έξοδα':'lucide:icon/percent',
+    'Μετακίνηση':'lucide:icon/bus',
+    'Τόκος & Απόδοση':'lucide:icon/chart-line',
+  };
+  for(const [label,key] of Object.entries(expectedApproved)){
+    const row=await rowState(label);
+    assert(row?.key===key,'approved '+label+' expected '+key+' observed '+JSON.stringify(row));
+  }
+  await screenshot('approved-taxonomy-icons-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await noOverflow('approved taxonomy icons mobile');
+  const travelInView=await c.call("function(){const row=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')].find(el=>(el.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()==='Ταξίδι');row?.scrollIntoView({block:'center',inline:'nearest'});return Boolean(row)}");
+  assert(travelInView,'approved mobile Travel row reachable');
+  await screenshot('approved-taxonomy-icons-mobile-375');
+
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);

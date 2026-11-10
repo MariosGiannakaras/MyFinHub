@@ -124,7 +124,7 @@ export function SettingsPage({
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
   onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
-  onTaxonomyOperation: (operation: TaxonomyOperation) => void;
+  onTaxonomyOperation: (operation: TaxonomyOperation) => Promise<void>;
 }) {
   const saveRule=(rule:TransactionRule)=>{
     const editing=(data.state.transactionRules??[]).some(item=>item.id===rule.id);
@@ -202,16 +202,14 @@ export function SettingsPage({
 
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
 
-  const runTaxonomyOperation = (operation: TaxonomyOperation) => {
+  const runTaxonomyOperation = async (operation: TaxonomyOperation) => {
+    // Update the visible taxonomy only after the owner+AAL2 revisioned receipt.
+    setOperationResult('');
+    await onTaxonomyOperation(operation);
     const next = cloneSettings(taxonomyOperationPreview(draftRef.current, operation));
     draftRef.current = next;
     setDraft(next);
-    onTaxonomyOperation(operation);
-    setOperationResult(
-      operation.type === 'retire-category' || operation.type === 'retire-subcategory'
-        ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
-        : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
-    );
+    // The canonical top-line receipt owns success, never an optimistic toast.
   };
 
   const ownerTaxonomyApplied=JSON.stringify(categoryTree(data.state.settings,'expense'))===JSON.stringify(OWNER_EXPENSE_TREE)

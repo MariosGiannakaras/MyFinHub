@@ -1,5 +1,5 @@
 import { Archive, ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { categoryTree } from '../lib/categories';
 import { CATEGORY_ICON_PACKS, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
 import { categoryIconPackOptionCount } from '../lib/categoryIconPackSupport';
@@ -39,7 +39,7 @@ type RetirementOperation=Extract<TaxonomyOperation,{type:'retire-category'|'reti
 type RetirementState={operation:RetirementOperation;label:string;dependencies:TaxonomyRetirementDependency[]}|null;
 type CategoryWorkspaceView='all'|'taxonomy'|'icons';
 
-export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOperation,view='all'}:{data:FinanceData;asOf:string;settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>void;view?:CategoryWorkspaceView}){
+export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOperation,view='all'}:{data:FinanceData;asOf:string;settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>Promise<void>;view?:CategoryWorkspaceView}){
   const[kind,setKind]=useState<CategoryKind>('expense');
   const iconPack=activeCategoryIconPack(settings);
   const[categoryDraft,setCategoryDraft]=useState('');
@@ -48,6 +48,8 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
   const[moving,setMoving]=useState<MovingState>(null);
   const[retirement,setRetirement]=useState<RetirementState>(null);
   const[error,setError]=useState('');
+  const operationRef=useRef(false);
+  const[operationBusy,setOperationBusy]=useState(false);
   const normalized=useMemo(()=>ensureCategoryIdentities(settings),[settings]);
   const tree=categoryTree(normalized,kind);
   const noun=kind==='expense'?'εξόδων':'εσόδων';
@@ -60,26 +62,29 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       ?'Διάλεξε πρώτα βιβλιοθήκη εικονιδίων και μετά όρισε κατηγορία ή υποκατηγορία από τη συμπαγή λίστα. Οι επιλογές αλλάζουν μόνο την παρουσίαση.'
       :'Διαχειρίσου την ταξινόμηση και τα εικονίδια με stable ταυτότητα, χωρίς να αλλοιώνεται το οικονομικό ιστορικό.';
 
-  const perform=(operation:TaxonomyOperation)=>{
+  const perform=async(operation:TaxonomyOperation)=>{
+    if(operationRef.current)return false;
+    operationRef.current=true;setOperationBusy(true);setError('');
     try{
       taxonomyOperationPreview(normalized,operation);
-      onTaxonomyOperation(operation);
-      setError('');
+      await onTaxonomyOperation(operation);
       return true;
     }catch(reason){setError(errorMessage(reason));return false}
+    finally{operationRef.current=false;setOperationBusy(false)}
   };
-  const changeKind=(next:CategoryKind)=>{setKind(next);setEditing(null);setMoving(null);setRetirement(null);setError('')};
-  const addCategory=()=>{if(perform({type:'add-category',kind,label:categoryDraft}))setCategoryDraft('')};
-  const addSubcategory=(parentId:string)=>{const value=subcategoryDrafts[parentId]??'';if(perform({type:'add-subcategory',kind,parentId,label:value}))setSubcategoryDrafts(current=>({...current,[parentId]:''}))};
-  const saveEdit=()=>{
+  const changeKind=(next:CategoryKind)=>{if(operationRef.current)return;setKind(next);setEditing(null);setMoving(null);setRetirement(null);setError('')};
+  const addCategory=async()=>{if(await perform({type:'add-category',kind,label:categoryDraft}))setCategoryDraft('')};
+  const addSubcategory=async(parentId:string)=>{const value=subcategoryDrafts[parentId]??'';if(await perform({type:'add-subcategory',kind,parentId,label:value}))setSubcategoryDrafts(current=>({...current,[parentId]:''}))};
+  const saveEdit=async()=>{
     if(!editing)return;
     const operation:TaxonomyOperation=editing.type==='category'
       ?{type:'rename-category',kind,identityId:editing.id,label:editing.value}
       :{type:'rename-subcategory',kind,identityId:editing.id,label:editing.value};
-    if(perform(operation))setEditing(null);
+    if(await perform(operation))setEditing(null);
   };
-  const saveMove=()=>{if(moving&&perform({type:'move-subcategory',kind,identityId:moving.id,targetCategoryId:moving.targetCategoryId}))setMoving(null)};
+  const saveMove=async()=>{if(moving&&await perform({type:'move-subcategory',kind,identityId:moving.id,targetCategoryId:moving.targetCategoryId}))setMoving(null)};
   const requestRetirement=(operation:RetirementOperation,label:string)=>{
+    if(operationRef.current)return;
     try{
       const snapshot:FinanceData={...data,state:{...data.state,settings:normalized}};
       const dependencies=taxonomyRetirementDependencies(snapshot,operation,asOf);
@@ -87,12 +92,12 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       setError('');
     }catch(reason){setRetirement(null);setError(errorMessage(reason))}
   };
-  const confirmRetirement=()=>{
+  const confirmRetirement=async()=>{
     if(!retirement||retirement.dependencies.length)return;
-    if(perform(retirement.operation))setRetirement(null);
+    if(await perform(retirement.operation))setRetirement(null);
   };
 
-  return <section className="panel surface-raised category-icons-workspace" data-workspace-view={view} aria-labelledby="category-icons-title">
+  return <section className="panel surface-raised category-icons-workspace" data-workspace-view={view} aria-labelledby="category-icons-title" aria-busy={operationBusy}>
     <div className="panel-head">
       <div><span id="category-icons-title">{title}</span><small>{description}</small></div>
     </div>
@@ -107,12 +112,12 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       </div>
     </div>:null}
 
-    <div className="segmented-control" role="group" aria-label="Τύπος κατηγοριών">
+    <div className="segmented-control" role="group" aria-label="Τύπος κατηγοριών" inert={operationBusy}>
       <button type="button" className={kind==='expense'?'active':''} aria-pressed={kind==='expense'} onClick={()=>changeKind('expense')}>Έξοδα</button>
       <button type="button" className={kind==='income'?'active':''} aria-pressed={kind==='income'} onClick={()=>changeKind('income')}>Έσοδα</button>
     </div>
 
-    {showTaxonomy?<div className="taxonomy-add-row" role="group" aria-label={`Νέα κατηγορία ${noun}`}>
+    {showTaxonomy?<div className="taxonomy-add-row" inert={operationBusy} role="group" aria-label={`Νέα κατηγορία ${noun}`}>
       <label><span>Νέα κατηγορία</span><AppTextInput value={categoryDraft} onChange={event=>setCategoryDraft(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addCategory()}}} placeholder="Όνομα κατηγορίας"/></label>
       <Button type="button" variant="primary" onClick={addCategory}><Plus size={16} aria-hidden="true"/> Προσθήκη</Button>
     </div>:null}
@@ -122,7 +127,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       <div><b>Η «{retirement.label}» δεν μπορεί ακόμη να αποσυρθεί.</b><p>Τακτοποίησε εσύ τις παρακάτω ενεργές ή μελλοντικές αναφορές. Δεν θα γίνει αυτόματη μεταφορά, διαγραφή ή αλλαγή σε «Άλλο».</p><ul>{retirement.dependencies.map(item=><li key={`${item.kind}:${item.id}`}>{item.label}</li>)}</ul><Button type="button" variant="secondary" onClick={()=>setRetirement(null)}>Κλείσιμο</Button></div>
     </div>:null}
 
-    <div className="category-icon-category-list taxonomy-category-list">
+    <div className="category-icon-category-list taxonomy-category-list" inert={operationBusy}>
       {tree.map((category,categoryIndex)=>{
         const categoryId=taxonomyCategoryId(normalized,kind,category.name);
         if(!categoryId)return null;
@@ -203,8 +208,9 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       title={`Απόσυρση «${retirement?.label??''}»`}
       description="Θα αφαιρεθεί από τις ενεργές επιλογές για νέες κινήσεις. Η stable ταυτότητα, τα παλιά ονόματα και όλες οι ιστορικές οικονομικές αναφορές θα παραμείνουν ανέπαφα."
       confirmLabel="Απόσυρση"
+      busy={operationBusy}
       onConfirm={confirmRetirement}
-      onCancel={()=>setRetirement(null)}
+      onCancel={()=>{if(!operationRef.current)setRetirement(null)}}
     />:null}
   </section>;
 }

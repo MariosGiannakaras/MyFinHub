@@ -28,6 +28,7 @@ import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
+import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE } from './lib/ownerApprovedTaxonomy';
 import { applyTransactionRules } from './lib/transactionRules';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
@@ -251,6 +252,15 @@ function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
 function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
+  if(params.get('state')==='approved-icon-taxonomy'){
+    next.state.settings.expenseCategoryTree=OWNER_EXPENSE_TREE.map(item=>({...item,subcategories:[...item.subcategories]}));
+    next.state.settings.incomeCategoryTree=OWNER_INCOME_TREE.map(item=>({...item,subcategories:[...item.subcategories]}));
+    next.state.settings.expenseCategories=OWNER_EXPENSE_TREE.map(item=>item.name);
+    next.state.settings.incomeCategories=OWNER_INCOME_TREE.map(item=>item.name);
+    next.state.settings.categoryIconPack='lucide';
+    next.state.settings.categoryIcons={};next.state.settings.subcategoryIcons={};
+    next.state.settings.categoryIconPackSelections={};next.state.settings.subcategoryIconPackSelections={};
+  }
   if(params.get('card-vault')==='ready')next.state.cards=(next.state.cards??[]).map(card=>card.id==='qa-debit-card'?{...card,last4:'4242',vaultRef:'qa-debit-card'}:card);
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
@@ -652,7 +662,13 @@ function QaWorkspace(){
     if(new URLSearchParams(location.search).get('savings-goal-save-failure')==='1')throw new Error('Η δοκιμαστική διαγραφή προσωπικού στόχου απέτυχε.');
     update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   };
-  const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
+  const updateTaxonomy=async(operation:TaxonomyOperation)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('taxonomy-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteTaxonomyReceipt?:()=>void}).__myfinhubQaCompleteTaxonomyReceipt=resolve});
+    if(params.get('taxonomy-save-failure')==='1')throw new Error('Η δοκιμαστική αλλαγή ταξινόμησης απορρίφθηκε.');
+    document.documentElement.dataset.qaTaxonomyDurableWrites=String(Number(document.documentElement.dataset.qaTaxonomyDurableWrites||0)+1);
+    update(current=>applyTaxonomyOperation(current,operation,today));
+  };
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
   const focusRecurringPayment=(id:string)=>{setCommandRecurringId(id);setCommandRecurringKey(k=>k+1);setPage('recurring')};
   const handleAttention=(item:AttentionItem)=>{

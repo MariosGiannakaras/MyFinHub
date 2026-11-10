@@ -300,7 +300,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteSavingsGoal=(id:string)=>finance.updateDurably(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{
     const {applyTaxonomyOperation}=await import('./lib/taxonomyManagement');
-    finance.update(current=>applyTaxonomyOperation(current,operation,today));
+    await finance.updateDurably(current=>applyTaxonomyOperation(current,operation,today));
   };
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
