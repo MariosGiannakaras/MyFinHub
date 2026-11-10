@@ -38,7 +38,7 @@ jobs:
           (contains(github.event.pull_request.body, '<!-- run-649-account-quick-qa -->') &&
           'account-metadata budget-rules' ||
           (contains(github.event.pull_request.body, '<!-- run-649-shared-controls-qa -->') &&
-          'provider-brand-management settings-tabs quick-entry-reference account-metadata' ||
+          'owned-controls provider-brand-management settings-tabs quick-entry-reference account-metadata' ||
           (contains(github.event.pull_request.body, '<!-- run-649-loans-qa -->') &&
           'loans-remediation' ||
           (contains(github.event.pull_request.body, '<!-- run-649-lending-qa -->') &&

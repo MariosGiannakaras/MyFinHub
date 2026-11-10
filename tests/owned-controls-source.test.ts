@@ -38,6 +38,25 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain('(currentIndex+1)%items.length');
     expect(modalFocusSource).toContain('(currentIndex-1+items.length)%items.length');
   });
+  it('revokes both owned portals atomically when a parent becomes disabled, without committing a stale selection (#649 I02.02/I19.05)',()=>{
+    const fixture=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    const rendered=readFileSync(new URL('../scripts/owned-controls-qa.mjs',import.meta.url),'utf8');
+    const focused=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    for(const source of [selectSource,dateSource]){
+      expect(source).toContain('const active=open&&!disabled');
+      expect(source).toContain('useEffect(()=>{if(disabled)setOpen(false)},[disabled])');
+      expect(source).toContain("const portal=active&&typeof document!=='undefined'");
+      expect(source).toContain('aria-expanded={active}');
+      expect(source).toContain('useModalFocus<HTMLElement>(active,');
+      expect(source).toContain('if(disabled');
+    }
+    expect(fixture).toContain("if(screen==='owned-controls-disabled')return <QaOwnedControlsDisabledProbe/>");
+    expect(rendered).toContain('live disabled transition closes portalled selectors and calendars');
+    expect(rendered).toContain("owned-controls-disabled-mobile-320.png");
+    expect(rendered).toContain("portal dismissed on disabled state");
+    expect(rendered).toContain('confirmed change after reenable');
+    expect(focused).toContain("'owned-controls provider-brand-management settings-tabs quick-entry-reference account-metadata'");
+  });
   it('keeps accessible listbox and calendar roles',()=>{
     expect(selectSource).toContain('role="listbox"');
     expect(selectSource).toContain('role="option"');

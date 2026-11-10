@@ -1,6 +1,8 @@
 import { spawn, execFileSync } from 'node:child_process';
+import {mkdirSync,writeFileSync} from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
+const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-ui-ux-qa';mkdirSync(evidenceDir,{recursive:true});
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for owned-controls QA.');
 const port=9224;
@@ -73,6 +75,42 @@ try{
   await clickAria('Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions heading');await assertNoNativeSelects('Transactions');assert(await c.call("function(){return document.querySelectorAll('.mobile-transaction-filters .owned-select-shell').length>=2}"),'Transactions mobile filters use owned selects');
   await openMore();await clickText('.mobile-more-menu button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings heading');await clickText('.settings-tablist button','Λογαριασμοί');await assertNoNativeSelects('Settings accounts');assert(await c.call("function(){return document.querySelectorAll('.account-management-default-grid .owned-select-shell').length>=3}"),'Settings defaults use owned selects');
 
+  console.log('Owned controls QA: live disabled transition closes portalled selectors and calendars');
+  for(const width of [375,320]){
+    await viewport(width,width===320?700:812);
+    const probeUrl=new URL(baseUrl);probeUrl.searchParams.set('screen','owned-controls-disabled');
+    await c.send('Page.navigate',{url:probeUrl.href});
+    await waitFor("function(){return Boolean(document.querySelector('[data-owned-controls-disabled-probe]'))}",'QA disabled owner controls');
+    for(const kind of ['select','date']){
+      const selector=kind==='select'?'.owned-select-shell input':'.owned-date-shell input';
+      const popup=kind==='select'?'.owned-select-popover':'.owned-date-popover';
+      const valueSelector=kind==='select'?'[data-qa-controls-account]':'[data-qa-controls-date]';
+      assert(await c.call("function(selector){const input=document.querySelector(selector);input?.click();return Boolean(input&&!input.disabled)}",[selector]),kind+' enabled trigger opens owned control');
+      await waitFor("function(popup){return Boolean(document.querySelector(popup))}",kind+' portal opened',[popup]);
+      const before=await c.call("function(selector){return document.querySelector(selector)?.textContent||''}",[valueSelector]);
+      assert(await c.call("function(){const button=document.querySelector('[data-qa-toggle-controls]');button?.click();return Boolean(button)}"),'parent becomes disabled during open '+kind+' popover');
+      await waitFor("function(selector,popup){const input=document.querySelector(selector);return Boolean(input?.disabled&&input.getAttribute('aria-expanded')==='false'&&!document.querySelector(popup)&&document.querySelector('[data-qa-controls-disabled]')?.textContent==='true')}",kind+' portal dismissed on disabled state',[selector,popup]);
+      assert((await c.call("function(selector){return document.querySelector(selector)?.textContent||''}",[valueSelector]))===before,kind+' pending lock never changes the committed value');
+      const locked=await c.call("function(){return {overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,select:document.querySelector('.owned-select-shell input')?.disabled,date:document.querySelector('.owned-date-shell input')?.disabled}}");
+      assert(locked.select&&locked.date&&locked.overflow<=1,kind+' parent disabled state is consistent and mobile contained: '+JSON.stringify(locked));
+      if(width===320&&kind==='date'){
+        const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+        writeFileSync(`${evidenceDir}/owned-controls-disabled-mobile-320.png`,Buffer.from(image.data,'base64'));
+      }
+      assert(await c.call("function(){const button=document.querySelector('[data-qa-toggle-controls]');button?.click();return Boolean(button)}"),'reactivate after '+kind+' pending state');
+      await waitFor("function(selector){return Boolean(document.querySelector(selector)&&!document.querySelector(selector).disabled)}",kind+' trigger reenabled',[selector]);
+      assert(await c.call("function(selector){const input=document.querySelector(selector);input?.click();return Boolean(input)}",[selector]),kind+' picker reopens after resuming');
+      await waitFor("function(popup){return Boolean(document.querySelector(popup))}",kind+' reopened',[popup]);
+      const pick=kind==='select'
+        ?await c.call("function(){const node=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>node.textContent.includes('Νέος λογαριασμός'));node?.click();return Boolean(node)}")
+        :await c.call("function(){const node=document.querySelector('.owned-date-popover [data-date="2026-08-18"]');node?.click();return Boolean(node&&!node.disabled)}");
+      assert(pick,kind+' makes a valid selection only after reenabled');
+      await waitFor("function(popup){return !document.querySelector(popup)}",kind+' closes after successful choice',[popup]);
+      const after=await c.call("function(selector){return document.querySelector(selector)?.textContent||''}",[valueSelector]);
+      assert(after!=='',kind+' retains a visible committed value');
+      assert(after!==(before)&&after===(kind==='select'?'target':'2026-08-18'),kind+' confirmed change after reenable: '+after);
+    }
+  }
   console.log('Owned controls QA passed.');
 }finally{
   c?.close();

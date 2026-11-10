@@ -5,6 +5,8 @@ import { AppShell, type PageId } from './components/AppShell';
 import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { AppSelectInput } from './components/AppSelectInput';
+import { AppDateInput } from './components/AppDateInput';
 import { DesktopAppLockGate } from './components/DesktopAppLockGate';
 import { PageSkeleton } from './components/AppSkeleton';
 import { PeriodControl } from './components/PeriodControl';
@@ -794,10 +796,32 @@ function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
   return null;
 }
 
+function QaOwnedControlsDisabledProbe(){
+  const [disabled,setDisabled]=useState(false);
+  const [account,setAccount]=useState('source');
+  const [date,setDate]=useState('2026-08-17');
+  return <main data-owned-controls-disabled-probe style={{padding:20,maxWidth:420,margin:'24px auto'}}>
+    <h1>Απενεργοποίηση πεδίων κατά την αποθήκευση</h1>
+    <button type="button" data-qa-toggle-controls onClick={()=>setDisabled(current=>!current)}>{disabled?'Ενεργοποίηση':'Απενεργοποίηση'}</button>
+    <label style={{display:'block',marginTop:16}}>Λογαριασμός
+      <AppSelectInput aria-label="QA λογαριασμός" disabled={disabled} value={account} onChange={event=>setAccount(event.target.value)}>
+        <option value="source">Αρχικός λογαριασμός</option><option value="target">Νέος λογαριασμός</option>
+      </AppSelectInput>
+    </label>
+    <label style={{display:'block',marginTop:16}}>Ημερομηνία
+      <AppDateInput aria-label="QA ημερομηνία" disabled={disabled} value={date} min="2026-08-01" max="2026-08-31" onChange={event=>setDate(event.target.value)}/>
+    </label>
+    <output data-qa-controls-disabled>{String(disabled)}</output>
+    <output data-qa-controls-account>{account}</output>
+    <output data-qa-controls-date>{date}</output>
+  </main>;
+}
+
 function QaApp(){
   const params=new URLSearchParams(location.search);
   const screen=params.get('screen')??'';
   if(screen==='desktop-lock')return <QaDesktopLockProbe/>;
+  if(screen==='owned-controls-disabled')return <QaOwnedControlsDisabledProbe/>;
   if(screen==='persistence-probe')return <QaPersistenceProbe/>;
   if(screen==='session-signal')return <QaSessionSignalProbe/>;
   if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;
