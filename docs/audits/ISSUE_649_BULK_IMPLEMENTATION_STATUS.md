@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — I20.03 accepted; I20.01 nested discard QA candidate (latest)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed.** **I20.03 accepted (+1)** at `917aa7649a649e7d2486fd76aa1eba4196bfb7d8`: [CI/validate/CodeQL/Unified #42828771457](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42828771457) **SUCCESS** and [two-suite focused Chromium #42829373274](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42829373274) **SUCCESS** (`command-palette icon-packs`). Artifact **#13771690411** downloaded; first CDP bootstrap timed out for Command Palette, one permitted clean-profile retry passed full suite; icon-packs passed. Inspected both exact 375px Lending person screenshots with focused visible article and no horizontal overflow, plus QA logs and all exact entity/route/no-write assertions. Existing desktop focus and other command targets remain green. I20.03 is accepted; overall I20 remains partial.
+
+**I20.01 QA-only candidate, NOT counted:** Existing shared `DialogShell`/`useModalFocus` holds ARIA labels, Escape, topmost Tab trap, scroll lock and nested `ConfirmDialog` ownership. Existing History QA covers Escape and focus restoration, but Quick Entry's nested dirty-discard had no full rendered keyboard/restore assertions. Extended only the existing `quick-entry-reference` browser suite in both light/dark desktop: focus the actual launcher, use a real dirty frequent chip, verify stacked labelled dialogs and Tab/Shift+Tab containment, Escape cancellation retaining draft, reopening and explicitly discarding, final launcher focus restoration and released scroll lock. Existing tablet/375px/320px Quick Entry reference layout tests remain intact. Source guards added in `tests/quick-entry-reference-source.test.ts`. **Requires exact-head source CI/CodeQL/Unified and one Draft opt-in existing `run-649-shared-controls-qa` batch (includes Quick Entry and sibling shared controls)**; inspect produced screenshots/logs, fix genuine shared focus failures rather than weakening assertions. Do not count I20.01 before full evidence. No product code, finance posting, RLS, database, CSS/threshold, Android or production changes.
+
+**Parallel next:** inspect I20.02 semantic confirmation copy and cancellation boundaries against existing shared owner, without duplicating already accepted I17 and I20.03 work or overlapping the separate #652 backup PR. Keep #654 Draft, marker OFF during CI, no merge or full Ready/Windows run.
+
+---
+
 ## 2026-11-10 — I20.03 mobile named Lending navigation source guard repair (latest)
 
 **Progress: Implementations 6/23 completed · Sub-implementations 51/132 completed (unchanged).** I17.01–06 accepted at `fb2856a9dfb0a4f4fc1c2edce5fdfe594a95d953` with [exact source CI #42820251577](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42820251577) and [two-suite focused Chromium #42820251558](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42820251558) both **SUCCESS**; no I17 rework is authorized.
