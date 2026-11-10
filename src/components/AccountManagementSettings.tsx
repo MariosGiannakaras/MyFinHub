@@ -19,7 +19,7 @@ import {
 } from '../lib/financialProviders';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import { userErrorMessage } from '../lib/userMessage';
-import { rovingTabDestination } from '../lib/rovingTabDestination';
+import { rovingRadioTypeaheadDestination, rovingTabDestination } from '../lib/rovingTabDestination';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -149,7 +149,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const onProviderKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
     if(!editor||busy||!providers.length)return;
     const key=event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft':event.key;
-    const next=rovingTabDestination(key,index,providers.length);
+    const next=rovingTabDestination(key,index,providers.length)??(event.altKey||event.ctrlKey||event.metaKey?null:rovingRadioTypeaheadDestination(event.key,index,providers.map(provider=>provider.displayName)));
     if(next===null)return;
     event.preventDefault();
     const target=providers[next];

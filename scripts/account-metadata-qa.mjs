@@ -93,6 +93,11 @@ try{
   await waitFor("function(){const nodes=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')];return nodes.at(-1)?.getAttribute('aria-checked')==='true'}",'provider End selects final item');
   await press('Home','Home',36);
   await waitFor("function(){const nodes=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')];return nodes[0]?.getAttribute('aria-checked')==='true'}",'provider Home selects first item');
+
+  await press('A','KeyA',65);
+  await waitFor("function(){const radio=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')].find(node=>(node.textContent||'').includes('Alpha Bank'));return radio?.getAttribute('aria-checked')==='true'&&document.activeElement===radio}",'provider Latin A typeahead selects Alpha Bank');
+  await press('Ε','KeyE',69);
+  await waitFor("function(){const radio=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')].find(node=>(node.textContent||'').includes('Εθνική Τράπεζα'));return radio?.getAttribute('aria-checked')==='true'&&document.activeElement===radio}",'provider Greek Ε typeahead selects Εθνική');
   assert(await c.call("function(index){const nodes=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')];return Boolean(nodes[index]&&(nodes[index].click()||true))}",[originalRadio.index]),'restore original provider before finance IBAN save');
   await waitFor("function(index){const nodes=[...document.querySelectorAll('.account-management-provider-picker [role=radio]')];return nodes[index]?.getAttribute('aria-checked')==='true'}",'original provider restored',[originalRadio.index]);
   assert((await currentEditIban()).includes('GR16'),'Account Management loads the current payroll IBAN');

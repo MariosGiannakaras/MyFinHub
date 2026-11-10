@@ -51,6 +51,9 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(rendered).toContain('Account provider radio group supports roving keyboard');
     for(const key of ['ArrowRight','ArrowUp','Home','End'])expect(rendered).toContain("await press('"+key+"'");
     expect(rendered).toContain('state.stops===1');
+    expect(component).toContain('rovingRadioTypeaheadDestination(event.key,index,providers.map(provider=>provider.displayName))');
+    expect(rendered).toContain('provider Latin A typeahead selects Alpha Bank');
+    expect(rendered).toContain('provider Greek Ε typeahead selects Εθνική');
     expect(rendered).toContain('original provider restored');
   });
 
