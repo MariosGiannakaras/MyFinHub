@@ -22,8 +22,12 @@ function removeDescription(element:HTMLElement,id:string){
   if(values.length)element.setAttribute('aria-describedby',values.join(' '));else element.removeAttribute('aria-describedby');
 }
 
-export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
+export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void, focusActive = true): RefObject<T | null> {
   const ref = useRef<T | null>(null);
+  // Nested confirmations suspend only the parent's keyboard trap, not its
+  // open lifetime. Preserve the original launcher across suspend/resume.
+  const focusActiveRef = useRef(focusActive);
+  focusActiveRef.current = focusActive;
   const opener = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const generatedErrorId = `${useId().replace(/:/g,'')}-form-error`;
@@ -53,7 +57,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     const initial = canReceiveFocus(preferredTarget)
       ? preferredTarget!
       : [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].find(canReceiveFocus) ?? root;
-    queueMicrotask(() => initial.focus({ preventScroll: true }));
+    if (focusActiveRef.current) queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     let associatedErrorId='';
     const syncErrorAssociation=()=>{
@@ -69,7 +73,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     errorObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['id','role','class']});
 
     const trap = (event: KeyboardEvent) => {
-      if (!isTopmostModal(root)) return;
+      if (!focusActiveRef.current || !isTopmostModal(root)) return;
       if (shortcutMatches(event, 'dismiss') && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
@@ -111,10 +115,26 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       // before the exiting dialog unmounts. Preserve that destination; restore
       // the opener and scroll only after ordinary dismissals.
       const focused=document.activeElement;
-      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused);
+      // On an explicit nested discard, the focused ConfirmDialog is closing
+      // along with this editor. It must not count as an intentional new route
+      // destination merely because the two dialogs are DOM siblings.
+      const inOtherModal=focused instanceof HTMLElement&&Boolean(focused.closest('[aria-modal="true"]'))&&!root.contains(focused);
+      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused)&&!inOtherModal;
       if(!hasDestination){
         window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
-        queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
+        if(inOtherModal){
+          // Allow the child's opener-restoration microtask to settle first.
+          // A deliberate focus move to a nonmodal route target wins instead.
+          requestAnimationFrame(()=>{
+            const active=document.activeElement;
+            if(active instanceof HTMLElement&&active!==body&&active.isConnected&&!active.closest('[aria-modal="true"]')&&active!==opener.current)return;
+            if(opener.current?.isConnected)opener.current.focus({ preventScroll: true });
+          });
+        }else{
+          queueMicrotask(() => {
+            if(opener.current?.isConnected)opener.current.focus({ preventScroll: true });
+          });
+        }
       }
     };
   }, [open, preferred, generatedErrorId]);

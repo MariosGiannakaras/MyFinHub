@@ -101,7 +101,10 @@ try{
           await waitFor("function(){return !document.querySelector('.account-management-modal')}",'mobile account modal close');
         }
       }
-      if(tab.id==='categories')assert(await c.call("function(){return ![...document.querySelectorAll('.settings-categories-only .taxonomy-icon-disclosure')].some(node=>node.getClientRects().length)}") ,'Categories keeps icon pickers out of the visible taxonomy workspace');
+      if(tab.id==='categories'){
+        const sections=await c.call("function(){const root=document.querySelector('.settings-categories-only');if(!root)return null;const visible=node=>node.getClientRects().length>0;const pickers=[...root.querySelectorAll('.category-icon-picker-block,.taxonomy-icon-disclosure:not(.taxonomy-subcategory-disclosure)')];const disclosure=[...root.querySelectorAll('.taxonomy-subcategory-disclosure')];return {pickerVisible:pickers.some(visible),subcategoryCount:disclosure.length,subcategoriesVisible:disclosure.some(visible),actions:root.querySelectorAll('.taxonomy-row-actions button').length}}");
+        assert(Boolean(sections&&!sections.pickerVisible&&sections.subcategoryCount>0&&sections.subcategoriesVisible&&sections.actions>0),`Categories isolates icon pickers while retaining visible subcategory disclosure and existing mutation actions: ${JSON.stringify(sections)}`);
+      }
       if(tab.id==='icons'){
         const iconState=await c.call("function(){const root=document.querySelector('.settings-icons-only');return {picker:[...(root?.querySelectorAll('.taxonomy-icon-disclosure')||[])].some(node=>node.getClientRects().length>0),management:[...(root?.querySelectorAll('.taxonomy-add-row,.taxonomy-row-actions')||[])].some(node=>node.getClientRects().length>0)}}");assert(iconState.picker,'Icons exposes real icon preference controls');assert(!iconState.management,'Icons does not duplicate taxonomy mutation controls');
       }
