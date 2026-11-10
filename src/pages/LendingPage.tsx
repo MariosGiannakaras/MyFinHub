@@ -52,19 +52,33 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   },[commandPerson,commandPersonKey,rows]);
   useEffect(()=>{
     if(!commandPerson||selectedPerson!==commandPerson)return;
-    // Route transitions and closing Command Palette can restore the opener
-    // after the first paint. Focus the exact selected person after route layout
-    // settles, as for Account Management, without changing its finance state.
+    // An exiting search dialog restores its opener after the next paint.
+    // Wait for actual unmount instead of racing an arbitrary frame count.
+    let frame=0;
     let secondFrame=0;
-    const frame=requestAnimationFrame(()=>{
-      secondFrame=requestAnimationFrame(()=>{
-        const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
-          .find(row=>row.textContent?.includes(commandPerson));
-        selected?.scrollIntoView({block:'nearest',behavior:'auto'});
-        selected?.focus({preventScroll:true});
+    let disposed=false;
+    const focusAfterCommandExit=()=>{
+      if(disposed||document.querySelector('.command-palette'))return;
+      observer.disconnect();
+      frame=requestAnimationFrame(()=>{
+        secondFrame=requestAnimationFrame(()=>{
+          if(disposed||document.querySelector('.command-palette'))return;
+          const selected=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+            .find(row=>row.textContent?.includes(commandPerson));
+          selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+          selected?.focus({preventScroll:true});
+        });
       });
-    });
-    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
+    };
+    const observer=new MutationObserver(focusAfterCommandExit);
+    observer.observe(document.body,{childList:true,subtree:true});
+    focusAfterCommandExit();
+    return()=>{
+      disposed=true;
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(secondFrame);
+    };
   },[commandPerson,commandPersonKey,selectedPerson]);
 
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);
