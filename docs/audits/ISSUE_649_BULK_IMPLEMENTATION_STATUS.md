@@ -1,5 +1,11 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-10 — source hygiene syntax correction within the bulk code batch
+
+**Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** The initial coherent shared-focus/Settings batch at `364fdda6aef147c11b3ecb77c04ee73047a4967d` triggered mandatory (non-optional) draft [CI #42839809372](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42839809372). `validate` **FAILED at hygiene:unused** before tests because newly added test title contained an unescaped apostrophe (`launcher's`) in a single-quoted TypeScript string; this is a source test typo, not a confirmed product runtime failure. Corrected the test title to `original opener` without changing functionality, guard strictness, or QA thresholds. Verify entire exact head with mandatory source CI when the next code-phase checkpoint is pushed; do not enable expensive Draft five-suite QA until Phase 2. CodeQL status on the superseded run does not establish this head's acceptance. No I20.01 count yet; no merge/release.
+
+---
+
 ## 2026-11-10 — owner-ordered bulk phase separation activated; I20.01 shared focus and Settings sibling fixes (candidate)
 
 **Progress: Implementations 6/23 completed · Sub-implementations 52/132 completed (unchanged).** Owner explicitly requests **mass implementation of code first**, followed by consolidated assistant-owned QA, non-code integration/documentation review, and finally PR/merge/CI verification. Keep the Draft batch, do not launch focused expensive QA on every edit and do not merge before green pre-merge checks; integration CI is post-merge. `AGENTS.md` now owns this enduring four-phase execution policy, while changing counters and acceptance stay here. Mandatory push-triggered source CI and high-risk auth/migration/finance checks remain intact. Do not misrepresent the 80 remaining checklist entries as 80 missing code features: classify evidence-backed existing code vs changed code vs unverified behavior first.

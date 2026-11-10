@@ -34,7 +34,7 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
   });
 
-  it('preserves the original launcher's focus and scroll boundary across nested confirmation (#649 I20.01)',()=>{
+  it('preserves the original opener focus and scroll boundary across nested confirmation (#649 I20.01)',()=>{
     expect(focus).toContain('const focusActiveRef = useRef(focusActive)');
     expect(focus).toContain('focusActiveRef.current = focusActive');
     expect(focus).toContain('if (!focusActiveRef.current || !isTopmostModal(root)) return;');
