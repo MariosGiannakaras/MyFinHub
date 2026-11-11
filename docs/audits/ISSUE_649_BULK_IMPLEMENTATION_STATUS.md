@@ -1,5 +1,7 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+**2026-11-11 source preflight correction:** Reconciled the I03.02 test's literal `\\d` escape with the actual `/^\\d{6}$/` server TOTP regex. The change is test-only; no auth endpoint, MFA flow or security gate changed. **Progress remains 6/23 · 61/132**. Validate this exact head in CI; earlier queued runs do not validate it.
+
 ## 2026-11-11 — I03 owner authentication K contract reconciliation
 
 **Progress: Implementations 6/23 completed · Sub-implementations 61/132 completed.** The previous exact-head `57e3e9c55566f53fe9a7a7ab60309da7fe187298` mandatory [CI #43033177827](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43033177827) finished **SUCCESS** (source validation, CodeQL and Unified; optional Draft rendered/Windows/WebKit/Lighthouse were skipped, not PASS).

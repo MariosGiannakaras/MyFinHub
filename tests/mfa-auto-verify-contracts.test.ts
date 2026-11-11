@@ -62,7 +62,7 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(enrollHandler).toContain('await requireSession(req, res)');
     expect(enrollHandler).toContain('await isOwner(session.accessToken)');
     expect(enrollHandler).toContain('await beginTotpEnrollment(session.accessToken)');
-    expect(handler).toContain("if (!/^\\\\d{6}$/.test(code))");
+    expect(handler).toContain("if (!/^\\d{6}$/.test(code))");
     expect(handler).toContain("if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_MFA_CODE'");
     expect(handler).toContain("accessTokenAal(tokens.access_token) !== 'aal2'");
     expect(handler).toContain('!(await isOwner(tokens.access_token))');
