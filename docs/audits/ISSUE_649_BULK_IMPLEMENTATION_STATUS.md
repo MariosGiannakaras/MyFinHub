@@ -1,5 +1,19 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I03 owner authentication K contract reconciliation
+
+**Progress: Implementations 6/23 completed · Sub-implementations 61/132 completed.** The previous exact-head `57e3e9c55566f53fe9a7a7ab60309da7fe187298` mandatory [CI #43033177827](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43033177827) finished **SUCCESS** (source validation, CodeQL and Unified; optional Draft rendered/Windows/WebKit/Lighthouse were skipped, not PASS).
+
+**I03.02 K verified-existing (+1):** MFA enrollment requires same-origin authenticated owner access; verification accepts only a six-digit TOTP and upgrades cookies only after a genuine owner AAL2 token. `MfaScreen` submits exactly on the sixth digit once, clears rejected codes and restores focus; unauthenticated/MFA states do not mount `FinanceApp`. Extended `tests/mfa-auto-verify-contracts.test.ts` with enrollment boundary, rejected-code/owner-AAL2 issuance and no-finance-pre-MFA source assertions; reused previously passing MFA keyboard rendered harness contract without claiming new screenshots.
+
+**I03.04 K verified-existing (+1):** `tests/security.test.ts`, `tests/native-bearer-api.test.ts`, `tests/native-bearer-card-vault.test.ts`, `tests/account-security.test.ts`, `tests/auth-resilience.test.ts`, and `tests/desktop-loopback-auth-integration.test.ts` already cover owner+AAL2 denial, same-origin/CSRF, cookie-vs-explicit-bearer provenance, malformed bearer fail-closed, session resilience, account/password boundary, card-vault access, and loopback same-port restrictions. No new authentication endpoint or softened RLS. Reuse required final security/real-stack gates.
+
+**I03.06 K verified-existing (+1):** `tests/shared-app-lock.test.ts`, `tests/app-lock-bypass.test.ts`, `tests/device-access.test.ts`, and `tests/auth-expiry-state.test.ts` guard owner app-lock ticket, fresh password+TOTP recovery, protected endpoint coverage, server rejection of forged/expired unlock, and active-device session revocation with stale access failure. Desktop/app-lock timing and rendered UI evidence still require the user-ordered final consolidated QA; **code/test contract completion is not rendered acceptance**. Session/device identity continues to use only authoritative session claims, never invented metadata.
+
+**Validation:** new source assertions need exact new-head CI; existing source suites passed on prior head. **Integration:** #654 Draft → develop, unmerged. **Production:** not started; main, Android, databases and credentials untouched. **High-risk I22.05 remains open** pending atomic mutation-only ledger review, as documented below. Next: continue the next independent #649 implementation/verified-existing item; run required consolidated rendered and final Ready gates only after a coherent code batch.
+
+---
+
 ## 2026-11-11 — I10.04 intermediate-date repayment cap; I13.03/I22.06 verified contracts
 
 **Progress: Implementations 6/23 completed · Sub-implementations 58/132 completed.** Prior exact-head `a1b909b190a5cfa4fb35f21c876f14a065ba353d` mandatory [CI #43015090737](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43015090737) **SUCCESS**; rendered/Windows/WebKit/Lighthouse/final screenshot jobs in Draft remain unrun/skipped, not PASS.
