@@ -135,7 +135,9 @@ export function lendingOutstandingFor(data:FinanceData,person:string,asOf?:strin
 
 /** Conservative upper bound for a repayment at a selected historical date.
  * It must fit both the selected day's receivable and the final known balance.
- * Full server-side chronology/revision validation remains authoritative. */
+ * Finance writes retain owner/revision protections, but complete historical
+ * repayment validation without writeoffs is a separate backend gap (I22.05).
+ * This UI bound cannot replace full intermediate-date server validation. */
 export function lendingRepaymentLimit(data:FinanceData,person:string,date:string){
   return Math.max(0,Math.min(lendingOutstandingFor(data,person,date),lendingOutstandingFor(data,person)));
 }
