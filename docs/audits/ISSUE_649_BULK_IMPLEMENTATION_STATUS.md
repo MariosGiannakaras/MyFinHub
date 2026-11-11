@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I07.04 seed-snapshot fixture correction after mandatory CI
+
+**Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed (unchanged).** [CI #43080574049](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43080574049) at `9f5854cc01440bf0eb5dd5c3e66612e5c1f04a1f` ran 1,722 tests: 1,721 PASS / 1 FAIL in the *new* I07.04 regression fixture; existing finance tests, new I08.01 tests and source guards passed. The test incorrectly appended a historical imported **seed transaction** while retaining the prior authoritative snapshot balance. `accountBalances` correctly treats imported seed entries as already reflected in seed snapshots, and only overlays custom/edited/deleted historic entries plus modern ledger legs; the new test's expected extra debit was therefore false. Changed the synthetic duplicate to `state.customTransactions`, an actual post-snapshot additional legacy-format charge, keeping immutable seed original and preserving separate identities, per-account cash and 120€ booked expense. No production code or accounting behavior changed, and no test/security threshold was relaxed.
+
+**Validation:** correction pending exact new-head mandatory CI. CodeQL and Unified outcome must be rechecked on the new head. **Integration:** #654 Draft → develop; no merge. **Production:** main/Android/Supabase untouched. **Open:** I22.05 atomic DB repayment guard, consolidated rendered/mobile/Windows/DB QA.
+
+**Next:** verify corrected exact-head source test/CI and proceed with independent safe work before final grouped rendered acceptance.
+
+---
+
 ## 2026-11-11 — I07.04 / I08.01 transaction provenance and selected-card vs portfolio finance contracts
 
 **Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed.** **I07.04 K verified-existing (+1):** Added same-merchant/same-date duplicate legacy charge on a second linked account plus a modern independent charge; checked three identities, account balances, complete booked expense and unchanged original seed. Transactions source guard preserves per-row IDs, account routing and separation of credit card postings from generic account rows. **I08.01 K verified-existing (+1):** Added two-credit-card as-of regression for individual over-limit, excluded future card charge, per-card versus aggregated portfolio debt/limits/available credit, and archived-card retained debt with zero active limit. Credit and Reports source regression enforces selected-card identity versus portfolio aggregation. No finance posting/schema change or historical rewrite.

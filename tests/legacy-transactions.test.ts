@@ -54,7 +54,7 @@ describe('legacy transaction overrides and tombstones', () => {
   it('keeps same-merchant charges on distinct ledger identities and linked accounts (#649 I07.04)', () => {
     const data=fixture();
     const original=structuredClone(data.seed.transactions[0]);
-    data.seed.transactions.push({...original,id:'legacy-2',accountId:'bank-b',cell:'B13'});
+    data.state.customTransactions=[{...original,id:'legacy-2',accountId:'bank-b',cell:'B13'}];
     const extra=createEvent({kind:'expense',date:'2026-08-10',amount:40,note:original.note,category:'Τρόφιμα',accountId:'bank-a'});
     data.state.events=[extra];
     expect(effectiveLegacyTransactions(data).map(row=>[row.id,row.accountId,row.note])).toEqual([
