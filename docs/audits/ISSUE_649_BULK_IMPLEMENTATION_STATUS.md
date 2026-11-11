@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I11.06 legacy recurring identity and ordinary spending regression
+
+**Progress: Implementations 6/23 completed · Sub-implementations 55/132 completed.** **I11.06 K verified-existing (+1 code/guard):** `src/lib/recurring.ts` already limits linked payments to explicit `recurringId` instead of inferring a charge from equal merchant name, date or amount. The existing `tests/recurring-payment-edit.test.ts` ensures a corrected expense retains its original explicit link and an unrelated income never inherits it. Extended the same guard using the real synthetic FinanceData fixture to prove that two identical merchant/date/amount expenses remain separate booked spending, only the explicitly linked event counts as a recurring payment, and the seed recurring plus historical finance state is unchanged. This is a finance-semantic preservation guard, **not** a new event engine, automatic subscription import, monthly recurring reclassification or history rewrite.
+
+**Validation/CI:** exact prior head `b4e4fa32b442767d3435026bc674e8b9a2a516cd` had mandatory [CI #42911768151](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42911768151) **SUCCESS**, including validate, CodeQL and Unified. New I11.06 test is written/reviewed but **not yet CI-validated** on this commit; failure requires reopening only I11.06. Shared dialog, device revoke and clipboard UI candidates remain pending user-ordered consolidated rendered evidence. **Integration/merge:** #654 Draft to develop, unmerged. **Production/release:** no owner authorization, main unchanged, Android untouched.
+
+**Next safe action:** continue source-evidence classification and independent code regression work under #649 before grouped rendered QA; keep expensive Draft markers disabled and do not merge pending gates.
+
+---
+
 ## 2026-11-11 — verified-existing K contracts and shared recurring/forecast regression
 
 **Progress: Implementations 6/23 completed · Sub-implementations 54/132 completed.** On exact runtime `5e6a18c36b17f647b6dddcee4212d6b424aff69a`, mandatory [CI #42904317761](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/42904317761) **SUCCESS** (validate, CodeQL and Unified required gate); expensive Draft-only rendered/Windows/WebKit/Lighthouse jobs were **SKIPPED**, not PASS. The eight source-test failures in the previous run were resolved; the repaired mandatory source head was inspected. Source CI does not yet accept the I20.01/I18.05/I20.02/I20.06 rendered candidates.
