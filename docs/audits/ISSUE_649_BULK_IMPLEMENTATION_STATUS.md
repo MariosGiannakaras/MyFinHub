@@ -1,5 +1,21 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I04/I06 account privacy and savings K guards
+
+**Progress: Implementations 6/23 completed · Sub-implementations 65/132 completed.** The current branch code has source coverage for the next four independent verified-existing items; no domain formula or UI ownership change is required.
+
+**I04.02 K verified-existing (+1):** single in-session `privacyVisible` state masks monetary values in Dashboard primary/secondary balances, movement amounts, upcoming items, income/expense summary and category rows, and suppresses numerical chart content/ARIA strings while preserving the previously approved relative balance visualization. Added a bounded multi-surface regression lock in `tests/privacy-session-state-source.test.ts`. Existing `tests/dashboard-primary-cards-ux-source.test.ts` covers masked vs revealed large-value geometry and user-visible focus controls; rendered privacy assertions remain for consolidated QA.
+
+**I04.03 K verified-existing (+1):** `tests/account-selection.test.ts` protects cash/payroll/savings hierarchy independent of account labels, stale default operating accounts, bank-classified savings, absent payroll, missing operating identities, and the exact synthetic QA fixture. `tests/dashboard-primary-cards-ux-source.test.ts` plus the existing focused browser harness guards IBAN absence/fallback, account-chart historical dates, account filtering, large revealed balances and chart/value layout. No false payroll substitution or account-ID rewrite.
+
+**I06.03 K verified-existing (+1):** Savings presents monthly *booked flow* separately from personal goal percentages calculated on the **same common, unreserved savings balance** as-of the selected period, with explanatory multiple-goal gap copy and no-goal empty state. Added `tests/savings-page-source.test.ts` cross-assertions that goal progress derives from one `savingsBalance`, not a synthetic per-goal allocation. Existing projections are read-only and may not post finance events.
+
+**I06.04 K verified-existing (+1):** `tests/ledger-foundations.test.ts` covers current/payroll-to-savings origin constraints, transfer zero-sum posting and account validity; `tests/legacy-workbook-semantics.test.ts` preserves Pay&Save and HELP/RETURN classifications, rejecting IRIS keyword inference. `tests/loans-workspace.test.ts` keeps HELP creation distinct from loan repayment; Savings/Quick Entry source and rendered harness cover single canonical event creation. No new allocation, legacy mutation or double posting.
+
+**Validation:** previous mandatory head `57e3e9c55566f53fe9a7a7ab60309da7fe187298` [CI #43033177827](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43033177827) passed. The new MFA and privacy/savings assertions require exact new-head CI; Draft optional rendered gates are not passed. **Integration:** #654 Draft → develop, unmerged. **Production:** main/Android/database untouched. **I22.05 remains a separate high-risk atomic RPC guard** and must not be implied fixed by UI preflight. Next: validate source guards, proceed with unaccepted high-priority K/code items, then the owner's consolidated rendered QA.
+
+---
+
 **2026-11-11 source preflight correction:** Reconciled the I03.02 test's literal `\\d` escape with the actual `/^\\d{6}$/` server TOTP regex. The change is test-only; no auth endpoint, MFA flow or security gate changed. **Progress remains 6/23 · 61/132**. Validate this exact head in CI; earlier queued runs do not validate it.
 
 ## 2026-11-11 — I03 owner authentication K contract reconciliation
