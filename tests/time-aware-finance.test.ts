@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { accountBalances } from '../src/lib/domain.js';
 import { cashFlowForecast } from '../src/lib/forecast.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { createScheduledTransaction, scheduledLifecycle, scheduledToEvent, transitionScheduled } from '../src/lib/scheduled.js';
+import { createScheduledTransaction, pendingScheduled, scheduledHistory, scheduledLifecycle, scheduledToEvent, transitionScheduled } from '../src/lib/scheduled.js';
 import type { FinanceData } from '../src/types.js';
 
 function baseData(): FinanceData {
@@ -35,6 +35,53 @@ describe('time-aware finance model', () => {
     data.state.scheduled = [transitionScheduled(item, 'completed', event.id)];
     expect(accountBalances(data, '2026-08-21').bank).toBe(880);
     expect(data.state.scheduled[0].completedEventId).toBe(event.id);
+  });
+
+  it('edits a scheduled item in place, then posts one real event and restores by undo (#649 I12.04)',()=>{
+    const initial=baseData();
+    const original=createScheduledTransaction(initial,{id:'scheduled-regression',kind:'expense',dueDate:'2026-08-20',amount:125,accountId:'bank',category:'Άλλο',note:'Original'});
+    const pending={...initial,state:{...initial.state,scheduled:[original]}};
+    const edited=createScheduledTransaction(pending,{id:original.id,createdAt:original.createdAt,kind:'expense',dueDate:'2026-08-20',amount:90.25,accountId:'bank',category:'Άλλο',note:'Edited'});
+    const draft={...pending,state:{...pending.state,scheduled:[edited]}};
+    expect(edited).toMatchObject({id:original.id,createdAt:original.createdAt,amount:90.25,status:'pending',note:'Edited'});
+    expect(pendingScheduled(draft)).toHaveLength(1);
+    expect(accountBalances(draft,'2026-08-21').bank).toBe(1000);
+    const event=scheduledToEvent(draft,edited,{date:'2026-08-21',amount:90.25,accountId:'bank'});
+    const completed=transitionScheduled(edited,'completed',event.id);
+    const saved={...draft,state:{...draft.state,scheduled:[completed],events:[event]}};
+    expect(saved.state.events).toHaveLength(1);
+    expect(saved.state.events?.[0]).toMatchObject({id:event.id,kind:'expense',amount:90.25,legs:[{accountId:'bank',amount:-90.25}]});
+    expect(pendingScheduled(saved)).toEqual([]);
+    expect(scheduledHistory(saved)).toContainEqual(expect.objectContaining({id:original.id,status:'completed',completedEventId:event.id}));
+    expect(accountBalances(saved,'2026-08-21').bank).toBeCloseTo(909.75,2);
+    expect(()=>scheduledToEvent(saved,completed,{date:'2026-08-21'})).toThrow(/ήδη κλείσει/);
+    // A confirmed history undo restores the prior immutable state; this unit test
+    // checks its accounting semantics, not the remote server's history receipt.
+    expect(accountBalances(draft,'2026-08-21').bank).toBe(1000);
+    expect(draft.state.scheduled?.[0]).toMatchObject({id:original.id,status:'pending'});
+    expect(draft.state.events).toEqual([]);
+    expect(pending.state.scheduled?.[0]).toMatchObject({amount:125,note:'Original',status:'pending'});
+  });
+
+  it('keeps skip/cancel and invalid completion drafts nonposting (#649 I12.04)',()=>{
+    const data=baseData();
+    const item=createScheduledTransaction(data,{id:'scheduled-negative',kind:'expense',dueDate:'2026-08-20',amount:80,accountId:'bank',note:'No actual charge'});
+    for(const status of ['skipped','cancelled'] as const){
+      const closed=transitionScheduled(item,status);
+      const state={...data,state:{...data.state,scheduled:[closed]}};
+      expect(scheduledLifecycle(closed,'2026-08-21')).toBe(status);
+      expect(pendingScheduled(state)).toEqual([]);
+      expect(scheduledHistory(state)).toHaveLength(1);
+      expect(cashFlowForecast(state,'2026-08-17',30).movements).toEqual([]);
+      expect(accountBalances(state,'2026-08-31').bank).toBe(1000);
+      expect(state.state.events).toEqual([]);
+      expect(()=>scheduledToEvent(state,closed,{date:'2026-08-21'})).toThrow(/ήδη κλείσει/);
+    }
+    expect(item.status).toBe('pending');
+    expect(()=>createScheduledTransaction(data,{kind:'expense',dueDate:'2026-08-20',amount:0,accountId:'bank'})).toThrow();
+    expect(()=>createScheduledTransaction(data,{kind:'expense',dueDate:'2026-08-20',amount:40,accountId:'missing'})).toThrow();
+    expect(()=>createScheduledTransaction(data,{kind:'transfer',dueDate:'2026-08-20',amount:40,fromAccountId:'bank',toAccountId:'bank'})).toThrow();
+    expect(()=>scheduledToEvent(data,item,{date:'2026-08-21',accountId:'missing'})).toThrow();
   });
 
   it('derives upcoming and due lifecycle from date without mutating stored state', () => {

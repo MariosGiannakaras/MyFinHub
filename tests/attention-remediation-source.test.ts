@@ -26,6 +26,37 @@ describe('Attention post-v1.4 remediation contracts',()=>{
     expect(app).toContain('attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision }');
   });
 
+  it('routes each alert to its existing exact entity or source, not an inferred merchant (#649 I13.02)',()=>{
+    const model=readFileSync(new URL('../src/lib/attention.ts',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+    const transactions=readFileSync(new URL('../src/pages/TransactionsPage.tsx',import.meta.url),'utf8');
+    for(const token of [
+      "scheduledId:item.id,action:'complete_scheduled'",
+      "recurringId:item.id,action:'pay_recurring'",
+      "loanId:loan.id,action:'pay_loan'",
+      "cardId:card.id,statementId:statement.id,action:'pay_credit'",
+      "budgetId:row.id,action:'open_budgets'",
+      "transactionId:item.id,transactionSource:item.source,action:'categorize_transaction'",
+      "transactionId:primary.id,transactionSource:primary.source,action:'review_duplicate'"
+    ])expect(model).toContain(token);
+    for(const token of [
+      "focusRecurringPayment(item.recurringId)",
+      "openSpecial({ mode: 'loan', loanId: item.loanId",
+      "openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, statementId:item.statementId",
+      "openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId })",
+      "url.searchParams.set('reportSection','budgets')"
+    ])expect(app).toContain(token);
+    expect(page).toContain("url.searchParams.set('attentionTx',item.transactionId)");
+    expect(page).toContain("url.searchParams.set('attentionSource',item.transactionSource)");
+    expect(page).toContain("url.hash='#/transactions'");
+    expect(transactions).toContain("params.get('attentionTx')");
+    expect(transactions).toContain("params.get('attentionSource')");
+    expect(reports).toContain("url.searchParams.get('reportSection')!=='budgets'");
+    expect(reports).toContain('id="report-budgets"');
+    for(const label of ['exact recurring and loan deep actions','exact credit statement context','exact scheduled completion is atomic'])expect(qa).toContain(label);
+  });
+
   it('offers group expansion only when rows are actually truncated',()=>{
     expect(page).toContain('const canExpand=items.length>4');
     expect(page).toContain('{canExpand?<Button');
