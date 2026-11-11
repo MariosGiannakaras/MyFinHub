@@ -90,6 +90,38 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
   expect(lendingRepaymentLimit(d,'Alex','2026-08-16')).toBe(0);
  });
 
+ it('uses intermediate dated repayments before a later lending replenishes the final balance (#649 I10.04)',()=>{
+  const d=fixture();
+  const laterRepayment=createEvent({kind:'repayment',date:'2026-08-20',person:'Alex',amount:80,note:'Old repayment',accountId:'cash'});
+  const replenishment=createEvent({kind:'lending',date:'2026-08-30',person:'Alex',amount:100,note:'New lending',accountId:'cash'});
+  d.state.events=[laterRepayment,replenishment];
+  expect(lendingOutstandingFor(d,'Alex','2026-08-19')).toBe(100);
+  expect(lendingOutstandingFor(d,'Alex','2026-08-20')).toBe(20);
+  expect(lendingOutstandingFor(d,'Alex')).toBe(120);
+  // The previous min(selected, final) would incorrectly offer 100 here.
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-19')).toBe(20);
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-21')).toBe(20);
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-31')).toBe(120);
+  expect(lendingRepaymentLimit(d,'Alex','not-a-date')).toBe(0);
+  expect(d.state.events).toEqual([laterRepayment,replenishment]);
+ });
+
+ it('includes completed legacy dated repayments when finding the lowest intermediate amount (#649 I10.04)',()=>{
+  const d=fixture();
+  d.seed.lending[0].outstanding=20;
+  d.seed.lending[0].entries=[
+    {date:'2026-07-01',lent:100,repaid:0},
+    {date:'2026-08-20',lent:0,repaid:80},
+  ];
+  d.state.events=[createEvent({kind:'lending',date:'2026-08-30',person:'Alex',amount:100,note:'Later lending',accountId:'cash'})];
+  expect(lendingOutstandingFor(d,'Alex','2026-08-19')).toBe(100);
+  expect(lendingOutstandingFor(d,'Alex','2026-08-20')).toBe(20);
+  expect(lendingOutstandingFor(d,'Alex')).toBe(120);
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-19')).toBe(20);
+  expect(d.seed.lending[0].outstanding).toBe(20);
+  expect(d.seed.lending[0].entries).toHaveLength(2);
+ });
+
  it('undo restores historic receivable without changing seeded legacy history',()=>{
   const d=fixture(),seed=JSON.stringify(d.seed.lending);
   const action=createEvent({kind:'lending_writeoff',date:'2026-08-17',person:'Alex',amount:25,note:'Owner signed'});

@@ -133,11 +133,30 @@ export function lendingHistory(data:FinanceData,asOf?:string):LendingHistoryRow[
 
 export function lendingOutstandingFor(data:FinanceData,person:string,asOf?:string){const target=cleanString(person);return target?lendingRows(data,asOf).find(row=>row.person===target)?.outstanding??0:0}
 
-/** Conservative upper bound for a repayment at a selected historical date.
- * It must fit both the selected day's receivable and the final known balance.
- * Finance writes retain owner/revision protections, but complete historical
- * repayment validation without writeoffs is a separate backend gap (I22.05).
- * This UI bound cannot replace full intermediate-date server validation. */
+/** Conservative UI ceiling for a dated repayment. A future lending event can
+ * replenish the final balance after a later repayment has exhausted it, so
+ * checking only the entered and final dates is insufficient. Include each
+ * dated receivable decrease from canonical events and reconstructed legacy
+ * history; preserve incomplete legacy snapshots as documented. This is UI
+ * preflight, not an atomic server/RPC validation substitute (I22.05). */
 export function lendingRepaymentLimit(data:FinanceData,person:string,date:string){
-  return Math.max(0,Math.min(lendingOutstandingFor(data,person,date),lendingOutstandingFor(data,person)));
+  const target=cleanString(person);
+  if(!target||!isValidDateOnly(date))return 0;
+  const checkpoints=new Set<string>([date]);
+  for(const event of asArray<Record<string,unknown>>(data.state.events)){
+    const eventDate=cleanDate(event.date);
+    if(cleanString(event.person)===target&&isValidDateOnly(eventDate)&&eventDate>date&&
+      finiteNumber(event.receivableDelta)<0)checkpoints.add(eventDate);
+  }
+  for(const legacy of asArray<Record<string,unknown>>(data.seed.lending)){
+    if(cleanString(legacy.person)!==target)continue;
+    for(const entry of asArray<Record<string,unknown>>(legacy.entries)){
+      const entryDate=cleanDate(entry.date);
+      if(isValidDateOnly(entryDate)&&entryDate>date&&
+        (finiteNumber(entry.repaid)>0||finiteNumber(entry.haircut)>0))checkpoints.add(entryDate);
+    }
+  }
+  let limit=lendingOutstandingFor(data,target);
+  for(const checkpoint of checkpoints)limit=Math.min(limit,lendingOutstandingFor(data,target,checkpoint));
+  return Math.max(0,limit);
 }
