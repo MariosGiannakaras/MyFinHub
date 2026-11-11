@@ -9,6 +9,22 @@ const stackThree=readFileSync(new URL('../src/styles/canonical-credit-card-stack
 const host=readFileSync(new URL('../src/styles/credit-approved-target.css',import.meta.url),'utf8');
 
 describe('Credit post-v1.4 remediation contracts',()=>{
+  it('keeps Credit scoped to the selected identity and Reports to all credit cards (#649 I08.01)',()=>{
+    const reports=readFileSync(new URL('../src/lib/reports.ts',import.meta.url),'utf8');
+    for(const token of [
+      'const card=activeCredit.find(item=>item.id===selectedCardId)??activeCredit[0]',
+      'const debt=card?creditDebtForCard(data,card.id,asOf):0;',
+      'const limit=card?creditLimitForCard(data,card):0;',
+      'const available=Math.max(0,limit-debt);','creditEventsForCard(data,card.id)'
+    ])expect(page).toContain(token);
+    for(const token of [
+      'creditCards(data,{includeArchived:true}).map(card=>',
+      'const debt=creditDebtForCard(data,card.id,asOf);const limit=card.active===false?0:creditLimitForCard(data,card);',
+      'const debt=cards.reduce((sum,card)=>sum+card.debt,0);',
+      'const limit=active.reduce((sum,card)=>sum+card.limit,0);'
+    ])expect(reports).toContain(token);
+  });
+
   it('keeps one canonical stack navigation model and populated create reachability',()=>{
     expect(page).toContain('<Plus/> Προσθήκη πιστωτικής');
     expect(page).toContain('aria-label={`Αρχείο καρτών, ${archivedCredit.length}`}');

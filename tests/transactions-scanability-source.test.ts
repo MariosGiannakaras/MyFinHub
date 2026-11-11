@@ -11,6 +11,19 @@ const coordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.m
 
 describe('Transactions scanability source contracts',()=>{
   it('removes routine app provenance and replaces internal kind fallbacks with human labels',()=>{expect(page).not.toContain("'MyFinHub'");expect(page).toContain("row.category===row.kind?eventKindLabel(row.kind):categoryPath");expect(page).toContain("if(row.source!=='legacy')return category");expect(page).toContain("row.overridden?'Ιστορικό · override':'Ιστορικό'")});
+  it('preserves row IDs and bank-account links instead of grouping equal merchants (#649 I07.04)',()=>{
+    const source=page.slice(page.indexOf('const sourceRows=useMemo'),page.indexOf('useEffect(()=>{',page.indexOf('const sourceRows=useMemo')));
+    const filtered=page.slice(page.indexOf('const rows=useMemo'),page.indexOf('const firstComment='));
+    for(const token of ['effectiveLegacyTransactions(data)','id:t.id,date:t.date','id:e.id,date:e.date',
+      'accountIds:[t.accountId,t.fromAccountId,t.toAccountId].filter(Boolean)',
+      "accountIds:[...new Set(e.legs.map(l=>l.accountId).filter(id=>id!=='credit-card'))]",
+      "!['card_purchase','card_payment'].includes(e.kind)",'return [...legacy,...events]'])expect(source).toContain(token);
+    expect(filtered).toContain("(account==='all'||r.accountIds.includes(account))");
+    expect(filtered).toContain('sourceRows.filter(r=>');
+    expect(page).toContain('<tr key={r.id}');
+    expect(page).toContain('<article key={r.id}');
+  });
+
   it('keeps desktop table headers semantic and gives mobile filters readable width instead of forcing truncation',()=>{expect(page).toContain("mobile?'mobile-transaction-filters':'desktop-finance-table'");expect(page).toContain('transaction-filter-controls');const head=page.match(/<thead>[\s\S]*?<\/thead>/)?.[0]||'';expect(head).not.toContain('AppSelectInput');expect(head).toContain('Ημερομηνία');expect(head).toContain('Περιγραφή');expect(head).toContain('Λογαριασμός');expect(head).toContain('Ποσό');expect(responsiveStyles).toContain('.transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}')});
   it('keeps the desktop date range readable and reflows filters before labels collide',()=>{expect(approvedStyles).toContain('minmax(240px,1.15fr) 42px');expect(approvedStyles).toContain('.transactions-approved{gap:12px;min-width:0;max-width:100%;grid-template-columns:minmax(0,1fr)');expect(approvedStyles).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr)');expect(approvedStyles).toContain('@media(max-width:1180px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr)}.transactions-approved-table{min-width:0;table-layout:fixed}');expect(approvedStyles).toContain('.transactions-approved-date .owned-input{min-width:0;width:100%;border:0;background:transparent;color:#30476e;outline:0;padding:0 2px;font-size:var(--ux-dense-label-size)!important}');expect(approvedStyles).toContain('@media(max-width:1180px)');expect(approvedStyles).toContain('.transactions-approved-filters{grid-template-columns:repeat(2,1fr);align-items:center}');expect(approvedStyles).toContain('@media(max-width:980px){.transactions-approved-table th{height:48px;white-space:normal;overflow-wrap:anywhere;line-height:1.2}}');
     /* At <=980px the stacking/width rules are inherited from <=1180px;

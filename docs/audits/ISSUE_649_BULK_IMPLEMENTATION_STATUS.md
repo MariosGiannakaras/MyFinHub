@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I07.04 / I08.01 transaction provenance and selected-card vs portfolio finance contracts
+
+**Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed.** **I07.04 K verified-existing (+1):** Added same-merchant/same-date duplicate legacy charge on a second linked account plus a modern independent charge; checked three identities, account balances, complete booked expense and unchanged original seed. Transactions source guard preserves per-row IDs, account routing and separation of credit card postings from generic account rows. **I08.01 K verified-existing (+1):** Added two-credit-card as-of regression for individual over-limit, excluded future card charge, per-card versus aggregated portfolio debt/limits/available credit, and archived-card retained debt with zero active limit. Credit and Reports source regression enforces selected-card identity versus portfolio aggregation. No finance posting/schema change or historical rewrite.
+
+**Validation/CI:** previous head `e654b07107d469bad842be1df9c19ad57bb008d0` [mandatory CI #43055114950](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43055114950) **SUCCESS**. New source tests pending exact-head CI; optional rendered/Windows/WebKit/final gates unrun or skipped, not PASS. **Integration:** Draft PR #654 → develop, no merge. **Production/release:** no main/Android/Supabase data operation. **Open:** I22.05 atomic mutation-side repayment-chronology validation still requires legacy/read/import/history-safe design and isolated proof.
+
+**Next:** verify new-head mandatory CI and correct any exposed real failure; continue remaining scoped #649 work before grouped rendered acceptance.
+
+---
+
 ## 2026-11-11 — I08.05 / I09.03 card and loan finance regression contracts
 
 **Progress: Implementations 6/23 completed · Sub-implementations 69/132 completed.** **I08.05 K verified-existing (+1):** `tests/credit-statements.test.ts` already covers deterministic statement cycles, due boundaries, partial/full settlement and future-date exclusion; `tests/credit-rates.test.ts` covers interest/rate provenance without inventing financial events; `scripts/ui-ux-credit-overlimit-qa.mjs` covers overlimit visual states. Extended `tests/ledger-foundations.test.ts` with the canonical financial boundary: purchase creates exactly one expense and credit liability; a linked card settlement moves bank cash and reduces that liability but does not create a second expense or alter net worth again. This is existing semantics protected by a cross-domain exact-cent test, not a new credit engine.

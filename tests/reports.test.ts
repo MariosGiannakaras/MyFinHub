@@ -23,6 +23,29 @@ describe('operational reports',()=>{
  it('reports category/subcategory and excludes refunds from headline shape',()=>{const data=fixture();const coffee=createEvent({kind:'expense',date:'2026-08-03',amount:5,note:'Coffee',category:'Φαγητό',accountId:'piraeus-payroll'});coffee.subcategory='Καφές';data.state.events=[coffee];expect(subcategoryTotals(data,'2026-08')).toEqual(expect.arrayContaining([{name:'Όχημα › Βενζίνη',value:40},{name:'Φαγητό › Καφές',value:5}]));const snapshot=operationalReportSnapshot(data,'2026-08');expect(snapshot.flow.expense).toBe(45);expect(snapshot.recurring).toBe(30);expect(snapshot.receivables).toBe(25);expect(snapshot).not.toHaveProperty('refunds')});
  it('returns a stable six-month operational series',()=>{const series=reportFlowSeries(fixture(),'2026-08',6);expect(series).toHaveLength(6);expect(series.at(-1)?.month).toBe('2026-08')});
  it('aggregates independent credit-card limits and debts by card identity',()=>{const data=fixture();data.state.cards=[{id:'credit-a',bankId:'piraeus',nickname:'A',kind:'credit',network:'visa',creditLimit:1000,active:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},{id:'credit-b',bankId:'alpha',nickname:'B',kind:'credit',network:'mastercard',creditLimit:500,active:true,createdAt:'2026-02-01T00:00:00.000Z',updatedAt:'2026-02-01T00:00:00.000Z'}];const a=createEvent({kind:'card_purchase',date:'2026-08-05',amount:200,note:'A purchase'});a.cardId='credit-a';const aPay=createEvent({kind:'card_payment',date:'2026-08-06',amount:50,note:'A payment',fromAccountId:'piraeus-payroll'});aPay.cardId='credit-a';const b=createEvent({kind:'card_purchase',date:'2026-08-07',amount:100,note:'B purchase'});b.cardId='credit-b';data.state.events=[a,aPay,b];const snapshot=operationalReportSnapshot(data,'2026-08');expect(snapshot.creditCards).toBe(2);expect(snapshot.creditDebt).toBe(250);expect(snapshot.creditLimit).toBe(1500);expect(snapshot.creditAvailable).toBe(1250);expect(snapshot.creditUsage).toBeCloseTo(1/6);expect(snapshot.creditCardRows.map(row=>row.id)).toEqual(['credit-a','credit-b']);expect(creditCardSnapshots(data,'2026-08-31')[0]).toMatchObject({id:'credit-a',debt:150,limit:1000})});
+ it('keeps archived-card debt and individual over-limit separate from portfolio available credit (#649 I08.01)',()=>{
+  const data=fixture(),createdAt='2026-01-01T00:00:00.000Z';
+  data.state.cards=[
+    {id:'credit-a',bankId:'piraeus',nickname:'A',kind:'credit',network:'visa',creditLimit:100,active:true,createdAt,updatedAt:createdAt},
+    {id:'credit-b',bankId:'alpha',nickname:'B',kind:'credit',network:'visa',creditLimit:500,active:true,createdAt:'2026-02-01T00:00:00.000Z',updatedAt:'2026-02-01T00:00:00.000Z'},
+  ];
+  const charge=(date:string,amount:number,cardId:string)=>{
+    const event=createEvent({kind:'card_purchase',date,amount,note:'Purchase'});event.cardId=cardId;return event;
+  };
+  data.state.events=[charge('2026-08-05',125,'credit-a'),charge('2026-08-07',50,'credit-b'),charge('2026-08-27',20,'credit-b')];
+  const asOf='2026-08-17',cards=creditCardSnapshots(data,asOf);
+  expect(cards.find(card=>card.id==='credit-a')).toMatchObject({active:true,debt:125,limit:100,available:0,usage:1.25});
+  expect(cards.find(card=>card.id==='credit-b')).toMatchObject({active:true,debt:50,limit:500,available:450,usage:0.1});
+  const current=operationalReportSnapshot(data,'2026-08',asOf);
+  expect(current).toMatchObject({creditCards:2,creditDebt:175,creditLimit:600,creditAvailable:425});
+  expect(current.creditUsage).toBeCloseTo(175/600);
+  data.state.cards=data.state.cards.map(card=>card.id==='credit-a'?{...card,active:false}:card);
+  const archived=operationalReportSnapshot(data,'2026-08',asOf);
+  expect(archived).toMatchObject({creditCards:1,creditDebt:175,creditLimit:500,creditAvailable:325});
+  expect(archived.creditCardRows.find(card=>card.id==='credit-a')).toMatchObject({active:false,debt:125,limit:0,available:0});
+  expect(archived.creditCardRows.find(card=>card.id==='credit-b')).toMatchObject({active:true,debt:50,limit:500,available:450});
+  expect(operationalReportSnapshot(data,'2026-08','2026-08-31').creditDebt).toBe(195);
+ });
  it('preserves over-limit utilization instead of capping analytics at 100 percent',()=>{const data=fixture();data.state.cards=[{id:'credit-a',bankId:'piraeus',nickname:'A',kind:'credit',network:'visa',creditLimit:100,active:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'}];const purchase=createEvent({kind:'card_purchase',date:'2026-08-05',amount:125,note:'Over-limit purchase'});purchase.cardId='credit-a';data.state.events=[purchase];const snapshot=operationalReportSnapshot(data,'2026-08');expect(snapshot.creditDebt).toBe(125);expect(snapshot.creditLimit).toBe(100);expect(snapshot.creditAvailable).toBe(0);expect(snapshot.creditUsage).toBeCloseTo(1.25);expect(creditCardSnapshots(data,'2026-08-31')[0]).toMatchObject({debt:125,limit:100,available:0,usage:1.25})});
  it('applies one current-month as-of cutoff across Reports balances, credit and account series',()=>{
   const data=fixture();

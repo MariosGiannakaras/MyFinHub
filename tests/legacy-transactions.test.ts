@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances, effectiveLegacyTransactions, monthlyFlow } from '../src/lib/domain.js';
+import { accountBalances, createEvent, effectiveLegacyTransactions, monthlyFlow } from '../src/lib/domain.js';
 import { effectiveLegacyTransaction, restoreLegacyOriginal, withLegacyOverride, withLegacyTombstone } from '../src/lib/legacyTransactions.js';
 import type { FinanceData, LegacyTransaction } from '../src/types.js';
 
@@ -49,6 +49,21 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(effectiveLegacyTransactions(next)).toHaveLength(1);
     expect(monthlyFlow(next, '2026-08').expense).toBe(65);
     expect(accountBalances(next, '2026-08-31')['bank-a']).toBe(975);
+  });
+
+  it('keeps same-merchant charges on distinct ledger identities and linked accounts (#649 I07.04)', () => {
+    const data=fixture();
+    const original=structuredClone(data.seed.transactions[0]);
+    data.seed.transactions.push({...original,id:'legacy-2',accountId:'bank-b',cell:'B13'});
+    const extra=createEvent({kind:'expense',date:'2026-08-10',amount:40,note:original.note,category:'Τρόφιμα',accountId:'bank-a'});
+    data.state.events=[extra];
+    expect(effectiveLegacyTransactions(data).map(row=>[row.id,row.accountId,row.note])).toEqual([
+      ['legacy-1','bank-a',original.note],['legacy-2','bank-b',original.note],
+    ]);
+    expect(new Set([...effectiveLegacyTransactions(data).map(row=>row.id),extra.id]).size).toBe(3);
+    expect(monthlyFlow(data,'2026-08').expense).toBe(120);
+    expect(accountBalances(data,'2026-08-31')).toMatchObject({'bank-a':920,'bank-b':160});
+    expect(data.seed.transactions[0]).toEqual(original);
   });
 
   it('makes a later manual edit authoritative by clearing the prior confirmed review decision only for that row', () => {
