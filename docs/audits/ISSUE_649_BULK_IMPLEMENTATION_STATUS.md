@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-12 — I13.04 forecast advisory, due provenance and owner-controlled review semantics
+
+**Progress: Implementations 6/23 completed · Sub-implementations 76/132 completed.** **I13.04 K verified-existing (+1):** Added a deterministic split between currently booked cash and a future scheduled €995 expense: current bank €1,000 must not trigger a false *actual* low-balance alert, while the low €5 prospective balance produces a clearly marked `open_forecast` advisory with the future due date; no forecast projection writes an event. Added a review-semantic fixture: a real legacy-format Pay&Save suggestion is advisory until the owner chooses to confirm; `kept` preserves the original €30 income, while explicit `confirmed saving_cash_offset` reclassifies it as savings without altering account cash, immutable seed or creating a finance event. Added cross-layer source guards for actual-budget/as-of evaluation, forecast provenance, urgent dismissal prohibition, fingerprint invalidation, optional review/IRIS human confirmation and reviewDecisions-only mutation. Existing expiry/loan/recurring future-payment negative tests remain authoritative. No taxonomy/rule migration or automatic reclassification.
+
+**Validation:** previous head `c207b8a2c5e0a6348ad357290d11bb3129ecd7f8` [CI #43111788747](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43111788747) **SUCCESS**, including source validate + CodeQL. New tests require exact-head mandatory CI; rendered/Windows/WebKit/real-stack/final screenshot gates remain skipped or unrun, not PASS. **Integration:** Draft PR #654 → develop, no merge. **Production:** main/Android/private financial state unchanged. **Open:** I22.05 server/DB atomic repayment chronology and staged consolidated QA.
+
+**Next:** check exact-head source result, address any material fixture discrepancy or actual regression before proceeding to remaining independent K/V implementation and consolidated QA.
+
+---
+
 ## 2026-11-12 — I12.04 / I13.02 scheduled lifecycle and exact Attention source routing
 
 **Progress: Implementations 6/23 completed · Sub-implementations 75/132 completed.** **I12.04 K verified-existing (+1):** `src/lib/scheduled.ts` and the existing revisioned `updateDurably` flow support pending-only completion, edit-in-place identity, skipped/cancelled nonposting, one scheduled+event state mutation, and conflict/error receipts. Added deterministic finance tests for creating/editing an item with preserved ID, one exact-cent posted event, closed-state re-entry denial, unchanged cash for pending/skipped/cancelled, malformed account/transfer/payment rejection and equivalent pre-write state restored by synthetic undo. Added cross-layer source guards for the production scheduled completion, durable update receipts, error/pending/failure behavior and synthetic QA injection. This does **not** claim DB-concurrency isolation, browser acceptance or an independently exercised remote history undo; those are separate final gates.

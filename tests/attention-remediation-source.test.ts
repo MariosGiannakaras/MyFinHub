@@ -57,6 +57,25 @@ describe('Attention post-v1.4 remediation contracts',()=>{
     for(const label of ['exact recurring and loan deep actions','exact credit statement context','exact scheduled completion is atomic'])expect(qa).toContain(label);
   });
 
+  it('keeps due/forecast advisory sources and owner review choices distinct from postings (#649 I13.04)',()=>{
+    const model=readFileSync(new URL('../src/lib/attention.ts',import.meta.url),'utf8');
+    const domain=readFileSync(new URL('../src/lib/domain.ts',import.meta.url),'utf8');
+    const review=readFileSync(new URL('../src/components/LegacyConfirmationPanel.tsx',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    expect(model).toContain("budgetProgress(data,asOf.slice(0,7),asOf,false)");
+    expect(model).toContain('const balances=accountBalances(data,asOf)');
+    expect(model).toContain('const forecast=cashFlowForecast(data,asOf,30)');
+    expect(model).toContain("action:'open_forecast'");
+    expect(model).toContain("if(item.severity==='danger')throw new Error");
+    expect(model).toContain('decision.fingerprint!==item.fingerprint');
+    expect(review).toContain("onDecision(id,{status,semanticKind,decidedAt:now.toISOString(),snoozedUntil});");
+    expect(review).toContain("onClick={()=>act(s.transaction.id,'kept')}");
+    expect(review).toContain("disabled={s.semanticKind==='iris_context'}");
+    expect(domain).toContain("if (decision?.status === 'confirmed' && decision.semanticKind)");
+    expect(domain).toContain("existingDecision?.status==='kept'");
+    expect(app).toContain('reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision }');
+  });
+
   it('offers group expansion only when rows are actually truncated',()=>{
     expect(page).toContain('const canExpand=items.length>4');
     expect(page).toContain('{canExpand?<Button');

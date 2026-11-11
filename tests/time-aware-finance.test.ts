@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { accountBalances } from '../src/lib/domain.js';
+import { allAttentionItems } from '../src/lib/attention.js';
 import { cashFlowForecast } from '../src/lib/forecast.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import { createScheduledTransaction, pendingScheduled, scheduledHistory, scheduledLifecycle, scheduledToEvent, transitionScheduled } from '../src/lib/scheduled.js';
@@ -149,6 +150,22 @@ describe('time-aware finance model', () => {
     expect(forecast.sourceCounts.loan).toBe(1);
     expect(forecast.projectedPortfolio).toBe(1660);
     expect(forecast.insufficientData).toBe(false);
+  });
+
+  it('distinguishes forecast low-cash advice from booked cash and does not post it (#649 I13.04)',()=>{
+    const data=baseData();
+    const bill=createScheduledTransaction(data,{kind:'expense',dueDate:'2026-08-22',amount:995,accountId:'bank',note:'Future known bill'});
+    data.state.scheduled=[bill];
+    const before=JSON.stringify(data);
+    const items=allAttentionItems(data,'2026-08-17');
+    expect(items.some(item=>item.id==='current-balance:bank')).toBe(false);
+    const advice=items.find(item=>item.id==='forecast:bank');
+    expect(advice).toMatchObject({kind:'forecast',severity:'warning',action:'open_forecast',accountId:'bank',dueDate:'2026-08-22',amount:5});
+    expect(advice?.reason).toContain('ντετερμινιστική');
+    expect(items.find(item=>item.id===`scheduled:${bill.id}`)).toMatchObject({action:'complete_scheduled',scheduledId:bill.id});
+    expect(accountBalances(data,'2026-08-17').bank).toBe(1000);
+    expect(data.state.events).toEqual([]);
+    expect(JSON.stringify(data)).toBe(before);
   });
 
   it('excludes skipped and cancelled scheduled items from forecast', () => {

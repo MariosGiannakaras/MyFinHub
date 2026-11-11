@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances, createEvent, flowImpactLegacy, migrateData, monthlyFlow, netWorth, suggestSplitParts } from '../src/lib/domain.js';
+import { accountBalances, createEvent, flowImpactLegacy, migrateData, monthlyFlow, netWorth, reviewSuggestions, suggestSplitParts } from '../src/lib/domain.js';
 import type { FinanceData, LegacyTransaction } from '../src/types.js';
 
 const minimal = (): FinanceData => migrateData({
@@ -33,6 +33,25 @@ describe('RheomIQ ledger invariants',()=>{
   it('lending preserves net worth through receivable asset',()=>{const d=minimal();const before=netWorth(d,'2026-08-17');d.state.events=[createEvent({kind:'lending',date:'2026-08-17',amount:100,note:'lend',accountId:'piraeus-payroll',person:'Χρήστος'})];expect(netWorth(d,'2026-08-17')).toBe(before)});
   it('rejects unbalanced split',()=>{expect(()=>createEvent({kind:'split',date:'2026-08-17',amount:10,note:'bad',accountId:'cash',parts:[{id:'1',label:'x',category:'Άλλο',amount:9}]})).toThrow(/δεν ισούνται/)});
   it('review suggestions do not alter legacy reporting before confirmation',()=>{const d=minimal();const tx:LegacyTransaction={id:'x',date:'2026-08-17',type:'income',accountId:'piraeus-savings',amount:20,note:'Pay&Save',category:'Έσοδα'};d.seed.transactions=[tx];expect(flowImpactLegacy(d,tx).income).toBe(20);d.state.reviewDecisions={x:{status:'confirmed',semanticKind:'saving_cash_offset',decidedAt:new Date().toISOString()}};const f=flowImpactLegacy(d,tx);expect(f.income).toBe(0);expect(f.saving).toBe(20)});
+  it('requires an explicit owner choice before reclassifying Pay&Save and never creates a new event (#649 I13.04)',()=>{
+    const d=minimal(),tx:LegacyTransaction={id:'qa-reviewed',date:'2026-08-17',type:'income',accountId:'piraeus-payroll',amount:30,note:'Pay&Save',category:'Μισθός'};
+    d.state.customTransactions=[tx];
+    const originalSeed=JSON.stringify(d.seed),originalEvents=JSON.stringify(d.state.events);
+    const opening=accountBalances(d,'2026-08-17');
+    const undecided=monthlyFlow(d,'2026-08');
+    expect(reviewSuggestions(d).some(item=>item.transaction.id===tx.id&&item.semanticKind==='saving_cash_offset')).toBe(true);
+    expect(undecided).toMatchObject({income:30,saving:0});
+    const kept={...d,state:{...d.state,reviewDecisions:{...d.state.reviewDecisions,[tx.id]:{status:'kept' as const,decidedAt:'2026-08-17T12:00:00Z'}}}};
+    expect(reviewSuggestions(kept).some(item=>item.transaction.id===tx.id)).toBe(false);
+    expect(monthlyFlow(kept,'2026-08')).toMatchObject({income:30,saving:0});
+    const confirmed={...d,state:{...d.state,reviewDecisions:{...d.state.reviewDecisions,[tx.id]:{status:'confirmed' as const,semanticKind:'saving_cash_offset' as const,decidedAt:'2026-08-17T12:00:00Z'}}}};
+    expect(monthlyFlow(confirmed,'2026-08')).toMatchObject({income:0,saving:30});
+    for(const next of [kept,confirmed]){
+      expect(accountBalances(next,'2026-08-17')).toEqual(opening);
+      expect(JSON.stringify(next.state.events)).toBe(originalEvents);
+      expect(JSON.stringify(next.seed)).toBe(originalSeed);
+    }
+  });
   it('kept review decision preserves original transaction meaning',()=>{const d=minimal();const tx:LegacyTransaction={id:'x',date:'2026-08-17',type:'income',accountId:'cash',amount:30,note:'IRIS',category:'Έσοδα'};d.state.reviewDecisions={x:{status:'kept',decidedAt:new Date().toISOString()}};expect(flowImpactLegacy(d,tx).income).toBe(30)});
   it('parses mixed comments into editable review parts',()=>{const parts=suggestSplitParts('ΕΠΙΔΟΜΑ ΑΔΕΙΑΣ: 450,02€\nΕπιστροφή: 100€');expect(parts).toHaveLength(2);expect(parts[0].kind).toBe('income');expect(parts[1].kind).toBe('refund');expect(parts.reduce((s,p)=>s+p.amount,0)).toBeCloseTo(550.02)});
 });
