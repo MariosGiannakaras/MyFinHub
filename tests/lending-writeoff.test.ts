@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {createEvent,accountBalances,monthlyFlow,netWorth,migrateData} from '../src/lib/domain.js';
-import {lendingHistory,lendingOutstandingFor} from '../src/lib/lending.js';
+import {lendingHistory,lendingOutstandingFor,lendingRepaymentLimit} from '../src/lib/lending.js';
 import {validateCompleteFinanceSemantics,validateFinanceStateSemantics} from '../server/financeSemanticValidation.js';
 import type {FinanceData} from '../src/types.js';
 
@@ -67,6 +67,27 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
     expect(()=>validateFinanceStateSemantics({...d.state,events:[forged]})).toThrow();
   }
  });
+ it('rejects repayment before the loan or beyond known later repayments (#649 I10.04)',()=>{
+  const d=fixture();
+  const laterLoan=createEvent({kind:'lending',date:'2026-08-25',person:'Nikos',amount:40,note:'Future loan',accountId:'cash'});
+  const laterRepayment=createEvent({kind:'repayment',date:'2026-08-29',person:'Alex',amount:80,note:'Later repayment',accountId:'cash'});
+  d.state.events=[laterLoan,laterRepayment];
+  expect(lendingOutstandingFor(d,'Nikos')).toBe(40);
+  expect(lendingOutstandingFor(d,'Nikos','2026-08-17')).toBe(0);
+  expect(lendingRepaymentLimit(d,'Nikos','2026-08-17')).toBe(0);
+  expect(lendingRepaymentLimit(d,'Nikos','2026-08-26')).toBe(40);
+  expect(lendingOutstandingFor(d,'Alex','2026-08-15')).toBe(100);
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-15')).toBe(20);
+  const backdated=createEvent({kind:'repayment',date:'2026-08-15',person:'Alex',amount:20,note:'Earlier repayment',accountId:'cash'});
+  d.state.events.push(backdated);
+  expect(lendingOutstandingFor(d,'Alex','2026-08-29')).toBe(0);
+  expect(()=>validateCompleteFinanceSemantics(d)).not.toThrow();
+  const extraCent=createEvent({kind:'repayment',date:'2026-08-16',person:'Alex',amount:.01,note:'Excess cent',accountId:'cash'});
+  d.state.events.push(extraCent);
+  expect(lendingRepaymentLimit(d,'Alex','2026-08-16')).toBe(0);
+  expect(()=>validateCompleteFinanceSemantics(d)).toThrow();
+ });
+
  it('undo restores historic receivable without changing seeded legacy history',()=>{
   const d=fixture(),seed=JSON.stringify(d.seed.lending);
   const action=createEvent({kind:'lending_writeoff',date:'2026-08-17',person:'Alex',amount:25,note:'Owner signed'});

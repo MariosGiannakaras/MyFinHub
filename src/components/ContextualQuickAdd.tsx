@@ -18,7 +18,7 @@ import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSele
 import { savingContributionDraftError } from '../lib/ledgerFoundations';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
 import { creditPurchaseAmount, creditStatementById, creditStatementEvents, recommendedPayableStatement } from '../lib/creditStatements';
-import { lendingOutstandingFor } from '../lib/lending';
+import { lendingOutstandingFor, lendingRepaymentLimit } from '../lib/lending';
 import { isSelfLoan, loanInstallmentPaymentPlan, loanOutstanding, loanRemainingInstallments, setLoanPaymentInstallmentCount } from '../lib/loans';
 import { allRecurringItems, recurringAccountError } from '../lib/recurring';
 import { installmentExpensePurpose, recurringExpensePurpose } from '../lib/linkedPaymentPurpose';
@@ -155,7 +155,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
           if(!writeoffConfirmed||confirmedWriteoffAmount!==amount)throw new Error('Επιβεβαίωσε ρητά το τρέχον ποσό διαγραφής πριν από την αποθήκευση.');
           event=createEvent({kind:'lending_writeoff',date,amount:numeric,note:note.trim()||'Επιβεβαιωμένη μερική διαγραφή απαίτησης',person:clean});
         }else if(context.action==='repay'){
-          const outstanding=lendingOutstandingFor(data,clean);if(outstanding<=0)throw new Error('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');if(numeric>outstanding+.01)throw new Error(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);
+          const outstanding=lendingRepaymentLimit(data,clean,date);if(outstanding<=0)throw new Error('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');if(numeric>outstanding+.005)throw new Error(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);
           event=createEvent({kind:'repayment',date,amount:numeric,note:note.trim()||'Επιστροφή δανεικών',accountId,person:clean});
         }else{
           if(expectedReturnDate&&expectedReturnDate<date)throw new Error('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');

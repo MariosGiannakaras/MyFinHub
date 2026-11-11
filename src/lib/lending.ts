@@ -132,3 +132,10 @@ export function lendingHistory(data:FinanceData,asOf?:string):LendingHistoryRow[
 }
 
 export function lendingOutstandingFor(data:FinanceData,person:string,asOf?:string){const target=cleanString(person);return target?lendingRows(data,asOf).find(row=>row.person===target)?.outstanding??0:0}
+
+/** Conservative upper bound for a repayment at a selected historical date.
+ * It must fit both the selected day's receivable and the final known balance.
+ * Full server-side chronology/revision validation remains authoritative. */
+export function lendingRepaymentLimit(data:FinanceData,person:string,date:string){
+  return Math.max(0,Math.min(lendingOutstandingFor(data,person,date),lendingOutstandingFor(data,person)));
+}

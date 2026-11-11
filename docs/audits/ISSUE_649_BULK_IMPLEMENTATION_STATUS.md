@@ -1,5 +1,13 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — shared historical receivable repayment prevalidation
+
+**Progress: Implementations 6/23 completed · Sub-implementations 56/132 completed.** **I10.04 (+1):** Both the contextual repayment editor and the direct Lending fallback previously checked an unscoped/current outstanding even after the user selected a historical date. The new shared `lendingRepaymentLimit` conservatively uses the minimum of the date-specific and all-recorded receivable; both UI paths now enforce it with half-cent overpayment tolerance. This prevents known future loan entries from justifying a repayment before the receivable existed, and catches one-cent overpayment before submitting. Full intermediate-period validation, owner+AAL2, revisions and historical correctness remain enforced by the unchanged server. Existing partial/multiple/future as-of tests plus a new synthetic future-lending/backdated/later-repayment/overpayment negative test guard the boundary. No finance mutation, migration, Android or production action.
+
+**Validation/CI:** the preceding mandatory source CI is independent of this code head; exact new-head validation pending and bundled rendered/keyboard QA remains reserved for user-ordered Phase 2. Do not mark skipped rendered jobs PASS. **Integration/merge:** PR #654 still Draft → develop, not merged. **Production/release:** not started. Next: inspect exact-head source CI and proceed with independent remaining code work or grouped QA when the Phase-1 code batch is coherent.
+
+---
+
 ## 2026-11-11 — I11.06 legacy recurring identity and ordinary spending regression
 
 **Progress: Implementations 6/23 completed · Sub-implementations 55/132 completed.** **I11.06 K verified-existing (+1 code/guard):** `src/lib/recurring.ts` already limits linked payments to explicit `recurringId` instead of inferring a charge from equal merchant name, date or amount. The existing `tests/recurring-payment-edit.test.ts` ensures a corrected expense retains its original explicit link and an unrelated income never inherits it. Extended the same guard using the real synthetic FinanceData fixture to prove that two identical merchant/date/amount expenses remain separate booked spending, only the explicitly linked event counts as a recurring payment, and the seed recurring plus historical finance state is unchanged. This is a finance-semantic preservation guard, **not** a new event engine, automatic subscription import, monthly recurring reclassification or history rewrite.
