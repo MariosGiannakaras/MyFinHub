@@ -62,7 +62,10 @@ describe('legacy transaction overrides and tombstones', () => {
     ]);
     expect(new Set([...effectiveLegacyTransactions(data).map(row=>row.id),extra.id]).size).toBe(3);
     expect(monthlyFlow(data,'2026-08').expense).toBe(120);
-    expect(accountBalances(data,'2026-08-31')).toMatchObject({'bank-a':920,'bank-b':160});
+    // The seed import's original charge is already incorporated into the bank-a
+    // snapshot; only the two post-snapshot overlay charges move live cash.
+    expect(accountBalances(fixture(),'2026-08-31')).toMatchObject({'bank-a':1000,'bank-b':200});
+    expect(accountBalances(data,'2026-08-31')).toMatchObject({'bank-a':960,'bank-b':160});
     expect(data.seed.transactions[0]).toEqual(original);
   });
 

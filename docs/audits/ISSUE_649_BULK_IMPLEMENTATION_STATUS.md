@@ -1,5 +1,13 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I07.04 canonical seed snapshot correction after second CI
+
+**Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed (unchanged).** At `2f30396b116deb5a60802747428e1f3fa2d919b2`, [CI #43081213050](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43081213050) reported 1,721 PASS / 1 FAIL (new I07.04 test), while CodeQL passed. After moving the synthetic duplicate to `state.customTransactions`, the test still incorrectly expected the original **seed charge** to debit the account a second time; `accountBalances` appropriately starts from the imported snapshot and applies only post-snapshot custom transactions and ledger legs. The corrected guard asserts the unchanged €1,000/€200 opening account snapshot and €960/€160 after a €40 modern charge and €40 custom legacy-format charge. All three identical merchant charges remain distinct in `monthlyFlow` (€120 total), without double-debiting imported history. This is an evidenced fixture expectation correction, not a relaxation of accounting or a runtime implementation change.
+
+**Validation:** exact new-head source CI pending; no rendered/Windows/WebKit/final gate claimed. **Integration:** Draft PR #654 → develop, unmerged. **Production:** none; main, Android, and owner data untouched. **Unresolved:** I22.05 atomic server repayment guard and final rendered/recovery security evidence. Next: inspect new head CI, then continue unblocked #649 items.
+
+---
+
 ## 2026-11-11 — I07.04 seed-snapshot fixture correction after mandatory CI
 
 **Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed (unchanged).** [CI #43080574049](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43080574049) at `9f5854cc01440bf0eb5dd5c3e66612e5c1f04a1f` ran 1,722 tests: 1,721 PASS / 1 FAIL in the *new* I07.04 regression fixture; existing finance tests, new I08.01 tests and source guards passed. The test incorrectly appended a historical imported **seed transaction** while retaining the prior authoritative snapshot balance. `accountBalances` correctly treats imported seed entries as already reflected in seed snapshots, and only overlays custom/edited/deleted historic entries plus modern ledger legs; the new test's expected extra debit was therefore false. Changed the synthetic duplicate to `state.customTransactions`, an actual post-snapshot additional legacy-format charge, keeping immutable seed original and preserving separate identities, per-account cash and 120€ booked expense. No production code or accounting behavior changed, and no test/security threshold was relaxed.
