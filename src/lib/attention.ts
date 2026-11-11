@@ -98,12 +98,14 @@ export function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
     return null;
   }
   const first=validRecurringAnchor(item.firstExpectedDate);
-  if(first&&first>asOf){
+  const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
+  // A first payment booked early in the very same month settles that cycle.
+  // A future first date in a later month is still authoritative.
+  if(first&&first>asOf&&!(paidThisMonth&&first.slice(0,7)===asOf.slice(0,7))){
     return daysBetween(asOf,first)<=UPCOMING_DAYS?{date:first,severity:'warning' as const,overdue:false}:null;
   }
   const day=typicalPaymentDay(data,item);if(!day)return null;
   const current=monthDate(asOf,day);
-  const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
   if(current<=asOf&&!paidThisMonth)return {date:current,severity:'danger' as const,overdue:true};
   if(current>asOf&&!paidThisMonth&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
   if(paidThisMonth){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}

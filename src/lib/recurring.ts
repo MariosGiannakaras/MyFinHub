@@ -48,7 +48,11 @@ export function typicalPaymentDay(data:FinanceData,item:RecurringItem):number|nu
 
 function monthlyNextDate(data:FinanceData,item:RecurringItem,asOf:string){
   const first=validRecurringAnchor(item.firstExpectedDate);
-  if(first&&first>asOf)return first;
+  // A first-cycle charge can be paid before its stated first due day.
+  // Preserve a future first cycle in another month, but never forecast the
+  // already paid first month a second time.
+  const paidThisMonth=recurringPayments(data,item.id).some(e=>e.date<=asOf&&e.date.slice(0,7)===asOf.slice(0,7));
+  if(first&&first>asOf&&!(paidThisMonth&&first.slice(0,7)===asOf.slice(0,7)))return first;
   const day=typicalPaymentDay(data,item);
   if(!day)return validRecurringAnchor(item.firstExpectedDate);
   const base=new Date(`${asOf}T12:00:00Z`);
@@ -56,7 +60,7 @@ function monthlyNextDate(data:FinanceData,item:RecurringItem,asOf:string){
   let due=build(base.getUTCFullYear(),base.getUTCMonth());
   // A linked early payment settles this month's obligation even when the
   // derived typical billing day has not arrived yet.
-  if(due.getTime()<base.getTime()||recurringPayments(data,item.id).some(e=>e.date<=asOf&&e.date.slice(0,7)===asOf.slice(0,7)))due=build(base.getUTCFullYear(),base.getUTCMonth()+1);
+  if(due.getTime()<base.getTime()||paidThisMonth)due=build(base.getUTCFullYear(),base.getUTCMonth()+1);
   return due.toISOString().slice(0,10);
 }
 

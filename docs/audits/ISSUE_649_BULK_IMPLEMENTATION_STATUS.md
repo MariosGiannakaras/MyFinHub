@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I11.03 first-cycle early payment and canonical loan routing
+
+**Progress: Implementations 6/23 completed · Sub-implementations 67/132 completed.** **I11.03 K scoped implementation (+1):** discovered that a newly registered monthly recurring item with a **first due date later in the current month** could still be projected and flagged as upcoming after an explicitly linked *early first payment*. The early-payment path was correct for established recurring items but bypassed by the `firstExpectedDate>asOf` shortcut. Corrected `src/lib/recurring.ts::monthlyNextDate` and `src/lib/attention.ts::recurringDue` together: the first due date is skipped only if a linked real payment already occurred **in that same first month**. Future first dates in other months stay authoritative; paused/stopped remain excluded. New `tests/recurring-forecast-cadence.test.ts` deterministic regression locks first-month partial linked payments, an identical unlinked merchant expense (booked only once per actual event), no duplicate projected February charge or upcoming advisory, March next cycle, future April anchor preservation, stop/pause/resume and zero forecast postings. Existing recurring/loan cadence suites cover annual, February, early payment and linked installment behavior. Finance events/seed history, recurrence contract and server posting are unchanged. This is a correction to the approved current-month settled-cycle rule, not a change to the open unpaid-past-cycle product-policy decision I11.02.
+
+**I09.04 K verified-existing (+1):** `src/lib/loans.ts::activeLongTermLoanObligations` and `src/lib/attention.ts::loanDue` derive linked Loans items from canonical `loanId` payments rather than materializing new Recurring items. Existing `tests/recurring.test.ts`, `tests/attention.test.ts`, `tests/recurring-forecast-cadence.test.ts`, `tests/loans-workspace.test.ts`, and `tests/command-loan-reachability-source.test.ts` already guard one loan-specific logical obligation, real loan payment, next forecast, command focus and absence of duplicate active Recurring records. No loan/finance migration.
+
+**Validation:** exact new-head source CI pending; earlier mandatory head `57e3e9c` was green. The larger grouped rendered browser/keyboard and mobile QA remains unrun on this code head; existing source coverage is not claimed as new rendered acceptance. **Integration:** #654 Draft → develop, no merge. **Production:** no authorization, main/Android/DB unchanged. I22.05 mutation-only atomic RPC validation remains open. Next: inspect exact-head CI and address any real failure without weakening regressions, then continue safe independent code work/approved QA staging.
+
+---
+
 ## 2026-11-11 — I04/I06 account privacy and savings K guards
 
 **Progress: Implementations 6/23 completed · Sub-implementations 65/132 completed.** The current branch code has source coverage for the next four independent verified-existing items; no domain formula or UI ownership change is required.
