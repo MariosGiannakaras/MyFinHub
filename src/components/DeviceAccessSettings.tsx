@@ -24,7 +24,8 @@ function platformLabel(platform:ConnectedDevice['platform']){
 
 function activityLabel(value:string){
   const timestamp=Date.parse(value);
-  if(!Number.isFinite(timestamp))return 'Πρόσφατα';
+  // Missing or malformed registry timestamps must not imply recent verified activity.
+  if(!Number.isFinite(timestamp))return 'Μη διαθέσιμη';
   const minutes=Math.max(0,Math.round((Date.now()-timestamp)/60_000));
   if(minutes<1)return 'Μόλις τώρα';
   if(minutes<60)return `Πριν από ${minutes} ${minutes===1?'λεπτό':'λεπτά'}`;

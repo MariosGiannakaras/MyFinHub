@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I15.04 verified owner profile and non-fabricated device activity
+
+**Progress: Implementations 6/23 completed · Sub-implementations 73/132 completed.** **I15.04 K source verification with bounded correction (+1):** Owner profile email is populated from the authenticated session, email change follows the real Supabase user-update receipt and pending-email confirmation rather than claiming an immediate completed change, and password change uses the existing owner+AAL2+same-origin server path. Device activity timestamps come from the authenticated session registry `last_seen_at` (not guessed location or fabricated login metadata), with the list/revoke handler separately protected by owner+AAL2 and same-origin mutations. Corrected one demonstrably false fallback: an absent/malformed device timestamp no longer displays **«Πρόσφατα»**; it now displays **«Μη διαθέσιμη»**. Added cross-layer regression in `tests/account-security-source.test.ts` for the profile actions, session checks, device DTO provenance, bounded touch interval and invalid-timestamp copy. No authentication path, RLS rule, registry schema or underlying session activity value was changed.
+
+**Validation/CI:** prior corrected I07.04 `96853c3c57f30fa46a15a2fdcff7aaba2bd1c4f6` [CI #43101668145](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43101668145) **SUCCESS**. New I12.02 tests and this copy correction require exact new-head CI. Rendered device-copy/Settings validation and final Windows/WebKit/security/release gates remain separate, unrun or skipped, not PASS. **Integration:** Draft PR #654 → develop; no merge. **Production:** main, Android and private Supabase data untouched. **Open:** I22.05 atomic server repayment guard.
+
+**Next:** inspect exact-head CI, correct any isolated test/implementation defect, then continue remaining #649 code/QA per approved staged workflow.
+
+---
+
 ## 2026-11-11 — I12.02 current booked portfolio and neutral flat forecast protection
 
 **Progress: Implementations 6/23 completed · Sub-implementations 72/132 completed.** **I12.02 K verified-existing (+1):** `PlanningApprovedDesktop` already presents the canonical currently booked portfolio separately from 30/60/90-day hypothetical projections, derives account charts from the 90-day `cashFlowForecast`, and centers a constant series at SVG y=16 rather than misleadingly drawing a zero balance. Added focused source guards for current booked value, all three horizons, account-level as-of provenance and constant-line positioning. Added deterministic finance-domain regressions for an unmoving 90-day series (two anchored points, no invented movement) and one pending €75 bill (current €1,500 unchanged, projected €1,425 at 30/60/90 days, account-level €925/€500, exactly one future movement, no booked ledger event). Existing design/layout/rendered-contract tests preserved. This item is regression-only; not a new forecast engine, synthetic event posting or styling change.
