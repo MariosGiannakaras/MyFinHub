@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances, categoryTotals, migrateData, monthlyFlow, netWorth } from '../src/lib/domain.js';
+import { accountBalances, categoryTotals, createEvent, migrateData, monthlyFlow, netWorth } from '../src/lib/domain.js';
 import {
   createExpenseSplitEvent,
   createTransferEvent,
@@ -107,6 +107,22 @@ describe('ledger foundations', () => {
     expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:0,net:0});
     expect(accountBalances(data,'2026-08-21')).toMatchObject({bank:874.45,savings:625.55});
     expect(netWorth(data,'2026-08-21')).toBeCloseTo(beforeWorth,2);
+  });
+
+  it('books a credit purchase once while repayment only moves cash against the liability (#649 I08.05)',()=>{
+    const data=minimal(),before=netWorth(data,'2026-08-21');
+    const purchase=createEvent({kind:'card_purchase',date:'2026-08-21',amount:120,note:'Credit purchase',cardId:'card-contract'});
+    const payment=createEvent({kind:'card_payment',date:'2026-08-21',amount:60,note:'Card settlement',fromAccountId:'bank',cardId:'card-contract'});
+    data.state.events=[purchase];
+    expect(purchase.legs).toEqual([{accountId:'credit-card',amount:-120}]);
+    expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:120,net:-120});
+    expect(netWorth(data,'2026-08-21')).toBeCloseTo(before-120,2);
+    data.state.events.push(payment);
+    expect(payment.legs).toEqual([{accountId:'bank',amount:-60},{accountId:'credit-card',amount:60}]);
+    expect(accountBalances(data,'2026-08-21')).toMatchObject({bank:940,'credit-card':-60});
+    expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:120,net:-120});
+    expect(netWorth(data,'2026-08-21')).toBeCloseTo(before-120,2);
+    expect(data.state.events).toHaveLength(2);
   });
 
   it('derives split totals in cents without floating-point drift', () => {
