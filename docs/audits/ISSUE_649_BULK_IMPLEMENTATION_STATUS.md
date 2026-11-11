@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-11 — I12.02 current booked portfolio and neutral flat forecast protection
+
+**Progress: Implementations 6/23 completed · Sub-implementations 72/132 completed.** **I12.02 K verified-existing (+1):** `PlanningApprovedDesktop` already presents the canonical currently booked portfolio separately from 30/60/90-day hypothetical projections, derives account charts from the 90-day `cashFlowForecast`, and centers a constant series at SVG y=16 rather than misleadingly drawing a zero balance. Added focused source guards for current booked value, all three horizons, account-level as-of provenance and constant-line positioning. Added deterministic finance-domain regressions for an unmoving 90-day series (two anchored points, no invented movement) and one pending €75 bill (current €1,500 unchanged, projected €1,425 at 30/60/90 days, account-level €925/€500, exactly one future movement, no booked ledger event). Existing design/layout/rendered-contract tests preserved. This item is regression-only; not a new forecast engine, synthetic event posting or styling change.
+
+**Validation/CI:** previous exact source correction head `96853c3c57f30fa46a15a2fdcff7aaba2bd1c4f6` CI was in progress at drafting; new-head mandatory source/CodeQL result pending. No unrun optional rendered or Windows/WebKit/final gate is claimed PASS. **Integration:** #654 remains Draft → develop, unmerged. **Production:** main/Android/Supabase data untouched. **Open:** I22.05 mutation-atomic receivable chronology and final cross-surface rendered/DB evidence.
+
+**Next:** review new-head CI once available, fix any concrete newly exposed guard failure, continue other independent #649 implementation work before consolidated browser/security/desktop QA.
+
+---
+
 ## 2026-11-11 — I07.04 canonical seed snapshot correction after second CI
 
 **Progress: Implementations 6/23 completed · Sub-implementations 71/132 completed (unchanged).** At `2f30396b116deb5a60802747428e1f3fa2d919b2`, [CI #43081213050](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43081213050) reported 1,721 PASS / 1 FAIL (new I07.04 test), while CodeQL passed. After moving the synthetic duplicate to `state.customTransactions`, the test still incorrectly expected the original **seed charge** to debit the account a second time; `accountBalances` appropriately starts from the imported snapshot and applies only post-snapshot custom transactions and ledger legs. The corrected guard asserts the unchanged €1,000/€200 opening account snapshot and €960/€160 after a €40 modern charge and €40 custom legacy-format charge. All three identical merchant charges remain distinct in `monthlyFlow` (€120 total), without double-debiting imported history. This is an evidenced fixture expectation correction, not a relaxation of accounting or a runtime implementation change.

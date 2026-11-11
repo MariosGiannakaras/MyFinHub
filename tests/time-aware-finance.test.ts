@@ -46,6 +46,40 @@ describe('time-aware finance model', () => {
     expect(scheduledLifecycle(item, '2026-08-30')).toBe('due');
   });
 
+  it('keeps a flat 90-day forecast anchored to booked balances without inventing movement (#649 I12.02)',()=>{
+    const data=baseData(),seed=JSON.stringify(data);
+    const forecast=cashFlowForecast(data,'2026-08-17',90);
+    expect(forecast.currentPortfolio).toBe(1500);
+    expect(forecast.projectedPortfolio).toBe(1500);
+    expect(forecast.insufficientData).toBe(true);
+    expect(forecast.movements).toHaveLength(0);
+    expect(forecast.points).toHaveLength(2);
+    expect(forecast.points[0]).toMatchObject({date:'2026-08-17',portfolio:1500,balances:{bank:1000,savings:500}});
+    expect(forecast.points.at(-1)).toMatchObject({date:forecast.endDate,portfolio:1500,balances:{bank:1000,savings:500}});
+    expect(forecast.accounts.map(row=>[row.accountId,row.current,row.projected])).toEqual([['bank',1000,1000],['savings',500,500]]);
+    expect(JSON.stringify(data)).toBe(seed);
+  });
+
+  it('separates pending 30/60/90 forecasts from booked cash, keeping one movement (#649 I12.02)',()=>{
+    const data=baseData();
+    data.state.scheduled=[createScheduledTransaction(data,{kind:'expense',dueDate:'2026-08-22',amount:75,accountId:'bank',note:'Known future bill'})];
+    const eventCount=data.state.events?.length??0;
+    for(const horizon of [30,60,90] as const){
+      const forecast=cashFlowForecast(data,'2026-08-17',horizon);
+      expect(forecast.currentPortfolio).toBe(1500);
+      expect(forecast.projectedPortfolio).toBe(1425);
+      expect(forecast.movements).toHaveLength(1);
+      expect(forecast.movements[0]).toMatchObject({date:'2026-08-22',source:'scheduled',portfolioDelta:-75});
+      expect(forecast.points.map(point=>point.portfolio)).toEqual([1500,1425,1425]);
+      expect(forecast.accounts.find(row=>row.accountId==='bank')).toMatchObject({current:1000,projected:925});
+      expect(forecast.accounts.find(row=>row.accountId==='savings')).toMatchObject({current:500,projected:500});
+    }
+    expect(accountBalances(data,'2026-08-17')).toMatchObject({bank:1000,savings:500});
+    expect(accountBalances(data,'2026-08-31')).toMatchObject({bank:1000,savings:500});
+    expect(data.state.scheduled[0].status).toBe('pending');
+    expect(data.state.events?.length??0).toBe(eventCount);
+  });
+
   it('keeps scheduled transfers portfolio-neutral while projecting both account legs', () => {
     const data = baseData();
     data.state.scheduled = [createScheduledTransaction(data, { kind: 'transfer', dueDate: '2026-08-22', amount: 200, fromAccountId: 'bank', toAccountId: 'savings' })];

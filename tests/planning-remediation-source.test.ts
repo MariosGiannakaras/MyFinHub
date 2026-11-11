@@ -15,6 +15,23 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain('isAnimationActive={false}');
   });
 
+  it('keeps current booked cash visible while chart/sparklines show only future projections (#649 I12.02)',()=>{
+    expect(component).toContain('cashFlowForecast(data,asOf,30)');
+    expect(component).toContain('cashFlowForecast(data,asOf,60)');
+    expect(component).toContain('cashFlowForecast(data,asOf,90)');
+    expect(component).toContain('Τρέχουσα συνολική ρευστότητα: <b>{money.format(forecasts[30].currentPortfolio)}</b>');
+    expect(component).toContain('const portfolioTrend=forecasts[90].points.map(point=>({date:point.date,portfolio:point.portfolio}))');
+    expect(component).toContain('Σήμερα</span><strong className={row.current<0');
+    expect(component).toContain('sparklinePoints(forecasts[90].points,row.accountId)');
+    expect(component).toContain('if(max===min)return values.map((_,index)=>`${(index/denominator)*100},16`).join(\' \');');
+    expect(component).toContain('viewBox="0 0 100 32"');
+    expect(component).toContain('role="img" aria-label={`Προβολή υπολοίπου');
+    expect(component).toContain('accountSummary(forecasts[30],row.accountId)');
+    expect(component).toContain('accountSummary(forecasts[60],row.accountId)');
+    expect(component).toContain('accountSummary(forecasts[90],row.accountId)');
+    expect(target).toContain('.planning-account-sparkline{width:100%;height:38px;align-self:center;overflow:visible}');
+  });
+
   it('uses forecast-state semantics instead of arbitrary list-index tones',()=>{
     expect(component).toContain("type AccountForecastState='negative'|'low'|'declining'|'growing'|'stable'");
     expect(component).toContain('data-forecast-state={state}');
