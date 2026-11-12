@@ -1,3 +1,13 @@
+## 2026-11-12 — I14.03 bounded responsive Reports proof staged (QA candidate)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 79/132 completed (unchanged).** I14.03 truthful positive-only, top-five, non-credit Reports scope was already implemented but remains **NOT COUNTED** pending rendered proof. Reused the existing `reports-visual` browser runner to assert current vs historical cutoff language, full non-clipped scope text, non-overflow and actual screenshots in desktop 1440px, prior-month desktop 1440px, mobile 375px and mobile 320px states; regression source guard is `tests/649-reports-distribution-rendered-source.test.ts`. No new render harness, finance calculations, styling or data edits. I20.02 safe «Διατήρηση» / destructive «Ακύρωση» remains candidate until its Planning browser proof.
+
+**Validation:** preceding exact head `e1260f88195d39147b0b57b947e70217ac39f99b` [CI #43208656665](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43208656665) **SUCCESS** (validate, CodeQL, Unified); Draft-only rendered/Windows/WebKit/Lighthouse **SKIPPED**. Current head needs own source CI plus grouped browser QA and direct screenshots; do not count I14.03/I20.02 from source only. **Integration:** #654 Draft → develop, no merge. **Production:** main, Android, hosted finance data unchanged. **I22.05** atomic repayment chronology still open.
+
+**Next:** inspect exact-head CI, run bounded existing Reports/Planning browser evidence together when source is accepted, repair any actual screenshot/source failure, then proceed to remaining #649 grouped validation and security checks.
+
+---
+
 ## 2026-11-12 — I20.02 distinguish scheduled cancellation from safe dismissal (code candidate)
 
 **Progress: Implementations 6/23 completed · Sub-implementations 79/132 completed (unchanged).** Source-confirmed I20.02 ambiguity: in Planning the destructive **cancel scheduled item** confirmation used the same visible button label «Ακύρωση» as the shared dialog's default *dismiss without changing anything* button. The shared component correctly prefers safe dismissal focus and explicit danger styling, but two identically named actions could trigger the opposite user intent. The Planning-specific safe action now says **«Διατήρηση»**, without forking the shared dialog or changing cancellation/skip finance/history semantics. The existing Planning Chromium lifecycle suite now first dismisses using the distinct safe button, asserts the pending item and cancellation action remain present, reopens, checks distinct styles/labels, then executes the destructive path and verifies its history. Added a bounded source guard `tests/649-confirmation-intent-source.test.ts`; all other shared confirm consumers remain unchanged.
