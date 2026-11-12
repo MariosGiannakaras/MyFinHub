@@ -23,6 +23,10 @@ describe('#649 I22.05 direct owner/AAL2 RPC mutation chronology boundary',()=>{
     expect(migration).toContain('private.rheomiq_legacy_receivable_cents_asof');
     expect(migration).toContain('private.rheomiq_chronology_date');
     expect(migration).toContain('RECEIVABLE_CHRONOLOGY_CONFLICT');
+    expect(migration).toContain("left join jsonb_array_elements(");
+    expect(migration).toContain("previous.value is distinct from proposed.value");
+    expect(migration).toContain("round(v_delta*100)<>(case when");
+    expect(migration.match(/\(\?:\[eE\]/g)?.length).toBeGreaterThanOrEqual(2);
     expect(migration).toContain("baseline.cents+next.event_cents<least(baseline.cents+prior.event_cents,0)");
     const privateGuards=migration.slice(migration.indexOf('-- BEGIN I22.05 ISOLATED LOCAL POSTGRES HELPERS'),migration.indexOf('-- END I22.05 ISOLATED LOCAL POSTGRES HELPERS'));
     expect(privateGuards).not.toMatch(/security definer|drop table|truncate|delete from|update public\.rheomiq_app_state set/i);
@@ -40,7 +44,7 @@ describe('#649 I22.05 direct owner/AAL2 RPC mutation chronology boundary',()=>{
     expect(localSmoke).toContain('sudo -u postgres createdb');
     expect(localSmoke).toContain('trap cleanup EXIT');
     expect(localSmoke).toContain('BEGIN I22.05 ISOLATED LOCAL POSTGRES HELPERS');
-    for(const phrase of ['cent beyond payoff','hidden dated deficit','same day additive lending','complete legacy intermediate deficit','incomplete legacy opening preserved','forged amount-vs-delta','invalid day denied','unchanged historic anomaly']){
+    for(const phrase of ['cent beyond payoff','hidden dated deficit','same day additive lending','complete legacy intermediate deficit','incomplete legacy opening preserved','forged amount-vs-delta','invalid day denied','unchanged historic anomaly','scientific notation cannot hide overpayment']){
       expect(localFixtures).toContain(phrase);
     }
   });

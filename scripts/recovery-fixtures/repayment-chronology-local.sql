@@ -93,6 +93,12 @@ begin
   -- Day validity must fail closed on changed receivable mutations.
   v_next:='{"events":[{"id":"bad-date","kind":"repayment","person":"Alex","date":"2026-02-30","amount":1,"receivableDelta":-1}]}';
   perform qa.expect_chronology('invalid day denied',v_seed,v_prior,v_next,true);
+  -- Numeric-scientific text cannot hide the receivable delta from the
+  -- daily comparison when a direct RPC skips the Node input validator.
+  v_prior:='{"events":[{"id":"last","kind":"repayment","person":"Alex","date":"2026-08-29","amount":100,"receivableDelta":-100}]}';
+  v_next:=jsonb_set(v_prior,'{events}',v_prior->'events'||
+    '[{"id":"scientific","kind":"repayment","person":"Alex","date":"2026-08-19","amount":100,"receivableDelta":"-1e2"}]'::jsonb);
+  perform qa.expect_chronology('scientific notation cannot hide overpayment',v_seed,v_prior,v_next,true);
   -- The guard is read-only and never rewrites past seed/entries.
   if private.rheomiq_legacy_receivable_cents_asof(v_seed,'Alex',date '2026-08-20')<>10000 then
     raise exception 'Initial legacy opening not preserved';

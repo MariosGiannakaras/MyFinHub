@@ -121,7 +121,6 @@ create or replace function private.rheomiq_guard_mutable_receivable_chronology(
 ) returns void language plpgsql volatile security invoker set search_path='' as $$
 declare
   v_event jsonb;
-  v_prior jsonb;
   v_kind text;
   v_amount numeric;
   v_delta numeric;
@@ -133,16 +132,18 @@ begin
   -- Direct PostgREST RPC callers do not pass through Node's semantic checks.
   -- Enforce shape/delta for new or changed receivable events while allowing
   -- unchanged imported historical entries with legacy metadata.
-  for v_event in select e.value from jsonb_array_elements(
-    case when jsonb_typeof(p_next_state->'events')='array' then p_next_state->'events' else '[]'::jsonb end
-  ) e(value) loop
-    select old.value into v_prior
+  -- A single ID-keyed join avoids O(n²) rescans of the old event array.
+  -- Unchanged imported event bodies remain valid without reclassifying them.
+  for v_event in
+    select proposed.value
     from jsonb_array_elements(
+      case when jsonb_typeof(p_next_state->'events')='array' then p_next_state->'events' else '[]'::jsonb end
+    ) as proposed(value)
+    left join jsonb_array_elements(
       case when jsonb_typeof(p_previous_state->'events')='array' then p_previous_state->'events' else '[]'::jsonb end
-    ) old(value)
-    where old.value->>'id'=v_event->>'id' and old.value=v_event
-    limit 1;
-    if found then continue; end if;
+    ) as previous(value) on previous.value->>'id'=proposed.value->>'id'
+    where previous.value is null or previous.value is distinct from proposed.value
+  loop
     v_kind:=v_event->>'kind';
     if v_kind in ('lending','repayment','lending_writeoff') then
       if nullif(btrim(coalesce(v_event->>'person','')),'') is null or
@@ -160,7 +161,7 @@ begin
          v_delta::text in ('NaN','Infinity','-Infinity') or
          v_amount<=0 or abs(v_amount*100-round(v_amount*100))>0.000001 or
          abs(v_amount*100)>9007199254740991 or
-         round(v_delta*100)<>case when v_kind='lending' then round(v_amount*100) else -round(v_amount*100) end or
+         round(v_delta*100)<>(case when v_kind='lending' then round(v_amount*100) else -round(v_amount*100) end) or
          abs(v_delta*100-round(v_delta*100))>0.000001 then
         raise exception using errcode='22023',message='INVALID_RECEIVABLE_EVENT';
       end if;
@@ -178,7 +179,7 @@ begin
   with raw as materialized (
     select 'before'::text as version,btrim(e.value->>'person') as person,
            private.rheomiq_chronology_date(e.value->>'date') as event_day,
-           case when e.value->>'receivableDelta' ~ '^[+-]?[0-9]+(?:\.[0-9]+)?$'
+           case when e.value->>'receivableDelta' ~ '^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$'
                 then round((e.value->>'receivableDelta')::numeric*100)
                 else 0::numeric end as cents
     from jsonb_array_elements(coalesce(p_previous_state->'events','[]'::jsonb)) e(value)
@@ -187,7 +188,7 @@ begin
     union all
     select 'after',btrim(e.value->>'person'),
            private.rheomiq_chronology_date(e.value->>'date'),
-           case when e.value->>'receivableDelta' ~ '^[+-]?[0-9]+(?:\.[0-9]+)?$'
+           case when e.value->>'receivableDelta' ~ '^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$'
                 then round((e.value->>'receivableDelta')::numeric*100)
                 else 0::numeric end
     from jsonb_array_elements(coalesce(p_next_state->'events','[]'::jsonb)) e(value)
