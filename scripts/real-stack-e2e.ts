@@ -5,6 +5,7 @@ import { validateCompleteFinanceData } from '../server/financeDataValidation.js'
 import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
+import { runDirectReceivableRpcProof } from './real-stack-receivable-rpc.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -342,6 +343,14 @@ async function main(){
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
+    await runDirectReceivableRpcProof({
+      apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
+      email,password:TEST_PASSWORD,userId,factorId,
+      totpCode:()=>nextTotp(secret,correct),
+      data:initial.body.data,revision:initialRevision,generation:initialGeneration,
+    });
+    console.log('[real-stack] PASS direct PostgREST denied AAL1/overpayment/forgery without finance or history commit');
 
     const staleState=structuredClone(initial.body.data.state);
     const nextState=structuredClone(initial.body.data.state);
