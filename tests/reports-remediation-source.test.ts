@@ -155,6 +155,22 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain("keyboardAfter.top>=keyboardAfter.navBottom+7");
   });
 
+  it('separates top-five positive bank balances from whole-portfolio net worth and card debt (#649 I14.03)',()=>{
+    const reports=readFileSync(new URL('../src/lib/reports.ts',import.meta.url),'utf8');
+    const domain=readFileSync(new URL('../src/lib/domain.ts',import.meta.url),'utf8');
+    expect(page).toContain("allAccounts(data).filter(account=>account.kind!=='credit')");
+    expect(page).toContain(".filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5)");
+    expect(page).toContain("const accountDistributionTotal=accountDistribution.reduce((sum,row)=>sum+row.balance,0)");
+    expect(page).toContain('Μεγαλύτερα θετικά υπόλοιπα');
+    expect(page).toContain('έως 5 μη πιστωτικοί λογαριασμοί, όχι καθαρή περιουσία.');
+    expect(page).toContain('const creditPercent=snapshot.creditLimit>0?snapshot.creditUsage:null');
+    expect(page).toContain("const budgetRows=useMemo(()=>budgetProgress(data,month,asOf)");
+    expect(page).toContain("toLocaleString('el-GR'");
+    expect(reports).toContain('const limit=active.reduce((sum,card)=>sum+card.limit,0);');
+    expect(reports).toContain('const debt=cards.reduce((sum,card)=>sum+card.debt,0);');
+    expect(domain).toContain('export function netWorth(');
+  });
+
   it('does not introduce unsupported export or download decoration',()=>{
     expect(page).not.toMatch(/Εξαγωγή|PDF|CSV|Λήψη|Download/i);
   });

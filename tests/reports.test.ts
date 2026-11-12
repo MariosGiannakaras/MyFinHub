@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
+import { reportingPeriodEndDate } from '../src/lib/reportingPeriod.js';
 import { categoryMomentum, creditCardSnapshots, operationalReportSnapshot, primaryAccountSeries, reportFlowSeries, reportInsightModel, subcategoryTotals } from '../src/lib/reports.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -68,6 +69,39 @@ describe('operational reports',()=>{
   expect(reportInsightModel(data,'2026-08','2026-08-17').credit.debt).toBe(0);
   expect(reportInsightModel(data,'2026-08','2026-09-02').credit.debt).toBe(75);
  });
+ it('uses one exact historical/current cutoff for bank cash, credit debt, expenses and el-GR month reports (#649 I14.01)',()=>{
+  const data=fixture();
+  data.state.cards=[{id:'credit-a',bankId:'piraeus',nickname:'Credit A',kind:'credit',network:'visa',creditLimit:300,active:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'}];
+  const later=createEvent({kind:'expense',date:'2026-08-29',amount:60,note:'Known future expense',category:'Όχημα',accountId:'piraeus-payroll'});
+  later.subcategory='Βενζίνη';
+  const credit=createEvent({kind:'card_purchase',date:'2026-08-29',amount:25,note:'Future credit-funded purchase',category:'Αγορά'});
+  credit.cardId='credit-a';
+  data.state.events=[later,credit];
+  const input=JSON.stringify(data);
+  expect(reportingPeriodEndDate('2026-07','2026-08-17')).toBe('2026-07-31');
+  expect(reportingPeriodEndDate('2026-08','2026-08-17')).toBe('2026-08-17');
+  expect(reportingPeriodEndDate('2026-08','2026-09-02')).toBe('2026-08-31');
+  const july=operationalReportSnapshot(data,'2026-07','2026-08-17');
+  const current=operationalReportSnapshot(data,'2026-08','2026-08-17');
+  const closed=operationalReportSnapshot(data,'2026-08','2026-09-02');
+  expect(july.balances['piraeus-payroll']).toBe(200);
+  expect(current.balances['piraeus-payroll']).toBe(1200);
+  expect(closed.balances['piraeus-payroll']).toBe(1140);
+  expect(current.flow.expense).toBe(40);
+  expect(closed.flow.expense).toBe(125);
+  expect(current.creditDebt).toBe(0);
+  expect(closed.creditDebt).toBe(25);
+  expect(reportFlowSeries(data,'2026-08',2,'2026-08-17').at(-1)?.expense).toBe(40);
+  expect(reportFlowSeries(data,'2026-08',2,'2026-09-02').at(-1)?.expense).toBe(125);
+  expect(primaryAccountSeries(data,'2026-08',['piraeus-payroll'],2,'2026-08-17').map(row=>row['piraeus-payroll'])).toEqual([200,1200]);
+  expect(primaryAccountSeries(data,'2026-08',['piraeus-payroll'],2,'2026-09-02').at(-1)?.['piraeus-payroll']).toBe(1140);
+  expect(subcategoryTotals(data,'2026-08','2026-08-17')).toContainEqual({name:'Όχημα › Βενζίνη',value:40});
+  expect(subcategoryTotals(data,'2026-08','2026-09-02')).toContainEqual({name:'Όχημα › Βενζίνη',value:100});
+  expect(reportInsightModel(data,'2026-08','2026-08-17').credit.debt).toBe(0);
+  expect(reportInsightModel(data,'2026-08','2026-09-02').credit.debt).toBe(25);
+  expect(JSON.stringify(data)).toBe(input);
+ });
+
  it('excludes future current-month realized expenses from Reports while preserving historical totals',()=>{
   const data=fixture(),future=createEvent({kind:'expense',date:'2026-08-27',amount:50,note:'Future expense',category:'Όχημα',accountId:'piraeus-payroll'});
   future.subcategory='Βενζίνη';
