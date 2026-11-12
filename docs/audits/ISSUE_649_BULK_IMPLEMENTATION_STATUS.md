@@ -1,3 +1,13 @@
+## 2026-11-12 — I20.02 distinguish scheduled cancellation from safe dismissal (code candidate)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 79/132 completed (unchanged).** Source-confirmed I20.02 ambiguity: in Planning the destructive **cancel scheduled item** confirmation used the same visible button label «Ακύρωση» as the shared dialog's default *dismiss without changing anything* button. The shared component correctly prefers safe dismissal focus and explicit danger styling, but two identically named actions could trigger the opposite user intent. The Planning-specific safe action now says **«Διατήρηση»**, without forking the shared dialog or changing cancellation/skip finance/history semantics. The existing Planning Chromium lifecycle suite now first dismisses using the distinct safe button, asserts the pending item and cancellation action remain present, reopens, checks distinct styles/labels, then executes the destructive path and verifies its history. Added a bounded source guard `tests/649-confirmation-intent-source.test.ts`; all other shared confirm consumers remain unchanged.
+
+**Validation:** previous head `fa6a80dfbf1526a672fa39dc45365c969ee782b2` [CI #43174868944](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43174868944) **SUCCESS** including validate, CodeQL and Unified. This new coherent source/QA candidate is **NOT accepted or counted** until its exact-head mandatory CI/CodeQL and grouped browser Planning desktop/mobile/keyboard evidence run and are directly inspected. I14.03 positive-only Reports copy remains visual-pending; I22.05 server/database atomic repayment chronology remains open. **Integration:** #654 stays Draft → develop, no merge. **Production:** no main, Android, hosted database or financial data changes.
+
+**Next:** check the new exact-head CI, correct any actual failure, include Planning cancel/keep in the consolidated browser QA with Reports/account/device siblings and inspect screenshots before counting I20.02.
+
+---
+
 # #649 Phase 2 — consolidated implementation checkpoint
 
 ## 2026-11-12 — I19.02 exactly one canonical event for each real payment domain
