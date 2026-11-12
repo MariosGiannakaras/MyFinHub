@@ -15,7 +15,7 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("http:\\/\\/127\\.0\\.0\\.1");
     expect(direct).toContain("aal1Claims.aal==='aal1'");
     expect(direct).toContain("aal2Claims.aal==='aal2'");
-    expect(direct).toContain("'myfinhub_device_sessions'");
+    expect(direct).toContain('/rest/v1/myfinhub_device_sessions');
     expect(direct).toContain('rheomiq_save_mutable_state_history');
     expect(direct).toContain('rheomiq_read_history');
     expect(direct).toContain("dated overpayment");
