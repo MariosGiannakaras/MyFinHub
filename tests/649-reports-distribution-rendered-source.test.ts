@@ -16,6 +16,16 @@ describe('#649 I14.03 positive-only Reports distribution and responsive copy',()
     expect(page).toContain('Θετικά υπόλοιπα έως σήμερα');
     expect(page).toContain('Θετικά υπόλοιπα στο τέλος της περιόδου');
   });
+  it('uses the configured Chromium and fresh isolated loopback launch for the existing focused suite',()=>{
+    expect(browser).toContain('MYFINHUB_QA_PRIMARY_BROWSER');
+    expect(browser).toContain('createServer');
+    expect(browser).toContain("listener.listen(0,'127.0.0.1'");
+    expect(browser).toContain('myfinhub-reports-visual-qa-chrome-${port}');
+    expect(browser).toContain('rmSync(profile');
+    expect(browser).toContain('--disable-dev-shm-usage');
+    expect(browser).toContain('Chromium exited before CDP ready');
+    expect(browser).toContain('child.stderr');
+  });
   it('requires visible captions and captured screenshots at four actual responsive states',()=>{
     expect(browser).toContain('inspectDistribution');
     expect(browser).toContain('detail.xoverflow<=2&&detail.yoverflow<=2');
