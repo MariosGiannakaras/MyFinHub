@@ -45,6 +45,24 @@ describe('Quick Entry owner-reference contract',()=>{
     expect(rendered).toContain('Escape preserves unsaved finance draft');
     expect(rendered).toContain('nested discard restores original launcher focus');
   });
+  it('blocks duplicate contextual submissions and preserves a single revisioned event receipt (#649 I19.02)',()=>{
+    const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');
+    const app=readFileSync('src/App.tsx','utf8');
+    expect(contextual).toContain('if(saving||submitInFlight.current)return;');
+    expect(contextual).toContain('submitInFlight.current=true;setSaving(true);');
+    expect(contextual).toContain('finally{submitInFlight.current=false;setSaving(false)}');
+    expect(contextual).toContain('await onCreate(event);');
+    expect(contextual).toContain('await onCreateLinkedTransfer(event,fee);');
+    expect(contextual).toContain("event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`");
+    expect(contextual).toContain('event.loanId=loan.id;');
+    expect(contextual).toContain("event=createEvent({kind:'repayment',date,amount:numeric");
+    expect(contextual).toContain("event=createEvent({kind:'card_payment',date,amount:numeric");
+    expect(app).toContain('const exists=events.some(existing=>existing.id===event.id);');
+    expect(app).toContain('events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]');
+    expect(app).toContain('const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event))');
+    expect(app).toContain('finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee))');
+  });
+
   it('keeps owned popovers shared and viewport-safe',()=>{expect(popovers).toContain('max-height:min(72dvh,620px)');expect(popovers).toContain('border-radius:20px 20px 0 0');expect(popovers).toContain('@media(prefers-reduced-motion:reduce)')});
   it('registers focused rendered visual regression',()=>{expect(runner).toContain('scripts/quick-entry-reference-qa.mjs');expect(rendered).toContain("for(const theme of ['light','dark'])");expect(rendered).toContain('1440,1000');expect(rendered).toContain('820,900');expect(rendered).toContain('375,812');expect(rendered).toContain('mobile footer actions share one row')});
 });

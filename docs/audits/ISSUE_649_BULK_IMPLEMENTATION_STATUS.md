@@ -1,5 +1,15 @@
 # #649 Phase 2 — consolidated implementation checkpoint
 
+## 2026-11-12 — I19.02 exactly one canonical event for each real payment domain
+
+**Progress: Implementations 6/23 completed · Sub-implementations 79/132 completed.** **I19.02 K verified-existing (+1):** Added one synthetic end-to-end finance-domain regression across six explicitly separate booked actions: real recurring €29.99 and ordinary loan installment €40 expense (one account leg each), €50 lending and €20 repayment (matching +/- receivable deltas), €90 credit purchase and €30 liability settlement (separate purchase/settlement legs, no double expense). Guards enforce six unique event identities, exactly one recurring/loan linked payment each, €159.99 actual expense, €870.01 bank balance, €60 residual credit liability, €30 receivable and immutable imported seed. Added focused source guards for the contextual in-flight lock, one awaited durable `onCreate` or fee-group receipt and the App's event-ID upsert/atomic linked-fee path. No financial posting, idempotency strategy or database semantics were modified. The open I22.05 server/DB *repayment chronology* gap is **not** resolved by these client/domain tests.
+
+**Validation:** previous head `2fe003cc03514f9bd8e82184c90156976d2c5758` [CI #43174280673](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43174280673) **SUCCESS**. New head needs exact-head mandatory CI; grouped rendered/performance/Windows/real-stack acceptance remains pending. **I14.03** Reports positive-only copy is still awaiting direct rendered desktop/tablet/mobile inspection and **not counted**. **Integration:** Draft PR #654 → develop, no merge. **Production:** main, Android and Supabase owner data untouched.
+
+**Next:** inspect new-head CI, correct any verified test/logic problem, then work through remaining safe I20/I18/I23 guards and grouped QA as defined in the #649 phase plan.
+
+---
+
 ## 2026-11-12 — I14.01 period cutoffs and I14.03 positive-only distribution copy
 
 **Progress: Implementations 6/23 completed · Sub-implementations 78/132 completed.** **I14.01 K verified-existing (+1):** Extended canonical Reports unit coverage to compare a synthetic prior July closing snapshot, August 17 as-of cash, and complete August 31 values for bank cash, known future expense, card-funded purchase/credit liability, subcategory totals, `reportFlowSeries`, `primaryAccountSeries` and comparative insights. `reportingPeriodEndDate` remains the single period cutoff; no future booked charge leaks into current-month reports, and all records/seed are unchanged. The source test retains Greek locale percentage formatting.

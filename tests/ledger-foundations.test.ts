@@ -11,6 +11,10 @@ import {
   transferDraftError,
 } from '../src/lib/ledgerFoundations.js';
 import type { FinanceData, SplitPart } from '../src/types.js';
+import { creditDebtForCard } from '../src/lib/cards.js';
+import { lendingOutstandingFor } from '../src/lib/lending.js';
+import { loanPaidAmount, loanPaymentEvents } from '../src/lib/loans.js';
+import { recurringPayments } from '../src/lib/recurring.js';
 
 const minimal = (): FinanceData => migrateData({
   app:'MyFinHub',schemaVersion:3,updatedAt:'2026-08-21T00:00:00Z',
@@ -123,6 +127,47 @@ describe('ledger foundations', () => {
     expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:120,net:-120});
     expect(netWorth(data,'2026-08-21')).toBeCloseTo(before-120,2);
     expect(data.state.events).toHaveLength(2);
+  });
+
+  it('posts exactly one linked event per actual recurring, loan, lending and card action (#649 I19.02)',()=>{
+    const data=minimal();
+    const stamp='2026-08-01T00:00:00.000Z';
+    data.state.cards=[{id:'card-contract',bankId:'piraeus',nickname:'Test credit',kind:'credit',network:'visa',creditLimit:500,active:true,createdAt:stamp,updatedAt:stamp}];
+    data.state.recurringCustom=[{id:'rec-contract',name:'Internet',amount:29.99,day:21,accountId:'bank',category:'Σπίτι',active:true}];
+    const loan={id:'loan-contract',name:'Installment',total:200,installment:40,installments:5,paidCount:0,defaultAccountId:'bank'};
+    data.state.customLoans=[loan];
+    const beforeSeed=JSON.stringify(data.seed);
+    const booked=[
+      createEvent({kind:'expense',date:'2026-08-21',amount:29.99,note:'Recurring real payment',accountId:'bank',recurringId:'rec-contract',category:'Σπίτι'}),
+      createEvent({kind:'expense',date:'2026-08-21',amount:40,note:'Real loan installment',accountId:'bank',loanId:loan.id,category:'Άλλο'}),
+      createEvent({kind:'lending',date:'2026-08-21',amount:50,note:'Money lent',accountId:'bank',person:'Alex'}),
+      createEvent({kind:'repayment',date:'2026-08-21',amount:20,note:'Money repaid',accountId:'bank',person:'Alex'}),
+      createEvent({kind:'card_purchase',date:'2026-08-21',amount:90,note:'Credit purchase',cardId:'card-contract',category:'Άλλο'}),
+      createEvent({kind:'card_payment',date:'2026-08-21',amount:30,note:'Credit settlement',fromAccountId:'bank',cardId:'card-contract'}),
+    ];
+    expect(new Set(booked.map(event=>event.id)).size).toBe(booked.length);
+    expect(booked.map(event=>event.legs)).toEqual([
+      [{accountId:'bank',amount:-29.99}],
+      [{accountId:'bank',amount:-40}],
+      [{accountId:'bank',amount:-50}],
+      [{accountId:'bank',amount:20}],
+      [{accountId:'credit-card',amount:-90}],
+      [{accountId:'bank',amount:-30},{accountId:'credit-card',amount:30}],
+    ]);
+    expect(booked[2].receivableDelta).toBe(50);
+    expect(booked[3].receivableDelta).toBe(-20);
+    expect(booked[4].creditDelta).toBe(-90);
+    expect(booked[5].creditDelta).toBe(30);
+    data.state.events=booked;
+    expect(data.state.events).toHaveLength(6);
+    expect(recurringPayments(data,'rec-contract').map(event=>event.id)).toEqual([booked[0].id]);
+    expect(loanPaymentEvents(data,loan).map(event=>event.id)).toEqual([booked[1].id]);
+    expect(loanPaidAmount(data,loan)).toBe(40);
+    expect(creditDebtForCard(data,'card-contract','2026-08-21')).toBe(60);
+    expect(lendingOutstandingFor(data,'Alex','2026-08-21')).toBe(30);
+    expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:159.99,net:-159.99});
+    expect(accountBalances(data,'2026-08-21')).toMatchObject({bank:870.01,cash:100,savings:500,'credit-card':-60});
+    expect(JSON.stringify(data.seed)).toBe(beforeSeed);
   });
 
   it('derives split totals in cents without floating-point drift', () => {
