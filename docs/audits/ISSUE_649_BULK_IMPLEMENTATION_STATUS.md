@@ -1,3 +1,11 @@
+## 2026-11-12 — New SQL migration recorded as release-PENDING (CI ledger failure correction)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (unchanged).** [CI #43299670649](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43299670649) **validate FAILED** in the canonical production-migration ledger source contract before reaching the disposable PostgreSQL smoke: source inventory had 60 SQL migration files while its explicit release/applied list still had 59. All other 1,755 source/domain tests passed. The newly staged `20261112220000_guard_mutable_receivable_chronology.sql` is now correctly appended to **releasePending** (never productionApplied) in the existing ledger guard, with regression assertions that it must not be marked production-applied. No tests or security thresholds were weakened. The actual SQL helper smoke remains **UNRUN**, not PASS, pending new exact-head CI; this migration has not been executed on hosted/production DB. Existing accepted UI evidence and source application behavior remain unchanged.
+
+**Next:** inspect next validate job's disposable Postgres execution; fix only actual SQL/fixture issues, keep #654 Draft and counters unchanged.
+
+---
+
 ## 2026-11-12 — I22.05 SQL smoke integrated into existing mandatory CI
 
 **Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (unchanged).** An isolated local PostgreSQL guard proof now runs as one *additional low-cost existing validate step* after the established app-lock PostgreSQL smoke, never as a duplicate Ready/Windows/Chromium matrix. The targeted source regression checks CI invocation, no-remote-DB guard, disposable database cleanup, all key negative/tie/legacy SQL fixtures, invoker authorization, and unchanged RPC body outside the chronology hook. The prior [CI #43288137706](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43288137706) passed source/CodeQL/Unified, but does not validate the new SQL migration. This exact new head still needs source + local PostgreSQL verification and CodeQL; no DB rollout, hosted state modification, merge or package increment claimed.
