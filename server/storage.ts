@@ -73,6 +73,8 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     if (/HISTORY_UNAVAILABLE/i.test(marker)) throw new ApiError(409, 'HISTORY_UNAVAILABLE', 'There is no change available in that direction. Reload the history.');
     if (/HISTORY_IRREVERSIBLE_BOUNDARY/i.test(marker)) throw new ApiError(409, 'HISTORY_IRREVERSIBLE_BOUNDARY', 'The operation crosses an irreversible import or permanently deleted card boundary.');
     if (/EXPECTED_HISTORY_GENERATION_REQUIRED/i.test(marker)) throw new ApiError(428, 'HISTORY_PRECONDITION_REQUIRED', 'A current history generation is required before saving.');
+    if (/RECEIVABLE_CHRONOLOGY_CONFLICT/i.test(marker)) throw new ApiError(409, 'RECEIVABLE_CHRONOLOGY_CONFLICT', 'Repayment exceeds the dated outstanding balance. Reload before saving.');
+    if (/INVALID_RECEIVABLE_EVENT/i.test(marker)) throw new ApiError(400, 'INVALID_DATA', 'The receivable entry is invalid.');
     if (/REVISION_CONFLICT|40001/i.test(marker)) throw new ApiError(409, 'REVISION_CONFLICT', 'The data changed in another session. Reload before saving.');
     if (/EXPECTED_REVISION_REQUIRED/i.test(marker)) throw new ApiError(428, 'PRECONDITION_REQUIRED', 'A current revision is required before saving.');
     if (/MFA_REQUIRED/i.test(marker)) throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
