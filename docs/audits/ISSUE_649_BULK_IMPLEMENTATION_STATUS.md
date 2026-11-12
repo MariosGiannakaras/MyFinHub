@@ -1,3 +1,11 @@
+## 2026-11-12 — I22.05 SQL smoke integrated into existing mandatory CI
+
+**Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (unchanged).** An isolated local PostgreSQL guard proof now runs as one *additional low-cost existing validate step* after the established app-lock PostgreSQL smoke, never as a duplicate Ready/Windows/Chromium matrix. The targeted source regression checks CI invocation, no-remote-DB guard, disposable database cleanup, all key negative/tie/legacy SQL fixtures, invoker authorization, and unchanged RPC body outside the chronology hook. The prior [CI #43288137706](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43288137706) passed source/CodeQL/Unified, but does not validate the new SQL migration. This exact new head still needs source + local PostgreSQL verification and CodeQL; no DB rollout, hosted state modification, merge or package increment claimed.
+
+**Next:** inspect actual CI local PostgreSQL and test output. Only repair failures with verified root cause. Then add narrow direct PostgREST owner+AAL2/race/rollback proof if needed before accepting I22.05.
+
+---
+
 ## 2026-11-12 — I22.05 disposable local PostgreSQL proof and source scope guard
 
 **Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (unchanged).** After staging the additive direct-RPC migration, the bounded source guard was adjusted to preserve the *existing* durable-history descendant pruning in the canonical RPC instead of incorrectly labeling it as new destructive SQL. Added `scripts/repayment-chronology-local-postgres-smoke.sh` using only a fresh disposable local Postgres database (explicit remote env refusal, automatic drop on exit), extracting the new private helpers verbatim from the migration without invoking hosted Supabase or owner data. The scoped fixture `scripts/recovery-fixtures/repayment-chronology-local.sql` exercises actual PL/pgSQL for extra cent, intermediate overdraft/future replenishment, same-date ties, complete/incomplete imported legacy history, unchanged imported anomalies, forged metadata, invalid date, allowed writeoff and private grants. This is **not** a full locked RPC/PostgREST proof; no migration applied outside disposable local DB and no owner finance history altered.

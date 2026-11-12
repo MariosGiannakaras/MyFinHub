@@ -2,6 +2,9 @@ import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 const migration=readFileSync(new URL('../supabase/migrations/20261112220000_guard_mutable_receivable_chronology.sql',import.meta.url),'utf8');
 const storage=readFileSync(new URL('../server/storage.ts',import.meta.url),'utf8');
+const ci=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
+const localSmoke=readFileSync(new URL('../scripts/repayment-chronology-local-postgres-smoke.sh',import.meta.url),'utf8');
+const localFixtures=readFileSync(new URL('../scripts/recovery-fixtures/repayment-chronology-local.sql',import.meta.url),'utf8');
 const base=readFileSync(new URL('../supabase/migrations/20260930122054_relational_finance_ledger_cutover.sql',import.meta.url),'utf8');
 const boundary='create or replace function public.rheomiq_save_mutable_state_history(';
 const previous=base.slice(base.indexOf(boundary),base.indexOf('create or replace function public.rheomiq_move_history(')).trim();
@@ -30,6 +33,16 @@ describe('#649 I22.05 direct owner/AAL2 RPC mutation chronology boundary',()=>{
     expect(migration).not.toContain('create or replace function public.rheomiq_move_history');
     expect(migration).toContain("v_owner := public.rheomiq_history_assert_access()");
     expect(migration).toContain("if p_expected_revision<>v_current.revision");
+  });
+  it('executes a real isolated PostgreSQL regression without cloud or production data',()=>{
+    expect(ci).toContain('bash scripts/repayment-chronology-local-postgres-smoke.sh');
+    expect(localSmoke).toContain('Refusing configured external PostgreSQL/Supabase connections');
+    expect(localSmoke).toContain('sudo -u postgres createdb');
+    expect(localSmoke).toContain('trap cleanup EXIT');
+    expect(localSmoke).toContain('BEGIN I22.05 ISOLATED LOCAL POSTGRES HELPERS');
+    for(const phrase of ['cent beyond payoff','hidden dated deficit','same day additive lending','complete legacy intermediate deficit','incomplete legacy opening preserved','forged amount-vs-delta','invalid day denied','unchanged historic anomaly']){
+      expect(localFixtures).toContain(phrase);
+    }
   });
   it('maps direct database refusals to user-visible 409 rather than false saving receipts',()=>{
     expect(storage).toContain("ApiError(409, 'RECEIVABLE_CHRONOLOGY_CONFLICT'");
