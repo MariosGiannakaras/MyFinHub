@@ -1,5 +1,7 @@
 import type { FinanceData, FinanceEvent, SplitPart } from '../src/types.js';
 import { moneyToCents } from '../src/lib/money.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
+import { lendingOutstandingFor } from '../src/lib/lending.js';
 import { ApiError } from './http.js';
 
 const CREDIT_ACCOUNT_ID='credit-card';
@@ -263,6 +265,51 @@ function validateWriteoffOutstanding(data:FinanceData){
       running+=cents(event.receivableDelta??0,`receivable delta ${event.id}`);
       if(!Number.isSafeInteger(running)||running<0)
         invalid(`Writeoff/repayment exceeds outstanding for ${event.id}.`);
+    }
+  }
+}
+
+
+/**
+ * Mutation-only, full-seed guard for dated receivable reductions.
+ *
+ * The ordinary state-only validator cannot know the imported seed balance.
+ * Check the proposed daily balance at every old/new repayment, writeoff and
+ * dated legacy decrease; a later lending must not conceal an earlier deficit.
+ * Preserve pre-existing imported anomalies when an unrelated mutation does
+ * not worsen them. Currency comparison is cent-exact and no history is edited.
+ *
+ * This is an API-side preflight paired with the revision-locked persistence
+ * RPC, not a substitute for a DB-enforced guard against direct RPC callers.
+ */
+export function validateMutableReceivableChronology(next:FinanceData,previous:FinanceData){
+  const checkpoints=new Map<string,Set<string>>();
+  const record=(person:unknown,date:unknown)=>{
+    if(typeof person!=='string'||typeof date!=='string'||!isValidDateOnly(date))return;
+    const name=person.trim();
+    if(!name)return;
+    const dates=checkpoints.get(name)??new Set<string>();
+    dates.add(date);
+    checkpoints.set(name,dates);
+  };
+  for(const document of [previous,next]){
+    for(const event of document.state.events??[]){
+      if(event.kind==='repayment'||event.kind==='lending_writeoff')record(event.person,event.date);
+    }
+    for(const legacy of document.seed.lending??[]){
+      for(const entry of legacy.entries??[]){
+        if(Number(entry.repaid)>0||Number(entry.haircut)>0)record(legacy.person,entry.date);
+      }
+    }
+  }
+  for(const [person,dates] of checkpoints){
+    for(const date of dates){
+      const proposed=moneyToCents(lendingOutstandingFor(next,person,date));
+      const original=moneyToCents(lendingOutstandingFor(previous,person,date));
+      if(!Number.isSafeInteger(proposed)||!Number.isSafeInteger(original))
+        invalid('Invalid dated receivable balance.');
+      if(proposed<0&&proposed<Math.min(original,0))
+        invalid('Dated receivable repayment exceeds outstanding.');
     }
   }
 }

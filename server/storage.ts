@@ -5,6 +5,7 @@ import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
 import { validateCompleteFinanceData } from './financeDataValidation.js';
+import { validateMutableReceivableChronology } from './financeSemanticValidation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
@@ -220,12 +221,24 @@ export async function writeMutableState(
   const label = historyLabel.trim() || 'Οικονομική αλλαγή';
   if (label.length > 180) throw new ApiError(400, 'INVALID_HISTORY', 'The change-history label is invalid.');
 
+  const expectedRevisionNumber=parseExpectedRevision(expectedRevision);
+  const expectedHistoryGenerationNumber=parseExpectedHistoryGeneration(expectedHistoryGeneration);
+  // Read the owner-authorized seed at the expected revision. The final RPC
+  // still enforces that revision/history generation under its database lock,
+  // so a concurrent import/save between preflight and commit cannot land.
+  const snapshot=await readStore(accessToken);
+  if(snapshot.revision!==String(expectedRevisionNumber))
+    throw new ApiError(409,'REVISION_CONFLICT','The data changed in another session. Reload before saving.');
+  const candidate:FinanceData={...snapshot.data,state,updatedAt};
+  validateCompleteFinanceData(candidate);
+  validateMutableReceivableChronology(candidate,snapshot.data);
+
   const row = first(await supabase<MutableStateRow[] | MutableStateRow>('rpc/rheomiq_save_mutable_state_history', {
     method: 'POST',
     body: JSON.stringify({
       p_state: state,
-      p_expected_revision: parseExpectedRevision(expectedRevision),
-      p_expected_history_generation: parseExpectedHistoryGeneration(expectedHistoryGeneration),
+      p_expected_revision: expectedRevisionNumber,
+      p_expected_history_generation: expectedHistoryGenerationNumber,
       p_updated_at: updatedAt,
       p_history_label: label,
     }),

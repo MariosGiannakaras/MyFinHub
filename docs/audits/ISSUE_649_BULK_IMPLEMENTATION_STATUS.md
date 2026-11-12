@@ -1,3 +1,13 @@
+## 2026-11-12 — I22.05 mutation-side chronology hardening candidate (DB/RPC boundary still open)
+
+**Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (unchanged).** At prior accepted head `88104a5cbaac4e2ceaa7a77ef75f7d49aee1f96a`, combined Reports/Planning rendered evidence and source CI remain accepted (I14.03/I20.02). Bounded next priority I22.05: a dated ordinary repayment could overdraft a receivable before later lending replenished it, while the existing complete-document server rule checked chronological negativity only for people with writeoffs. Added an API mutation-side full-seed read at the expected revision, the established complete-document guard, and a cent-exact dated-repayment/legacy chronology comparison before the existing atomic revision+history-generation RPC. A concurrent write/import is still rejected by the locked RPC. The new comparison does not rewrite imported history and permits unchanged historical anomalies while forbidding newly worsened deficits. Deterministic regression tests cover extra-cent overpayment, backdated repayment hidden by future lending, same-day ties, complete legacy dated decreases, imported historical compatibility and the source boundary. **This does not close I22.05:** direct authenticated PostgREST RPC callers still need an independent atomic DB-side guard; do not present API preflight as DB enforcement. No SQL migration, hosted DB action, data restore or Android edit.
+
+**Validation:** new commit exact-head CI/CodeQL/Unified **PENDING**; no claim of runtime server or direct-RPC testing, full Ready, Windows, WebKit or independent recovery. **Integration:** #654 Draft → develop unmerged. **Production:** main/Android/owner data untouched.
+
+**Next:** inspect mandatory source CI; correct verified failures. Design and validate DB-side chronology enforcement against direct RPC, seed/legacy/import/history/tied-date semantics before counting I22.05; continue other #649 safe gaps without rerunning accepted Reports/Planning evidence.
+
+---
+
 ## 2026-11-12 — I14.03 and I20.02 accepted after combined desktop/tablet/mobile QA
 
 **Progress: Implementations 6/23 completed · Sub-implementations 81/132 completed (+2).**
