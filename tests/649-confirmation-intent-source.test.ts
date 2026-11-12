@@ -18,6 +18,17 @@ describe('#649 I20.02 distinct scheduled cancellation intent',()=>{
     expect(planning).toContain("await onUpsertScheduled(transitionScheduled(item,status))");
   });
 
+  it('uses isolated Chromium bootstrap before the consolidated Planning browser assertions',()=>{
+    expect(browser).toContain('MYFINHUB_QA_PRIMARY_BROWSER');
+    expect(browser).toContain('createServer');
+    expect(browser).toContain("listener.listen(0,'127.0.0.1'");
+    expect(browser).toContain('myfinhub-planning-forecast-qa-chrome-${port}');
+    expect(browser).toContain('rmSync(profile');
+    expect(browser).toContain('--disable-dev-shm-usage');
+    expect(browser).toContain('Chromium exited before CDP ready');
+    expect(browser).toContain('child.stderr');
+  });
+
   it('checks real browser dismissal, retained pending action and separate destructive confirmation',()=>{
     expect(browser).toContain('scheduled cancellation shows separate safe keep and destructive action labels');
     expect(browser).toContain("await clickText('[role=alertdialog] footer button','Διατήρηση')");

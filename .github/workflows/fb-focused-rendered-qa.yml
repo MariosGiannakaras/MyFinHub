@@ -24,6 +24,7 @@ jobs:
        contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-rules-icon-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-taxonomy-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-provider-receipt-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-lending-qa -->') ||
@@ -35,7 +36,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') &&
+          'reports-visual planning-forecast' ||
+          contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') &&
           'command-palette icon-packs taxonomy-management' ||
           contains(github.event.pull_request.body, '<!-- run-649-rules-icon-qa -->') &&
           'command-palette icon-packs' ||

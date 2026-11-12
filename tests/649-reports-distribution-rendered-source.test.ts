@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const page=read('src/pages/ReportsPage.tsx');
 const browser=read('scripts/reports-visual-qa.mjs');
+const workflow=read('.github/workflows/fb-focused-rendered-qa.yml');
 
 describe('#649 I14.03 positive-only Reports distribution and responsive copy',()=>{
   it('keeps the canonical cutoff, five highest positive balances, and non-net-worth scope',()=>{
@@ -30,7 +31,10 @@ describe('#649 I14.03 positive-only Reports distribution and responsive copy',()
     expect(browser).toContain('inspectDistribution');
     expect(browser).toContain('detail.xoverflow<=2&&detail.yoverflow<=2');
     expect(browser).toContain('detail.documentOverflow<=2');
-    for(const viewport of ['desktop-1440','historical-desktop-1440','mobile-375','mobile-320'])expect(browser).toContain("inspectDistribution('"+viewport+"'");
+    for(const viewport of ['desktop-1440','historical-desktop-1440','tablet-768','mobile-375','mobile-320'])expect(browser).toContain("inspectDistribution('"+viewport+"'");
     expect(browser).toContain('reports-positive-only-distribution-${label}.png');
+    expect(browser).toContain("navigate('budget-rules',768,1024,false)");
+    expect(workflow).toContain('<!-- run-649-reports-planning-qa -->');
+    expect(workflow).toContain("'reports-visual planning-forecast'");
   });
 });
