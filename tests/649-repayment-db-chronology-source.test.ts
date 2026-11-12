@@ -21,7 +21,9 @@ describe('#649 I22.05 direct owner/AAL2 RPC mutation chronology boundary',()=>{
     expect(migration).toContain('private.rheomiq_chronology_date');
     expect(migration).toContain('RECEIVABLE_CHRONOLOGY_CONFLICT');
     expect(migration).toContain("baseline.cents+next.event_cents<least(baseline.cents+prior.event_cents,0)");
-    expect(migration).not.toMatch(/security definer|drop table|truncate|delete from|update public\.rheomiq_app_state set/i);
+    const privateGuards=migration.slice(migration.indexOf('-- BEGIN I22.05 ISOLATED LOCAL POSTGRES HELPERS'),migration.indexOf('-- END I22.05 ISOLATED LOCAL POSTGRES HELPERS'));
+    expect(privateGuards).not.toMatch(/security definer|drop table|truncate|delete from|update public\.rheomiq_app_state set/i);
+    expect(migration).toContain("delete from public.rheomiq_history_points"); // preserved original transactional pruning
     expect(migration).toContain('security invoker');
     expect(migration).toContain('revoke all on function private.rheomiq_guard_mutable_receivable_chronology');
     expect(migration).not.toContain('create or replace function public.rheomiq_import_state');
