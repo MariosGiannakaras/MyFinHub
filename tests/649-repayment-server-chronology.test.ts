@@ -16,7 +16,7 @@ const withEvents=(prior:FinanceData,events:FinanceData['state']['events']):Finan
 describe('#649 I22.05 API mutation-side repayment chronology (DB/RPC guard remains open)',()=>{
   it('rejects an extra repayment cent after a later confirmed payoff',()=>{
     const prior=withEvents(fixture(),[dated('repayment','2026-08-29',100,'Payoff')]);
-    const next=withEvents(prior,[...prior.state.events,dated('repayment','2026-08-16',0.01,'Backdated')]);
+    const next=withEvents(prior,[...(prior.state.events??[]),dated('repayment','2026-08-16',0.01,'Backdated')]);
     expect(lendingOutstandingFor(next,'Alex')).toBeCloseTo(-0.01,2);
     expect(()=>validateMutableReceivableChronology(next,prior)).toThrow(/Dated receivable repayment exceeds/);
   });
@@ -25,11 +25,11 @@ describe('#649 I22.05 API mutation-side repayment chronology (DB/RPC guard remai
       dated('repayment','2026-08-20',80,'Original repayment'),
       dated('lending','2026-08-30',100,'Later lending')
     ]);
-    const next=withEvents(prior,[...prior.state.events,dated('repayment','2026-08-19',30,'Backdated')]);
+    const next=withEvents(prior,[...(prior.state.events??[]),dated('repayment','2026-08-19',30,'Backdated')]);
     expect(lendingOutstandingFor(next,'Alex')).toBe(90);
     expect(lendingOutstandingFor(next,'Alex','2026-08-20')).toBe(-10);
     expect(()=>validateMutableReceivableChronology(next,prior)).toThrow(/Dated receivable repayment exceeds/);
-    const accepted=withEvents(prior,[...prior.state.events,dated('repayment','2026-08-19',20,'Within balance')]);
+    const accepted=withEvents(prior,[...(prior.state.events??[]),dated('repayment','2026-08-19',20,'Within balance')]);
     expect(()=>validateMutableReceivableChronology(accepted,prior)).not.toThrow();
   });
   it('does not depend on event-id sort order for same-day lending and repayment',()=>{
@@ -58,9 +58,9 @@ describe('#649 I22.05 API mutation-side repayment chronology (DB/RPC guard remai
   });
   it('does not rewrite or newly reject an unchanged imported anomalous history',()=>{
     const prior=withEvents(fixture(),[dated('repayment','2026-08-20',120,'Imported old entry')]);
-    const unchanged=withEvents(prior,[...prior.state.events]);
+    const unchanged=withEvents(prior,[...(prior.state.events??[])]);
     expect(()=>validateMutableReceivableChronology(unchanged,prior)).not.toThrow();
-    const worsened=withEvents(prior,[...prior.state.events,dated('repayment','2026-08-19',0.01,'New excess')]);
+    const worsened=withEvents(prior,[...(prior.state.events??[]),dated('repayment','2026-08-19',0.01,'New excess')]);
     expect(()=>validateMutableReceivableChronology(worsened,prior)).toThrow(/Dated receivable repayment exceeds/);
   });
   it('preflights full seed/current revision and preserves the locked mutation RPC',()=>{
