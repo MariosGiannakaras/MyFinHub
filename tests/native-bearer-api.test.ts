@@ -142,7 +142,7 @@ describe('native bearer finance API boundary', () => {
 
   it('denies AAL1 bearer mutation before History, Backup and Import storage (#649 I22.02)',async()=>{
     const token=tokenWithAal('aal1');
-    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'owner-id'})));
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>upstream(200,{id:'owner-id'})));
     const cases=[
       {handler:historyHandler,body:{action:'undo',updatedAt:'2026-08-22T00:00:00.000Z'}},
       {handler:backupHandler,body:{}},
@@ -167,7 +167,7 @@ describe('native bearer finance API boundary', () => {
   it('denies non-owner bearer History, Backup and Import without side effects (#649 I22.02)',async()=>{
     const token=tokenWithAal('aal2');
     storage.isOwner.mockResolvedValue(false);
-    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'different-user'})));
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>upstream(200,{id:'different-user'})));
     const cases=[
       {handler:historyHandler,body:{action:'redo',updatedAt:'2026-08-22T00:00:00.000Z'}},
       {handler:backupHandler,body:{}},
