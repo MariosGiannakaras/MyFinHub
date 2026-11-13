@@ -102,6 +102,33 @@ describe('native bearer finance API boundary', () => {
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
   });
 
+  it('denies a bearer AAL1 finance mutation before any revisioned write (#649 I22.02)', async()=>{
+    const token=tokenWithAal('aal1');
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'owner-id'})));
+    const res=responseRecorder();
+    await dataHandler(bearerRequest('PUT',token,{
+      'if-match':'7','x-rheomiq-history-generation':'4',
+    }),res);
+    expect(res.statusCode).toBe(403);
+    expect(JSON.parse(res.body)).toMatchObject({code:'MFA_REQUIRED'});
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
+    expect(storage.writeMutableState).not.toHaveBeenCalled();
+  });
+
+  it('denies a non-owner AAL2 bearer finance mutation without clearing browser cookies (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    storage.isOwner.mockResolvedValue(false);
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'different-user'})));
+    const res=responseRecorder();
+    await dataHandler(bearerRequest('PUT',token,{
+      'if-match':'7','x-rheomiq-history-generation':'4',
+    }),res);
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body)).toMatchObject({code:'AUTH_REQUIRED'});
+    expect(res.headers.has('set-cookie')).toBe(false);
+    expect(storage.writeMutableState).not.toHaveBeenCalled();
+  });
+
   it('preserves the existing same-origin requirement for cookie mutations', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
