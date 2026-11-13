@@ -344,12 +344,25 @@ async function main(){
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
     console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
-    await runDirectReceivableRpcProof({
+    const directRpcSessions=await runDirectReceivableRpcProof({
       apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
       email,password:TEST_PASSWORD,userId,factorId,
       totpCode:()=>nextTotp(secret,correct),
       data:initial.body.data,revision:initialRevision,generation:initialGeneration,
     });
+    // The direct proof uses a separate synthetic Auth session. Retire only its
+    // session IDs through the existing owner+AAL2 API so the subsequent
+    // two-device lifecycle test retains its original strict count.
+    for(const sessionId of directRpcSessions){
+      const retired=await primary.request('/api/auth/devices',{
+        method:'POST',body:{action:'revoke',sessionId},
+      });
+      expect(retired,200,undefined,'direct-rpc-synthetic-device-retirement');
+    }
+    const afterDirectDevices=await primary.request('/api/auth/devices');
+    expect(afterDirectDevices,200,undefined,'direct-rpc-synthetic-device-count');
+    assert(afterDirectDevices.body?.count===1&&afterDirectDevices.body?.devices?.[0]?.current===true,
+      'Direct RPC proof left synthetic test sessions active.');
     console.log('[real-stack] PASS direct PostgREST denied AAL1/overpayment/forgery without finance or history commit');
 
     const staleState=structuredClone(initial.body.data.state);

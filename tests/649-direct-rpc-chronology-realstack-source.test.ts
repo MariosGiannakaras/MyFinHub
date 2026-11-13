@@ -22,6 +22,11 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("future lending masks an intermediate deficit");
     expect(direct).toContain("forged receivable delta");
     expect(direct).toContain("JSON.stringify(after.body)===JSON.stringify(before.body)");
+    expect(direct).toContain("return [...new Set([aal1Claims.session_id!,aal2Claims.session_id!])]");
+    expect(real).toContain("for(const sessionId of directRpcSessions)");
+    expect(real).toContain("action:'revoke',sessionId");
+    expect(real).toContain("afterDirectDevices.body?.count===1");
+    expect(real).toContain("devices.body?.count===2");
     expect(direct).not.toMatch(/console\.(?:log|error).*token|process\.env\.SUPABASE_SECRET/);
   });
 });

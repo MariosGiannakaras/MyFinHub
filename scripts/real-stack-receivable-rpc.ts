@@ -107,4 +107,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(JSON.stringify(after.body)===JSON.stringify(before.body)&&
     String(historyAfter.body?.generation)===generation,
     'Direct RPC rejected a finance mutation but changed revision, state or history.');
+  // Return only the synthetic local GoTrue session IDs. The existing
+  // owner-authorized device API will revoke them before device-lifecycle QA.
+  return [...new Set([aal1Claims.session_id!,aal2Claims.session_id!])];
 }
