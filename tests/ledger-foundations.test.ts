@@ -15,6 +15,7 @@ import { creditDebtForCard } from '../src/lib/cards.js';
 import { lendingOutstandingFor } from '../src/lib/lending.js';
 import { loanPaidAmount, loanPaymentEvents } from '../src/lib/loans.js';
 import { recurringPayments } from '../src/lib/recurring.js';
+import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
 
 const minimal = (): FinanceData => migrateData({
   app:'MyFinHub',schemaVersion:3,updatedAt:'2026-08-21T00:00:00Z',
@@ -168,6 +169,69 @@ describe('ledger foundations', () => {
     expect(monthlyFlow(data,'2026-08')).toMatchObject({income:0,expense:159.99,net:-159.99});
     expect(accountBalances(data,'2026-08-21')).toMatchObject({bank:870.01,cash:100,savings:500,'credit-card':-60});
     expect(JSON.stringify(data.seed)).toBe(beforeSeed);
+  });
+
+  it('reconciles imported snapshot, same-day ledger legs, refunds, savings and receivable cash signs (#649 I22.01)',()=>{
+    const data=minimal();
+    // The seed receipt is already represented by the August 1 snapshot:
+    // income history must not credit the account a second time.
+    data.seed.transactions.push({
+      id:'imported-legacy-income',date:'2026-07-31',type:'income',accountId:'bank',
+      amount:300,note:'Included in imported snapshot',category:'Μισθός',source:'legacy',
+    });
+    const frozenSeed=JSON.stringify(data.seed);
+    const entries=[
+      createEvent({kind:'expense',date:'2026-08-20',amount:20,note:'Booked groceries',accountId:'bank',category:'Φαγητό'}),
+      createEvent({kind:'saving_cash_offset',date:'2026-08-20',amount:0.01,note:'One-cent savings',fromAccountId:'bank',toAccountId:'savings'}),
+      createEvent({kind:'income',date:'2026-08-21',amount:11.11,note:'Booked income',accountId:'bank'}),
+      createEvent({kind:'refund',date:'2026-08-21',amount:5,note:'Refund for groceries',accountId:'bank',category:'Φαγητό'}),
+      createEvent({kind:'lending',date:'2026-08-22',amount:30,note:'Money lent',person:'Alex',accountId:'bank'}),
+      createEvent({kind:'repayment',date:'2026-08-22',amount:10,note:'Cash repaid',person:'Alex',accountId:'bank'}),
+      createEvent({kind:'saving_cash_offset',date:'2026-08-22',amount:25,note:'Transfer to savings',fromAccountId:'bank',toAccountId:'savings'}),
+      createEvent({kind:'expense',date:'2026-08-23',amount:4,note:'Future booked charge',accountId:'bank'}),
+    ];
+    data.state.events=entries;
+    expect(()=>validateCompleteFinanceData(data)).not.toThrow();
+    expect(new Set(entries.map(event=>event.id)).size).toBe(entries.length);
+    for(const event of entries){
+      const movement=event.legs.reduce((sum,leg)=>sum+leg.amount,0);
+      if(event.kind==='saving_cash_offset')expect(movement).toBeCloseTo(0,2);
+      if(event.kind==='lending')expect(movement).toBeCloseTo(-event.receivableDelta,2);
+      if(event.kind==='repayment')expect(movement).toBeCloseTo(-event.receivableDelta,2);
+    }
+    const checkpoints=[
+      {date:'2026-08-20',bank:979.99,savings:500.01,worth:1580},
+      {date:'2026-08-21',bank:996.1,savings:500.01,worth:1596.11},
+      {date:'2026-08-22',bank:951.1,savings:525.01,worth:1596.11},
+      {date:'2026-08-23',bank:947.1,savings:525.01,worth:1592.11},
+    ];
+    for(const item of checkpoints){
+      const balances=accountBalances(data,item.date);
+      expect(balances.bank).toBeCloseTo(item.bank,2);
+      expect(balances.savings).toBeCloseTo(item.savings,2);
+      expect(balances.cash).toBe(100);
+      expect(netWorth(data,item.date)).toBeCloseTo(item.worth,2);
+    }
+    const current=monthlyFlow(data,'2026-08','2026-08-22');
+    expect(current.income).toBeCloseTo(11.11,2);
+    expect(current.expense).toBeCloseTo(15,2);
+    expect(current.refunds).toBe(5);
+    expect(current.saving).toBeCloseTo(25.01,2);
+    expect(current.net).toBeCloseTo(-3.89,2);
+    expect(categoryTotals(data,'2026-08','2026-08-22').find(row=>row.name==='Φαγητό')?.value).toBeCloseTo(15,2);
+    expect(lendingOutstandingFor(data,'Alex','2026-08-21')).toBe(0);
+    expect(lendingOutstandingFor(data,'Alex','2026-08-22')).toBe(20);
+    // Same-date sums must not depend on arbitrary insertion order.
+    const asOfBefore=accountBalances(data,'2026-08-22');
+    data.state.events=[...entries].reverse();
+    expect(accountBalances(data,'2026-08-22').bank).toBeCloseTo(asOfBefore.bank,2);
+    expect(monthlyFlow(data,'2026-08','2026-08-22').net).toBeCloseTo(current.net,2);
+    // The full-document guard must reject unknown ledger account references.
+    data.state.events=[...entries,createEvent({
+      kind:'expense',date:'2026-08-22',amount:1,note:'Orphan source',accountId:'deleted-account',
+    })];
+    expect(()=>validateCompleteFinanceData(data)).toThrowError(/account reference/i);
+    expect(JSON.stringify(data.seed)).toBe(frozenSeed);
   });
 
   it('derives split totals in cents without floating-point drift', () => {
