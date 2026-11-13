@@ -6,6 +6,10 @@ const storage = vi.hoisted(() => ({
   parseExpectedRevision: vi.fn((value: string | undefined) => Number(value)),
   readStore: vi.fn(),
   writeMutableState: vi.fn(),
+  readHistory: vi.fn(),
+  moveHistory: vi.fn(),
+  backupStore: vi.fn(),
+  writeStore: vi.fn(),
 }));
 const devices = vi.hoisted(() => ({ ensureDeviceSessionAccess: vi.fn() }));
 const stateValidation = vi.hoisted(() => ({
@@ -17,6 +21,9 @@ vi.mock('../server/deviceSessionRegistry.js', () => devices);
 vi.mock('../server/stateValidation.js', () => stateValidation);
 
 import dataHandler from '../api/data.js';
+import historyHandler from '../api/history.js';
+import backupHandler from '../api/backup.js';
+import importHandler from '../api/import.js';
 
 const TEST_SESSION_ID = '123e4567-e89b-42d3-a456-426614174000';
 function tokenWithAal(aal: 'aal1' | 'aal2') {
@@ -66,6 +73,10 @@ describe('native bearer finance API boundary', () => {
     storage.parseExpectedRevision.mockReset().mockImplementation((value: string | undefined) => Number(value));
     storage.readStore.mockReset().mockResolvedValue({ data: { app: 'RheomIQ' }, revision: 7, updatedAt: '2026-08-22T00:00:00.000Z' });
     storage.writeMutableState.mockReset().mockResolvedValue({ revision: 8, updatedAt: '2026-08-22T00:01:00.000Z' });
+    storage.readHistory.mockReset().mockResolvedValue({});
+    storage.moveHistory.mockReset().mockResolvedValue({});
+    storage.backupStore.mockReset().mockResolvedValue('test-only');
+    storage.writeStore.mockReset().mockResolvedValue({});
     stateValidation.parseMutableWrite.mockReset().mockImplementation((value: any) => value);
   });
 
@@ -127,6 +138,55 @@ describe('native bearer finance API boundary', () => {
     expect(JSON.parse(res.body)).toMatchObject({code:'AUTH_REQUIRED'});
     expect(res.headers.has('set-cookie')).toBe(false);
     expect(storage.writeMutableState).not.toHaveBeenCalled();
+  });
+
+  it('denies AAL1 bearer mutation before History, Backup and Import storage (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal1');
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'owner-id'})));
+    const cases=[
+      {handler:historyHandler,body:{action:'undo',updatedAt:'2026-08-22T00:00:00.000Z'}},
+      {handler:backupHandler,body:{}},
+      {handler:importHandler,body:{app:'RheomIQ',schemaVersion:3}},
+    ];
+    for(const testCase of cases){
+      const res=responseRecorder();
+      await testCase.handler({
+        method:'POST',
+        headers:{authorization:`Bearer ${token}`},
+        body:testCase.body,
+      },res);
+      expect(res.statusCode).toBe(403);
+      expect(JSON.parse(res.body)).toMatchObject({code:'MFA_REQUIRED'});
+    }
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
+    expect(storage.moveHistory).not.toHaveBeenCalled();
+    expect(storage.backupStore).not.toHaveBeenCalled();
+    expect(storage.writeStore).not.toHaveBeenCalled();
+  });
+
+  it('denies non-owner bearer History, Backup and Import without side effects (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    storage.isOwner.mockResolvedValue(false);
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(upstream(200,{id:'different-user'})));
+    const cases=[
+      {handler:historyHandler,body:{action:'redo',updatedAt:'2026-08-22T00:00:00.000Z'}},
+      {handler:backupHandler,body:{}},
+      {handler:importHandler,body:{app:'RheomIQ',schemaVersion:3}},
+    ];
+    for(const testCase of cases){
+      const res=responseRecorder();
+      await testCase.handler({
+        method:'POST',
+        headers:{authorization:`Bearer ${token}`},
+        body:testCase.body,
+      },res);
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body)).toMatchObject({code:'AUTH_REQUIRED'});
+      expect(res.headers.has('set-cookie')).toBe(false);
+    }
+    expect(storage.moveHistory).not.toHaveBeenCalled();
+    expect(storage.backupStore).not.toHaveBeenCalled();
+    expect(storage.writeStore).not.toHaveBeenCalled();
   });
 
   it('preserves the existing same-origin requirement for cookie mutations', async () => {
