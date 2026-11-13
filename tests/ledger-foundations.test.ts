@@ -196,8 +196,10 @@ describe('ledger foundations', () => {
     for(const event of entries){
       const movement=event.legs.reduce((sum,leg)=>sum+leg.amount,0);
       if(event.kind==='saving_cash_offset')expect(movement).toBeCloseTo(0,2);
-      if(event.kind==='lending')expect(movement).toBeCloseTo(-event.receivableDelta,2);
-      if(event.kind==='repayment')expect(movement).toBeCloseTo(-event.receivableDelta,2);
+      if(event.kind==='lending'||event.kind==='repayment'){
+        expect(event.receivableDelta).toBeTypeOf('number');
+        expect(movement).toBeCloseTo(-(event.receivableDelta??Number.NaN),2);
+      }
     }
     const checkpoints=[
       {date:'2026-08-20',bank:979.99,savings:500.01,worth:1580},

@@ -1,3 +1,9 @@
+## 2026-11-14 — I22.01 new read-only fixture TypeScript optional-field correction
+
+**Progress: Implementations 6/23 completed · Sub-implementations 82/132 completed (I22.01 still NOT counted).** [CI #43517533683](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43517533683) `validate` failed in TypeScript hygiene **before executing any domain assertions**: the new ledger reconciliation test negated optional `FinanceEvent.receivableDelta` at two expressions (TS18048). Corrected the fixture to explicitly require a numeric receivable delta and fail closed on an absent one (`Number.NaN`), then assert the same signed cash/receivable cents; no product/domain implementation, acceptance criteria or test thresholds changed. The I22.05 accepted local PostgREST+recovery proof on prior `8588365` remains valid. Exact new-head source CI/CodeQL/Unified required before accepting I22.01. PR #654 Draft → develop, unmerged; hosted/production database and Android untouched.
+
+---
+
 ## 2026-11-14 — I22.05 accepted real-stack direct-RPC chronology and I22.01 read-only reconciliation candidate
 
 **Progress: Implementations 6/23 completed · Sub-implementations 82/132 completed (+1 accepted).**
