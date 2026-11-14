@@ -137,7 +137,110 @@ DO $$ BEGIN
    RAISE EXCEPTION 'AAL1 was allowed to configure PIN';
  EXCEPTION WHEN insufficient_privilege THEN NULL;
  END;
-END $$;
+END $;
+-- All three exposed SECURITY DEFINER App Lock RPCs must be unusable by
+-- AAL1 users, even when their JWT is otherwise a valid owner/device session.
+DO $
+DECLARE rejected integer:=0;
+BEGIN
+  BEGIN
+    PERFORM public.myfinhub_app_lock_ticket('validate',repeat('a',64));
+    RAISE EXCEPTION 'AAL1 was allowed to validate an App Lock ticket';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  BEGIN
+    PERFORM public.myfinhub_app_lock_recover('9876');
+    RAISE EXCEPTION 'AAL1 was allowed to recover an App Lock PIN';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  IF rejected<>2 THEN RAISE EXCEPTION 'AAL1 App Lock denials were incomplete'; END IF;
+END $;
+RESET ROLE;
+
+-- Test effective grants on the actual compiled functions, not merely SQL text.
+DO $
+DECLARE signature text;
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.myfinhub_app_lock_action(text,text,text,integer)',
+    'public.myfinhub_app_lock_ticket(text,text)',
+    'public.myfinhub_app_lock_recover(text)'
+  ] LOOP
+    IF NOT has_function_privilege('authenticated',signature,'EXECUTE') THEN
+      RAISE EXCEPTION 'Authenticated App Lock grant missing for %',signature;
+    END IF;
+    IF has_function_privilege('anon',signature,'EXECUTE') THEN
+      RAISE EXCEPTION 'Anonymous App Lock RPC execution exposed for %',signature;
+    END IF;
+  END LOOP;
+  IF has_table_privilege('authenticated','public.myfinhub_app_lock','SELECT')
+    OR has_table_privilege('authenticated','public.myfinhub_app_lock_tickets','SELECT') THEN
+    RAISE EXCEPTION 'Private App Lock verifier/ticket tables exposed to authenticated role';
+  END IF;
+END $;
+
+-- A valid AAL2 non-owner with an ACTIVE device still must be denied by all
+-- three SECURITY DEFINER entrypoints.
+INSERT INTO auth.users VALUES ('33333333-3333-4333-8333-333333333333');
+INSERT INTO public.myfinhub_device_sessions(session_id,user_id)
+ VALUES('44444444-4444-4444-8444-444444444444','33333333-3333-4333-8333-333333333333');
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claims',jsonb_build_object(
+  'sub','33333333-3333-4333-8333-333333333333',
+  'session_id','44444444-4444-4444-8444-444444444444','aal','aal2'
+)::text,false);
+DO $
+DECLARE rejected integer:=0;
+BEGIN
+  BEGIN
+    PERFORM public.myfinhub_app_lock_action('status');
+    RAISE EXCEPTION 'Non-owner AAL2 was allowed to read App Lock status';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  BEGIN
+    PERFORM public.myfinhub_app_lock_ticket('validate',repeat('a',64));
+    RAISE EXCEPTION 'Non-owner AAL2 was allowed to query App Lock tickets';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  BEGIN
+    PERFORM public.myfinhub_app_lock_recover('9876');
+    RAISE EXCEPTION 'Non-owner AAL2 was allowed to recover the owner PIN';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  IF rejected<>3 THEN RAISE EXCEPTION 'Non-owner App Lock denials were incomplete'; END IF;
+END $;
+RESET ROLE;
+
+-- Revocation of an otherwise valid owner AAL2 session must immediately
+-- remove its authority for status, ticket and high-assurance recovery.
+UPDATE public.myfinhub_device_sessions
+ SET revoked_at=clock_timestamp()
+ WHERE session_id='22222222-2222-4222-8222-222222222222';
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claims',jsonb_build_object(
+  'sub','11111111-1111-4111-8111-111111111111',
+  'session_id','22222222-2222-4222-8222-222222222222','aal','aal2'
+)::text,false);
+DO $
+DECLARE rejected integer:=0;
+BEGIN
+  BEGIN
+    PERFORM public.myfinhub_app_lock_action('status');
+    RAISE EXCEPTION 'Revoked owner device was allowed to read App Lock status';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  BEGIN
+    PERFORM public.myfinhub_app_lock_ticket('validate',repeat('a',64));
+    RAISE EXCEPTION 'Revoked owner device was allowed to query App Lock tickets';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  BEGIN
+    PERFORM public.myfinhub_app_lock_recover('9876');
+    RAISE EXCEPTION 'Revoked owner device was allowed to recover App Lock PIN';
+  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
+  END;
+  IF rejected<>3 THEN RAISE EXCEPTION 'Revoked device App Lock denials were incomplete'; END IF;
+END $;
 RESET ROLE;
 ROLLBACK;
 \echo Local PostgreSQL PIN/RLS/recovery smoke: PASS
