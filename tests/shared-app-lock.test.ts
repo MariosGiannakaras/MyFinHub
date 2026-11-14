@@ -94,13 +94,14 @@ describe('shared owner app privacy PIN',()=>{
     expect(assessment).toContain('four separate `InitPlan` nodes');
 
     const appLock=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
+    const grantSql=appLock.replace(/\s+/g,' ').replace(/public,\s*anon/g,'public, anon');
     for(const signature of [
       'public.myfinhub_app_lock_action(text,text,text,integer)',
       'public.myfinhub_app_lock_ticket(text,text)',
       'public.myfinhub_app_lock_recover(text)',
     ]){
-      expect(appLock).toContain('revoke all on function '+signature+' from public, anon;');
-      expect(appLock).toContain('grant execute on function '+signature+' to authenticated;');
+      expect(grantSql).toContain('revoke all on function '+signature+' from public, anon;');
+      expect(grantSql).toContain('grant execute on function '+signature+' to authenticated;');
     }
     expect(appLock).toContain('and private.myfinhub_app_lock_session_unlocked()');
   });
