@@ -77,7 +77,7 @@ function bearerRequest(method: 'GET' | 'PUT', token: string, extraHeaders: Recor
 
 // These use the real API handler and cover both metadata reads and every
 // state/Storage mutation branch, including provider and recurring-image paths.
-const metadataRoutes = [
+const metadataRoutes: Array<{ method: string; query: Record<string, string>; headers?: Record<string, string>; body?: unknown }> = [
   { method: 'GET', query: {} },
   { method: 'GET', query: { resource: 'financial-providers' } },
   { method: 'GET', query: { resource: 'recurring-service-assets' } },
