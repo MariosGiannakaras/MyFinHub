@@ -1,6 +1,8 @@
+import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { assertSyntheticVisualQaUrl } from '../scripts/visual-evidence-store.mjs';
+const require = createRequire(import.meta.url);
+const { assertSyntheticVisualQaUrl } = require('../scripts/visual-evidence-store.mjs') as {assertSyntheticVisualQaUrl:(value:string)=>string};
 
 const store=readFileSync(new URL('../scripts/visual-evidence-store.mjs',import.meta.url),'utf8');
 const workflow=readFileSync(new URL('../.github/workflows/final-visual-qa.yml',import.meta.url),'utf8');
