@@ -1,3 +1,17 @@
+## 2026-11-14 — I03.03 ACCEPTED: old AAL2 reads cannot resurrect an expired or MFA-downgraded workspace
+
+**Progress: Implementations 6/23 completed · Sub-implementations 88/132 completed (+1 I03.03).**
+
+**I03.03 ACCEPTED (+1 within source and synthetic browser QA scope):** On exact implementation head `9e5cac34615c7db085f1fab5539fb835cdf61f80`, [mandatory CI #43642194779](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43642194779) **SUCCESS**: 314/314 test files, 1,775/1,775 tests, TypeScript/build, privacy and bundle limits, both disposable PostgreSQL finance/App Lock security smoke tests, CodeQL and Unified. [Single focused Chromium #43642454601](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43642454601) **SUCCESS** (`ui-ux-runtime`, failed suites 0, no browser console/network exceptions). Downloaded immutable screenshot artifact **#14132079687**; directly inspected real **375px** `runtime-expired-inflight-session-375.png` (login only; no finance) and `runtime-mfa-overlapping-session-375.png` (MFA-only with keyboard-focused code input, readable Greek copy, no clipped actions). Original auth-expiry and MFA screenshot scenarios and synthetic finance persistence/recovery tests still passed.
+
+**Evidence-backed defect corrected:** `src/hooks/useSession.ts` previously applied whichever asynchronous `getSession()` response arrived last; a stale **authenticated AAL2** response could overwrite an already-processed `rheomiq:auth-expired` event or a newer `rheomiq:mfa-required` refresh and reopen protected UI. A monotonic transition epoch now discards out-of-order success/error results from refresh, login, MFA verification and logout, and stale enrollment callbacks cannot publish errors. Expiry and nonauthenticated downgrade clear the **memory-only** PIN ticket. The existing `src/qa.tsx` fixture holds a prior authenticated response and releases it after expiry or after a newer MFA result; the real hook must keep FinanceApp unmounted. `scripts/ui-ux-runtime-qa.mjs` asserts both races in actual Chromium and captures screenshots; existing `FB Focused Rendered QA` supports one Draft-only **`<!-- run-649-session-race-qa -->`** selector for this suite. That opt-in was turned **OFF** after successful inspection. Existing backend 401/503 cookie-preservation, bearer no-fallback and owner+AAL2/active-device PostgREST evidence is retained, not redundantly rerun. This does not modify #645 LoginScreen/MFA implementation, the secure backend/Auth/RLS contract or Android.
+
+**Not claimed:** A production session-expiry trial, a full Ready browser/200%-zoom/light-dark/Windows suite, or a hosted Supabase release. The additive receivable SQL migration is still release-PENDING and not applied. PR #654 remains Draft → `develop`, unmerged; no private financial data, hosted database, destructive restore, main, Android or production modification.
+
+**Next:** Continue remaining high-priority #649 P0 work not owned by #645/#648/#652; review I03.05 accessibility and I18.03 backup freshness or other branch-recorded open items without reopening accepted I22.01/02/03/05/06/07. Consolidated review-head cross-engine, Windows, performance, complete rendered evidence and security/integration gates remain pending. Reconcile overlapping #650/#651/#653 only via designated integration owner before protected develop merge.
+
+---
+
 ## 2026-11-14 — I22.07 ACCEPTED: privacy-safe desktop diagnostics and synthetic-only final screenshots
 
 **Progress: Implementations 6/23 completed · Sub-implementations 87/132 completed (+1 I22.07).**
