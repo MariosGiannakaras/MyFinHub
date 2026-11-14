@@ -8,6 +8,7 @@ const vault = vi.hoisted(() => ({
   readCardSecrets: vi.fn(),
   writeCardSecrets: vi.fn(),
   deleteCardSecrets: vi.fn(),
+  deleteCommittedCardSecrets: vi.fn(),
 }));
 
 vi.mock('../server/storage.js', () => storage);
@@ -61,6 +62,7 @@ describe('native bearer card-vault boundary', () => {
     vault.readCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     vault.writeCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     vault.deleteCardSecrets.mockReset().mockResolvedValue(undefined);
+    vault.deleteCommittedCardSecrets.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -107,6 +109,43 @@ describe('native bearer card-vault boundary', () => {
     expect(res.statusCode).toBe(401);
     expect(res.headers.has('set-cookie')).toBe(false);
     expect(vault.readCardSecrets).not.toHaveBeenCalled();
+  });
+
+  it('rejects AAL1 bearer vault writes, deletes and committed deletions before accessing secrets (#649 I22.02)', async () => {
+    const token = tokenWithAal('aal1');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => upstream(200, { id: 'owner-id' })));
+    const requests = [
+      request('PUT', token, { cardId: 'card-1', pan: '4111111111111111' }),
+      request('DELETE', token, { cardId: 'card-1' }),
+      request('DELETE', token, { cardId: 'card-1', requireCommittedDeletion: true }),
+    ];
+    for (const req of requests) {
+      const res = responseRecorder();
+      await handleCardVaultRequest(req, res);
+      expect(res.statusCode).toBe(403);
+      expect(JSON.parse(res.body)).toMatchObject({ code: 'MFA_REQUIRED' });
+    }
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
+    for (const operation of Object.values(vault)) expect(operation).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-owner bearer vault writes and deletions without clearing browser cookies (#649 I22.02)', async () => {
+    const token = tokenWithAal('aal2');
+    storage.isOwner.mockResolvedValue(false);
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => upstream(200, { id: 'different-user' })));
+    const requests = [
+      request('PUT', token, { cardId: 'card-1', pan: '4111111111111111' }),
+      request('DELETE', token, { cardId: 'card-1' }),
+      request('DELETE', token, { cardId: 'card-1', requireCommittedDeletion: true }),
+    ];
+    for (const req of requests) {
+      const res = responseRecorder();
+      await handleCardVaultRequest(req, res);
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body)).toMatchObject({ code: 'AUTH_REQUIRED' });
+      expect(res.headers.has('set-cookie')).toBe(false);
+    }
+    for (const operation of Object.values(vault)) expect(operation).not.toHaveBeenCalled();
   });
 
   it('allows owner AAL2 bearer to delete the server-vault secret explicitly', async () => {

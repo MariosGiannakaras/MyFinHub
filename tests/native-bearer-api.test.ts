@@ -12,18 +12,32 @@ const storage = vi.hoisted(() => ({
   writeStore: vi.fn(),
 }));
 const devices = vi.hoisted(() => ({ ensureDeviceSessionAccess: vi.fn() }));
+const metadata = vi.hoisted(() => ({
+  readAccountMetadata: vi.fn(),
+  readFinancialProviders: vi.fn(),
+  readRecurringServiceAssets: vi.fn(),
+  writeAccountMetadata: vi.fn(),
+  writeFinancialProvider: vi.fn(),
+  updateFinancialProvider: vi.fn(),
+  uploadFinancialProviderAsset: vi.fn(),
+  uploadRecurringServiceAsset: vi.fn(),
+  deleteRecurringServiceAsset: vi.fn(),
+  setFinancialProviderAssetBinding: vi.fn(),
+}));
 const stateValidation = vi.hoisted(() => ({
   parseMutableWrite: vi.fn((value: any) => value),
 }));
 
 vi.mock('../server/storage.js', () => storage);
 vi.mock('../server/deviceSessionRegistry.js', () => devices);
+vi.mock('../server/accountMetadataStore.js', () => metadata);
 vi.mock('../server/stateValidation.js', () => stateValidation);
 
 import dataHandler from '../api/data.js';
 import historyHandler from '../api/history.js';
 import backupHandler from '../api/backup.js';
 import importHandler from '../api/import.js';
+import metadataHandler from '../api/account-metadata.js';
 
 const TEST_SESSION_ID = '123e4567-e89b-42d3-a456-426614174000';
 function tokenWithAal(aal: 'aal1' | 'aal2') {
@@ -61,6 +75,21 @@ function bearerRequest(method: 'GET' | 'PUT', token: string, extraHeaders: Recor
   };
 }
 
+// These use the real API handler and cover both metadata reads and every
+// state/Storage mutation branch, including provider and recurring-image paths.
+const metadataRoutes = [
+  { method: 'GET', query: {} },
+  { method: 'GET', query: { resource: 'financial-providers' } },
+  { method: 'GET', query: { resource: 'recurring-service-assets' } },
+  { method: 'PUT', query: {}, body: { accountId: 'payroll', iban: null }, headers: { 'if-match': '0' } },
+  { method: 'POST', query: { resource: 'financial-providers' }, body: { id: 'bank', displayName: 'Bank', shortName: 'B', providerKind: 'bank', sortOrder: 0 } },
+  { method: 'PATCH', query: { resource: 'financial-providers' }, body: { id: 'bank', displayName: 'Bank', shortName: 'B', providerKind: 'bank', sortOrder: 0 } },
+  { method: 'PUT', query: { resource: 'financial-provider-assets', providerId: 'bank', role: 'logo', variant: 'light', fileName: 'logo.png' }, headers: { 'content-type': 'image/png' }, body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) },
+  { method: 'PUT', query: { resource: 'recurring-service-assets', recurringId: 'recurring-1', fileName: 'logo.png' }, headers: { 'content-type': 'image/png' }, body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) },
+  { method: 'DELETE', query: { resource: 'recurring-service-assets', assetKey: 'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa' } },
+  { method: 'PUT', query: { resource: 'financial-provider-asset-binding' }, body: { providerId: 'bank', role: 'logo', variant: 'light', assetKey: null } },
+];
+
 describe('native bearer finance API boundary', () => {
   const originalUrl = process.env.SUPABASE_URL;
   const originalKey = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -69,6 +98,7 @@ describe('native bearer finance API boundary', () => {
     process.env.SUPABASE_URL = 'https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
     devices.ensureDeviceSessionAccess.mockReset().mockResolvedValue({});
+    for (const operation of Object.values(metadata)) operation.mockReset();
     storage.isOwner.mockReset().mockResolvedValue(true);
     storage.parseExpectedRevision.mockReset().mockImplementation((value: string | undefined) => Number(value));
     storage.readStore.mockReset().mockResolvedValue({ data: { app: 'RheomIQ' }, revision: 7, updatedAt: '2026-08-22T00:00:00.000Z' });
@@ -187,6 +217,33 @@ describe('native bearer finance API boundary', () => {
     expect(storage.moveHistory).not.toHaveBeenCalled();
     expect(storage.backupStore).not.toHaveBeenCalled();
     expect(storage.writeStore).not.toHaveBeenCalled();
+  });
+
+  it('denies AAL1 bearer across account, provider and Storage-backed metadata resources (#649 I22.02)', async () => {
+    const token = tokenWithAal('aal1');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => upstream(200, { id: 'owner-id' })));
+    for (const route of metadataRoutes) {
+      const res = responseRecorder();
+      await metadataHandler({ ...route, headers: { ...route.headers, authorization: `Bearer ${token}` } }, res);
+      expect(res.statusCode).toBe(403);
+      expect(JSON.parse(res.body)).toMatchObject({ code: 'MFA_REQUIRED' });
+    }
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
+    for (const operation of Object.values(metadata)) expect(operation).not.toHaveBeenCalled();
+  });
+
+  it('denies non-owner bearer across account, provider and Storage-backed metadata resources without cookie side effects (#649 I22.02)', async () => {
+    const token = tokenWithAal('aal2');
+    storage.isOwner.mockResolvedValue(false);
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => upstream(200, { id: 'different-user' })));
+    for (const route of metadataRoutes) {
+      const res = responseRecorder();
+      await metadataHandler({ ...route, headers: { ...route.headers, authorization: `Bearer ${token}` } }, res);
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body)).toMatchObject({ code: 'AUTH_REQUIRED' });
+      expect(res.headers.has('set-cookie')).toBe(false);
+    }
+    for (const operation of Object.values(metadata)) expect(operation).not.toHaveBeenCalled();
   });
 
   it('preserves the existing same-origin requirement for cookie mutations', async () => {
