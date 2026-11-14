@@ -99,6 +99,12 @@ export function MfaScreen({
             maxLength={6}
             value={code}
             onChange={e=>changeCode(e.target.value)}
+            onPaste={event=>{
+              // A pasted authenticator code may contain separators (e.g. 123 456).
+              // Normalize BEFORE the browser's six-character maxLength truncates it.
+              const digits=event.clipboardData.getData('text').replace(/\D/g,'');
+              if(digits.length===6){event.preventDefault();changeCode(digits)}
+            }}
             readOnly={busy}
             aria-busy={busy}
             required

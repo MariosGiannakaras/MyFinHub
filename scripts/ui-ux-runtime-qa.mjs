@@ -56,6 +56,31 @@ try{
   console.log('Runtime QA: auth, loading, conflict and error-state surfaces');
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
 
+  // The real MFA input must accept six digits pasted with a grouping space,
+  // without the browser truncating the raw seven-character clipboard value.
+  console.log('Runtime QA: MFA pasted code, error semantics and 200% zoom');
+  await navigate({screen:'mfa-error'},null);
+  await waitFor("function(){return Boolean(document.querySelector('#mfa-code'))}",'MFA input');
+  const paste=await c.call("function(){const input=document.querySelector('#mfa-code');if(!input)return null;const clipboard=new DataTransfer();clipboard.setData('text','123 456');input.focus();const canceled=!input.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));return {canceled,describedBy:input.getAttribute('aria-describedby'),label:document.querySelector('label[for=mfa-code]')?.textContent,alert:document.querySelector('#mfa-error[role=alert]')?.textContent||''}}");
+  assert(paste?.canceled&&paste.describedBy==='mfa-error'&&paste.label?.includes('6ψήφιος')&&paste.alert.includes('Ο κωδικός επαλήθευσης'),'MFA grouped paste is normalized before maxlength and errors remain announced');
+  await waitFor("function(){return document.documentElement.dataset.qaMfaVerifyCount==='1'}",'exactly one MFA verification after grouped paste');
+  await waitFor("function(){return document.querySelector('#mfa-code')?.value===''}",'MFA rejected code clears for retry');
+  await sleep(160);
+  assert(await c.call("function(){return document.documentElement.dataset.qaMfaVerifyCount==='1'&&document.activeElement?.id==='mfa-code'}"),'MFA paste verified once and refocused its input');
+
+  const authZoom=async (screen,label)=>{
+    await viewport(640,900);
+    await navigate({screen},null);
+    const proof=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('dark');document.documentElement.style.zoom='200%';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const card=document.querySelector('.login-card');const input=document.querySelector('#mfa-code')||document.querySelector('#login-password');const alert=document.querySelector('.login-error[role=alert]');const box=card?.getBoundingClientRect();const field=input?.getBoundingClientRect();return {theme:document.documentElement.dataset.theme,zoom:document.documentElement.style.zoom,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,cardRight:box?.right,inputRight:field?.right,alert:alert?.textContent||'',described:input?.getAttribute('aria-describedby'),inputId:input?.id}}");
+    assert(proof.theme==='dark'&&proof.zoom==='200%'&&proof.overflow<=1&&proof.cardRight<=640.5&&proof.inputRight<=640.5,screen+': dark 200% zoom must not clip finance-auth fields or create horizontal overflow '+JSON.stringify(proof));
+    assert(Boolean(proof.alert)&&Boolean(proof.described),screen+': live alert and corresponding accessible input description required');
+    const image=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
+    writeFileSync(`${evidenceDir}/runtime-${label}-dark-200pct-zoom.png`,Buffer.from(image.data,'base64'));
+  };
+  await authZoom('mfa-error','mfa');
+  await authZoom('login-error','login');
+  await viewport(375,812);
+
   console.log('Runtime QA: auth expiry and MFA downgrade recovery');
   await navigate({screen:'session-signal'},null);
   await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe');

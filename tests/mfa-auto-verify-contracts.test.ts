@@ -24,6 +24,19 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(mfa).toContain('onSubmit={event=>event.preventDefault()}');
     expect(mfa).toContain('autoComplete="one-time-code"');
   });
+  it('normalizes pasted grouped OTP before maxlength and preserves accessible zoom/browser QA (#649 I03.05)',()=>{
+    const runtime=read('scripts/ui-ux-runtime-qa.mjs');
+    expect(mfa).toContain('onPaste={event=>{');
+    expect(mfa).toContain("event.clipboardData.getData('text').replace(/\\D/g,'')");
+    expect(mfa).toContain('if(digits.length===6){event.preventDefault();changeCode(digits)}');
+    expect(runtime).toContain("clipboard.setData('text','123 456')");
+    expect(runtime).toContain('exactly one MFA verification after grouped paste');
+    expect(runtime).toContain("document.documentElement.style.zoom='200%'");
+    expect(runtime).toContain('runtime-${label}-dark-200pct-zoom.png');
+    expect(runtime).toContain("await authZoom('mfa-error','mfa')");
+    expect(runtime).toContain("await authZoom('login-error','login')");
+  });
+
   it('supports errors, clear-to-retry, re-focus, pending and deliberate enrollment/logout',()=>{
     expect(mfa).toContain("setCode('')");
     expect(mfa).toContain('requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))');
