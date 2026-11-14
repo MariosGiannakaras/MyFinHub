@@ -60,6 +60,8 @@ export function DesktopBackupPanel({
   };
 
   const lastValid = status?.lastValidBackupAt ? Date.parse(status.lastValidBackupAt) : NaN;
+  const backedRevision = status?.lastValidBackupRevision ?? status?.backups.find(item=>item.valid)?.revision ?? null;
+  const revisionBehind = Boolean(status?.currentRevision && backedRevision && status.currentRevision !== backedRevision);
   const newestFailure = status?.lastFailureAt ? Date.parse(status.lastFailureAt) : NaN;
   const failed = Number.isFinite(newestFailure) && (!Number.isFinite(lastValid) || newestFailure > lastValid);
   const overdue = Number.isFinite(lastValid) && Date.now() - lastValid > 36 * HOUR_MS;
@@ -70,7 +72,7 @@ export function DesktopBackupPanel({
     : invalidOnly ? 'Δεν υπάρχει έγκυρο τοπικό αντίγραφο'
     : !Number.isFinite(lastValid)
       ? 'Αναμονή πρώτου αντιγράφου'
-      : overdue ? 'Απαιτείται νέο αντίγραφο' : 'Υπάρχει επαληθευμένο αντίγραφο';
+      : overdue ? 'Απαιτείται νέο αντίγραφο' : revisionBehind ? 'Έγκυρο αντίγραφο παλαιότερης έκδοσης' : 'Υπάρχει επαληθευμένο αντίγραφο';
   const statusAttention = Boolean(error) || failed || overdue || invalidOnly;
   const nextEligible = Number.isFinite(lastValid)
     ? Date.now() >= lastValid + 24 * HOUR_MS
@@ -91,7 +93,7 @@ export function DesktopBackupPanel({
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div className="settings-data-action-copy">
           <strong>{stateText}</strong>
-          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
+          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}${revisionBehind ? ' · Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.' : ''}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
         </div>
       </div>
       <div className="settings-app-list desktop-backup-facts">

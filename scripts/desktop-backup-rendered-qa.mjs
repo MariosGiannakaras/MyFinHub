@@ -28,12 +28,15 @@ class Cdp {
 }
 function injectNativeBackupFixture(){
   const mode=new URL(location.href).searchParams.get('backup-ui-state')||'empty';
-  const good={name:'MyFinHub-finance-2026-10-24T12-00-00-000Z-r465-abcdef12.json',createdAt:'2026-10-24T12:00:00.000Z',revision:'465',bytes:89412,valid:true};
+  const goodDate=mode==='stale-revision'?new Date(Date.now()-60_000).toISOString():'2026-10-24T12:00:00.000Z';
+  const good={name:'MyFinHub-finance-'+goodDate.replace(/[:.]/g,'-')+'-r465-abcdef12.json',createdAt:goodDate,revision:'465',bytes:89412,valid:true};
   const invalid={name:'MyFinHub-finance-2026-10-23T12-00-00-000Z-r460-abcdef12.json',createdAt:'2026-10-23T12:00:00.000Z',revision:'460',bytes:88312,valid:false};
   const empty=mode==='empty'||mode==='retry';
   const status={folder:'C:\\Users\\Owner\\Documents\\MyFinHub\\Backups',intervalHours:24,retentionDays:30,
     backups:empty?[]:mode==='invalid-only'?[invalid]:[good,invalid],
     lastValidBackupAt:empty||mode==='invalid-only'?null:good.createdAt,
+    lastValidBackupRevision:empty||mode==='invalid-only'?null:good.revision,
+    currentRevision:mode==='stale-revision'?'466':'465',
     lastFailureAt:mode==='failure'?'2026-10-24T12:30:00.000Z':null};
   // React StrictMode can run effects twice; preserve the synthetic failure
   // until the QA explicitly activates recovery and clicks the real Refresh.
@@ -69,7 +72,7 @@ try{
   const wait=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await delay(100)}throw new Error('Timed out waiting for '+label)};
   const viewports=[{name:'desktop',width:1440,height:1000},{name:'tablet',width:768,height:1024},{name:'mobile',width:375,height:812}];
   for(const viewport of viewports){
-    for(const mode of ['empty','populated','failure','invalid-only','retry']){
+    for(const mode of ['empty','populated','failure','invalid-only','retry','stale-revision']){
       await c.send('Emulation.setDeviceMetricsOverride',{width:viewport.width,height:viewport.height,mobile:viewport.width<680,deviceScaleFactor:1});
       const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('backup-ui-state',mode);
       await c.send('Page.navigate',{url:url.href});
@@ -99,6 +102,9 @@ try{
       assert(result.disabledRestore===expectedInvalid,viewport.name+'/'+mode+': damaged restore not blocked');
       assert(result.hasFailure===(mode==='failure'),viewport.name+'/'+mode+': failure state inaccurate');
       assert(result.invalidOnlyAlert===(mode==='invalid-only'),viewport.name+'/'+mode+': invalid-only alert mismatch');
+      if(mode==='stale-revision'){
+        assert(await c.call("function(){const panel=document.querySelector('.desktop-backup-panel');const health=panel?.querySelector('.desktop-backup-health');return Boolean(health&&(health.textContent||'').includes('Έγκυρο αντίγραφο παλαιότερης έκδοσης')&&(health.textContent||'').includes('Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.')&&!health.classList.contains('is-error'))}"),viewport.name+': current revision not represented truthfully');
+      }
       if(mode==='invalid-only')assert(await c.call("function(){return (document.querySelector('.desktop-backup-health')?.textContent||'').includes('κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256')&&!document.querySelector('.desktop-backup-health')?.textContent?.includes('Δεν έχει δημιουργηθεί ακόμη τοπικό backup')}"),viewport.name+'/'+mode+': corrupted catalog falsely announced first install');
       if(viewport.name==='mobile')assert(result.missingTouch.length===0,'mobile '+mode+': touch targets <40px '+JSON.stringify(result.missingTouch));
       const dims=await c.call("function(){const root=document.documentElement;return {width:innerWidth,height:Math.min(2800,Math.ceil(Math.max(root.scrollHeight,document.body.scrollHeight)))}}");
@@ -131,7 +137,7 @@ try{
       }
     }
   }
-  console.log('Desktop backup rendered QA passed: 15 responsive native panel states, 3 error-to-retry screenshots, 2 dark-theme states, corruption-only warning, failure recovery and destructive restore confirmation.');
+  console.log('Desktop backup rendered QA passed: 18 responsive native panel states, 3 error-to-retry screenshots, 2 dark-theme states, corruption-only warning, failure recovery and destructive restore confirmation.');
 }finally{
   c?.close();
   // Chromium wrappers can leave grandchildren holding the CDP port after the

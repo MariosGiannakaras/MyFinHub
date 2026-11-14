@@ -27,9 +27,25 @@ describe('#649 I18.03/I18.06 local Windows backups',()=>{
     expect(source).toContain("'Αναμονή πρώτου αντιγράφου'");
     expect(source).toContain('κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256');
   });
+  it('compares owner-authorized server revision against latest SHA-valid local backup (#649 I18.03)',()=>{
+    const ipc=readFileSync('desktop/main.cjs','utf8');
+    const store=readFileSync('desktop/backup-store.cjs','utf8');
+    const ui=readFileSync('src/components/DesktopBackupPanel.tsx','utf8');
+    const hook=readFileSync('src/hooks/useDesktopAutoBackup.ts','utf8');
+    expect(ipc).toContain('const snapshot = await requireBackupAccess(event, unlockToken)');
+    expect(ipc).toContain('currentRevision: snapshot.revision');
+    expect(store).toContain('const latestValid = backups.find(item => item.valid)');
+    expect(store).toContain('lastValidBackupRevision: latestValid?.revision ?? null');
+    expect(ui).toContain('status.currentRevision !== backedRevision');
+    expect(ui).toContain('Έγκυρο αντίγραφο παλαιότερης έκδοσης');
+    expect(ui).toContain('Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.');
+    expect(hook).toContain('desktopBackupIsRecent(status.lastValidBackupAt)');
+    expect(hook).not.toContain('currentRevision');
+  });
+
   it('renders corrupt-only, retry and healthy states on actual desktop/tablet/mobile',()=>{
     const source=readFileSync('scripts/desktop-backup-rendered-qa.mjs','utf8');
-    expect(source).toContain("['empty','populated','failure','invalid-only','retry']");
+    expect(source).toContain("['empty','populated','failure','invalid-only','retry','stale-revision']");
     expect(source).toContain("transientStatusFailure=mode==='retry'");
     expect(source).toContain('window.__myfinhubQaEnableBackupStatusRetry=()=>{transientStatusFailure=false}');
     expect(source).toContain("if(transientStatusFailure)throw new Error('synthetic transient status failure')");

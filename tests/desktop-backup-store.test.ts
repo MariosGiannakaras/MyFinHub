@@ -9,7 +9,7 @@ const { createDesktopBackupStore } = require('../desktop/backup-store.cjs') as {
   createDesktopBackupStore: (paths: { userData: string; documents: string }) => {
     initialize: () => unknown;
     save: (snapshot: { data: unknown; revision: string }) => { verified: boolean; name: string };
-    status: () => { folder:string; backups: Array<{ valid: boolean; revision: string; name: string }>; lastValidBackupAt: string | null; lastFailureAt: string | null };
+    status: () => { folder:string; backups: Array<{ valid: boolean; revision: string; name: string }>; lastValidBackupAt: string | null; lastValidBackupRevision: string | null; lastFailureAt: string | null };
     restoreCandidate: (name: string) => unknown;
     setFolder: (path: string) => unknown;
     reportFailure: () => void;
@@ -43,6 +43,7 @@ describe('desktop automatic backup store', () => {
     const receipt = store.save({ data, revision: '465' });
     expect(receipt.verified).toBe(true);
     expect(store.status().backups).toMatchObject([{ revision: '465', valid: true }]);
+    expect(store.status().lastValidBackupRevision).toBe('465');
     expect(store.restoreCandidate(receipt.name)).toEqual(data);
   });
 
@@ -53,6 +54,7 @@ describe('desktop automatic backup store', () => {
     fs.appendFileSync(path.join(store.status().folder, receipt.name), '\ncorrupt');
     expect(store.status().backups[0].valid).toBe(false);
     expect(store.status().lastValidBackupAt).toBeNull();
+    expect(store.status().lastValidBackupRevision).toBeNull();
     expect(() => store.restoreCandidate(receipt.name)).toThrow();
   });
 
@@ -87,6 +89,7 @@ describe('desktop automatic backup store', () => {
     fs.appendFileSync(path.join(store.status().folder,newer.name),'\\ncorrupt');
     expect(store.status().backups).toMatchObject([{revision:'465',valid:false},{revision:'464',valid:true}]);
     expect(store.status().lastValidBackupAt).toBe('2026-11-04T12:00:00.000Z');
+    expect(store.status().lastValidBackupRevision).toBe('464');
     expect(store.restoreCandidate(older.name)).toEqual(data);
     expect(()=>store.restoreCandidate(newer.name)).toThrow();
   });
