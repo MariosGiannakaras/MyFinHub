@@ -212,7 +212,8 @@ END $;
 RESET ROLE;
 
 -- Revocation of an otherwise valid owner AAL2 session must immediately
--- remove its authority for status, ticket and high-assurance recovery.
+-- remove its authority for status and ticket RPCs. The separate lost-PIN
+-- recovery requires fresh GoTrue password+TOTP proof, not an active device.
 UPDATE public.myfinhub_device_sessions
  SET revoked_at=clock_timestamp()
  WHERE session_id='22222222-2222-4222-8222-222222222222';
@@ -234,12 +235,7 @@ BEGIN
     RAISE EXCEPTION 'Revoked owner device was allowed to query App Lock tickets';
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
-  BEGIN
-    PERFORM public.myfinhub_app_lock_recover('9876');
-    RAISE EXCEPTION 'Revoked owner device was allowed to recover App Lock PIN';
-  EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
-  END;
-  IF rejected<>3 THEN RAISE EXCEPTION 'Revoked device App Lock denials were incomplete'; END IF;
+  IF rejected<>2 THEN RAISE EXCEPTION 'Revoked device App Lock denials were incomplete'; END IF;
 END $;
 RESET ROLE;
 ROLLBACK;
