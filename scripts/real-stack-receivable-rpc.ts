@@ -5,6 +5,7 @@ type Options={
   apiUrl:string;publishable:string;serviceRole:string;
   email:string;password:string;userId:string;factorId:string;
   totpCode:()=>Promise<string>;
+  totpCodeForSecret:(secret:string,previous?:string)=>Promise<string>;
   data:FinanceData;revision:string;generation:string;
 };
 type Response={status:number;body:any};
@@ -37,11 +38,11 @@ export async function runDirectReceivableRpcProof(options:Options){
 
   // Only synthetic local Auth sessions are registered here. The actual
   // finance RPC still checks its own owner+AAL2 and active-device policies.
-  const register=async(sessionId:string)=>{
+  const register=async(sessionId:string,registeredUserId=userId)=>{
     const row=await postJson(apiUrl+'/rest/v1/myfinhub_device_sessions',{
       apikey:serviceRole,authorization:'Bearer '+serviceRole,
       prefer:'resolution=merge-duplicates,return=representation'
-    },{session_id:sessionId,user_id:userId,platform:'web',device_label:'Synthetic direct RPC proof',app_version:'local-real-stack',revoked_at:null});
+    },{session_id:sessionId,user_id:registeredUserId,platform:'web',device_label:'Synthetic direct RPC proof',app_version:'local-real-stack',revoked_at:null});
     assert(row.status===201||row.status===200,'Local direct RPC test device registration failed.');
   };
   await register(aal1Claims.session_id!);
@@ -84,6 +85,65 @@ export async function runDirectReceivableRpcProof(options:Options){
   const originalRows=Array.isArray(before.body)?before.body:[before.body];
   assert(String(originalRows[0]?.revision)===revision&&
     String(historyBefore.body?.generation)===generation,'Direct RPC proof began at a stale finance/history revision.');
+
+
+  // A second synthetic user has genuine GoTrue TOTP-verified AAL2 and an
+  // active local device, but is NOT in the single-owner table. This isolates
+  // owner authorization from a merely missing MFA or missing device session.
+  // Every privileged bootstrap call is confined to the above loopback origin.
+  const nonownerEmail='qa-nonowner-'+userId+'@example.com';
+  const newUser=await postJson(apiUrl+'/auth/v1/admin/users',{
+    apikey:serviceRole,authorization:'Bearer '+serviceRole,
+  },{email:nonownerEmail,password,email_confirm:true});
+  const nonownerUserId=String(newUser.body?.id||'');
+  assert([200,201].includes(newUser.status)&&/^[0-9a-f-]{36}$/i.test(nonownerUserId)&&nonownerUserId!==userId,
+    'Local nonowner Auth fixture registration failed.');
+  const nonownerLogin=await postJson(apiUrl+'/auth/v1/token?grant_type=password',authHeaders,{
+    email:nonownerEmail,password,
+  });
+  assert(nonownerLogin.status===200&&typeof nonownerLogin.body?.access_token==='string',
+    'Local nonowner GoTrue password login failed.');
+  const nonownerAal1=String(nonownerLogin.body.access_token);
+  const nonownerAal1Claims=jwtClaims(nonownerAal1);
+  assert(nonownerAal1Claims.sub===nonownerUserId&&nonownerAal1Claims.aal==='aal1',
+    'Local nonowner did not reach AAL1.');
+  const nonownerEnroll=await postJson(apiUrl+'/auth/v1/factors',{
+    ...authHeaders,authorization:'Bearer '+nonownerAal1,
+  },{factor_type:'totp',friendly_name:'Isolated nonowner QA factor'});
+  const nonownerFactorId=String(nonownerEnroll.body?.id||'');
+  const nonownerSecret=String(nonownerEnroll.body?.totp?.secret||'');
+  assert(nonownerEnroll.status===200&&nonownerFactorId.length>5&&nonownerSecret.length>=16,
+    'Local nonowner TOTP factor enrollment failed.');
+  const nonownerChallenge=await postJson(
+    apiUrl+'/auth/v1/factors/'+encodeURIComponent(nonownerFactorId)+'/challenge',
+    {...authHeaders,authorization:'Bearer '+nonownerAal1});
+  assert(nonownerChallenge.status===200&&typeof nonownerChallenge.body?.id==='string',
+    'Local nonowner GoTrue TOTP challenge failed.');
+  const nonownerCode=await options.totpCodeForSecret(nonownerSecret);
+  let nonownerVerified=await postJson(
+    apiUrl+'/auth/v1/factors/'+encodeURIComponent(nonownerFactorId)+'/verify',
+    {...authHeaders,authorization:'Bearer '+nonownerAal1},
+    {challenge_id:nonownerChallenge.body.id,code:nonownerCode});
+  if(nonownerVerified.status===401||nonownerVerified.status===422){
+    // One bounded clock-boundary retry with the same local challenge.
+    nonownerVerified=await postJson(
+      apiUrl+'/auth/v1/factors/'+encodeURIComponent(nonownerFactorId)+'/verify',
+      {...authHeaders,authorization:'Bearer '+nonownerAal1},
+      {challenge_id:nonownerChallenge.body.id,code:await options.totpCodeForSecret(nonownerSecret,nonownerCode)});
+  }
+  assert(nonownerVerified.status===200&&typeof nonownerVerified.body?.access_token==='string',
+    'Local nonowner GoTrue AAL2 verification failed.');
+  const nonownerAal2=String(nonownerVerified.body.access_token);
+  const nonownerClaims=jwtClaims(nonownerAal2);
+  assert(nonownerClaims.sub===nonownerUserId&&nonownerClaims.aal==='aal2',
+    'Local nonowner token is not genuine AAL2.');
+  await register(nonownerClaims.session_id!,nonownerUserId);
+  for(const method of ['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']){
+    const denied=await rpc(method,nonownerAal2,
+      method==='rheomiq_save_mutable_state_history'?mutable(overpay):{});
+    assert(denied.status===403&&String(denied.body?.code)==='42501',
+      'Local nonowner AAL2 with active device crossed the direct '+method+' owner RPC boundary.');
+  }
 
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},

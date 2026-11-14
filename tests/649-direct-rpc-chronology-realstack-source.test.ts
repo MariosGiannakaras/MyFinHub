@@ -21,6 +21,12 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("dated overpayment");
     expect(direct).toContain("future lending masks an intermediate deficit");
     expect(direct).toContain("forged receivable delta");
+    expect(direct).toContain("nonownerClaims.aal==='aal2'");
+    expect(direct).toContain("nonownerUserId!==userId");
+    expect(direct).toContain("await register(nonownerClaims.session_id!,nonownerUserId)");
+    expect(direct).toContain("['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']");
+    expect(direct).toContain("denied.status===403&&String(denied.body?.code)==='42501'");
+    expect(real).toContain("totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode)");
     expect(direct).toContain("JSON.stringify(after.body)===JSON.stringify(before.body)");
     expect(direct).toContain("return [...new Set([aal1Claims.session_id!,aal2Claims.session_id!])]");
     expect(real).toContain("for(const sessionId of directRpcSessions)");

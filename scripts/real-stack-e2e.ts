@@ -348,6 +348,7 @@ async function main(){
       apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
       email,password:TEST_PASSWORD,userId,factorId,
       totpCode:()=>nextTotp(secret,correct),
+      totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode),
       data:initial.body.data,revision:initialRevision,generation:initialGeneration,
     });
     // The direct proof uses a separate synthetic Auth session. Retire only its
