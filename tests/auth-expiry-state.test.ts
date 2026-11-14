@@ -37,6 +37,23 @@ describe('client auth-state expiry signals',()=>{
     expect(source).toContain("window.removeEventListener('rheomiq:mfa-required', mfaRequired)");
   });
 
+  it('guards stale AAL2 responses after hard expiry and newer MFA refresh in the actual browser (#649 I03.03)',()=>{
+    const hook=readFileSync(new URL('../src/hooks/useSession.ts',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    const runtime=readFileSync(new URL('../scripts/ui-ux-runtime-qa.mjs',import.meta.url),'utf8');
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(hook).toContain('const transitionEpoch = useRef(0)');
+    expect(hook).toContain('if (epoch !== transitionEpoch.current) return false');
+    expect(hook).toContain('++transitionEpoch.current;\n      clearAppUnlockToken();');
+    expect(hook).toContain('if (!session.authenticated) clearAppUnlockToken()');
+    expect(qa).toContain('__myfinhubQaHoldNextSession');
+    expect(qa).toContain('__myfinhubQaReleaseSession');
+    expect(runtime).toContain('stale AAL2 response reopened expired workspace');
+    expect(runtime).toContain('stale AAL2 response overrode MFA downgrade');
+    expect(workflow).toContain('<!-- run-649-session-race-qa -->');
+    expect(workflow).toContain("'ui-ux-runtime'");
+  });
+
   it('keeps rendered MFA downgrade verification aligned with the current MFA challenge contract',()=>{
     const runtime=readFileSync('scripts/ui-ux-runtime-qa.mjs','utf8');
     expect(runtime).toContain("document.querySelector('#mfa-title')");

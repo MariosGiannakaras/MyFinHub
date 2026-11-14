@@ -68,6 +68,30 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))&&(document.body.textContent||'').includes('Σύνδεση')}",'expired session recovery');
   const authExpiredShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-auth-expired.png`,Buffer.from(authExpiredShot.data,'base64'));
 
+  // I03.03: older authenticated responses must never reopen finance after
+  // expiry or override the newer MFA-required state.
+  console.log('Runtime QA: held AAL2 responses after expiry and MFA downgrade');
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe=authenticated]')!==null}",'race fixture initial authenticated');
+  await c.call("function(){globalThis.__myfinhubQaHoldNextSession?.();window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return globalThis.__myfinhubQaHeldSessionCount?.()===1}",'held stale authenticated read');
+  assert(await c.call("function(){window.dispatchEvent(new Event('rheomiq:auth-expired'));return globalThis.__myfinhubQaReleaseSession?.()===true}"),'stale request released after expiry');
+  await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'expiry login');
+  await sleep(350);
+  assert(await c.call("function(){return Boolean(document.querySelector('#login-title'))&&!document.querySelector('[data-session-probe=authenticated]')}"),'stale AAL2 response reopened expired workspace');
+  const expiredRaceShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-expired-inflight-session-375.png`,Buffer.from(expiredRaceShot.data,'base64'));
+
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe=authenticated]')!==null}",'race fixture reset authenticated');
+  await c.call("function(){globalThis.__myfinhubQaHoldNextSession?.();window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return globalThis.__myfinhubQaHeldSessionCount?.()===1}",'held previous AAL2 read');
+  await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return Boolean(document.querySelector('#mfa-title')&&document.querySelector('#mfa-code'))}",'new MFA result');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseSession?.()===true}"),'older AAL2 result released');
+  await sleep(350);
+  assert(await c.call("function(){return Boolean(document.querySelector('#mfa-title')&&document.querySelector('#mfa-code'))&&!document.querySelector('[data-session-probe=authenticated]')}"),'stale AAL2 response overrode MFA downgrade');
+  const mfaRaceShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-mfa-overlapping-session-375.png`,Buffer.from(mfaRaceShot.data,'base64'));
+
   await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);
   assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.conflict[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Υπάρχουν νεότερα δεδομένα')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'conflict state is assertive and has explicit latest-version recovery');

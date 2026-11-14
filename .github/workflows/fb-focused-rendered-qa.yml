@@ -32,11 +32,14 @@ jobs:
        contains(github.event.pull_request.body, '<!-- run-649-shared-controls-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-account-quick-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-finance-entry-qa -->') ||
-       contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->'))
+       contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-session-race-qa -->'))
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-session-race-qa -->') &&
+          'ui-ux-runtime' ||
+          contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') &&
           'reports-visual planning-forecast' ||
           contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') &&
           'command-palette icon-packs taxonomy-management' ||

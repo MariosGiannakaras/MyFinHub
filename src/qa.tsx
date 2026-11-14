@@ -52,7 +52,22 @@ const QA_SESSION_SIGNAL_SCREEN=new URLSearchParams(location.search).get('screen'
 if(QA_SESSION_SIGNAL_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
   let mode:'authenticated'|'mfa'='authenticated';
-  (globalThis as typeof globalThis & {__myfinhubQaSessionMode?:(next:'authenticated'|'mfa')=>void}).__myfinhubQaSessionMode=(next)=>{mode=next};
+  let holdNextSession=false;
+  const heldSessionReads:Array<()=>void>=[];
+  const controls=globalThis as typeof globalThis & {
+    __myfinhubQaSessionMode?:(next:'authenticated'|'mfa')=>void;
+    __myfinhubQaHoldNextSession?:()=>boolean;
+    __myfinhubQaHeldSessionCount?:()=>number;
+    __myfinhubQaReleaseSession?:()=>boolean;
+  };
+  controls.__myfinhubQaSessionMode=(next)=>{mode=next};
+  controls.__myfinhubQaHoldNextSession=()=>{holdNextSession=true;return true};
+  controls.__myfinhubQaHeldSessionCount=()=>heldSessionReads.length;
+  controls.__myfinhubQaReleaseSession=()=>{
+    const complete=heldSessionReads.shift();
+    if(!complete)return false;
+    complete();return true;
+  };
   globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
@@ -60,7 +75,12 @@ if(QA_SESSION_SIGNAL_SCREEN){
       const payload=mode==='mfa'
         ?{authenticated:false,email:'qa@example.invalid',mfaRequired:true,mfaEnrollmentRequired:false}
         :{authenticated:true,email:'qa@example.invalid',mfaRequired:false,mfaEnrollmentRequired:false};
-      return new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
+      const fresh=()=>new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
+      if(holdNextSession){
+        holdNextSession=false;
+        return await new Promise<Response>(resolve=>heldSessionReads.push(()=>resolve(fresh())));
+      }
+      return fresh();
     }
     return originalFetch(input,init);
   };
