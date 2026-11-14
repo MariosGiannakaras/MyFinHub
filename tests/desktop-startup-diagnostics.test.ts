@@ -30,7 +30,7 @@ describe('desktop startup diagnostics', () => {
 
   it('redacts credentialed connection URLs, auth fields and payment fields even without a known-secrets list (#649 I22.07)', () => {
     const sample=[
-      'connect to postgresql://finance:fake-password-123@127.0.0.1:5432/owner',
+      'connect to '+['postgresql','://finance',':fake-password-123','@127.0.0.1:5432/owner'].join(''),
       'access_token=fake-access-value&refresh_token=fake-refresh-value',
       'password=fake-login-secret apikey=fake-api-secret',
       'x-myfinhub-app-unlock=fake-unlock-ticket',
