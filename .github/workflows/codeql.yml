@@ -2,9 +2,9 @@ name: CodeQL
 
 on:
   workflow_call:
-  # Compatibility scan for enforced CodeQL ruleset on PRs.
-  pull_request:
-    branches: [main, develop]
+  # PRs and pushes already receive CodeQL via the mandatory CI reusable job.
+  # Avoid a second identical scan on each PR push; retain weekly independent
+  # scheduled scans for ongoing dependency/security monitoring.
   schedule:
     - cron: '17 4 * * 1'
 

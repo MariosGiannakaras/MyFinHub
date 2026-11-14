@@ -58,6 +58,15 @@ describe('Settings post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain("support-diagnostics','1'");
   });
 
+  it('distinguishes legitimate subcategory disclosure from the icon picker in Categories (#649 I20.01 sibling QA)',()=>{
+    const taxonomy=readFileSync(new URL('../src/components/CategoryIconsWorkspace.tsx',import.meta.url),'utf8');
+    expect(taxonomy).toContain('className="taxonomy-icon-disclosure taxonomy-subcategory-disclosure"');
+    expect(taxonomy).toContain('{showIcons?<details className="taxonomy-icon-disclosure">');
+    expect(rendered).toContain('.taxonomy-icon-disclosure:not(.taxonomy-subcategory-disclosure)');
+    expect(rendered).toContain('subcategoryCount:disclosure.length');
+    expect(rendered).toContain('!sections.pickerVisible&&sections.subcategoryCount>0');
+  });
+
   it('directly covers every Settings tab in Light/Dark and bounded wide desktop evidence',()=>{
     expect(rendered).toContain("const tabs=[");
     expect(rendered).toContain("assert((await applyTheme('light'))==='light'");

@@ -22,20 +22,20 @@ const RULES:readonly SemanticRule[]=[
   {icon:'coffee',terms:['καφες','καφε','coffee','cafe','espresso']},
   {icon:'takeaway',terms:['delivery','take away','takeaway','wolt','efood']},
   {icon:'dining',terms:['εστιατοριο','εστιαση','φαγητο','τροφίμα','τροφιμα','restaurant','dining','food']},
-  {icon:'shoes',terms:['παπουτσια','υποδηματα','shoes','sneakers']},
-  {icon:'clothing',terms:['ρουχα','ενδυση','clothing','fashion']},
-  {icon:'electronics',terms:['ηλεκτρονικα','electronics','gadgets','συσκευες']},
-  {icon:'computer',terms:['υπολογιστης','υπολογιστες','laptop','computer','pc']},
+  {icon:'shoes',terms:['παπουτσια','παπουτσι','υποδηματα','shoes','sneakers']},
+  {icon:'clothing',terms:['ρουχα','ρουχο','ενδυση','clothing','fashion']},
+  {icon:'electronics',terms:['ηλεκτρονικα','ηλεκτρονικη συσκευη','electronics','gadgets','συσκευες']},
+  {icon:'computer',terms:['ai λογισμικο','υπολογιστης','υπολογιστες','laptop','computer','pc']},
   {icon:'phone',terms:['κινητο','smartphone','mobile phone']},
   {icon:'gaming',terms:['gaming','games','παιχνιδια','playstation','xbox','steam']},
   {icon:'gift',terms:['δωρα','δωρο','gift','present']},
-  {icon:'shopping',terms:['αγορες','shopping','λιανικη','retail']},
+  {icon:'shopping',terms:['αγορες','αγορα','λοιπη αγορα','shopping','λιανικη','retail']},
 
   {icon:'fuel',terms:['καυσιμα','βενζινη','πετρελαιο κινησης','fuel','petrol','gas station']},
   {icon:'parking',terms:['parking','σταθμευση','διοδια','parking διοδια']},
   {icon:'motorcycle',terms:['μηχανη','μοτοσυκλετα','motorcycle','scooter']},
   {icon:'taxi',terms:['ταξι','taxi','uber','ride']},
-  {icon:'public-transport',terms:['μμμ','μετρο','λεωφορειο','τραμ','σιδηροδρομος','train','metro','bus','public transport','μετακινησεις','μεταφορες']},
+  {icon:'public-transport',terms:['μμμ','μετακινηση','κτελ','τρενο','μετρο','λεωφορειο','τραμ','σιδηροδρομος','train','metro','bus','public transport','μετακινησεις','μεταφορες']},
   {icon:'service',terms:['service','συντηρηση service','συνεργειο','επισκευη οχηματος','car repair']},
   {icon:'insurance',terms:['ασφαλεια','ασφαλιση','insurance']},
   {icon:'car',terms:['οχημα','αυτοκινητο','car','vehicle']},
@@ -46,7 +46,7 @@ const RULES:readonly SemanticRule[]=[
   {icon:'electricity',terms:['ρευμα','δεη','electricity','power bill']},
   {icon:'water',terms:['νερο','ευδαπ','water bill']},
   {icon:'heating',terms:['θερμανση','φυσικο αεριο','heating']},
-  {icon:'internet',terms:['internet','ιντερνετ','wifi','fiber']},
+  {icon:'internet',terms:['cloud αποθηκευση','internet','ιντερνετ','wifi','fiber']},
   {icon:'telephone',terms:['τηλεφωνια','τηλεπικοινωνιες','κινητη τηλεφωνια','σταθερη τηλεφωνια','telecom','telephone']},
   {icon:'home',terms:['στεγαση','σπιτι','κατοικια','home','housing']},
 
@@ -55,7 +55,7 @@ const RULES:readonly SemanticRule[]=[
   {icon:'cinema',terms:['σινεμα','κινηματογραφος','movie','cinema']},
   {icon:'gym',terms:['γυμναστηριο','fitness','gym']},
   {icon:'sport',terms:['αθλητισμος','sports','sport']},
-  {icon:'subscription',terms:['συνδρομη','συνδρομες','παγια','σταθερα εξοδα','subscription','recurring']},
+  {icon:'subscription',terms:['ψηφιακη υπηρεσια','συνδρομη','συνδρομες','παγια','σταθερα εξοδα','subscription','recurring']},
   {icon:'entertainment',terms:['διασκεδαση','ψυχαγωγια','entertainment']},
 
   {icon:'dentist',terms:['οδοντιατρος','οδοντιατρικα','dentist','dental']},
@@ -66,11 +66,11 @@ const RULES:readonly SemanticRule[]=[
 
   {icon:'books',terms:['βιβλια','βιβλιοπωλειο','books','book']},
   {icon:'course',terms:['μαθηματα','σεμιναρια','course','lesson','tuition']},
-  {icon:'education',terms:['εκπαιδευση','σχολειο','σπουδες','education','school']},
+  {icon:'education',terms:['εκπαιδευτικη εφαρμογη','εκπαιδευση','σχολειο','σπουδες','education','school']},
 
-  {icon:'flight',terms:['πτηση','αεροπορικα','flight','airline']},
+  {icon:'flight',terms:['πτηση','αεροπορικα','αεροπορικο εισιτηριο','flight','airline']},
   {icon:'hotel',terms:['ξενοδοχειο','διαμονη','hotel','booking']},
-  {icon:'ferry',terms:['πλοιο','ακτοπλοικα','ferry','ship']},
+  {icon:'ferry',terms:['πλοιο','ακτοπλοικα','ακτοπλοικο εισιτηριο','ferry','ship']},
   {icon:'holiday',terms:['διακοπες','vacation','holiday']},
   {icon:'travel',terms:['ταξιδι','ταξιδια','travel','trip']},
 
@@ -83,13 +83,13 @@ const RULES:readonly SemanticRule[]=[
   {icon:'tobacco',terms:['καπνος','τσιγαρα','tobacco','cigarettes']},
   {icon:'kiosk',terms:['ψιλικα','περιπτερο','kiosk','convenience']},
 
-  {icon:'bank-fee',terms:['τραπεζικα εξοδα','προμηθεια τραπεζας','bank fee','commission']},
+  {icon:'bank-fee',terms:['χρηματοοικονομικα εξοδα','τραπεζικη προμηθεια','τραπεζικο πακετο','χρεωστικος τοκος επιβαρυνση','τραπεζικα εξοδα','προμηθεια τραπεζας','bank fee','commission']},
   {icon:'installment',terms:['δοση','δοσεις','installment']},
   {icon:'loan',terms:['δανειο','δανεια','loan','debt']},
   {icon:'tax',terms:['φορος','φοροι','εφορια','ααδε','tax','taxes']},
-  {icon:'government',terms:['δημοσιο','government','public service']},
+  {icon:'government',terms:['κρατικη ασφαλιστικη παροχη','δυπα','ασφαλιστικη παροχη','επιδομα','δημοσιο','government','public service']},
   {icon:'saving',terms:['αποταμιευση','αποταμιευσεις','saving','savings']},
-  {icon:'investment',terms:['επενδυση','επενδυσεις','μετοχες','investment','stocks']},
+  {icon:'investment',terms:['τοκος αποδοση','πιστωτικος τοκος','επενδυση','επενδυσεις','μετοχες','investment','stocks']},
   {icon:'card',terms:['καρτα','πιστωτικη','χρεωστικη','credit card','debit card']},
   {icon:'cash',terms:['μετρητα','cash']},
   {icon:'transfer',terms:['μεταφορα χρηματων','τραπεζικη μεταφορα','transfer']},
@@ -118,6 +118,10 @@ function hasTerm(label:string,term:string){
 export function inferredCategoryIcon(kind:CategoryKind,label:string):CategoryIconKey|null{
   const normalized=normalize(label);
   if(!normalized)return null;
+  // Prefer a full Greek/Latin label over a coincidental earlier substring.
+  // Ταξίδι is not Ταξί; Απόδοση is not a Δόση.
+  const exact=RULES.find(rule=>(!rule.kind||rule.kind===kind)&&rule.terms.some(term=>normalize(term)===normalized));
+  if(exact)return exact.icon;
   const match=RULES.find(rule=>(!rule.kind||rule.kind===kind)&&rule.terms.some(term=>hasTerm(normalized,term)));
   if(match)return match.icon;
   if(/^(αλλο|αλλα|other|misc)$/.test(normalized))return kind==='income'?'income':'other';

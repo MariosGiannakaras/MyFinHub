@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const settings=read('src/pages/SettingsPage.tsx');
 const css=read('src/pages/SettingsData.css');
+const qa=read('scripts/settings-tabs-qa.mjs');
+const confirmCss=read('src/styles/confirm-dialog.css');
 
 describe('Settings Data source contract',()=>{
   it('preserves the canonical backup and import safety semantics',()=>{
@@ -12,12 +14,39 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('const snapshot = await loadData()');
     expect(settings).toContain('downloadJson(snapshot.data)');
     expect(settings).toContain('const receipt = await bridge.saveLocalBackup()');
+    expect(settings).toContain('let databaseBackupConfirmed=false;');
+    expect(settings).toMatch(/await onBackup\(\);\s*databaseBackupConfirmed=true;/);
+    expect(settings).toContain("if(databaseBackupConfirmed){");
+    expect(qa).toContain('settings-backup-db-ack-download-unavailable-desktop');
+    expect(qa).toContain('confirmed database backup is never reported as a total failure');
+    expect(qa).toContain('settings-json-import-oversize-error-desktop');
+    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog{width:min(520px,100%);background:');
+    expect(confirmCss).toContain('.app-confirm-dialog>header small{color:var(--muted)}');
+    expect(confirmCss).toContain('.quick-modal.app-confirm-dialog>header :is(p,small){font-size:12px}');
+    const sharedQuickModal=read('src/styles/quick-entry-modal-base.css');
+    expect(sharedQuickModal).toContain('.quick-modal>header small{color:#4777d6;font-size:11px');
+    expect(sharedQuickModal).toContain('.quick-modal>header p{font-size:12px;line-height:1.45;overflow-wrap:break-word;');
+    expect(confirmCss).not.toContain('.quick-modal.app-confirm-dialog>header p{font-size:');
+    expect(confirmCss).not.toContain('.quick-modal.app-confirm-dialog>header small{color:var(--muted);font-size:');
+    expect(qa).toContain('settings-json-import-confirm-mobile');
+    expect(qa).toContain('destructive confirmation prose stays readable');
+
+    expect(qa).toContain('new valid import request clears prior oversized-file failure');
+    expect(settings).toContain('Το backup στη βάση δημιουργήθηκε, αλλά απέτυχε η ανάκτηση ή η λήψη του JSON');
+    expect(settings).toContain(",'warning');");
+    expect(settings).toContain(",'error');");
+
     expect(settings).not.toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('tone="destructive"');
     expect(settings).toContain('δημιουργεί αυτόματα backup των προηγούμενων δεδομένων');
     expect(settings).toContain('Δεν αναιρείται με Undo.');
     expect(settings).toContain('type="file" accept="application/json,.json" hidden');
+    const requestImport=settings.slice(settings.indexOf('const requestImport ='),settings.indexOf('const cancelImport ='));
+    expect(requestImport.indexOf("setOperationResult('');")).toBeLessThan(requestImport.indexOf('setPendingImportFile(file);'));
+    expect(requestImport).toContain("setOperationResult('Το αρχείο είναι μεγαλύτερο");
+    expect(settings).toMatch(/const confirmImport = async \(\) => \{[\s\S]*?setOperationResult\(''\);[\s\S]*?await onImport\(/);
+
   });
 
   it('keeps the Data tab focused on backup and restore actions only',()=>{

@@ -15,6 +15,23 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain('isAnimationActive={false}');
   });
 
+  it('keeps current booked cash visible while chart/sparklines show only future projections (#649 I12.02)',()=>{
+    expect(component).toContain('cashFlowForecast(data,asOf,30)');
+    expect(component).toContain('cashFlowForecast(data,asOf,60)');
+    expect(component).toContain('cashFlowForecast(data,asOf,90)');
+    expect(component).toContain('Τρέχουσα συνολική ρευστότητα: <b>{money.format(forecasts[30].currentPortfolio)}</b>');
+    expect(component).toContain('const portfolioTrend=forecasts[90].points.map(point=>({date:point.date,portfolio:point.portfolio}))');
+    expect(component).toContain('Σήμερα</span><strong className={row.current<0');
+    expect(component).toContain('sparklinePoints(forecasts[90].points,row.accountId)');
+    expect(component).toContain('if(max===min)return values.map((_,index)=>`${(index/denominator)*100},16`).join(\' \');');
+    expect(component).toContain('viewBox="0 0 100 32"');
+    expect(component).toContain('role="img" aria-label={`Προβολή υπολοίπου');
+    expect(component).toContain('accountSummary(forecasts[30],row.accountId)');
+    expect(component).toContain('accountSummary(forecasts[60],row.accountId)');
+    expect(component).toContain('accountSummary(forecasts[90],row.accountId)');
+    expect(target).toContain('.planning-account-sparkline{width:100%;height:38px;align-self:center;overflow:visible}');
+  });
+
   it('uses forecast-state semantics instead of arbitrary list-index tones',()=>{
     expect(component).toContain("type AccountForecastState='negative'|'low'|'declining'|'growing'|'stable'");
     expect(component).toContain('data-forecast-state={state}');
@@ -38,6 +55,33 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(details).toBeGreaterThan(forecast);
     expect(scheduled).toBeGreaterThan(details);
     expect(component).toContain("scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})");
+  });
+
+  it('reproduces compact-desktop last-row scroll and action-menu clipping using browser geometry',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain("await navigate('extreme',1100,720)");
+    expect(qa).toContain("Math.abs(scroller.scrollTop-max)<=1");
+    expect(qa).toContain('planning-scheduled-last-row-menu-1100');
+    expect(qa).toContain('planning-forecast-extreme-compact-desktop');
+    expect(qa).toContain('compactForecast.numbersFit');
+    expect(component).toContain('onToggle={event=>placeScheduledMenu(event.currentTarget)}');
+    expect(component).toContain("popup.style.bottom='36px'");
+    expect(target).toContain('.planning-forecast-summary{grid-template-columns:repeat(3,minmax(0,1fr));padding-inline:12px 10px}');
+    expect(qa).toContain('scroller.scrollIntoView({block:');
+    expect(qa).toContain('popupVisibility.within&&popupVisibility.withinViewport&&popupVisibility.hitInside');
+    expect(qa).toContain('last-row action menu must remain visible and clickable');
+  });
+
+  it('allocates axis width from formatted cash values so large negative signs stay inside the chart',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(component).toContain('const portfolioAxisWidth=Math.max(82');
+    expect(component).toContain('money.format(point.portfolio).length');
+    expect(component).toContain('<YAxis width={portfolioAxisWidth} tickFormatter={value=>money.format(Number(value))}');
+    expect(component).not.toContain('<YAxis width={82} tickFormatter={value=>money.format(Number(value))}');
+    expect(qa).toContain('1100px extreme negative portfolio axis must retain visible minus signs without clipping');
+    expect(qa).toContain('tick.left>=negativeAxis.rootLeft+8');
+    expect(qa).toContain("root.querySelectorAll('svg text')");
+    expect(qa).toContain("includes('€')");
   });
 
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{

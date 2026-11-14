@@ -5,6 +5,7 @@ import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
 import { validateCompleteFinanceData } from './financeDataValidation.js';
+import { validateMutableReceivableChronology } from './financeSemanticValidation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
@@ -72,6 +73,8 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     if (/HISTORY_UNAVAILABLE/i.test(marker)) throw new ApiError(409, 'HISTORY_UNAVAILABLE', 'There is no change available in that direction. Reload the history.');
     if (/HISTORY_IRREVERSIBLE_BOUNDARY/i.test(marker)) throw new ApiError(409, 'HISTORY_IRREVERSIBLE_BOUNDARY', 'The operation crosses an irreversible import or permanently deleted card boundary.');
     if (/EXPECTED_HISTORY_GENERATION_REQUIRED/i.test(marker)) throw new ApiError(428, 'HISTORY_PRECONDITION_REQUIRED', 'A current history generation is required before saving.');
+    if (/RECEIVABLE_CHRONOLOGY_CONFLICT/i.test(marker)) throw new ApiError(409, 'RECEIVABLE_CHRONOLOGY_CONFLICT', 'Repayment exceeds the dated outstanding balance. Reload before saving.');
+    if (/INVALID_RECEIVABLE_EVENT/i.test(marker)) throw new ApiError(400, 'INVALID_DATA', 'The receivable entry is invalid.');
     if (/REVISION_CONFLICT|40001/i.test(marker)) throw new ApiError(409, 'REVISION_CONFLICT', 'The data changed in another session. Reload before saving.');
     if (/EXPECTED_REVISION_REQUIRED/i.test(marker)) throw new ApiError(428, 'PRECONDITION_REQUIRED', 'A current revision is required before saving.');
     if (/MFA_REQUIRED/i.test(marker)) throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
@@ -220,12 +223,24 @@ export async function writeMutableState(
   const label = historyLabel.trim() || 'Οικονομική αλλαγή';
   if (label.length > 180) throw new ApiError(400, 'INVALID_HISTORY', 'The change-history label is invalid.');
 
+  const expectedRevisionNumber=parseExpectedRevision(expectedRevision);
+  const expectedHistoryGenerationNumber=parseExpectedHistoryGeneration(expectedHistoryGeneration);
+  // Read the owner-authorized seed at the expected revision. The final RPC
+  // still enforces that revision/history generation under its database lock,
+  // so a concurrent import/save between preflight and commit cannot land.
+  const snapshot=await readStore(accessToken);
+  if(snapshot.revision!==String(expectedRevisionNumber))
+    throw new ApiError(409,'REVISION_CONFLICT','The data changed in another session. Reload before saving.');
+  const candidate:FinanceData={...snapshot.data,state,updatedAt};
+  validateCompleteFinanceData(candidate);
+  validateMutableReceivableChronology(candidate,snapshot.data);
+
   const row = first(await supabase<MutableStateRow[] | MutableStateRow>('rpc/rheomiq_save_mutable_state_history', {
     method: 'POST',
     body: JSON.stringify({
       p_state: state,
-      p_expected_revision: parseExpectedRevision(expectedRevision),
-      p_expected_history_generation: parseExpectedHistoryGeneration(expectedHistoryGeneration),
+      p_expected_revision: expectedRevisionNumber,
+      p_expected_history_generation: expectedHistoryGenerationNumber,
       p_updated_at: updatedAt,
       p_history_label: label,
     }),
@@ -258,10 +273,17 @@ export async function writeStore(data: FinanceData, expectedRevision?: string, f
   const next = migrateProductData({ ...data, app: 'RheomIQ', updatedAt: new Date().toISOString() });
   validateCompleteFinanceData(next);
 
-  const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
-  const body = force
-    ? { p_data: next }
-    : { p_data: next, p_expected_revision: parseExpectedRevision(expectedRevision) };
+  // The checked import RPC locks and compares the revision atomically with
+  // the replacement; preserve the legacy no-header RPC for native clients.
+  const guardedImport=force&&expectedRevision!==undefined;
+  const path=force
+    ? guardedImport?'rpc/rheomiq_import_state_checked':'rpc/rheomiq_import_state'
+    : 'rpc/rheomiq_save_state';
+  const body=force
+    ? guardedImport
+      ? {p_data:next,p_expected_revision:parseExpectedRevision(expectedRevision)}
+      : {p_data:next}
+    : {p_data:next,p_expected_revision:parseExpectedRevision(expectedRevision)};
   const row = first(await supabase<StateRow[] | StateRow>(path, {
     method: 'POST',
     body: JSON.stringify(body),

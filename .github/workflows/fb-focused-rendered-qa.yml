@@ -15,7 +15,56 @@ permissions:
 jobs:
   changed-surfaces:
     name: focused-browser-evidence
-    if: github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->')
+    if: >-
+      github.event.pull_request.draft == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-icon-packs-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-rules-icon-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-taxonomy-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-provider-receipt-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-lending-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-loans-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-shared-controls-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-account-quick-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-finance-entry-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->'))
+    env:
+      # One opt-in browser runner, one suite batch, never an extra full Ready gate.
+      # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-reports-planning-qa -->') &&
+          'reports-visual planning-forecast' ||
+          contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') &&
+          'command-palette icon-packs taxonomy-management' ||
+          contains(github.event.pull_request.body, '<!-- run-649-rules-icon-qa -->') &&
+          'command-palette icon-packs' ||
+          contains(github.event.pull_request.body, '<!-- run-649-taxonomy-qa -->') &&
+          'icon-packs taxonomy-management' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-icon-packs-qa -->') &&
+          'icon-packs' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->') &&
+          'budget-rules' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-finance-entry-qa -->') &&
+          'budget-rules action-center-context' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-account-quick-qa -->') &&
+          'account-metadata budget-rules' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-shared-controls-qa -->') &&
+          'owned-controls provider-brand-management settings-tabs quick-entry-reference account-metadata' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-loans-qa -->') &&
+          'loans-remediation' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-lending-qa -->') &&
+          'lending-remediation' ||
+          (contains(github.event.pull_request.body, '<!-- run-649-provider-receipt-qa -->') &&
+          'provider-brand-management receipt-local-ocr' ||
+          (contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->') &&
+           'reports-visual' ||
+           (contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') &&
+            'action-center-context receipt-local-ocr settings-tabs savings-remediation card-vault-runtime account-metadata' ||
+            'quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette')))))))))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -28,7 +77,7 @@ jobs:
       - name: Preflight all focused browser script syntax before launching Chromium
         shell: bash
         run: |
-          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+          for suite in $FOCUSED_SUITES; do
             node --check "scripts/$suite-qa.mjs"
           done
       - name: Launch synthetic web QA app
@@ -53,10 +102,22 @@ jobs:
           export MYFINHUB_QA_PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
           if [ -z "$MYFINHUB_QA_PRIMARY_BROWSER" ]; then echo "Chromium required"; exit 1; fi
           failures=0
-          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+          for suite in $FOCUSED_SUITES; do
             echo "Running changed surface: $suite"
             if node "scripts/$suite-qa.mjs" >"$RUNNER_TEMP/fb-focused/logs/$suite.log" 2>&1; then
               echo "PASS: $suite"
+            elif grep -Eq 'Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version' "$RUNNER_TEMP/fb-focused/logs/$suite.log"; then
+              # One bounded retry only for an isolated Chromium CDP bootstrap.
+              # All browser assertions remain strict; preserve both log attempts.
+              echo "Chromium bootstrap failed for $suite; retrying once with a clean script-owned profile."
+              sleep 1
+              if node "scripts/$suite-qa.mjs" >"$RUNNER_TEMP/fb-focused/logs/$suite-bootstrap-retry.log" 2>&1; then
+                echo "PASS after Chromium bootstrap retry: $suite"
+              else
+                echo "::error::Focused browser QA failed after Chromium bootstrap retry: $suite"
+                tail -n 85 "$RUNNER_TEMP/fb-focused/logs/$suite-bootstrap-retry.log"
+                failures=$((failures+1))
+              fi
             else
               echo "::error::Focused browser QA failed: $suite"
               tail -n 85 "$RUNNER_TEMP/fb-focused/logs/$suite.log"

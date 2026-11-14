@@ -63,6 +63,8 @@ const releasePending=[
   "20261022213500_expand_budget_scope_to_subcategories.sql",
   "20261024150000_add_device_details_and_nicknames.sql",
   "20261024160000_shared_owner_app_lock.sql",
+  "20261105204000_guard_stale_import_revision.sql",
+  "20261112220000_guard_mutable_receivable_chronology.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -83,6 +85,10 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261022213500_expand_budget_scope_to_subcategories.sql');
     expect(releasePending).toContain('20261024150000_add_device_details_and_nicknames.sql');
     expect(releasePending).toContain('20261024160000_shared_owner_app_lock.sql');
+    expect(releasePending).toContain('20261105204000_guard_stale_import_revision.sql');
+    expect(releasePending).toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(productionApplied).not.toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(productionApplied).not.toContain('20261105204000_guard_stale_import_revision.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

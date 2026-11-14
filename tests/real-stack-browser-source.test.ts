@@ -33,6 +33,14 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Chromium bootstrap attempt');
     expect(source).toContain('await stopBrowser(child)');
   });
+  it('bounds CDP WebSocket handshake and every command, rejecting stalled sessions before CI timeout',()=>{
+    expect(source).toContain('WebSocket handshake timed out after 15s');
+    expect(source).toContain('Browser CDP command timed out after 25s: ');
+    expect(source).toContain('this.rejectAll(error)');
+    expect(source).toContain('clearTimeout(timer)');
+    expect(source).toContain('this.ws.readyState!==WebSocket.OPEN');
+    expect(source).toContain('this.pending.delete(id)');
+  });
   it('covers modern and legacy durable mutation lifecycles across hard reload',()=>{
     expect(source).toContain('stage modern-create-reload');
     expect(source).toContain('stage modern-edit-delete-undo');
@@ -51,6 +59,17 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
+    expect(source).toContain("const seedPeriod=");
+    expect(source).toContain("2026-10-01T00:00:00.000Z");
+    expect(source).toContain("selectPeriod(seedPeriod,'previous')");
+    expect(source).toContain("selectPeriod(previousPeriod,'next')");
+    // The first direct span is Tooltip, not the month label.
+    expect(source).toContain("querySelector('.period-control>span:not(.app-tooltip)')");
+    expect(source).not.toContain("querySelector('.period-control>span')");
+    const monthControl=readFileSync('src/components/PeriodControl.tsx','utf8');
+    expect(monthControl).toContain('<Tooltip label="Προηγούμενος μήνας">');
+    expect(monthControl).toContain('<span>{monthLabel(month)}</span>');
+    expect(source).toContain('reporting period navigation');
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');
     expect(source).toContain('waitCreditState(false)');
@@ -119,7 +138,19 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Import boundary must disable unsafe history Undo.');
     expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
-    expect(source).toContain('400 /api/import');
+    expect(source).toContain('invalid import rejected in client preview before destructive confirmation');
+    // Shared OperationFeedback maps error/warning to role=alert; success alone uses status.
+    expect(readFileSync('src/components/OperationFeedback.tsx','utf8')).toContain("role={failure?'alert':'status'}");
+    expect(source).toContain(".operation-feedback[data-feedback-tone=error][role=alert]");
+    expect(source).toContain('data-management-invalid-import-preview-rejected');
+    expect(source).toContain('Malformed import rejection must be visibly painted within the screenshot viewport.');
+    expect(source).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
+    expect(source).not.toContain(".logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')");
+    expect(source).toContain("importResponsesAfter===importResponsesBefore");
+    expect(source).toContain('Malformed preview changed the canonical finance revision.');
+    expect(source).toContain('Malformed preview exposed an actionable import confirmation.');
+    expect(source).not.toContain('invalid import confirmation');
+    expect(source).not.toContain("expectedInvalidImport=true");
     expect(source).toContain('Imported QA Cash');
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');

@@ -33,6 +33,30 @@ describe('time-aware product integration', () => {
     expect(planningQa).toContain('planning-scheduled-skip-receipt-pending-mobile');
   });
 
+  it('keeps scheduled receipts, failed writes, conflicts and one-event lifecycle in the canonical boundary (#649 I12.04)',()=>{
+    const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
+    const scheduled=readFileSync(new URL('../src/lib/scheduled.ts',import.meta.url),'utf8');
+    const quick=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
+    const mutation=app.slice(app.indexOf('const upsertScheduled ='),app.indexOf('const upsertBudget='));
+    expect(mutation).toContain('finance.updateDurably');
+    expect(mutation).toContain('const nextEvent=applyTransactionRules(current,event)');
+    expect(mutation).toContain('scheduled: [...scheduled.filter((existing) => existing.id !== item.id), item]');
+    expect(mutation).toContain('events: [...events.filter((existing) => existing.id !== nextEvent.id), nextEvent]');
+    expect(scheduled).toContain("if (item.status !== 'pending') throw new Error");
+    expect(quick).toContain("context.mode==='scheduled'");
+    expect(quick).toContain('onCompleteScheduled');
+    expect(planning).toContain("await onCompleteScheduled(completed, event)");
+    expect(planning).toContain("await onUpsertScheduled(transitionScheduled(item,status))");
+    expect(planning).toContain("catch(cause){setLifecycleError");
+    expect(planning).toContain("catch (cause) { setCompleteError");
+    expect(finance).toContain('const updateDurably=useCallback(async(recipe:');
+    expect(finance).toContain("throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.')");
+    expect(finance).toContain("setCurrentSaveState('conflict')");
+    expect(qa).toContain("params.get('scheduled-save-failure')==='1'");
+    expect(qa).toContain("params.get('scheduled-save-pending')==='1'");
+    expect(qa).toContain('onCompleteScheduled={completeScheduledDurably}');
+  });
+
   it('keeps deterministic forecast language and an accessible text alternative', () => {
     expect(planning).toContain('ντετερμινιστική προβολή');
     expect(planning).toContain('Πρόβλεψη σε κείμενο');

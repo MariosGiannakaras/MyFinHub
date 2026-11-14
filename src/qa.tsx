@@ -5,6 +5,8 @@ import { AppShell, type PageId } from './components/AppShell';
 import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { AppSelectInput } from './components/AppSelectInput';
+import { AppDateInput } from './components/AppDateInput';
 import { DesktopAppLockGate } from './components/DesktopAppLockGate';
 import { PageSkeleton } from './components/AppSkeleton';
 import { PeriodControl } from './components/PeriodControl';
@@ -12,10 +14,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
+import { ReceiptCleanupNotice } from './components/ReceiptCleanupNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { SaveProgressBar } from './components/SaveProgressBar';
 import { useSession } from './hooks/useSession';
+import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
@@ -24,6 +28,7 @@ import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
+import { OWNER_EXPENSE_TREE, OWNER_INCOME_TREE } from './lib/ownerApprovedTaxonomy';
 import { applyTransactionRules } from './lib/transactionRules';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
@@ -76,6 +81,12 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let historyMoveCount=0;
   let rejectNextHistoryMove=false;
   let rejectHistoryAfterSteps=0;
+  let importHistoryCase:'read-failure'|'revision-mismatch'|null=null;
+  // Only the isolated hook QA can reject before advancing finance/history.
+  let importRejectOnce:'conflict'|'unavailable'|null=null;
+  let loseNextImportReceipt=false;
+  let importAttempts=0;
+  let importCommits=0;
   type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
   const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
   let cursorIndex=0;
@@ -90,6 +101,12 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaHistoryMoveCount?:()=>number;
     __myfinhubQaRejectNextHistoryMove?:()=>boolean;
     __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
+    __myfinhubQaImportHistoryCase?:(next:'read-failure'|'revision-mismatch')=>boolean;
+    __myfinhubQaRejectNextImport?:(next:'conflict'|'unavailable')=>boolean;
+    __myfinhubQaImportAttemptCount?:()=>number;
+    __myfinhubQaImportCommitCount?:()=>number;
+    __myfinhubQaAdvanceRemoteRevision?:()=>boolean;
+    __myfinhubQaLoseNextImportReceipt?:()=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -100,6 +117,14 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
   control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
   control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
+  control.__myfinhubQaImportHistoryCase=next=>{importHistoryCase=next;return true};
+  control.__myfinhubQaRejectNextImport=next=>{if(!QA_HISTORY_HOOK_PROBE)return false;importRejectOnce=next;return true};
+  control.__myfinhubQaImportAttemptCount=()=>importAttempts;
+  control.__myfinhubQaImportCommitCount=()=>importCommits;
+  control.__myfinhubQaLoseNextImportReceipt=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;loseNextImportReceipt=true;return true};
+  // Simulates another accepted session changing the server revision after
+  // this hook loaded its current revision, before its import confirmation.
+  control.__myfinhubQaAdvanceRemoteRevision=()=>{if(!QA_HISTORY_HOOK_PROBE)return false;revision+=1;return true};
   const history=()=>QA_HISTORY_HOOK_PROBE?({
     available:true,generation:String(revision),financeRevision:String(revision),
     currentPointId:snapshots[cursorIndex]!.id,
@@ -140,17 +165,40 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
       return response;
     }
     if(url.pathname==='/api/import'&&init?.method==='POST'){
+      importAttempts+=1;
+      const rejected=importRejectOnce;
+      importRejectOnce=null;
+      if(QA_HISTORY_HOOK_PROBE&&rejected){
+        return new Response(JSON.stringify({code:rejected==='conflict'?'REVISION_CONFLICT':'QA_IMPORT_UNAVAILABLE',
+          error:rejected==='conflict'?'Synthetic pre-commit revision conflict':'Synthetic pre-commit import unavailable'}),
+          {status:rejected==='conflict'?409:503,headers:{'content-type':'application/json'}});
+      }
+      // Exercise the actual browser If-Match header, not only a forced 409.
+      if(QA_HISTORY_HOOK_PROBE&&new Headers(init.headers).get('if-match')!==String(revision)){
+        return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'Synthetic stale import revision'}),
+          {status:409,headers:{'content-type':'application/json'}});
+      }
       backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      importCommits+=1;
       if(QA_HISTORY_HOOK_PROBE){
         snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
           state:structuredClone(backend.state),label:'QA import baseline'});
         cursorIndex=0; // Fixture reset, not Production import Undo semantics.
       }
       revision+=1;
+      if(QA_HISTORY_HOOK_PROBE&&loseNextImportReceipt){
+        loseNextImportReceipt=false;
+        // The database committed; only the HTTP acknowledgement was lost.
+        throw new TypeError('Synthetic network loss after committed import');
+      }
       return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
-      return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
+      const caseToSimulate=importHistoryCase;
+      importHistoryCase=null;
+      if(caseToSimulate==='read-failure')return new Response(JSON.stringify({code:'QA_HISTORY_READ_UNAVAILABLE',error:'Synthetic history read failure after accepted import'}),{status:503,headers:{'content-type':'application/json'}});
+      const envelope=history();
+      return new Response(JSON.stringify(caseToSimulate==='revision-mismatch'?{...envelope,financeRevision:String(revision+1)}:envelope),{status:200,headers:{'content-type':'application/json'}});
     }
     if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST'){
       historyMoveCount+=1;
@@ -204,6 +252,15 @@ function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
 function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
+  if(params.get('state')==='approved-icon-taxonomy'){
+    next.state.settings.expenseCategoryTree=OWNER_EXPENSE_TREE.map(item=>({...item,subcategories:[...item.subcategories]}));
+    next.state.settings.incomeCategoryTree=OWNER_INCOME_TREE.map(item=>({...item,subcategories:[...item.subcategories]}));
+    next.state.settings.expenseCategories=OWNER_EXPENSE_TREE.map(item=>item.name);
+    next.state.settings.incomeCategories=OWNER_INCOME_TREE.map(item=>item.name);
+    next.state.settings.categoryIconPack='lucide';
+    next.state.settings.categoryIcons={};next.state.settings.subcategoryIcons={};
+    next.state.settings.categoryIconPackSelections={};next.state.settings.subcategoryIconPackSelections={};
+  }
   if(params.get('card-vault')==='ready')next.state.cards=(next.state.cards??[]).map(card=>card.id==='qa-debit-card'?{...card,last4:'4242',vaultRef:'qa-debit-card'}:card);
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
@@ -299,8 +356,8 @@ function buildQaData(params:URLSearchParams){
       next.state.cards=[...cards.filter(card=>card.kind!=='credit'||card.active===false),base,...generated];
     }
   }
-  if(params.get('state')==='loans-long'||params.get('state')==='loans-future'){
-    const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
+  if(params.get('state')==='loans-long'||params.get('state')==='loans-future'||params.get('state')==='loans-completed'){
+    const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:params.get('state')==='loans-completed'?120:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
     next.seed.loans=[];next.state.customLoans=[longLoan];next.state.loanOverrides={};next.state.loanExtra={};
     if(params.get('state')==='loans-future'){
       const future=createEvent({kind:'expense',date:'2026-08-29',amount:100,note:'Future installment must not count yet',accountId:'piraeus-payroll'});
@@ -425,6 +482,11 @@ function buildQaData(params:URLSearchParams){
       category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
       alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
   }
+  if(params.get('state')==='account-delete-race'){
+    next.state.settings.customAccounts=[...(next.state.settings.customAccounts??[]),{
+      id:'qa-account-delete-race',name:'QA λογαριασμός για έλεγχο διαγραφής',kind:'bank',providerId:'alpha',provider:'Alpha Bank',custom:true,showInQuickChoices:true,
+    }];
+  }
   return next;
 }
 
@@ -446,6 +508,7 @@ function QaWorkspace(){
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [qaCleanupPending,setQaCleanupPending]=useState(()=>params.get('save')==='cleanup-pending'?1:0);
+  const receiptCleanup=useReceiptCleanup();
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
@@ -458,6 +521,8 @@ function QaWorkspace(){
   const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
   const [commandAccountId,setCommandAccountId]=useState<string|null>(null);
   const [commandAccountKey,setCommandAccountKey]=useState(0);
+  const [commandRuleId,setCommandRuleId]=useState<string|null>(null);
+  const [commandRuleKey,setCommandRuleKey]=useState(0);
   const [settingsTab,setSettingsTab]=useState<SettingsTabId>('general');
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
@@ -482,6 +547,22 @@ function QaWorkspace(){
 
   const recordHistory=(kind:ChangeHistoryEntry['kind'],label:string)=>{const entry:ChangeHistoryEntry={id:`qa-history-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,kind,label,at:new Date().toISOString()};setChangeHistory(items=>[entry,...items].slice(0,20))};
   const update=(recipe:(current:FinanceData)=>FinanceData)=>{const current=data;const next=recipe(current);if(next===current)return;setUndoStack(stack=>[...stack.slice(-19),current]);setRedoStack([]);recordHistory('change',financeChangeLabel(current,next));setData(next)};
+  // Synthetic race only: simulate another finance writer referencing the
+  // deletion candidate after the owner opened the confirmation dialog.
+  useEffect(()=>{
+    if(params.get('state')!=='account-delete-race')return;
+    const control=globalThis as typeof globalThis & {__myfinhubQaInjectAccountReference?:()=>boolean};
+    control.__myfinhubQaInjectAccountReference=()=>{
+      setData(current=>{
+        const event=createEvent({kind:'expense',date:'2026-08-16',amount:1,note:'QA concurrent account reference',accountId:'qa-account-delete-race'});
+        event.id='qa-account-delete-reference';
+        return {...current,state:{...current.state,events:[...(current.state.events??[]),event]}};
+      });
+      return true;
+    };
+    document.documentElement.dataset.qaAccountReferenceApplied=(data.state.events??[]).some(event=>event.id==='qa-account-delete-reference')?'true':'false';
+    return()=>{delete control.__myfinhubQaInjectAccountReference;delete document.documentElement.dataset.qaAccountReferenceApplied};
+  },[data]);
   const undo=()=>{const previous=undoStack.at(-1);if(!previous)return;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));recordHistory('undo','Αναίρεση τελευταίας αλλαγής');setData(previous)};
   const redo=()=>{const next=redoStack[0];if(!next)return;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');setData(next)};
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};
@@ -499,12 +580,14 @@ function QaWorkspace(){
     update(current=>withConfirmedLendingPlan(current,draft,true));
   };
   const addEventDurably=async(event:FinanceEvent)=>{
+    document.documentElement.dataset.qaQuickEventAttempts=String(Number(document.documentElement.dataset.qaQuickEventAttempts||0)+1);
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
     if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
       (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
     });
     addEvent(event);
+    document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1);
   };
   const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
     const params=new URLSearchParams(location.search);
@@ -551,7 +634,10 @@ function QaWorkspace(){
     commit();
   };
   const upsertScheduledDurably=(item:ScheduledTransaction)=>withScheduledReceipt(()=>upsertScheduled(item));
-  const completeScheduledDurably=(item:ScheduledTransaction,event:FinanceEvent)=>withScheduledReceipt(()=>completeScheduled(item,event));
+  const completeScheduledDurably=(item:ScheduledTransaction,event:FinanceEvent)=>{
+    document.documentElement.dataset.qaScheduledCompletionAttempts=String(Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)+1);
+    return withScheduledReceipt(()=>completeScheduled(item,event));
+  };
   const upsertBudget=async(budget:MonthlyBudget)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');
@@ -578,7 +664,13 @@ function QaWorkspace(){
     if(new URLSearchParams(location.search).get('savings-goal-save-failure')==='1')throw new Error('Η δοκιμαστική διαγραφή προσωπικού στόχου απέτυχε.');
     update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   };
-  const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
+  const updateTaxonomy=async(operation:TaxonomyOperation)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('taxonomy-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteTaxonomyReceipt?:()=>void}).__myfinhubQaCompleteTaxonomyReceipt=resolve});
+    if(params.get('taxonomy-save-failure')==='1')throw new Error('Η δοκιμαστική αλλαγή ταξινόμησης απορρίφθηκε.');
+    document.documentElement.dataset.qaTaxonomyDurableWrites=String(Number(document.documentElement.dataset.qaTaxonomyDurableWrites||0)+1);
+    update(current=>applyTaxonomyOperation(current,operation,today));
+  };
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
   const focusRecurringPayment=(id:string)=>{setCommandRecurringId(id);setCommandRecurringKey(k=>k+1);setPage('recurring')};
   const handleAttention=(item:AttentionItem)=>{
@@ -594,6 +686,7 @@ function QaWorkspace(){
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){setPage(action.page);return}
     if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(key=>key+1);setSettingsTab('accounts');setPage('settings');return}
+    if(action.type==='rule_focus'){setCommandRuleId(action.ruleId);setCommandRuleKey(key=>key+1);setSettingsTab('rules');setPage('settings');return}
     if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);setPage('cards');return}
     if(action.type==='credit_card_focus'){
       setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);setPage('credit');return;
@@ -648,18 +741,19 @@ function QaWorkspace(){
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
-    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
-    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
+    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenRules={()=>{setSettingsTab('rules');setPage('settings')}} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
+    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('account-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteAccountReceipt?:()=>void}).__myfinhubQaCompleteAccountReceipt=resolve});if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});document.documentElement.dataset.qaSettingsDurableWrites=String(Number(document.documentElement.dataset.qaSettingsDurableWrites||0)+1);update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
+      <ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }
@@ -670,6 +764,7 @@ function QaDesktopLockProbe(){
 
 function QaPersistenceProbe(){
   const finance=useFinance();
+  const [importOutcome,setImportOutcome]=useState('idle');
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
   const budget=finance.data.state.settings.monthlyBudget??0;
   return <><SaveProgressBar saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount}/><main className="boot-screen" data-persistence-probe="ready">
@@ -678,7 +773,8 @@ function QaPersistenceProbe(){
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
-    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
+    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}}).then(result=>setImportOutcome(result.status)).catch(()=>setImportOutcome('error'))}}>Synthetic import while GET pending</button>
+    <output data-persistence-import-outcome>{importOutcome}</output>
     {QA_HISTORY_HOOK_PROBE?<section aria-label="Synthetic history hook">
       <output data-persistence-undo-depth={finance.undoDepth}>{finance.undoDepth}</output>
       <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>
@@ -719,10 +815,32 @@ function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
   return null;
 }
 
+function QaOwnedControlsDisabledProbe(){
+  const [disabled,setDisabled]=useState(false);
+  const [account,setAccount]=useState('source');
+  const [date,setDate]=useState('2026-08-17');
+  return <main data-owned-controls-disabled-probe style={{padding:20,maxWidth:420,margin:'24px auto'}}>
+    <h1>Απενεργοποίηση πεδίων κατά την αποθήκευση</h1>
+    <button type="button" data-qa-toggle-controls onClick={()=>setDisabled(current=>!current)}>{disabled?'Ενεργοποίηση':'Απενεργοποίηση'}</button>
+    <label style={{display:'block',marginTop:16}}>Λογαριασμός
+      <AppSelectInput aria-label="QA λογαριασμός" disabled={disabled} value={account} onChange={event=>setAccount(event.target.value)}>
+        <option value="source">Αρχικός λογαριασμός</option><option value="target">Νέος λογαριασμός</option>
+      </AppSelectInput>
+    </label>
+    <label style={{display:'block',marginTop:16}}>Ημερομηνία
+      <AppDateInput aria-label="QA ημερομηνία" disabled={disabled} value={date} min="2026-08-01" max="2026-08-31" onChange={event=>setDate(event.target.value)}/>
+    </label>
+    <output data-qa-controls-disabled>{String(disabled)}</output>
+    <output data-qa-controls-account>{account}</output>
+    <output data-qa-controls-date>{date}</output>
+  </main>;
+}
+
 function QaApp(){
   const params=new URLSearchParams(location.search);
   const screen=params.get('screen')??'';
   if(screen==='desktop-lock')return <QaDesktopLockProbe/>;
+  if(screen==='owned-controls-disabled')return <QaOwnedControlsDisabledProbe/>;
   if(screen==='persistence-probe')return <QaPersistenceProbe/>;
   if(screen==='session-signal')return <QaSessionSignalProbe/>;
   if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;

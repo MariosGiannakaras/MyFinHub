@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
@@ -20,6 +22,10 @@ const accountStyles=readFileSync(new URL('../src/components/AccountManagementSet
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
 describe('app-owned entry controls',()=>{
+  it('preflights the actual owned-controls browser suite syntax before costly Chromium startup (#649)',()=>{
+    expect(()=>execFileSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/owned-controls-qa.mjs',import.meta.url))],{stdio:'pipe'})).not.toThrow();
+  });
+
   it('keeps centralized Escape dismissal, portal rendering and focus restoration infrastructure',()=>{
     for(const source of [selectSource,dateSource]){
       expect(source).toContain('createPortal');
@@ -29,7 +35,9 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain("shortcutMatches(event, 'dismiss')");
     expect(shortcutSource).toContain("if (id === 'dismiss') return 'Esc'");
     expect(modalFocusSource).toContain('onCloseRef.current()');
-    expect(modalFocusSource).toContain('opener.current?.focus');
+    expect(modalFocusSource).toContain('if(opener.current?.isConnected)opener.current.focus');
+    expect(modalFocusSource).toContain('const hasDestination=focused instanceof HTMLElement');
+    expect(modalFocusSource).toContain('requestAnimationFrame(()=>{');
     expect(modalFocusSource).toContain("event.key !== 'Tab'");
     expect(modalFocusSource).toContain('canReceiveFocus(preferredTarget)');
     expect(modalFocusSource).toContain('element.tabIndex>=0');
@@ -37,6 +45,25 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain('const currentIndex=current?items.indexOf(current):-1');
     expect(modalFocusSource).toContain('(currentIndex+1)%items.length');
     expect(modalFocusSource).toContain('(currentIndex-1+items.length)%items.length');
+  });
+  it('revokes both owned portals atomically when a parent becomes disabled, without committing a stale selection (#649 I02.02/I19.05)',()=>{
+    const fixture=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    const rendered=readFileSync(new URL('../scripts/owned-controls-qa.mjs',import.meta.url),'utf8');
+    const focused=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    for(const source of [selectSource,dateSource]){
+      expect(source).toContain('const active=open&&!disabled');
+      expect(source).toContain('useEffect(()=>{if(disabled)setOpen(false)},[disabled])');
+      expect(source).toContain("const portal=active&&typeof document!=='undefined'");
+      expect(source).toContain('aria-expanded={active}');
+      expect(source).toContain('useModalFocus<HTMLElement>(active,');
+      expect(source).toContain('if(disabled');
+    }
+    expect(fixture).toContain("if(screen==='owned-controls-disabled')return <QaOwnedControlsDisabledProbe/>");
+    expect(rendered).toContain('live disabled transition closes portalled selectors and calendars');
+    expect(rendered).toContain("owned-controls-disabled-mobile-320.png");
+    expect(rendered).toContain("portal dismissed on disabled state");
+    expect(rendered).toContain('confirmed change after reenable');
+    expect(focused).toContain("'owned-controls provider-brand-management settings-tabs quick-entry-reference account-metadata'");
   });
   it('keeps accessible listbox and calendar roles',()=>{
     expect(selectSource).toContain('role="listbox"');

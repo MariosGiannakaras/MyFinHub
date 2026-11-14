@@ -24,6 +24,37 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   const css=read('src/styles/durable-history-controls.css');
   expect(css).toContain('.history-actions button{min-height:44px}');
  });
+ it('fails closed on partial history navigation, stale receipts and irreversible import/vault boundaries (#649 I20.04)',()=>{
+  const finance=read('src/hooks/useFinance.ts');
+  const view=read('src/lib/historyView.ts');
+  const storage=read('server/storage.ts');
+  const boundaries=read('supabase/migrations/20261019110000_protect_irreversible_history_boundaries.sql');
+  const jump=finance.slice(finance.indexOf('const goToHistoryPoint=useCallback('),finance.indexOf('const doImport ='));
+  expect(jump).toContain("if(saveStateRef.current!=='saved'||!historyAvailableRef.current||");
+  expect(jump).toContain('coordinator.hasWork()||exclusiveOperation.current||!dataRef.current');
+  expect(jump).toContain('const plan=reachableHistoryNavigation(');
+  expect(jump).toContain('await coordinator.whenIdle()');
+  expect(jump).toContain('await moveHistory(plan.direction,revisionRef.current,historyGenerationRef.current)');
+  expect(jump).toContain('if(!historyMatchesRevision(res.history,res.revision))');
+  expect(jump).toContain('applyDataEnvelope(res)');
+  expect(jump).toContain('applyHistory(res.history)');
+  expect(jump).toContain('if(res.history.currentPointId!==expectedPoint)');
+  expect(jump).toContain("setCurrentSaveState('conflict')");
+  expect(jump).toContain("setCurrentSaveState('error')");
+  expect(jump).toContain('return false;');
+  expect(jump).toContain('exclusiveOperation.current=false');
+  expect(finance).toContain("if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false");
+  expect(view).toContain('if(byId.size!==points.length)return routes');
+  expect(view).toContain('if(active.length!==1)return routes');
+  expect(view).toContain('if(!next||next.length!==1||redoUsed.has(next[0].id))break');
+  expect(storage).toContain("'rpc/rheomiq_move_history'");
+  expect(storage).toContain('p_expected_revision: parseExpectedRevision(expectedRevision)');
+  expect(storage).toContain('p_expected_history_generation: parseExpectedHistoryGeneration(expectedHistoryGeneration)');
+  expect(storage).toContain("'HISTORY_IRREVERSIBLE_BOUNDARY'");
+  expect(boundaries).toContain("message='HISTORY_IRREVERSIBLE_BOUNDARY'");
+  expect(boundaries).toContain('private.rheomiq_history_move_blocked(v_owner,v_cursor.current_point_id,v_target.id,p_direction)');
+ });
+
  it('shows usable import instructions, validated shape and explicit irreversible boundary',()=>{
   const page=read('src/pages/SettingsPage.tsx');
   const css=read('src/pages/SettingsData.css');

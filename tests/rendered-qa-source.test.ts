@@ -47,7 +47,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('isBrowserBootstrapFailure(result.output)');
     expect(coordinator).toContain('retrying once with primary Chromium');
     expect(coordinator).toContain('FALLBACK ACTIVATED');
-    expect(coordinator).toContain('127\\.0\\.0\\.1:9\\d{3}');
+    expect(coordinator).toContain('127\\.0\\.0\\.1:\\d+');
     expect(coordinator).toMatch(/process\.env\.MYFINHUB_QA_REQUIRE_PRIMARY\s*===\s*'1'/);
   });
 
@@ -201,7 +201,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(frontendQa).toContain('confirm-persistence-recovery-mobile');
     expect(qaWorkspace).toContain('title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;"');
     expect(qaWorkspace).toContain('onRecover={()=>setRecoverOpen(true)}');
-    expect(confirmDialogCss).toContain('.quick-modal.app-confirm-dialog{background:var(--surface)!important');
+    expect(confirmDialogCss).toContain('.quick-modal.app-confirm-dialog{width:min(520px,100%);background:var(--surface)!important');
     expect(moneyEditDialogCss).toContain('.quick-modal.app-money-edit-dialog{background:var(--surface)!important');
     expect(receiptInboxCss).toContain('.receipt-inbox-backdrop + .modal-backdrop{z-index:140}');
     expect(receiptQa).toContain('receipt delete confirmation renders above Receipt Inbox');

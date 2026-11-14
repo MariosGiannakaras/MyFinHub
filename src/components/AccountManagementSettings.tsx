@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -19,6 +19,7 @@ import {
 } from '../lib/financialProviders';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import { userErrorMessage } from '../lib/userMessage';
+import { rovingRadioTypeaheadDestination, rovingTabDestination } from '../lib/rovingTabDestination';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -26,6 +27,7 @@ import { BankBrandMark } from './BankBrandMark';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
 import { ConfirmDialog } from './ConfirmDialog';
+import { OperationFeedback, type OperationFeedbackTone } from './OperationFeedback';
 import './AccountManagementSettings.css';
 import './AccountManagementProvider.css';
 
@@ -120,7 +122,10 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const[editor,setEditor]=useState<EditorDraft|null>(null);
   const[editorError,setEditorError]=useState('');
   const[message,setMessage]=useState('');
+  const[messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
+  const notify=(text:string,tone:OperationFeedbackTone='success')=>{setMessageTone(tone);setMessage(text)};
   const[busy,setBusy]=useState(false);
+  const mutationInFlight=useRef(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
   useEffect(()=>{
@@ -140,6 +145,18 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});
   const closeEditor=()=>{if(busy)return;setEditor(null);setEditorError('')};
+  const providerTabStop=providers.find(item=>item.id===editor?.providerId)?.id??providers[0]?.id;
+  const onProviderKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+    if(!editor||busy||!providers.length)return;
+    const key=event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft':event.key;
+    const next=rovingTabDestination(key,index,providers.length)??(event.altKey||event.ctrlKey||event.metaKey?null:rovingRadioTypeaheadDestination(event.key,index,providers.map(provider=>provider.displayName)));
+    if(next===null)return;
+    event.preventDefault();
+    const target=providers[next];
+    if(!target)return;
+    setEditor({...editor,providerId:target.id});
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+  };
   const setMode=(mode:AccountMode)=>{
     if(!editor)return;
     setEditor({
@@ -151,11 +168,11 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     });
   };
   const openNew=()=>{
-    setMessage('');setEditorError('');
+    notify('');setEditorError('');
     setEditor({id:'',source:'new',mode:'bank',originalKind:'bank',name:'',providerId:'',bankAccountCategory:'current',iban:'',cashType:'cash',defaultExpense:false,defaultIncome:false,defaultLoan:false});
   };
   const openEdit=(account:ProviderAccount)=>{
-    setMessage('');setEditorError('');
+    notify('');setEditorError('');
     const custom=Boolean((settings.customAccounts??[]).some(item=>item.id===account.id));
     setEditor({
       id:account.id,
@@ -174,13 +191,13 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   };
 
   const save=async()=>{
-    if(!editor||busy)return;
+    if(!editor||busy||mutationInFlight.current)return;
     const name=editor.name.trim();
     if(!name){setEditorError('Συμπλήρωσε όνομα λογαριασμού.');return}
     if(editor.mode==='bank'&&!editor.providerId){setEditorError('Επίλεξε τράπεζα ή πάροχο.');return}
     if(editor.mode==='bank'&&!editor.bankAccountCategory){setEditorError('Επίλεξε κατηγορία λογαριασμού.');return}
     if(editor.mode==='bank'&&editor.iban.trim()&&!isValidIban(editor.iban)){setEditorError('Έλεγξε το IBAN.');return}
-    setBusy(true);setEditorError('');
+    mutationInFlight.current=true;setBusy(true);setEditorError('');
     try{
       const isCustom=editor.source==='new'||editor.source==='custom';
       const id=editor.source==='new'?newAccountId(editor.mode,editor.providerId):editor.id;
@@ -241,24 +258,36 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       }catch{
         ibanWarning=' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
       }
-      setMessage((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning);
+      notify((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning,ibanWarning?'warning':'success');
       setEditor(null);
     }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
-    finally{setBusy(false)}
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const requestDelete=(account:ProviderAccount)=>{
     const custom=(settings.customAccounts??[]).some(item=>item.id===account.id);
-    if(!custom){setMessage('Οι αρχικοί λογαριασμοί διατηρούνται για να μην χαθεί το ιστορικό τους. Μπορείς να αλλάξεις όνομα και στοιχεία.');return}
+    if(!custom){notify('Οι αρχικοί λογαριασμοί διατηρούνται για να μην χαθεί το ιστορικό τους. Μπορείς να αλλάξεις όνομα και στοιχεία.','warning');return}
     const references=accountReferenceReasons(data,account.id);
-    if(references.length){setMessage(`Ο λογαριασμός δεν μπορεί να διαγραφεί, επειδή συνδέεται με: ${references.join(', ')}. Οι καταχωρίσεις διατηρούνται· δεν μεταφέρονται αυτόματα σε άλλο λογαριασμό.`);return}
-    setMessage('');setPendingDelete(account);
+    if(references.length){notify(`Ο λογαριασμός δεν μπορεί να διαγραφεί, επειδή συνδέεται με: ${references.join(', ')}. Οι καταχωρίσεις διατηρούνται· δεν μεταφέρονται αυτόματα σε άλλο λογαριασμό.`,'warning');return}
+    notify('');setPendingDelete(account);
   };
   const confirmDelete=async()=>{
-    if(!pendingDelete||busy)return;
-    setBusy(true);
+    if(!pendingDelete||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;setBusy(true);
     try{
       const id=pendingDelete.id;
+      // The account may have become referenced after its confirmation opened.
+      // Recheck the live finance snapshot immediately before the durable write.
+      const stillCustom=(settings.customAccounts??[]).some(item=>item.id===id);
+      const newReferences=accountReferenceReasons(data,id);
+      if(!stillCustom||newReferences.length){
+        notify(!stillCustom
+          ?'Ο λογαριασμός δεν είναι πλέον διαθέσιμος για διαγραφή.'
+          :`Η διαγραφή ακυρώθηκε: ο λογαριασμός συνδέεται πλέον με ${newReferences.join(', ')}. Οι οικονομικές κινήσεις διατηρούνται.`,
+          'warning');
+        setPendingDelete(null);
+        return;
+      }
       const remaining=(settings.customAccounts??[]).filter(item=>item.id!==id);
       const names={...settings.accountNames};delete names[id];
       const overrides={...(settings.accountOverrides??{})};delete overrides[id];
@@ -271,10 +300,10 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
         try{await saveAccountMetadata(id,'')}
         catch{metadataWarning=' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
       }
-      setMessage('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning);
+      notify('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning,metadataWarning?'warning':'success');
       setPendingDelete(null);
-    }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
-    finally{setBusy(false)}
+    }catch(error){notify(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'),'error')}
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const defaultOptions=(current:string)=>{
@@ -290,14 +319,14 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     <section className="panel surface-raised account-management-defaults">
       <div className="panel-head"><div><span>Προεπιλεγμένοι λογαριασμοί</span></div></div>
       <div className="account-management-default-grid">
-        <label><span>Έξοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
-        <label><span>Έσοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{defaultOptions(settings.defaultIncomeAccount)}</AppSelectInput></label>
-        <label><span>Πληρωμή δόσεων</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{defaultOptions(settings.defaultLoanAccount)}</AppSelectInput></label>
+        <label><span>Έξοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εξόδων" disabled={busy} value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
+        <label><span>Έσοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εσόδων" disabled={busy} value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{defaultOptions(settings.defaultIncomeAccount)}</AppSelectInput></label>
+        <label><span>Πληρωμή δόσεων</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" disabled={busy} value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{defaultOptions(settings.defaultLoanAccount)}</AppSelectInput></label>
       </div>
     </section>
 
     <section className="panel surface-raised account-management-list-card">
-      <div className="panel-head account-management-list-head"><div><span>Οι λογαριασμοί μου</span></div><Button type="button" variant="primary" className="account-management-create" onClick={openNew}><Plus size={17}/> Νέος λογαριασμός</Button></div>
+      <div className="panel-head account-management-list-head"><div><span>Οι λογαριασμοί μου</span></div><Button type="button" variant="primary" className="account-management-create" disabled={busy} onClick={openNew}><Plus size={17}/> Νέος λογαριασμός</Button></div>
       {metadata.error?<div className="logic-note compact" role="status">Τα IBAN δεν είναι προσωρινά διαθέσιμα. Οι υπόλοιπες ρυθμίσεις λογαριασμών λειτουργούν κανονικά.</div>:null}
       <div className="account-management-list" role="list">
         {accounts.map(account=>{
@@ -311,33 +340,33 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
               {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account,providers)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
             </div>
-            <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><IconButton type="button" className="danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></IconButton></div>
+            <div className="account-management-row-actions"><button type="button" className="account-management-edit" disabled={busy} onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><IconButton type="button" className="danger-text" disabled={busy} aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></IconButton></div>
           </div>;
         })}
       </div>
-      {message?<div className="account-management-message" role="status" aria-live="polite">{message}</div>:null}
+      {message?<OperationFeedback className="account-management-message" tone={messageTone}>{message}</OperationFeedback>:null}
     </section>
 
     <AnimatePresence>{editor?<motion.div className="account-management-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={closeEditor}>
       <motion.section ref={modalRef} className={`account-management-modal ${editor.source==='new'?'is-new':'is-edit'}`} role="dialog" aria-modal="true" aria-labelledby="account-editor-title" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.975,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.985,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={event=>event.stopPropagation()}>
         <header><h2 id="account-editor-title">{editor.source==='new'?'Νέος λογαριασμός':'Επεξεργασία λογαριασμού'}</h2><IconButton type="button" aria-label="Κλείσιμο" disabled={busy} onClick={closeEditor}><X/></IconButton></header>
         <div className="account-management-editor-body">
-          {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
+          {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" disabled={busy} className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" disabled={busy} className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
           {editor.mode==='bank'?<>
-            <fieldset className="account-management-provider-picker"><legend>{editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'}</legend><div role="radiogroup" aria-label="Τράπεζα ή πάροχος">{providers.map(provider=><button type="button" role="radio" aria-checked={editor.providerId===provider.id} className={editor.providerId===provider.id?'active':''} key={provider.id} onClick={()=>setEditor({...editor,providerId:provider.id})}><BankBrandMark id={provider.id} name={provider.displayName}/><span><b>{provider.displayName}</b><small>{provider.kindLabel}</small></span></button>)}</div>{providerCatalog.error?<small className="account-management-provider-fallback" role="status">{providerCatalog.error}</small>:null}</fieldset>
-            <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
-            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
-            <label className="account-management-field"><span>IBAN</span><AppTextInput inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>
+            <fieldset className="account-management-provider-picker"><legend>{editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'}</legend><div role="radiogroup" aria-label="Τράπεζα ή πάροχος">{providers.map((provider,index)=><button type="button" role="radio" aria-checked={editor.providerId===provider.id} tabIndex={provider.id===providerTabStop?0:-1} disabled={busy} onKeyDown={event=>onProviderKeyDown(event,index)} className={editor.providerId===provider.id?'active':''} key={provider.id} onClick={()=>setEditor({...editor,providerId:provider.id})}><BankBrandMark id={provider.id} name={provider.displayName}/><span><b>{provider.displayName}</b><small>{provider.kindLabel}</small></span></button>)}</div>{providerCatalog.error?<small className="account-management-provider-fallback" role="status">{providerCatalog.error}</small>:null}</fieldset>
+            <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" disabled={busy} value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
+            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput disabled={busy} data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
+            <label className="account-management-field"><span>IBAN</span><AppTextInput disabled={busy} inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>
           </>:<>
-            <fieldset className="account-management-segment compact account-management-cash-types"><legend>{editor.source==='new'?'2. Τύπος μετρητών':'Τύπος μετρητών'}</legend><div>{VISIBLE_CASH_ACCOUNT_TYPES.map(type=><button key={type.id} type="button" className={editor.cashType===type.id?'active is-cash':''} aria-pressed={editor.cashType===type.id} onClick={()=>setEditor({...editor,cashType:type.id})}>{type.label}</button>)}</div></fieldset>
-            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':'π.χ. Πορτοφόλι'}/></label>
+            <fieldset className="account-management-segment compact account-management-cash-types"><legend>{editor.source==='new'?'2. Τύπος μετρητών':'Τύπος μετρητών'}</legend><div>{VISIBLE_CASH_ACCOUNT_TYPES.map(type=><button key={type.id} type="button" disabled={busy} className={editor.cashType===type.id?'active is-cash':''} aria-pressed={editor.cashType===type.id} onClick={()=>setEditor({...editor,cashType:type.id})}>{type.label}</button>)}</div></fieldset>
+            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput disabled={busy} data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':'π.χ. Πορτοφόλι'}/></label>
           </>}
 
           {editor.source!=='new'&&editorCanBeDefault?<fieldset className="account-management-edit-defaults"><legend>Προεπιλογές</legend><div>
-            <label className="account-management-default-choice"><input type="checkbox" checked={editor.defaultExpense} onChange={event=>setEditor({...editor,defaultExpense:event.target.checked})}/><i aria-hidden="true"/><span>Έξοδα</span></label>
-            <label className="account-management-default-choice"><input type="checkbox" checked={editor.defaultIncome} onChange={event=>setEditor({...editor,defaultIncome:event.target.checked})}/><i aria-hidden="true"/><span>Έσοδα</span></label>
-            <label className="account-management-default-choice"><input type="checkbox" checked={editor.defaultLoan} onChange={event=>setEditor({...editor,defaultLoan:event.target.checked})}/><i aria-hidden="true"/><span>Πληρωμή δόσεων</span></label>
+            <label className="account-management-default-choice"><input type="checkbox" disabled={busy} checked={editor.defaultExpense} onChange={event=>setEditor({...editor,defaultExpense:event.target.checked})}/><i aria-hidden="true"/><span>Έξοδα</span></label>
+            <label className="account-management-default-choice"><input type="checkbox" disabled={busy} checked={editor.defaultIncome} onChange={event=>setEditor({...editor,defaultIncome:event.target.checked})}/><i aria-hidden="true"/><span>Έσοδα</span></label>
+            <label className="account-management-default-choice"><input type="checkbox" disabled={busy} checked={editor.defaultLoan} onChange={event=>setEditor({...editor,defaultLoan:event.target.checked})}/><i aria-hidden="true"/><span>Πληρωμή δόσεων</span></label>
           </div></fieldset>:null}
           {editorError?<div className="account-management-editor-error" role="alert" aria-live="assertive">{editorError}</div>:null}
         </div>

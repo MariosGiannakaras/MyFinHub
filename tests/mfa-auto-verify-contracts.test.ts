@@ -7,6 +7,8 @@ const login=read('src/components/LoginScreen.tsx');
 const session=read('src/hooks/useSession.ts');
 const api=read('src/lib/api.ts');
 const handler=read('api/auth/mfa/verify.ts');
+const enrollHandler=read('api/auth/mfa/enroll.ts');
+const app=read('src/App.tsx');
 const signIn=read('api/auth/login.ts');
 const browser=read('scripts/keyboard-semantic-accessibility-qa.mjs');
 
@@ -54,6 +56,25 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(signIn).toContain('await isOwner(tokens.access_token)');
     expect(signIn).toContain("accessTokenAal(tokens.access_token) === 'aal2'");
   });
+  it('keeps TOTP enrollment and challenge owner-bound and never renders finance before AAL2 (#649 I03.02)',()=>{
+    expect(enrollHandler).toContain("if (req.method !== 'POST')");
+    expect(enrollHandler).toContain('assertSameOrigin(req)');
+    expect(enrollHandler).toContain('await requireSession(req, res)');
+    expect(enrollHandler).toContain('await isOwner(session.accessToken)');
+    expect(enrollHandler).toContain('await beginTotpEnrollment(session.accessToken)');
+    expect(handler).toContain("if (!/^\\d{6}$/.test(code))");
+    expect(handler).toContain("if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_MFA_CODE'");
+    expect(handler).toContain("accessTokenAal(tokens.access_token) !== 'aal2'");
+    expect(handler).toContain('!(await isOwner(tokens.access_token))');
+    expect(handler.indexOf('setSessionCookies(req, res, tokens)'))
+      .toBeGreaterThan(handler.indexOf("accessTokenAal(tokens.access_token) !== 'aal2'"));
+    expect(app).toContain("if (session.state === 'mfa' || session.state === 'mfa-enroll') return");
+    expect(app).toContain("if (session.state !== 'authenticated') return <LoginScreen");
+    expect(mfa).toContain('verificationInFlight.current = true');
+    expect(mfa).toContain("setCode('')");
+    expect(session).toContain("e.code === 'INVALID_MFA_CODE'");
+  });
+
   it('preserves explicit password submission, autofill and error editing feedback',()=>{
     expect(login).toContain('autoComplete="username"');
     expect(login).toContain('autoComplete="current-password"');

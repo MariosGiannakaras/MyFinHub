@@ -6,7 +6,15 @@ describe('owner-confirmed writeoff through existing lending contextual dialog (#
     const page=readFileSync('src/pages/LendingPage.tsx','utf8');
     expect(modal).toContain("action:'lend'|'repay'|'writeoff'");
     expect(modal).toContain("lendingOutstandingFor(data,clean,date)");
+    expect(modal).toContain('lendingRepaymentLimit(data,clean,date)');
+    expect(page).toContain('lendingRepaymentLimit(data,cleanPerson,date)');
+    expect(modal).toContain('if(numeric>outstanding+.005)');
+    expect(page).toContain('if(numeric>outstanding+.005)');
     expect(modal).toContain("if(!writeoffConfirmed||confirmedWriteoffAmount!==amount)");
+    // Restoring the original amount after an edit must not resurrect an old confirmation.
+    expect(modal).toContain("setAmount(value);setWriteoffConfirmed(false);setDirty(true)");
+    expect(modal).toContain("setPerson(event.target.value);setWriteoffConfirmed(false)");
+    expect(modal).toContain("setDate(event.target.value);setWriteoffConfirmed(false)");
     expect(modal).toContain("kind:'lending_writeoff'");
     expect(modal).toContain("await onCreate(event)");
     expect(modal).toContain('data-lending-writeoff');

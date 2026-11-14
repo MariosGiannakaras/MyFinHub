@@ -5,6 +5,7 @@ import { validateCompleteFinanceData } from '../server/financeDataValidation.js'
 import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
+import { runDirectReceivableRpcProof } from './real-stack-receivable-rpc.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -322,12 +323,47 @@ async function main(){
     const initial=await primary.request('/api/data');
     expect(initial,200,undefined,'data-read');
     assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    // Distinct from the browser's early preview denial: the real API must
+    // still reject malformed payloads on its own, with finance untouched.
+    console.log('[real-stack] stage invalid-import-authoritative-validation');
+    const invalidApiImport=await primary.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(initial.body?.revision||'')},
+      body:{app:'RheomIQ',schemaVersion:3},
+    });
+    expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation');
+    const afterInvalidApiImport=await primary.request('/api/data');
+    expect(afterInvalidApiImport,200,undefined,'invalid-import-finance-unchanged');
+    assert(afterInvalidApiImport.body?.revision===initial.body?.revision
+      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(initial.body?.data),
+      'Authoritatively rejected import mutated confirmed finance.');
     const initialRevision=String(initial.body?.revision||'');
     console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
+    const directRpcSessions=await runDirectReceivableRpcProof({
+      apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
+      email,password:TEST_PASSWORD,userId,factorId,
+      totpCode:()=>nextTotp(secret,correct),
+      data:initial.body.data,revision:initialRevision,generation:initialGeneration,
+    });
+    // The direct proof uses a separate synthetic Auth session. Retire only its
+    // session IDs through the existing owner+AAL2 API so the subsequent
+    // two-device lifecycle test retains its original strict count.
+    for(const sessionId of directRpcSessions){
+      const retired=await primary.request('/api/auth/devices',{
+        method:'POST',body:{action:'revoke',sessionId},
+      });
+      expect(retired,200,undefined,'direct-rpc-synthetic-device-retirement');
+    }
+    const afterDirectDevices=await primary.request('/api/auth/devices');
+    expect(afterDirectDevices,200,undefined,'direct-rpc-synthetic-device-count');
+    assert(afterDirectDevices.body?.count===1&&afterDirectDevices.body?.devices?.[0]?.current===true,
+      'Direct RPC proof left synthetic test sessions active.');
+    console.log('[real-stack] PASS direct PostgREST denied AAL1/overpayment/forgery without finance or history commit');
 
     const staleState=structuredClone(initial.body.data.state);
     const nextState=structuredClone(initial.body.data.state);
@@ -442,14 +478,54 @@ async function main(){
     });
     expect(postBackupSave,200,undefined,'post-backup-mutation');
 
-    console.log('[real-stack] stage backup-restore');
+    // Exercise the revision-checked RPC through the real API + owner/AAL2 RLS
+    // on disposable local Supabase, not a mocked 409 or production storage.
+    console.log('[real-stack] stage import-stale-revision-denial');
+    const priorImportData=await primary.request('/api/data');
+    expect(priorImportData,200,undefined,'import-stale-prior-finance');
+    const priorImportHistory=await primary.request('/api/history');
+    expect(priorImportHistory,200,undefined,'import-stale-prior-history');
+    const priorImportBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const priorImportAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const staleChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(redone.body?.revision||'')},
+      body:backupData,
+    });
+    expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision');
+    const malformedChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':'not-a-revision'},
+      body:backupData,
+    });
+    expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision');
+    const afterStaleData=await primary.request('/api/data');
+    expect(afterStaleData,200,undefined,'import-stale-no-write');
+    const afterStaleHistory=await primary.request('/api/history');
+    expect(afterStaleHistory,200,undefined,'import-stale-history-unchanged');
+    const afterStaleBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const afterStaleAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    assert(afterStaleData.body?.revision===priorImportData.body?.revision
+      &&afterStaleData.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Post-backup mutation',
+      'Stale checked import replaced confirmed finance or advanced its revision.');
+    assert(afterStaleHistory.body?.generation===priorImportHistory.body?.generation
+      &&afterStaleHistory.body?.currentPointId===priorImportHistory.body?.currentPointId,
+      'Stale checked import moved the history cursor.');
+    assert(JSON.stringify(afterStaleBackups)===JSON.stringify(priorImportBackups)
+      &&JSON.stringify(afterStaleAudit)===JSON.stringify(priorImportAudit),
+      'Stale checked import changed pre-import backup or audit history.');
+    console.log('[real-stack] stage backup-restore revision-checked');
     const restoredFromBackup=await primary.request('/api/import',{
       method:'POST',
-      headers:{'x-rheomiq-confirm-import':'replace'},
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(postBackupSave.body?.revision||'')},
       body:backupData,
     });
     expect(restoredFromBackup,200,undefined,'backup-restore');
     assert(Number(restoredFromBackup.body?.revision)>Number(postBackupSave.body?.revision),'Backup restore did not advance the canonical revision.');
+    const preImportBackupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?reason=eq.pre-import&order=id.desc&limit=1&select=reason,revision`,local.serviceRole) as any[];
+    assert(Array.isArray(preImportBackupRows)&&preImportBackupRows.length===1
+      &&String(preImportBackupRows[0]?.revision)===String(postBackupSave.body?.revision),
+      'Successful checked import did not atomically back up the prior confirmed revision.');
 
     const recovered=await primary.request('/api/data');
     expect(recovered,200,undefined,'backup-restore-read');
@@ -1024,6 +1100,14 @@ async function main(){
     const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
     assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
 
+    // Establish the isolated recovery result before a potentially stalled UI runner.
+    if(process.env.MYFINHUB_ISOLATED_RECOVERY==='1'){
+      assert(process.env.CI==='true','Full recovery rehearsal may run only in isolated CI.');
+      console.log('[real-stack] stage isolated-postgresql-storage-restore-before-browser');
+      execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs'],{
+        stdio:'inherit',env:process.env,timeout:120_000,
+      });
+    }
     console.log('[real-stack] stage actual-browser-ui');
     let browserPreviousCode=lastCode;
     await runRealStackBrowserProof({

@@ -3,8 +3,10 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteReceiptDraft, type ReceiptProposal } from '../lib/receiptDrafts';
 import { receiptSplitParts } from '../lib/receiptItemReview';
+import { saveFinanceThenCleanupReceipt } from '../lib/receiptPostSave';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
 import { QuickAdd, type QuickPrefill } from './QuickAdd';
+import { ConfirmDialog } from './ConfirmDialog';
 const ReceiptInbox=lazy(async()=>({default:(await import('./ReceiptInbox')).ReceiptInbox}));
 
 export function ReceiptAwareQuickAdd({
@@ -18,6 +20,7 @@ export function ReceiptAwareQuickAdd({
   onClose,
   onCreate,
   onCreateLinkedTransfer,
+  onReceiptCleanupFailure,
   currentBalance,
 }: {
   open: boolean;
@@ -30,6 +33,7 @@ export function ReceiptAwareQuickAdd({
   onClose: () => void;
   onCreate: (event: FinanceEvent) => Promise<void>;
   onCreateLinkedTransfer?: (principal: FinanceEvent, fee: FinanceEvent | null) => Promise<void>;
+  onReceiptCleanupFailure?: (draftId: string) => void;
   currentBalance: (accountId: string) => number;
 }) {
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -37,6 +41,8 @@ export function ReceiptAwareQuickAdd({
   const [receiptProposal, setReceiptProposal] = useState<ReceiptProposal | null>(null);
   const [receiptSession, setReceiptSession] = useState(0);
   const [receiptHost, setReceiptHost] = useState<HTMLElement | null>(null);
+  const [quickDirty, setQuickDirty] = useState(false);
+  const [receiptSwitchConfirmOpen, setReceiptSwitchConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -44,6 +50,8 @@ export function ReceiptAwareQuickAdd({
       setReceiptDraftId(null);
       setReceiptProposal(null);
       setReceiptHost(null);
+      setQuickDirty(false);
+      setReceiptSwitchConfirmOpen(false);
     }
   }, [open]);
 
@@ -68,6 +76,16 @@ export function ReceiptAwareQuickAdd({
     };
   }, [receiptDraftId, receiptProposal,data.state.settings]);
 
+  const launchReceipt = () => {
+    setReceiptSwitchConfirmOpen(false);
+    setQuickDirty(false);
+    setReceiptOpen(true);
+  };
+  const requestReceiptOpen = () => {
+    if (quickDirty) { setReceiptSwitchConfirmOpen(true); return; }
+    launchReceipt();
+  };
+
   const applyReceipt = (draftId: string, proposal: ReceiptProposal) => {
     if(proposal.reviewedSplit&&!receiptSplitParts(proposal,data.state.settings))throw new Error('Η κατανομή δεν συμφωνεί με τα ελεγμένα ποσά και τις τρέχουσες κατηγορίες.');
     setReceiptDraftId(draftId);
@@ -76,16 +94,24 @@ export function ReceiptAwareQuickAdd({
     setReceiptSession((value) => value + 1);
   };
 
-  const create = async (event: FinanceEvent) => {
-    // The receipt draft is deleted only once its matching finance save succeeds.
-    await onCreate(event);
-    if (receiptDraftId) {
-      const handledId = receiptDraftId;
+  const completeWithReceipt = async (saveFinance:()=>Promise<void>) => {
+    const handledId=receiptDraftId;
+    // The finance save is acknowledged first. A later local IndexedDB failure
+    // must not cause QuickAdd to report a false finance error or post twice.
+    await saveFinanceThenCleanupReceipt(
+      saveFinance,
+      handledId?()=>deleteReceiptDraft(handledId):null,
+      ()=>{if(handledId)onReceiptCleanupFailure?.(handledId)},
+    );
+    if(handledId){
       setReceiptDraftId(null);
       setReceiptProposal(null);
-      void deleteReceiptDraft(handledId);
     }
   };
+  const create = async (event:FinanceEvent)=>completeWithReceipt(()=>onCreate(event));
+  const createLinked = onCreateLinkedTransfer
+    ? (principal:FinanceEvent,fee:FinanceEvent|null)=>completeWithReceipt(()=>onCreateLinkedTransfer(principal,fee))
+    : undefined;
 
   if (!open) return null;
 
@@ -100,13 +126,16 @@ export function ReceiptAwareQuickAdd({
         initialKind={receiptDraftId ? (receiptProposal?.reviewedSplit?'split':'expense') : initialKind}
         prefill={receiptDraftId ? receiptPrefill : prefill}
         motionMode={motionMode}
+        externalConfirmationOpen={receiptSwitchConfirmOpen}
+        onDraftDirtyChange={setQuickDirty}
         onClose={onClose}
         onCreate={create}
-        onCreateLinkedTransfer={onCreateLinkedTransfer}
+        onCreateLinkedTransfer={createLinked}
         currentBalance={currentBalance}
       />
-      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
+      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={requestReceiptOpen}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
     </> : null}
+    <ConfirmDialog open={receiptSwitchConfirmOpen} title="Απόρριψη αλλαγών πριν από τη σάρωση απόδειξης;" description="Οι μη αποθηκευμένες αλλαγές στην καταχώριση θα χαθούν αν μεταβείς στις αποδείξεις. Καμία οικονομική κίνηση δεν θα καταχωριστεί." confirmLabel="Απόρριψη αλλαγών" tone="destructive" motionMode={motionMode} onConfirm={launchReceipt} onCancel={() => setReceiptSwitchConfirmOpen(false)}/>
     {receiptOpen?<Suspense fallback={<div className="modal-backdrop receipt-inbox-backdrop" role="status" aria-live="polite">Φόρτωση αποδείξεων…</div>}><ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/></Suspense>:null}
   </>;
 }

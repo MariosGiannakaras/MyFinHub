@@ -369,9 +369,29 @@ export async function uploadFinancialProviderAsset(input:{
     throw new ApiError(502,'PROVIDER_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
   }
 
-  let payload:unknown;
+  // A failed response does not prove the registration RPC rolled back: the
+  // database may have committed before an upstream timeout. Verify by the
+  // generated, per-upload asset key before deleting its Storage object.
+  const asRegisteredAsset=(value:unknown)=>{
+    const asset=mapFinancialProviderAssetRow(value);
+    if(asset.asset_key!==assetKey||asset.provider_id!==input.providerId||
+      asset.storage_bucket!==PROVIDER_ASSET_BUCKET||asset.storage_path!==storagePath||
+      asset.asset_role!==input.role||asset.variant!==input.variant){
+      throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Δεν επιβεβαιώθηκε η καταχώριση της εικόνας.');
+    }
+    return {
+      assetKey:asset.asset_key,
+      role:asset.asset_role as FinancialProviderAssetRow['role'],
+      variant:asset.variant,
+      url:publicStorageUrl(url,asset),
+      fileName:asset.file_name,
+      mimeType:asset.mime_type,
+      sizeBytes:asset.size_bytes,
+      updatedAt:asset.updated_at,
+    };
+  };
   try{
-    payload=await request('rpc/rheomiq_register_financial_provider_asset',{
+    const payload=await request('rpc/rheomiq_register_financial_provider_asset',{
       method:'POST',
       body:JSON.stringify({
         p_provider_id:input.providerId,
@@ -385,31 +405,54 @@ export async function uploadFinancialProviderAsset(input:{
         p_make_primary:input.makePrimary,
       }),
     },accessToken);
+    if(!Array.isArray(payload)||payload.length!==1)throw new ApiError(502,'FINANCIAL_PROVIDER_ASSET_INVALID_RESPONSE','Provider image response is invalid.',false);
+    return asRegisteredAsset(payload[0]);
   }catch(error){
+    let registered:unknown;
     try{
-      const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
-        method:'DELETE',
-        headers:{apikey:apiKey,authorization},
-      },'DATA');
-      if(!cleanup.ok)console.error('[RheomIQ provider asset cleanup]',{status:cleanup.status});
+      const records=await request(
+        `rheomiq_financial_provider_assets?select=asset_key,provider_id,asset_role,variant,file_name,mime_type,storage_bucket,storage_path,size_bytes,updated_at,active&asset_key=eq.${encodeURIComponent(assetKey)}`,
+        {method:'GET'},accessToken);
+      if(!Array.isArray(records)||records.length>1)throw new Error('Invalid provider asset reconciliation result');
+      registered=records[0]??null;
+      if(registered)return asRegisteredAsset(registered);
     }catch{
-      console.error('[RheomIQ provider asset cleanup]',{status:'request-failed'});
+      // Fail closed. A permission/read failure or mismatched committed record
+      // must never cause deletion of a potentially registered/bound object.
+      console.error('[RheomIQ provider asset reconciliation]',{assetKey,status:'unverified'});
+      throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
     }
+
+    // A 5xx, timeout or invalid response may precede a still-running COMMIT:
+    // one empty read-back is not proof that no row will later appear. Only a
+    // definite PostgreSQL validation/key rejection permits compensating DELETE.
+    const definiteRejection=error instanceof ApiError&&(
+      error.status===400&&error.code==='INVALID_PROVIDER_DATA'||
+      error.status===409&&error.code==='PROVIDER_ASSET_CONFLICT'
+    );
+    if(!definiteRejection){
+      console.error('[RheomIQ provider asset reconciliation]',{assetKey,status:'ambiguous-register-response'});
+      throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+    }
+
+    // Only a confirmed rejected transaction and a verified-absent registry
+    // permit deleting this new, server-generated object. Never purge old keys.
+    let cleaned=false;
+    for(let attempt=1;attempt<=2;attempt++){
+      try{
+        const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
+          method:'DELETE',
+          headers:{apikey:apiKey,authorization},
+        },'DATA');
+        if(cleanup.ok||cleanup.status===404){cleaned=true;break}
+        console.error('[RheomIQ provider asset cleanup]',{assetKey,status:cleanup.status,attempt});
+      }catch{
+        console.error('[RheomIQ provider asset cleanup]',{assetKey,status:'request-failed',attempt});
+      }
+    }
+    if(!cleaned)throw new ApiError(503,'PROVIDER_ASSET_CLEANUP_PENDING','Η καταχώριση εικόνας απέτυχε και ο προσωρινός καθαρισμός δεν επιβεβαιώθηκε.');
     throw error;
   }
-  const row=Array.isArray(payload)?payload[0]:null;
-  if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_RESPONSE','Provider image response is invalid.',false);
-  const asset=mapFinancialProviderAssetRow(row);
-  return {
-    assetKey:asset.asset_key,
-    role:asset.asset_role as FinancialProviderAssetRow['role'],
-    variant:asset.variant,
-    url:publicStorageUrl(url,asset),
-    fileName:asset.file_name,
-    mimeType:asset.mime_type,
-    sizeBytes:asset.size_bytes,
-    updatedAt:asset.updated_at,
-  };
 }
 
 export async function setFinancialProviderAssetBinding(input:{

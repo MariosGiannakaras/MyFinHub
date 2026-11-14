@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-provider-brand-management-qa';
@@ -7,11 +8,34 @@ mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for provider branding QA.');
-const port=9263;
+// Reserve a free loopback CDP port rather than assuming a fixed one is idle.
+const port=await new Promise((resolve,reject)=>{
+  const listener=createServer();
+  listener.once('error',reject);
+  listener.listen(0,'127.0.0.1',()=>{
+    const address=listener.address();
+    listener.close(error=>{
+      if(error)reject(error);
+      else if(!address||typeof address==='string')reject(new Error('Provider QA could not reserve a local Chromium port.'));
+      else resolve(address.port);
+    });
+  });
+});
 const profile='/tmp/myfinhub-provider-brand-management-qa-chrome';
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+// As in receipt QA, never inherit Chromium's possibly locked transient profile.
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:['ignore','ignore','pipe']});
+let chromiumDiagnostics='';
+child.stderr?.on('data',chunk=>{chromiumDiagnostics=(chromiumDiagnostics+chunk.toString()).slice(-4096)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+async function waitHttp(url){
+  for(let i=0;i<120;i++){
+    try{const response=await fetch(url);if(response.ok)return}catch{}
+    if(child.exitCode!==null)throw new Error(`Chromium exited before CDP was ready (code ${child.exitCode}): ${chromiumDiagnostics}`);
+    await sleep(150);
+  }
+  throw new Error(`Timed out waiting for ${url} (Chrome exit: ${child.exitCode??'running'}) ${chromiumDiagnostics}`);
+}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Provider branding QA assertion failed: ${message}`)};
 let c=null;
@@ -21,6 +45,7 @@ try{
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+  const press=async(key,code,vk)=>{await c.send('Input.dispatchKeyEvent',{type:'rawKeyDown',key,code,windowsVirtualKeyCode:vk});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk})};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const applyTheme=preference=>c.call(`async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}`,[preference]);
   const clickAccounts=async()=>{const ok=await c.call("function(){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()==='Λογαριασμοί');if(!node)return false;node.click();return true}");assert(ok,'Accounts tab is available');await waitFor("function(){return !!document.querySelector('.provider-management')&&document.querySelectorAll('.provider-list-row').length>=8}",'compact provider list')};
@@ -107,7 +132,18 @@ try{
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'provider editor');
   const tabs=await c.call("function(){return [...document.querySelectorAll('.provider-editor-tabs [role=tab]')].map(node=>(node.textContent||'').trim())}");
   assert(JSON.stringify(tabs)===JSON.stringify(['Στοιχεία','Εικόνες']),'provider editor has Details and Images tabs');
+  console.log('Provider editor keyboard arrows wrap and preserve labelled panels');
+  assert(await c.call("function(){const tab=document.querySelector('#provider-editor-tab-details');tab?.focus();return document.activeElement===tab}"),'Details tab receives keyboard focus');
+  const verifyEditorTab=async id=>{await waitFor("function(id){const tabs=[...document.querySelectorAll('.provider-editor-tabs [role=tab]')],selected=tabs.filter(tab=>tab.getAttribute('aria-selected')==='true'),active=selected[0],panel=document.querySelector('.provider-editor-body [role=tabpanel]');return selected.length===1&&tabs.filter(tab=>tab.tabIndex===0).length===1&&active?.id==='provider-editor-tab-'+id&&document.activeElement===active&&panel?.id==='provider-editor-panel-'+id&&panel.getAttribute('aria-labelledby')===active.id}",'provider keyboard selects '+id,[id])};
+  await press('ArrowRight','ArrowRight',39);await verifyEditorTab('branding');
+  await press('Home','Home',36);await verifyEditorTab('details');
+  await press('ArrowLeft','ArrowLeft',37);await verifyEditorTab('branding');
+  await press('End','End',35);await verifyEditorTab('branding');
+  await press('Home','Home',36);await verifyEditorTab('details');
+  const providerIdLayout=await c.call("function(){const root=document.querySelector('.provider-id-field'),label=root?.querySelector('span'),key=root?.querySelector('code'),hint=root?.querySelector('small');if(!root||!label||!key||!hint)return null;const a=label.getBoundingClientRect(),b=key.getBoundingClientRect(),c=hint.getBoundingClientRect();return {display:getComputedStyle(root).display,wrap:getComputedStyle(root).overflowWrap,spaced:a.bottom+2<=b.top&&b.bottom+2<=c.top,overflow:root.scrollWidth-root.clientWidth}}");
+  assert(providerIdLayout?.display==='grid'&&providerIdLayout.wrap==='anywhere'&&providerIdLayout.spaced&&providerIdLayout.overflow<=1,'Provider ID label, read-only key and help are separate readable rows: '+JSON.stringify(providerIdLayout));
   await shot('provider-editor-details-light-desktop');
+  await viewport(375,812,true);await noOverflow('provider details mobile');await shot('provider-editor-details-light-mobile');await viewport(1440,1000,false);
   await openBranding();
   const brandingState=await c.call(`function(){const groups=[...document.querySelectorAll('.provider-brand-group>header h4')].map(node=>(node.textContent||'').trim());const text=document.querySelector('.provider-branding-panel')?.textContent||'';return {groups,slots:document.querySelectorAll('.provider-slot-card').length,text}}`);
   assert(brandingState.slots===9,'branding editor exposes nine semantic slots');
@@ -162,6 +198,11 @@ try{
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'existing editor closes');
   await clickText('.provider-management button','Νέος πάροχος');
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'new provider editor');
+  console.log('Provider new provider cannot bypass validation by keyboard');
+  assert(await c.call("function(){const tab=document.querySelector('#provider-editor-tab-details');tab?.focus();return document.activeElement===tab}"),'new provider starts on Details tab');
+  await press('ArrowRight','ArrowRight',39);
+  await waitFor("function(){return Boolean(document.querySelector('.provider-editor-error'))}",'new provider validation error');
+  assert(await c.call("function(){return Boolean(document.querySelector('.provider-details-panel'))&&!document.querySelector('.provider-branding-panel')&&document.activeElement?.id==='provider-editor-tab-details'}"),'new provider cannot bypass validation by keyboard');
   const details=await c.call(`function(){const set=(placeholder,value)=>{const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.getAttribute('placeholder')===placeholder);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true};return set('π.χ. Νέα Τράπεζα','QA Bank')}`);
   assert(details,'new-provider details are editable through app-owned controls');
   await sleep(100);
@@ -180,33 +221,72 @@ try{
   await viewport(375,812,true);assert(await applyTheme('dark')==='dark','mobile create flow follows dark app theme');await noOverflow('new provider mobile');await shot('provider-create-branding-dark-mobile');
   await viewport(1440,1000,false);await fullShot('provider-editor-branding-full-desktop');
 
-  console.log('Provider branding task-flow QA: partial create/upload failure recovery');
-  await c.call(`function(){
-    globalThis.__myfinhubOriginalFetch=globalThis.fetch;
-    let count=0;
+  console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
+  await c.call(`async function(){
+    const original=globalThis.fetch.bind(globalThis);
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared'};
+    globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
-      const url=String(input);const method=String(init?.method||'GET');
-      if(url.startsWith('/api/account-metadata?resource=financial-providers')&&method==='POST'){
-        count+=1;
+      const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      const url=new URL(raw,location.href);
+      const method=String(init?.method||'GET').toUpperCase();
+      const resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&(method==='POST'||method==='PATCH')){
+        if(method==='POST')provider.creates+=1;else provider.updates+=1;
         return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
       }
-      if(url.includes('/api/account-metadata?')&&url.includes('resource=financial-provider-assets')&&method==='PUT'){
-        count+=1;
-        return new Response(JSON.stringify({error:'Synthetic provider asset upload failure'}),{status:503,headers:{'content-type':'application/json'}});
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
+        provider.uploads+=1;
+        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E',fileName:'qa-new-provider.svg'};
+        return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
       }
-      return globalThis.__myfinhubOriginalFetch(input,init);
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
+        provider.bindings+=1;
+        const data=JSON.parse(String(init?.body||'{}'));
+        provider.bindingSlots.push(data.role+':'+data.variant);
+        // First logo binding is durable, second wordmark binding fails.
+        // Retry must not repeat the already acknowledged logo mutation.
+        if(provider.bindings===2)return new Response(JSON.stringify({error:'Synthetic wordmark binding rejection after durable provider, upload and logo binding'}),{status:503,headers:{'content-type':'application/json'}});
+        return new Response(JSON.stringify({binding:{}}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      return original(input,init);
     };
     return true;
   }`);
-  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
-  await waitFor("function(){const error=document.querySelector('.provider-editor-error');return Boolean(error)&&(error.textContent||'').includes('Synthetic provider asset upload failure')}",'partial provider failure error state');
-  const partialFailure=await c.call("function(){return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(document.querySelector('.provider-editor-footer .primary')?.textContent||document.querySelector('.provider-editor-footer button:last-child')?.textContent||'').trim(),error:(document.querySelector('.provider-editor-error')?.textContent||'').trim()}}");
+  console.log('Provider save single-flight blocks same-tick double click before React busy state');
+  const doubleProviderCreate=await c.call("function(){const button=[...document.querySelectorAll('.provider-editor-footer button')].find(el=>(el.textContent||'').includes('Δημιουργία παρόχου'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleProviderCreate,'provider create can be activated twice synchronously in synthetic probe');
+  await waitFor("function(){const warning=document.querySelector('.provider-editor-warning[data-feedback-tone=\"warning\"]');return Boolean(warning)&&(warning.textContent||'').includes('Τα στοιχεία του παρόχου αποθηκεύτηκαν')}",'partial provider warning state after binding rejection');
+  const partialFailure=await c.call("function(){const mock=globalThis.__qaNewProvider;const notice=document.querySelector('.provider-editor-warning'),footer=document.querySelector('.provider-editor-footer'),save=footer?.querySelector('button:last-child');const nr=notice?.getBoundingClientRect(),sr=save?.getBoundingClientRect();return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(save?.textContent||'').trim(),warning:(notice?.textContent||'').trim(),role:notice?.getAttribute('role'),inFooter:Boolean(notice?.closest('.provider-editor-feedback')),visible:Boolean(nr&&nr.top>=0&&nr.bottom<=innerHeight&&sr&&sr.bottom<=innerHeight&&nr.bottom<=sr.top),uploads:mock?.uploads,creates:mock?.creates,bindings:mock?.bindings,slots:mock?.bindingSlots,hasError:Boolean(document.querySelector('.provider-editor-error'))}}");
   assert(partialFailure.editorOpen,'partial provider failure keeps the editor recoverable');
-  assert(!partialFailure.success,'partial provider failure never emits a false all-success message');
-  assert(partialFailure.error.includes('Synthetic provider asset upload failure'),'partial provider failure surfaces the actionable task-local error');
+  assert(!partialFailure.success&&!partialFailure.hasError,'acknowledged metadata save is announced as partial warning, not all success or initial rejection');
+  assert(partialFailure.role==='alert','partially saved provider operation is announced accessibly');
+  assert(partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===2,'provider and binary each acknowledged once, first binding committed before second rejected');
+  assert(JSON.stringify(partialFailure.slots)===JSON.stringify(['logo:universal','wordmark:universal']),'provider writes the logo before rejecting wordmark');
+  assert(partialFailure.inFooter&&partialFailure.visible,'partial save warning and retry remain visibly anchored above the actions');
   assert(partialFailure.saveLabel.includes('Αποθήκευση'),'new provider is treated as existing after the provider row was already created');
-  await shot('provider-create-partial-upload-error-desktop');
-  await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch}return true}");
+  await shot('provider-create-partial-binding-warning-desktop');
+  await viewport(375,812,true);
+  await noOverflow('provider partial save warning mobile');
+  const mobileWarning=await c.call("function(){const notice=document.querySelector('.provider-editor-warning'),button=document.querySelector('.provider-editor-footer button:last-child');const a=notice?.getBoundingClientRect(),b=button?.getBoundingClientRect();return Boolean(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=innerHeight&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
+  assert(mobileWarning,'375px partial save warning and retry button stay visible without scrolling the branding gallery');
+  await shot('provider-create-partial-binding-warning-mobile');
+  await viewport(1440,1000,false);
+  await clickText('.provider-editor-footer button','Αποθήκευση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'retry completes provider bindings without retransmitting uploaded file');
+  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,slots:p.bindingSlots,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings===3,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
+  assert(JSON.stringify(settled.slots)===JSON.stringify(['logo:universal','wordmark:universal','wordmark:universal']),'only rejected wordmark binding is retried');
+  assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
+  await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
 
+  console.log('Shared compact Transactions filters remain at least 12px');
+  const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');
+  await viewport(1440,1000,false);
+  await c.send('Page.navigate',{url:transactionUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.transaction-filter-controls .owned-input'))}",'Transactions owned filters');
+  const filters=await c.call("function(){const nodes=[...document.querySelectorAll('.transaction-filter-controls .owned-input')].filter(node=>node.getClientRects().length);if(!nodes.length)return {present:false};nodes[0].scrollIntoView({block:'center',behavior:'instant'});return {present:true,fontSizes:nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(filters.present&&filters.fontSizes.every(size=>size>=12)&&filters.overflow<=1,'compact Transactions filters remain at least 12px without document overflow: '+JSON.stringify(filters));
+  await shot('shared-compact-transaction-filters-desktop');
   console.log('Provider branding task-flow QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

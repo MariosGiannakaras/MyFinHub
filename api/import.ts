@@ -21,6 +21,9 @@ export default async function handler(req: any, res: any) {
     assertImportConfirmation(requestHeader(req, 'x-rheomiq-confirm-import'));
     const body = await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES);
     validateCompleteFinanceData(body);
-    return sendJson(res, 200, await writeStore(body, undefined, true, session.accessToken));
+    // New web clients send If-Match so a stale preview cannot overwrite newer
+    // finances. Header-less legacy native imports retain the existing contract.
+    const revision=requestHeader(req,'if-match');
+    return sendJson(res, 200, await writeStore(body, revision||undefined, true, session.accessToken));
   });
 }

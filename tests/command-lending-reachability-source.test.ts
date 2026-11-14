@@ -24,11 +24,28 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain("setPeopleQuery('')");
    expect(page).toContain('setHistoryFilter(\'all\')');
    expect(page).toContain("'.lending-people-panel .lending-person-row[aria-pressed=\"true\"]'");
+   expect(page).toContain('secondFrame=requestAnimationFrame(()=>{');
+   expect(page).toContain('cancelAnimationFrame(secondFrame)');
+   expect(page).toContain('.find(row=>row.textContent?.includes(commandPerson)&&row.getClientRects().length>0)');
+   expect(page).toContain("row.querySelector('h3')?.textContent?.trim()===commandPerson&&row.getClientRects().length>0");
+   expect(page).toContain('const selected=desktop??mobile;');
+   expect(page).toContain('.receivable-person-grid > article[tabindex="-1"]');
+   expect(page).toContain('tabIndex={-1} key={row.person}');
    expect(page).toContain('selected?.focus({preventScroll:true})');
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{
    expect(browser).toContain('command-exact-lending-person');
    expect(browser).toContain('same-route second Lending person selected');
    expect(browser).toContain('same-route Lending keyboard focus');
+   // The immediately preceding Reports → Rules case uses a 375px viewport.
+   // The Lending selector is a desktop-only surface and must be tested visibly.
+   expect(browser).toContain('await viewport(1440,1000);');
+   expect(browser).toContain('visible desktop Lending person target');
+   expect(browser).toContain('focusTrace:globalThis.__qaFocusTrace||[]');
+   expect(browser).toContain('lendingRouteOpacity:');
+   expect(browser).toContain('mobile Lending visible exact-person focus');
+   expect(browser).toContain('same-route second mobile Lending person focus');
+   expect(browser).toContain('command-exact-lending-person-mobile-375');
+   expect(browser).toContain('command-exact-lending-person-mobile-same-route-375');
  });
 });

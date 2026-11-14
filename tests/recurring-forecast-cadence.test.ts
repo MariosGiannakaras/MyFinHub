@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { cashFlowForecast } from '../src/lib/forecast.js';
-import { createEvent } from '../src/lib/domain.js';
-import { nextRecurringDate } from '../src/lib/recurring.js';
+import { createEvent, monthlyFlow } from '../src/lib/domain.js';
+import { recurringDue } from '../src/lib/attention.js';
+import { activeRecurringItems, nextRecurringDate, recurringPayments } from '../src/lib/recurring.js';
 import type { FinanceData, RecurringItem } from '../src/types.js';
 
 type CadencedRecurring = RecurringItem & { recurrenceUnit?: 'month' | 'year'; recurrenceInterval?: number };
@@ -40,6 +41,36 @@ describe('recurring cadence forecast', () => {
     const charges=cashFlowForecast(data,'2026-08-11',60).movements.filter(m=>m.source==='recurring');
     expect(charges[0]?.date).toBe('2026-09-22');
     expect(charges.some(m=>m.date.startsWith('2026-08'))).toBe(false);
+  });
+
+  it('settles an early first monthly cycle once across Attention and forecast, preserving real partial bookings (#649 I11.03)',()=>{
+    const item:CadencedRecurring={id:'first-paid-early',name:'New monthly plan',amount:25,day:28,firstExpectedDate:'2026-02-28',accountId:'bank',category:'Συνδρομές',active:true,status:'active',recurrenceUnit:'month',recurrenceInterval:1};
+    const data=dataWith(item);
+    const partial=(date:string,amount:number)=>({...createEvent({kind:'expense',date,amount,note:'New monthly plan',accountId:'bank'}),recurringId:item.id});
+    data.state.events=[
+      partial('2026-02-20',10),
+      partial('2026-02-21',15),
+      createEvent({kind:'expense',date:'2026-02-21',amount:25,note:'New monthly plan',accountId:'bank'}),
+    ];
+    expect(recurringPayments(data,item.id)).toHaveLength(2);
+    expect(monthlyFlow(data,'2026-02').expense).toBe(50);
+    expect(recurringDue(data,item,'2026-02-23')).toBeNull();
+    expect(nextRecurringDate(data,item,'2026-02-23')).toBe('2026-03-21');
+    const forecast=cashFlowForecast(data,'2026-02-23',60).movements.filter(row=>row.source==='recurring');
+    expect(forecast.some(row=>row.date.startsWith('2026-02'))).toBe(false);
+    expect(forecast[0]?.date).toBe('2026-03-21');
+    expect(data.state.events).toHaveLength(3);
+    // A payment in February must not silently pull a future first billing
+    // date from April into February or March.
+    expect(nextRecurringDate(data,{...item,firstExpectedDate:'2026-04-28'},'2026-02-23')).toBe('2026-04-28');
+    for(const status of ['paused','stopped'] as const){
+      data.seed.recurring=[{...item,active:false,status}];
+      expect(activeRecurringItems(data)).toHaveLength(0);
+      expect(cashFlowForecast(data,'2026-02-23',60).movements.filter(row=>row.source==='recurring')).toEqual([]);
+    }
+    data.seed.recurring=[item];
+    expect(activeRecurringItems(data).map(row=>row.id)).toEqual([item.id]);
+    expect(nextRecurringDate(data,item,'2026-02-23')).toBe('2026-03-21');
   });
 
   it('does not forecast a second loan installment in a month already paid early',()=>{

@@ -1,0 +1,90 @@
+import {readFileSync} from 'node:fs';
+import {describe,expect,it} from 'vitest';
+const source=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
+const settings=source('../src/pages/SettingsPage.tsx');
+const accounts=source('../src/components/AccountManagementSettings.tsx');
+const screenshots=source('../scripts/ui-ux-visual-evidence-qa.mjs');
+const settingsQa=source('../scripts/settings-tabs-qa.mjs');
+const roving=source('../src/lib/rovingTabDestination.ts');
+
+describe('#649 cohesive Settings and rendered evidence regression',()=>{
+  it('targets only contextual paint and narrow text-size Quick Entry visual suites',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-quick-layout-qa -->');
+    expect(workflow).toContain("contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->') &&\n          'budget-rules'");
+  });
+
+  it('selects only the two related finance-entry browser suites for same-turn double-submit QA',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-finance-entry-qa -->');
+    expect(workflow).toContain("'budget-rules action-center-context'");
+    expect(source('../scripts/budget-rules-qa.mjs')).toContain('same-turn generic Quick Entry starts exactly one durable finance write');
+    expect(source('../scripts/action-center-context-qa.mjs')).toContain('same-turn contextual Quick Entry starts exactly one scheduled finance write');
+  });
+
+  it('selects only the two changed-surface suites for I16.02 and I19.05 verification',()=>{
+    const workflow=source('../.github/workflows/fb-focused-rendered-qa.yml');
+    expect(workflow).toContain('<!-- run-649-account-quick-qa -->');
+    expect(workflow).toContain("'account-metadata budget-rules'");
+    expect(source('../scripts/account-metadata-qa.mjs')).toContain('account-delete-late-reference-blocked-desktop');
+    expect(source('../scripts/budget-rules-qa.mjs')).toContain('rejected Quick Entry focuses the visible error without losing draft');
+  });
+
+  it('does not conceal Greek account provider labels behind single-line ellipses (#649 I16.01)',()=>{
+    const providerCss=source('../src/components/AccountManagementProvider.css');
+    expect(providerCss).toContain('button small{overflow-wrap:anywhere}');
+    expect(providerCss).not.toContain('button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}');
+    expect(settingsQa).toContain("labels.every(row=>row.wrap==='anywhere'");
+  });
+
+  it('uses action-scoped message tone so import, backup and taxonomy errors cannot inherit stale success',()=>{
+    expect(settings).toContain("const [operationFeedback,setOperationFeedback] = useState");
+    expect(settings).not.toContain('backupMessageIsError');
+    expect(settings).toContain("setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε");
+
+    expect(settings).toContain("'error');");
+    expect(settings).toContain("'warning');");
+    expect(settings).toContain('<OperationFeedback className="logic-note compact" tone={operationFeedback.tone}>');
+  });
+  it('implements ARIA tablist arrow, Home and End plus one sequential Tab stop',()=>{
+    for(const key of ["ArrowRight","ArrowLeft","Home","End"])expect(roving).toContain(key);
+    expect(settings).toContain("rovingTabDestination(event.key,index,SETTINGS_TABS.length)");
+    expect(settings).toContain("tabIndex={activeTab===tab.id?0:-1}");
+    expect(settings).toContain("onKeyDown={event=>onTabKeyDown(event,index)}");
+    expect(settings).toContain("aria-controls={`settings-panel-${tab.id}`}");
+    expect(settings).toContain("selectTab(SETTINGS_TABS[next].id)");
+  });
+  it('runs actual Settings tab keyboard, focus and selected-panel assertions in browser QA',()=>{
+    expect(settingsQa).toContain('const verifyKeyboardTablist=async()=>');
+    for(const key of ['ArrowRight','ArrowLeft','Home','End'])expect(settingsQa).toContain(`await press('${key}'`);
+    expect(settingsQa).toContain('active===selected');
+    expect(settingsQa).toContain('el.tabIndex===0');
+    expect(settingsQa).toContain('await verifyKeyboardTablist()');
+  });
+  it('announces blocked and failed account deletion as warning/error rather than success',()=>{
+    expect(accounts).toContain("notify(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'),'error')");
+    expect(accounts).toContain("metadataWarning?'warning':'success'");
+    expect(accounts).toContain('<OperationFeedback className="account-management-message" tone={messageTone}>');
+    expect(accounts).toContain(",'warning');return}");
+  });
+  it('reuses equivalent Settings list, taxonomy and typography rules within the CSS budget',()=>{
+    const settingsCss=source('../src/pages/SettingsPage.css');
+    expect(settingsCss).toContain('.settings-app-list,.keyboard-shortcut-list{display:grid;border:1px solid var(--line)');
+    expect(settingsCss).toContain('.settings-icons-only .category-icons-workspace,.settings-categories-only .category-icons-workspace{display:grid;gap:10px;padding:14px}');
+    expect(settingsCss).toContain('.settings-general-appearance .text-size-picker button b,.keyboard-shortcut-row b,');
+    expect(settingsCss).toContain('.settings-app-list>div:first-child,.keyboard-shortcut-row:first-child{border-top:0}');
+  });
+  it('captures full-page screenshots only once table/list content has finished painting',()=>{
+    expect(screenshots).toContain('const waitForVisualPaint=async(page)');
+    expect(screenshots).toContain("node.getAnimations()");
+    expect(screenshots).toContain("getComputedStyle(row).opacity");
+    expect(screenshots).toContain("document.querySelectorAll('.mobile-transaction-row')");
+    expect(screenshots).toContain("document.querySelectorAll('.transactions-approved-table tbody tr')");
+    expect(screenshots).toContain("last.rows>=3&&!last.faded");
+    expect(screenshots).toContain('const pendingImages=');
+    expect(screenshots).toContain('!last.pendingImages');
+    expect(screenshots).toContain('await waitForVisualPaint(page)');
+    expect(screenshots).not.toContain('await sleep(120);if(page=');
+    expect(screenshots).toContain('await new Promise(requestAnimationFrame)');
+  });
+});

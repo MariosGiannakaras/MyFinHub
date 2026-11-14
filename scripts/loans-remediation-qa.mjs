@@ -24,7 +24,7 @@ try{
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=async(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
-  const navigate=async(state='loans-long')=>{const url=new URL(baseUrl);url.searchParams.set('page','loans');url.searchParams.set('state',state);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')&&[...document.querySelectorAll('.loan-list-row h3')].some(node=>(node.textContent||'').includes('QA 120 δόσεις'))}",'long-installment Loans fixture');await sleep(100)};
+  const navigate=async(state='loans-long')=>{const url=new URL(baseUrl);url.searchParams.set('page','loans');url.searchParams.set('state',state);await c.send('Page.navigate',{url:url.href});await waitFor(state==='empty'?"function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')&&Boolean(document.querySelector('.loan-history.is-empty'))}":"function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')&&[...document.querySelectorAll('.loan-list-row h3')].some(node=>(node.textContent||'').includes('QA 120 δόσεις'))}",state==='empty'?'empty Loans fixture':'long-installment Loans fixture');await sleep(100)};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
   const state=()=>c.call(`function(){const row=[...document.querySelectorAll('.loan-list-row')].find(node=>(node.querySelector('h3')?.textContent||'').includes('QA 120 δόσεις')),progress=row?.querySelector('.installment-segments'),main=row?.querySelector('.loan-list-main'),meta=row?.querySelector('.loan-list-meta'),actions=row?.querySelector('.loan-list-actions'),history=document.querySelector('.loan-history'),note=document.querySelector('.loan-progress-note'),secondary=row?.querySelector('.loan-list-main h3+small');const rect=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,width:r.width,height:r.height}:null};const style=node=>node?getComputedStyle(node):null;return {row:rect(row),main:rect(main),progress:rect(progress),meta:rect(meta),actions:rect(actions),segments:progress?.querySelectorAll('i').length||0,paid:progress?.querySelectorAll('i.paid').length||0,visualSegments:progress?.getAttribute('data-visual-segments')||'',visualPaid:progress?.getAttribute('data-visual-paid')||'',ariaNow:progress?.getAttribute('aria-valuenow')||'',ariaMax:progress?.getAttribute('aria-valuemax')||'',historyEmpty:history?.classList.contains('is-empty')||false,historyHeight:rect(history)?.height||0,historyShadow:style(history)?.boxShadow||'',noteHeight:rect(note)?.height||0,noteBg:style(note)?.backgroundColor||'',secondaryColor:style(secondary)?.color||'',textSecondary:getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
 
@@ -43,6 +43,35 @@ try{
   assert(dark.secondaryColor&&dark.secondaryColor!=='rgba(0, 0, 0, 0)','dark secondary metadata remains visibly styled');
   assert(dark.overflow<=1,'dark Loans desktop remains overflow-safe');
   await shot('loans-long-dark-1440');
+
+  console.log('Loans remediation QA: 320px and 375px installment accessibility, empty and completed states');
+  for(const [width,height] of [[375,812],[320,700]]){
+    await viewport(width,height);await navigate('loans-long');
+    const mobile=await c.call("function(){const row=document.querySelector('.loan-list-row'),progress=row?.querySelector('.installment-segments'),actions=[...(row?.querySelectorAll('.loan-list-actions button')||[])].filter(button=>button.getClientRects().length);const rect=row?.getBoundingClientRect();return {row:Boolean(row),within:Boolean(rect&&rect.left>=-1&&rect.right<=innerWidth+1),progressNow:progress?.getAttribute('aria-valuenow'),progressMax:progress?.getAttribute('aria-valuemax'),actions:actions.length,touch:actions.map(button=>{const r=button.getBoundingClientRect();return Math.min(r.width,r.height)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+    assert(mobile.row&&mobile.within&&mobile.progressNow==='60'&&mobile.progressMax==='120','mobile Loans keeps true installment counts and bounded cards: '+JSON.stringify(mobile));
+    assert(mobile.overflow<=1&&mobile.actions>0&&mobile.touch.every(size=>size>=40),'mobile Loans actions stay present and safely hittable without horizontal scrolling: '+JSON.stringify(mobile));
+    const activeVisible=await c.call("function(){const row=document.querySelector('.loan-list-row[data-loan-lifecycle=active]'),title=row?.querySelector('h3');if(!title)return {visible:false};title.scrollIntoView({block:'center',behavior:'instant'});const rect=title.getBoundingClientRect(),bar=document.querySelector('.topbar')?.getBoundingClientRect();return {visible:rect.top>=(bar?.bottom??0)+8&&rect.bottom<=innerHeight-56,title:title.textContent||'',top:rect.top,bottom:rect.bottom}}");
+    assert(activeVisible.visible,'Loans active mobile screenshot must display the actual loan title below the toolbar: '+JSON.stringify(activeVisible));
+    await sleep(100);
+    await shot(`loans-long-mobile-${width}`);
+    if(width===320){
+      const actionVisible=await c.call("function(){const actions=document.querySelector('.loan-list-row[data-loan-lifecycle=active] .loan-list-actions');if(!actions)return {visible:false};actions.scrollIntoView({block:'center',behavior:'instant'});const rect=actions.getBoundingClientRect(),bar=document.querySelector('.topbar')?.getBoundingClientRect();return {visible:rect.top>=(bar?.bottom??0)+8&&rect.top<innerHeight-80&&rect.right<=innerWidth+1,top:rect.top,right:rect.right}}");
+      assert(actionVisible.visible,'320px Loans screenshot must actually display the installment payment controls: '+JSON.stringify(actionVisible));
+      await sleep(100);
+      await shot('loans-mobile-actions-320');
+    }
+  }
+  await viewport(320,700);await navigate('empty');
+  const emptyState=await c.call("function(){const history=document.querySelector('.loan-history.is-empty');return {empty:Boolean(history),active:document.querySelectorAll('.loan-list-row[data-loan-lifecycle=active]').length,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(emptyState.empty&&emptyState.active===0&&emptyState.overflow<=1,'empty Loans stays explicit and accessible on narrow mobile');
+  await shot('loans-empty-mobile-320');
+  await navigate('loans-completed');
+  const completed=await c.call("function(){const details=document.querySelector('.loan-history'),summary=details?.querySelector('summary');if(!details||!summary)return {found:false};summary.click();const item=details.querySelector('.loan-list-row[data-loan-lifecycle=completed]');const p=item?.querySelector('.installment-segments');return {found:Boolean(item),expanded:details.open,active:document.querySelectorAll('.loan-list-row[data-loan-lifecycle=active]').length,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(completed.found&&completed.expanded&&completed.active===0&&completed.overflow<=1,'fully paid Loans are archived in expandable historical view without active payment actions: '+JSON.stringify(completed));
+  const completedVisible=await c.call("function(){const title=document.querySelector('.loan-history .loan-list-row[data-loan-lifecycle=completed] h3');if(!title)return {visible:false};title.scrollIntoView({block:'center',behavior:'instant'});const rect=title.getBoundingClientRect(),bar=document.querySelector('.topbar')?.getBoundingClientRect();return {visible:rect.top>=(bar?.bottom??0)+8&&rect.bottom<=innerHeight-56&&rect.right<=innerWidth+1,top:rect.top,bottom:rect.bottom,right:rect.right,title:title.textContent||''}}");
+  assert(completedVisible.visible,'Completed Loans mobile screenshot must actually show its historical loan below the toolbar: '+JSON.stringify(completedVisible));
+  await sleep(120);
+  await shot('loans-completed-mobile-320');
 
   c.close();console.log(`Loans remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

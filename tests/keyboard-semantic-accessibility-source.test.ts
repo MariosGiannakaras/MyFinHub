@@ -64,7 +64,9 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('mobile More focus trap');
     expect(qa).toContain('restores focus to opener');
     expect(modalFocus).toContain("event.key !== 'Tab'");
-    expect(modalFocus).toContain('opener.current?.focus');
+    expect(modalFocus).toContain('if(opener.current?.isConnected)opener.current.focus');
+    expect(modalFocus).toContain('const hasDestination=focused instanceof HTMLElement');
+    expect(modalFocus).toContain('requestAnimationFrame(()=>{');
   });
 
   it('covers the 404 recovery surface at a 200%-equivalent viewport with reduced motion',()=>{

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const ci=read('.github/workflows/ci.yml');
 const codeql=read('.github/workflows/codeql.yml');
+const focused=read('.github/workflows/fb-focused-rendered-qa.yml');
 const cross=read('.github/workflows/cross-engine-smoke.yml');
 const performance=read('.github/workflows/performance-smoke.yml');
 const windows=read('.github/workflows/desktop-windows.yml');
@@ -33,15 +34,18 @@ describe('CI workflow optimization contracts',()=>{
     expect(ci).toContain('if [ "$failures" -gt 0 ]; then exit 1; fi');
   });
 
-  it('uses original pinned CodeQL and browser jobs as reusable, without duplicate PR/push triggers',()=>{
+  it('keeps pinned CodeQL reusable in CI and weekly standalone without duplicating PR scans',()=>{
     expect(ci).toContain('uses: ./.github/workflows/codeql.yml');
     expect(ci).toContain('uses: ./.github/workflows/cross-engine-smoke.yml');
     expect(ci).toContain('uses: ./.github/workflows/performance-smoke.yml');
     expect(codeql).toContain('workflow_call:');
     expect(codeql).toContain("cron: '17 4 * * 1'");
     expect(codeql).toContain('security-events: write');
-    expect(codeql).toContain('  pull_request:');
-    expect(codeql).toContain('    branches: [main, develop]');
+    // The develop/main rulesets require CodeQL code scanning; the mandatory
+    // CI workflow calls this reusable scanner on every PR head already.
+    // A second direct PR event would duplicate the same security analysis.
+    expect(codeql).not.toMatch(/^\s*pull_request:/m);
+    expect(codeql).not.toContain('    branches: [main, develop]');
     for(const reusable of [cross,performance]){
       expect(reusable).toContain('workflow_call:');
       expect(reusable).not.toContain('  pull_request:');
@@ -62,6 +66,20 @@ describe('CI workflow optimization contracts',()=>{
     expect(performance).toContain('lighthouse@13.4.1');
     expect(performance).toContain('node scripts/performance-audit.mjs');
     expect(performance).toContain('node scripts/loading-shift-audit.mjs');
+  });
+
+  it('runs one opt-in draft focused browser batch for #649 without triggering the full review matrix',()=>{
+    expect(focused).toContain("types: [synchronize, edited]");
+    expect(focused).toContain("<!-- run-fb-focused-qa -->");
+    expect(focused).toContain("<!-- run-649-focused-qa -->");
+    expect(focused).toContain('FOCUSED_SUITES:');
+    expect(focused).toContain('action-center-context receipt-local-ocr settings-tabs savings-remediation card-vault-runtime account-metadata');
+    expect(focused).toContain('quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette');
+    expect(focused.match(/for suite in \$FOCUSED_SUITES; do/g)).toHaveLength(2);
+    expect(focused).toContain('cancel-in-progress: true');
+    expect(focused).toContain('if: always()');
+    expect(focused).toContain('Failed focused suites: $failures');
+    expect(ci).toContain("github.event.pull_request.draft == false");
   });
 
   it('preserves Windows release tag safety and every original lifecycle test in reusable jobs',()=>{

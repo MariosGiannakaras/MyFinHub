@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const shell=read('src/components/DialogShell.tsx');
+const focus=read('src/hooks/useModalFocus.ts');
 const confirm=read('src/components/ConfirmDialog.tsx');
 const money=read('src/components/MoneyEditDialog.tsx');
 const quickAdd=read('src/components/QuickAdd.tsx');
@@ -15,7 +16,7 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('useReducedMotion');
     expect(shell).toContain("type DialogMotionMode='system'|'reduced'|'full'|'none'");
     expect(shell).not.toContain('export type DialogMotionMode');
-    expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
+    expect(shell).toContain('useModalFocus<HTMLElement>(open,preferredFocus,onRequestClose,focusActive)');
     expect(shell).toContain('focusActive=true');
     expect(shell).toContain('focusActive?:boolean');
     expect(shell).toContain('className="modal-backdrop"');
@@ -31,6 +32,18 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('const reduce=Boolean(systemReduced)');
     expect(shell).not.toContain("motionMode==='reduced'");
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
+  });
+
+  it('preserves the original opener focus and scroll boundary across nested confirmation (#649 I20.01)',()=>{
+    expect(focus).toContain('const focusActiveRef = useRef(focusActive)');
+    expect(focus).toContain('focusActiveRef.current = focusActive');
+    expect(focus).toContain('if (!focusActiveRef.current || !isTopmostModal(root)) return;');
+    expect(focus).toContain('const inOtherModal=');
+    expect(focus).toContain("focused.closest('[aria-modal=\"true\"]')");
+    expect(focus).toContain('requestAnimationFrame(()=>{');
+    expect(focus).toContain('if(opener.current?.isConnected)opener.current.focus({ preventScroll: true })');
+    expect(focus).toContain('const hasDestination=');
+    expect(focus).toContain('window.scrollTo({ left: scrollX, top: scrollY');
   });
 
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
@@ -74,7 +87,7 @@ describe('DialogShell source contract',()=>{
     expect(quickAdd).toContain('ariaLabelledBy="quick-add-title"');
     expect(quickAdd).toContain('ariaDescribedBy="quick-add-description"');
     expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
     expect(quickAdd).toContain('onRequestClose={requestClose}');
     expect(quickAdd).not.toContain("from 'framer-motion'");
     expect(quickAdd).not.toContain('useModalFocus');
@@ -106,7 +119,9 @@ describe('DialogShell source contract',()=>{
     expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('onRequestClose={requestClose}');
+    expect(contextual).toContain('focusActive={!discardOpen}');
+    expect(contextual).toContain('<ConfirmDialog open={discardOpen}');
     expect(contextual).toContain('busy={saving}');
     expect(contextual).toContain('inert={saving}');
     expect(contextual).not.toContain('useModalFocus');

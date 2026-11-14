@@ -304,6 +304,29 @@ try{
   await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
   await waitFor("function(){return !document.querySelector('#saving-editor-title')}",'complex Savings dismisses only after exact receipt');
 
+  console.log('Budget/Rules QA: contextual Quick Entry clears stale amount validation, preserves rejected draft');
+  const contextualFailureUrl=new URL(urlFor('savings','savings-bank-transfer'));
+  contextualFailureUrl.searchParams.set('quick-event-save-failure','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:contextualFailureUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'contextual finance rejection fixture');
+  await clickAria('Νέα αποταμίευση: Μεταφορά στην άκρη');
+  await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'contextual finance negative dialog');
+  const editContextualAmount=async value=>{
+    const changed=await c.call("function(value){const modal=document.querySelector('.contextual-quick-modal'),label=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Ποσό'),input=label?.querySelector('input');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[value]);
+    assert(changed,'contextual amount is editable in real dialog');
+  };
+  await editContextualAmount('0');
+  await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('Συμπλήρωσε ποσό')}",'contextual amount rejection announces error');
+  await editContextualAmount('21');
+  await waitFor("function(){return !document.querySelector('.contextual-quick-modal #context-quick-error')}",'corrected contextual amount removes stale validation message');
+  await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση κίνησης απέτυχε')}",'contextual durable finance rejection announces new error');
+  const rejectedContextual=await c.call("function(){const dialog=document.querySelector('.contextual-quick-modal'),amount=[...dialog?.querySelectorAll('label')||[]].find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Ποσό')?.querySelector('input');const save=[...dialog?.querySelectorAll('.editor-actions button')||[]].find(button=>(button.textContent||'').includes('Καταχώριση'));return {open:Boolean(dialog),amount:amount?.value||'',saveEnabled:Boolean(save&&!save.disabled),ariaBusy:dialog?.getAttribute('aria-busy')||''}}");
+  assert(rejectedContextual.open&&rejectedContextual.saveEnabled&&rejectedContextual.ariaBusy!=='true'&&Number(rejectedContextual.amount.replace(',','.'))>0,'rejected contextual finance receipt leaves corrected draft editable without false success: '+JSON.stringify(rejectedContextual));
+  await screenshot('contextual-quick-invalid-corrected-save-rejected-desktop');
+
   console.log('Budget/Rules QA: contextual Savings targets bank-classified savings accounts');
   await navigate('savings','savings-bank-transfer',1440,1000);
   await clickAria('Νέα αποταμίευση: Μεταφορά στην άκρη');
@@ -319,6 +342,12 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal input[role=combobox]'))}",'mobile contextual bank-savings state');
   assert(await c.call("function(){const input=[...document.querySelectorAll('.contextual-quick-modal label')].find(el=>(el.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'))?.querySelector('input[role=combobox]');return input?.value==='Ταμιευτηρίου'}"),'mobile destination retains bank-savings account');
   await noOverflow('bank savings contextual mobile');
+  // A prior capture showed the background through the contextual modal. This
+  // may be an ancestor entrance-opacity race; prove effective final paint.
+  await waitFor("function(){const modal=document.querySelector('.contextual-quick-modal');if(!modal)return false;let opacity=1;for(let node=modal;node;node=node.parentElement){const value=Number(getComputedStyle(node).opacity);if(Number.isFinite(value))opacity*=value;}const bg=getComputedStyle(modal).backgroundColor;const alpha=bg==='transparent'?0:bg.startsWith('rgba(')?Number(bg.split(',').at(-1)?.replace(')','')):1;return opacity>=.995&&alpha>=.995}",'contextual Quick Entry opaque ancestor and surface paint settled');
+  const surfaceProof=await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const r=modal?.getBoundingClientRect(),bg=modal?getComputedStyle(modal).backgroundColor:'';const surfaces=modal?[modal,modal.querySelector(':scope > header'),modal.querySelector(':scope > footer')].filter(Boolean):[];return {background:bg,surfaces:surfaces.map(node=>({background:getComputedStyle(node).backgroundColor,alpha:(()=>{const color=getComputedStyle(node).backgroundColor;return color.startsWith('rgba(')?Number(color.split(',').at(-1)?.replace(')','')):color==='transparent'?0:1})()})),left:r?.left,right:r?.right,top:r?.top,bottom:r?.bottom,viewportWidth:innerWidth,viewportHeight:innerHeight}}");
+  assert(surfaceProof.surfaces.length>=2&&surfaceProof.surfaces.every(node=>node.alpha>=.995),'mobile Quick Entry shell and header are both opaque, not glass surfaces: '+JSON.stringify(surfaceProof));
+  assert(surfaceProof.left>=-1&&surfaceProof.right<=surfaceProof.viewportWidth+1&&surfaceProof.top>=-1&&surfaceProof.bottom<=surfaceProof.viewportHeight+1,'contextual Quick Entry mobile surface stays fully contained: '+JSON.stringify(surfaceProof));
   await screenshot('savings-bank-typed-target-contextual-mobile');
   await clickAria('Κλείσιμο contextual καταχώρισης');
 
@@ -364,7 +393,10 @@ try{
   await setLabelInput('Σχόλιο','QA Failed Durable Entry');
   await clickText('.generic-quick-modal footer button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected Quick Entry receipt error');
+  await waitFor("function(){const error=document.getElementById('quick-add-error');return Boolean(error&&error.tabIndex===-1&&document.activeElement===error)}",'rejected Quick Entry focuses the visible error without losing draft');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&[...document.querySelectorAll('.generic-quick-modal label')].some(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Σχόλιο')&&label.querySelector('input')?.value==='QA Failed Durable Entry')}"),'rejected receipt keeps current unsaved Quick Entry draft');
+  const rejectedUndo=await c.call("function(){const undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return {writeCount:Number(document.documentElement.dataset.qaFinanceWrites||0),undoDisabled:undo?.disabled===true,modalOpen:Boolean(document.querySelector('.generic-quick-modal'))}}");
+  assert(rejectedUndo.writeCount===0&&rejectedUndo.undoDisabled&&rejectedUndo.modalOpen,'rejected finance receipt cannot create a finance write or unlock synthetic Undo: '+JSON.stringify(rejectedUndo));
   await screenshot('quick-entry-finance-receipt-failure-desktop');
   await viewport(390,844);
   await noOverflow('Quick Entry rejected receipt mobile');
@@ -373,13 +405,32 @@ try{
   await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-pending')});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'pending Quick Entry receipt fixture');
   await clickAria('Γρήγορη προσθήκη');
-  await setLabelInput('Ποσό','26');
+  // Deliberately submit once without an amount, then correct and retry.
   await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'initial Quick Entry validation error');
+  await setLabelInput('Ποσό','26');
+  console.log('Generic Quick Entry blocks same-tick duplicate finance receipts');
+  const doubleClick=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal footer button')].find(item=>(item.textContent||'').includes('Καταχώριση'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleClick,'generic Quick Entry submitted twice in one browser turn for regression');
   await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal[aria-busy=true]');const save=[...(dialog?.querySelectorAll('footer button')||[])].find(button=>(button.textContent||'').includes('Αποθήκευση…'));return Boolean(globalThis.__myfinhubQaCompleteQuickEventReceipt)&&Boolean(save?.disabled)}",'pending Quick Entry receipt locks exact finance-save action');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&document.querySelector('.generic-quick-modal header button[aria-label]')?.disabled===true}"),'Quick Entry remains open while receipt is pending');
+  const pendingEntry=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal'),footer=dlg?.querySelector('footer'),receipt=footer?.querySelector('.receipt-quick-launch'),undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');const box=receipt?.getBoundingClientRect();return {footerInert:footer?.inert===true,receiptVisible:Boolean(box&&box.width>0&&box.height>0),receiptCoords:box?{x:box.x+box.width/2,y:box.y+box.height/2}:null,previousErrorCleared:!dlg?.querySelector('#quick-add-error'),undoDisabled:undo?.disabled===true,financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0)}}");
+  const attemptCount=await c.call("function(){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)}");
+  assert(attemptCount===1,'same-turn generic Quick Entry starts exactly one durable finance write: '+attemptCount);
+  assert(pendingEntry.footerInert&&pendingEntry.receiptVisible&&pendingEntry.previousErrorCleared&&pendingEntry.undoDisabled&&pendingEntry.financeWrites===0,'pending generic finance receipt locks portalled receipt launch and clears stale validation without premature Undo: '+JSON.stringify(pendingEntry));
+  assert(pendingEntry.receiptCoords.x>=0&&pendingEntry.receiptCoords.x<1440&&pendingEntry.receiptCoords.y>=0&&pendingEntry.receiptCoords.y<1000,'receipt launch must be onscreen for real pointer blocked-interaction probe');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',...pendingEntry.receiptCoords});
+  await c.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...pendingEntry.receiptCoords});
+  await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...pendingEntry.receiptCoords});
+  assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal[aria-busy=true]'))&&!document.querySelector('.receipt-inbox')&&document.querySelector('.generic-quick-modal footer')?.inert===true}"),'real Chromium pointer cannot open receipt capture during pending finance save');
+  // Preserve the previously accepted immutable screenshot contract as well
+  // as the new negative pointer/portalled-launch evidence.
   await screenshot('quick-entry-finance-receipt-pending-desktop');
+  await screenshot('quick-entry-finance-receipt-pending-locked-receipt-launch-desktop');
   await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
   await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'Quick Entry dismissed only after finance receipt');
+  const acknowledgedEntry=await c.call("function(){const undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return {financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0),undoEnabled:undo?.disabled===false}}");
+  assert(acknowledgedEntry.financeWrites===1&&acknowledgedEntry.undoEnabled,'only the acknowledged synthetic finance event becomes available to Undo: '+JSON.stringify(acknowledgedEntry));
 
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);

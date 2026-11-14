@@ -5,6 +5,33 @@ const page=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),
 const css=readFileSync(new URL('../src/pages/ReportsPage.css',import.meta.url),'utf8');
 
 describe('Reports post-v1.4 remediation contracts',()=>{
+  it('preserves source-of-truth period, positive-only distribution and budget management contracts (#649 I14.01/.03/.05)',()=>{
+    const visual=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    const budgetQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain('operationalReportSnapshot(data,month,asOf)');
+    expect(page).toContain('reportingPeriodEndDate(month,asOf)');
+    expect(page).toContain('categoryMomentum(data,month,100,asOf)');
+    expect(page).toContain('accountBalances(data,periodEndDate)');
+    expect(page).toContain('.filter(row=>row.balance>.005)');
+    expect(page).toContain('Θετικά υπόλοιπα');
+    expect(page).toContain('const budgetRows=useMemo(()=>budgetProgress(data,month,asOf)');
+    expect(page).toContain('<BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/>');
+    expect(visual).toContain('future-dated expense and savings events do not mutate realized current-month Reports totals');
+    expect(visual).toContain('Reports period moves to July 2026');
+    expect(budgetQa).toContain('Budget');
+  });
+  it('protects 320px long Greek labels across category, counterparty, income and account lists (#649 I14.04)',()=>{
+    const visual=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(css).toContain('.report-category-list .semantic-list-title{overflow-wrap:anywhere}');
+    for(const selector of ['.report-counterparty-list .report-entry-copy b','.report-income-list .report-entry-copy b','.report-account-distribution-list b']){
+      expect(css).toContain(selector+'{overflow-wrap:anywhere}');
+    }
+    expect(visual).toContain('reports-long-greek-labels-mobile-320.png');
+    expect(visual).toContain('row.scroll<=row.client+2');
+    expect(visual).toContain('longLabels.pageOverflow<=2');
+    expect(visual).toContain('Reports 320px long-label screenshot stays clear of sticky headers and bottom navigation');
+  });
+
   it('defers private six-month account-history scans until reveal without losing chart data',()=>{
     expect(page).toContain("const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data])");
     expect(page).toContain("const accountIds=useMemo(()=>accounts.slice(0,4).map(account=>account.id),[accounts])");
@@ -66,6 +93,82 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(page).toContain('stroke="var(--chart-grid)"');
     expect(css).toContain('color:var(--text-secondary)');
     expect(css).toContain('font-size:var(--ux-dense-label-size)');
+  });
+
+  it('guards existing single-card credit summary width using actual Reports geometry',()=>{
+    const shared=readFileSync(new URL('../src/styles/expanded-report-layouts.css',import.meta.url),'utf8');
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(shared).toContain('.report-upcoming-card .report-operations-grid.report-credit-portfolio{grid-template-columns:minmax(0,1fr)}');
+    expect(rendered).toContain('Reports nested single-credit summary must span its own upcoming panel');
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-desktop.png');
+    expect(rendered).toContain('creditPortfolio.cardWidth>=creditPortfolio.outerWidth-2');
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(workflow).toContain("contains(github.event.pull_request.body, '<!-- run-reports-focused-qa -->')");
+    expect(workflow).toContain("'reports-visual'");
+    expect(rendered).toContain('reports-credit-portfolio-fullwidth-mobile.png');
+    expect(rendered).toContain('375px mobile nested credit summary stays full-width');
+    expect(rendered).toContain("darkPrivacy.theme==='dark'");
+    expect(rendered).toContain("darkPrivacy.surfaceInset==='#0f1828'");
+
+  });
+
+  it('keeps report section links inside the hash router and expands mobile hidden panels before focusing',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(page).toContain('href="#/reports" data-report-section={id}');
+    expect(page).toContain("if(sectionId==='report-comparisons')setMobileSupportExpanded(true)");
+    expect(page).toContain("target.scrollIntoView({block:'start',behavior:'auto'})");
+    expect(page).toContain("target.focus({preventScroll:true})");
+    expect(page).not.toContain('href="#report-comparisons"');
+    expect(rendered).toContain('reports-mobile-section-nav-comparisons.png');
+    expect(rendered).toContain("mobileSectionNav.beforeHash===mobileSectionNav.afterHash");
+    expect(rendered).toContain("mobileSectionNav.expanded==='true'");
+    expect(rendered).toContain('mobileSectionNav.focused');
+    expect(page).toContain("const navBottom=document.querySelector('.report-section-nav')?.getBoundingClientRect().bottom??0");
+    expect(page).toContain("window.scrollBy({top:-delta,behavior:'instant'})");
+    expect(css).toContain('.report-section-nav{position:sticky;top:84px;');
+    expect(css).toContain('.report-section-nav{top:80px}');
+    expect(css).toContain('.report-section-nav{top:62px}');
+    expect(rendered).toContain('mobileSectionNav.top>=mobileSectionNav.navBottom+7');
+  });
+
+  it('requires real hit-testing of sticky Reports section navigation after deep mobile scroll',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(rendered).toContain("[[375,812,'375'],[320,720,'320'],[375,4259,'375-long']]");
+    expect(rendered).toContain('document.elementFromPoint(x,y)');
+    expect(rendered).toContain('nav.contains(hit)');
+    expect(rendered).toContain("sticky.withinViewport&&sticky.navHit&&!sticky.documentOverflow");
+    expect(rendered).toContain('reports-sticky-section-nav-');
+  });
+
+  it('keeps a visible native keyboard focus and activates same-page mobile navigation via Enter',()=>{
+    const rendered=readFileSync(new URL('../scripts/reports-visual-qa.mjs',import.meta.url),'utf8');
+    expect(css).not.toContain('.report-section-nav a:focus-visible{background:rgba(47,111,237,.08);color:#1e5fd0;outline:none');
+    expect(css).toContain('.report-section-nav a:focus-visible{outline:2px solid var(--focus-outline,#2f6fed)}');
+    const reportsBase=readFileSync(new URL('../src/styles/reports-dashboard.css',import.meta.url),'utf8');
+    expect(reportsBase).not.toContain('var(--green,#187852)');
+    expect(reportsBase).not.toContain('var(--red,#b32942)');
+    expect(css).not.toContain('var(--ink,#0f1f45)');
+    expect(rendered).toContain("keyboardBefore.focusVisible&&keyboardBefore.outlineStyle!=='none'");
+    expect(rendered).toContain("Input.dispatchKeyEvent',{type:'keyDown',key:'Enter'");
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-focus-320.png');
+    expect(rendered).toContain('reports-mobile-section-nav-keyboard-activation-320.png');
+    expect(rendered).toContain("keyboardAfter.top>=keyboardAfter.navBottom+7");
+  });
+
+  it('separates top-five positive bank balances from whole-portfolio net worth and card debt (#649 I14.03)',()=>{
+    const reports=readFileSync(new URL('../src/lib/reports.ts',import.meta.url),'utf8');
+    const domain=readFileSync(new URL('../src/lib/domain.ts',import.meta.url),'utf8');
+    expect(page).toContain("allAccounts(data).filter(account=>account.kind!=='credit')");
+    expect(page).toContain(".filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5)");
+    expect(page).toContain("const accountDistributionTotal=accountDistribution.reduce((sum,row)=>sum+row.balance,0)");
+    expect(page).toContain('Μεγαλύτερα θετικά υπόλοιπα');
+    expect(page).toContain('έως 5 μη πιστωτικοί λογαριασμοί, όχι καθαρή περιουσία.');
+    expect(page).toContain('const creditPercent=snapshot.creditLimit>0?snapshot.creditUsage:null');
+    expect(page).toContain("const budgetRows=useMemo(()=>budgetProgress(data,month,asOf)");
+    expect(page).toContain("toLocaleString('el-GR'");
+    expect(reports).toContain('const limit=active.reduce((sum,card)=>sum+card.limit,0);');
+    expect(reports).toContain('const debt=cards.reduce((sum,card)=>sum+card.debt,0);');
+    expect(domain).toContain('export function netWorth(');
   });
 
   it('does not introduce unsupported export or download decoration',()=>{
