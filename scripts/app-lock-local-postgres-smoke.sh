@@ -137,10 +137,10 @@ DO $$ BEGIN
    RAISE EXCEPTION 'AAL1 was allowed to configure PIN';
  EXCEPTION WHEN insufficient_privilege THEN NULL;
  END;
-END $;
+END $$;
 -- All three exposed SECURITY DEFINER App Lock RPCs must be unusable by
 -- AAL1 users, even when their JWT is otherwise a valid owner/device session.
-DO $
+DO $$
 DECLARE rejected integer:=0;
 BEGIN
   BEGIN
@@ -154,11 +154,11 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>2 THEN RAISE EXCEPTION 'AAL1 App Lock denials were incomplete'; END IF;
-END $;
+END $$;
 RESET ROLE;
 
 -- Test effective grants on the actual compiled functions, not merely SQL text.
-DO $
+DO $$
 DECLARE signature text;
 BEGIN
   FOREACH signature IN ARRAY ARRAY[
@@ -177,7 +177,7 @@ BEGIN
     OR has_table_privilege('authenticated','public.myfinhub_app_lock_tickets','SELECT') THEN
     RAISE EXCEPTION 'Private App Lock verifier/ticket tables exposed to authenticated role';
   END IF;
-END $;
+END $$;
 
 -- A valid AAL2 non-owner with an ACTIVE device still must be denied by all
 -- three SECURITY DEFINER entrypoints.
@@ -189,7 +189,7 @@ SELECT set_config('request.jwt.claims',jsonb_build_object(
   'sub','33333333-3333-4333-8333-333333333333',
   'session_id','44444444-4444-4444-8444-444444444444','aal','aal2'
 )::text,false);
-DO $
+DO $$
 DECLARE rejected integer:=0;
 BEGIN
   BEGIN
@@ -208,7 +208,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>3 THEN RAISE EXCEPTION 'Non-owner App Lock denials were incomplete'; END IF;
-END $;
+END $$;
 RESET ROLE;
 
 -- Revocation of an otherwise valid owner AAL2 session must immediately
@@ -222,7 +222,7 @@ SELECT set_config('request.jwt.claims',jsonb_build_object(
   'sub','11111111-1111-4111-8111-111111111111',
   'session_id','22222222-2222-4222-8222-222222222222','aal','aal2'
 )::text,false);
-DO $
+DO $$
 DECLARE rejected integer:=0;
 BEGIN
   BEGIN
@@ -236,7 +236,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>2 THEN RAISE EXCEPTION 'Revoked device App Lock denials were incomplete'; END IF;
-END $;
+END $$;
 RESET ROLE;
 ROLLBACK;
 \echo Local PostgreSQL PIN/RLS/recovery smoke: PASS
