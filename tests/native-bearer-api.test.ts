@@ -246,6 +246,37 @@ describe('native bearer finance API boundary', () => {
     for (const operation of Object.values(metadata)) expect(operation).not.toHaveBeenCalled();
   });
 
+  it('rejects revoked owner AAL2 bearer sessions across finance and metadata/Storage endpoints before any data access (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    devices.ensureDeviceSessionAccess.mockRejectedValue(new ApiError(401,'DEVICE_ACCESS_REVOKED','Device session revoked.'));
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>upstream(200,{id:'owner-id'})));
+    const authorizedHeaders={authorization:`Bearer ${token}`};
+    const cases=[
+      {handler:dataHandler,req:bearerRequest('GET',token)},
+      {handler:dataHandler,req:bearerRequest('PUT',token,{'if-match':'7','x-rheomiq-history-generation':'4'})},
+      {handler:historyHandler,req:{method:'POST',headers:authorizedHeaders,body:{action:'undo',updatedAt:'2026-08-22T00:00:00.000Z'}}},
+      {handler:backupHandler,req:{method:'POST',headers:authorizedHeaders,body:{}}},
+      {handler:importHandler,req:{method:'POST',headers:authorizedHeaders,body:{app:'RheomIQ',schemaVersion:3}}},
+      {handler:metadataHandler,req:{method:'GET',headers:authorizedHeaders,query:{resource:'financial-providers'}}},
+      {handler:metadataHandler,req:{method:'PUT',headers:{...authorizedHeaders,'if-match':'0'},body:{accountId:'payroll',iban:null},query:{}}},
+      {handler:metadataHandler,req:{method:'PUT',headers:{...authorizedHeaders,'content-type':'image/png'},query:{resource:'financial-provider-assets',providerId:'bank',role:'logo',variant:'light',fileName:'logo.png'},body:Buffer.from([137,80,78,71,13,10,26,10])}},
+      {handler:metadataHandler,req:{method:'PUT',headers:{...authorizedHeaders,'content-type':'image/png'},query:{resource:'recurring-service-assets',recurringId:'recurring-1',fileName:'logo.png'},body:Buffer.from([137,80,78,71,13,10,26,10])}},
+    ];
+    for(const {handler,req} of cases){
+      const res=responseRecorder();
+      await handler(req,res);
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body)).toMatchObject({code:'DEVICE_ACCESS_REVOKED'});
+      expect(res.headers.has('set-cookie')).toBe(false);
+    }
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledTimes(cases.length);
+    expect(storage.isOwner).not.toHaveBeenCalled();
+    for(const operation of [
+      storage.readStore,storage.writeMutableState,storage.readHistory,storage.moveHistory,
+      storage.backupStore,storage.writeStore,...Object.values(metadata),
+    ])expect(operation).not.toHaveBeenCalled();
+  });
+
   it('preserves the existing same-origin requirement for cookie mutations', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));

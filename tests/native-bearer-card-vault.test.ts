@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../server/http.js';
 
 const storage = vi.hoisted(() => ({
   isOwner: vi.fn(),
@@ -146,6 +147,28 @@ describe('native bearer card-vault boundary', () => {
       expect(res.headers.has('set-cookie')).toBe(false);
     }
     for (const operation of Object.values(vault)) expect(operation).not.toHaveBeenCalled();
+  });
+
+  it('rejects revoked owner AAL2 bearer sessions before all vault read/write/delete paths (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    devices.ensureDeviceSessionAccess.mockRejectedValue(new ApiError(401,'DEVICE_ACCESS_REVOKED','Device session revoked.'));
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>upstream(200,{id:'owner-id'})));
+    const requests=[
+      request('POST',token,{cardId:'card-1'}),
+      request('PUT',token,{cardId:'card-1',pan:'4111111111111111'}),
+      request('DELETE',token,{cardId:'card-1'}),
+      request('DELETE',token,{cardId:'card-1',requireCommittedDeletion:true}),
+    ];
+    for(const req of requests){
+      const res=responseRecorder();
+      await handleCardVaultRequest(req,res);
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body)).toMatchObject({code:'DEVICE_ACCESS_REVOKED'});
+      expect(res.headers.has('set-cookie')).toBe(false);
+    }
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledTimes(requests.length);
+    expect(storage.isOwner).not.toHaveBeenCalled();
+    for(const operation of Object.values(vault))expect(operation).not.toHaveBeenCalled();
   });
 
   it('allows owner AAL2 bearer to delete the server-vault secret explicitly', async () => {
