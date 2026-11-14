@@ -10,6 +10,7 @@ const diagnostics = require('../desktop/startup-diagnostics.cjs') as {
   preflightSupabase:(config:{supabaseUrl:string;supabasePublishableKey:string},options?:Record<string,unknown>)=>Promise<boolean>;
   publicDiagnostic:(error:unknown,detail?:string,secrets?:string[])=>{code:string;stage:string;message:string;detail:string};
   redactDiagnosticText:(value:unknown,secrets?:string[])=>string;
+  startupError:(code:string,stage:string,message:string,detail?:string)=>Error;
 };
 
 describe('desktop startup diagnostics', () => {
@@ -25,6 +26,33 @@ describe('desktop startup diagnostics', () => {
     expect(output).not.toContain(jwt);
     expect(output).toContain('[redacted]');
     expect(output).toContain('Bearer [redacted]');
+  });
+
+  it('redacts credentialed connection URLs, auth fields and payment fields even without a known-secrets list (#649 I22.07)', () => {
+    const sample=[
+      'connect to postgresql://finance:fake-password-123@127.0.0.1:5432/owner',
+      'access_token=fake-access-value&refresh_token=fake-refresh-value',
+      'password=fake-login-secret apikey=fake-api-secret',
+      'x-myfinhub-app-unlock=fake-unlock-ticket',
+      'pan=4111111111111111 cvv=123 otp=654321',
+      'safe operation stage: startup',
+    ].join('\n');
+    const output=diagnostics.redactDiagnosticText(sample);
+    for(const secret of [
+      'fake-password-123','fake-access-value','fake-refresh-value','fake-login-secret',
+      'fake-api-secret','fake-unlock-ticket','4111111111111111','654321',
+    ])expect(output).not.toContain(secret);
+    expect(output).toContain('[redacted-db-url]');
+    expect(output).toContain('safe operation stage: startup');
+  });
+
+  it('omits all potentially sensitive finance backend output after runtime readiness (#649 I22.07)', () => {
+    const error=diagnostics.startupError('BACKEND_RUNTIME_FAILED','backend-runtime',
+      'Η τοπική υπηρεσία απέτυχε.', 'personal account and transaction data');
+    const diagnostic=diagnostics.publicDiagnostic(error,'card PAN and owner transaction notes');
+    expect(diagnostic).toMatchObject({code:'BACKEND_RUNTIME_FAILED',stage:'backend-runtime'});
+    expect(diagnostic.detail).toBe('Runtime output is intentionally omitted after backend readiness.');
+    expect(diagnostics.formatDiagnostic(diagnostic)).not.toMatch(/personal account|transaction notes|card PAN/);
   });
 
   it('bounds captured backend diagnostics', () => {

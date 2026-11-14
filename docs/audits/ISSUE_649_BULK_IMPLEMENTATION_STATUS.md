@@ -1,3 +1,17 @@
+## 2026-11-14 — I22.06 ACCEPTED booked/forecast finance contract; I22.04 reviewed, I22.07 privacy candidate
+
+**Progress: Implementations 6/23 completed · Sub-implementations 86/132 completed (+1 I22.06).**
+
+**I22.06 ACCEPTED (+1):** Exact [CI #43623051310](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/43623051310) **SUCCESS** with 314 test files / 1,771 tests, TypeScript, release privacy/bundle guard, both disposable PostgreSQL smoke suites, CodeQL and Unified. New deterministic `tests/forecast-scenarios.test.ts` case asserts the materially different economic definitions *in one unchanged synthetic document*: booked as-of expense and card purchase are spending, card settlement is debt payment not new spending, lending reduces bank cash but creates an equivalent receivable, repayment reverses that asset/cash transfer, bank/cash positive-only distribution is **not** net worth because it excludes receivables and credit debt, while scheduled obligations, variable recurring estimates and dated future booked events affect forecast but never fabricate present booked finance entries. A separately hypothetical what-if remains read-only. Checked every cent, forecast source count/point and original fixture immutability; no production finance semantics, schema or UI was changed. Previously accepted Reports positive-only desktop/tablet/mobile proof remains in the branch and was not pointlessly rerun.
+
+**I22.04 reviewed, hosted operational activation PENDING (not counted):** Cross-checked Supabase's published 2026 [password-security](https://supabase.com/docs/guides/auth/password-security) and [pricing](https://supabase.com/pricing): leaked-password checks use Have I Been Pwned and require Pro or higher. Updated `docs/POST_RELEASE_HARDENING.md` to distinguish completed source/feature-risk review from **unverified** project tier/toggle and owner-approval-gated hosted enablement. No admin operation, auth setting modification, extra login method, credential access or weakening of TOTP.
+
+**I22.07 new privacy candidate (NOT counted):** The Windows diagnostics redactor already removed explicit supplied secrets, Bearer tokens, JWTs and vault hashes, and the backend intentionally omits runtime finance output. Extended `desktop/startup-diagnostics.cjs` to also mask entire credentialed PostgreSQL URLs and typed Auth/PIN/card-related fields in copyable startup detail **even if not in the explicit secrets list**, with narrow actual-module tests in `tests/desktop-startup-diagnostics.test.ts`. The source/CI and Windows diagnostic blast radius require exact-head verification; no assertion of browser-console, screenshot or Windows installer acceptance yet. The API error logger, Support diagnostics whitelist and bundle privacy guard remain unchanged.
+
+**Next:** inspect the new exact-head mandatory source/CodeQL/Unified checks and fix only observed regressions. Complete the remaining I22.07 screenshot/console/log and in-memory ticket redaction review before counting it; continue other P0 #649 unblocked items, keeping I22.04 hosted toggle approval separate. PR #654 stays Draft to develop with expensive opt-ins OFF; no main, Android, production Supabase, owner data, destructive restoration or merge.
+
+---
+
 ## 2026-11-14 — I22.02 ACCEPTED direct nonowner AAL2 RPC proof; I22.06 material-finance definitions candidate
 
 **Progress: Implementations 6/23 completed · Sub-implementations 85/132 completed (+1 I22.02).**
