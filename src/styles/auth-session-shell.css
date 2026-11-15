@@ -2,7 +2,6 @@
 .login-card{width:min(430px,100%);max-width:100%;min-width:0;border-radius:20px;padding:26px;display:grid;gap:20px}
 .login-card>*{min-width:0}
 .login-brand{display:flex;align-items:center;gap:13px}
-.login-brand img{width:58px;height:58px;border-radius:18px;box-shadow:0 3px 10px rgba(24,45,78,.08)}
 .login-brand small{color:var(--muted);font-size:10px}
 .login-shield{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;padding:0;border:0;border-radius:0;background:transparent;color:var(--text-secondary);font-size:var(--ux-small-size);font-weight:700;line-height:1.45}
 .login-shield svg{flex:0 0 auto;color:var(--accent,var(--blue))}
@@ -27,7 +26,7 @@
 .login-logout:disabled{opacity:.55;cursor:wait;transform:none}
 .session-error-banner{position:fixed;z-index:120;left:50%;bottom:22px;transform:translateX(-50%);width:min(520px,calc(100% - 28px));border:1px solid rgba(214,64,88,.22);background:rgba(255,245,247,.97);color:#9f263a;border-radius:14px;padding:11px 14px;box-shadow:0 12px 34px rgba(15,34,62,.18);font-size:10px;line-height:1.45;text-align:center}
 @media(max-width:680px){.session-error-banner{bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
-@media(max-width:520px){.login-screen{padding:14px}.login-card{padding:20px;border-radius:23px}.login-brand img{width:52px;height:52px}}
+@media(max-width:520px){.login-screen{padding:14px}.login-card{padding:20px;border-radius:23px}}
 
 /* Password reveal is an integrated field action, not a second raised card. */
 .login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}
