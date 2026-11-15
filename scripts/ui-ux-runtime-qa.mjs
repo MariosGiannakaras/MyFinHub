@@ -72,10 +72,12 @@ try{
     await viewport(640,900);
     await navigate({screen},null);
     const proof=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('dark');document.documentElement.style.zoom='200%';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const card=document.querySelector('.login-card');const input=document.querySelector('#mfa-code')||document.querySelector('#login-password');const alert=document.querySelector('.login-error[role=alert]');const box=card?.getBoundingClientRect();const field=input?.getBoundingClientRect();return {theme:document.documentElement.dataset.theme,zoom:document.documentElement.style.zoom,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,cardRight:box?.right,inputRight:field?.right,alert:alert?.textContent||'',described:input?.getAttribute('aria-describedby'),inputId:input?.id}}");
-    assert(proof.theme==='dark'&&proof.zoom==='200%'&&proof.overflow<=1&&proof.cardRight<=640.5&&proof.inputRight<=640.5,screen+': dark 200% zoom must not clip finance-auth fields or create horizontal overflow '+JSON.stringify(proof));
-    assert(Boolean(proof.alert)&&Boolean(proof.described),screen+': live alert and corresponding accessible input description required');
+    // Capture even on failure so a real clipping defect is visible in the
+    // immutable CI artifact, not only reported as a bounding-box number.
     const image=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
     writeFileSync(`${evidenceDir}/runtime-${label}-dark-200pct-zoom.png`,Buffer.from(image.data,'base64'));
+    assert(proof.theme==='dark'&&proof.zoom==='200%'&&proof.overflow<=1&&proof.cardRight<=640.5&&proof.inputRight<=640.5,screen+': dark 200% zoom must not clip finance-auth fields or create horizontal overflow '+JSON.stringify(proof));
+    assert(Boolean(proof.alert)&&Boolean(proof.described),screen+': live alert and corresponding accessible input description required');
   };
   await authZoom('mfa-error','mfa');
   await authZoom('login-error','login');

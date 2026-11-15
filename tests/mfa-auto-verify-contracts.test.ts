@@ -35,6 +35,13 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(runtime).toContain('runtime-${label}-dark-200pct-zoom.png');
     expect(runtime).toContain("await authZoom('mfa-error','mfa')");
     expect(runtime).toContain("await authZoom('login-error','login')");
+    const authCss=read('src/styles/auth-session-shell.css');
+    expect(authCss).toContain('grid-template-columns:minmax(0,1fr);place-items:center');
+    expect(authCss).toContain('width:min(430px,100%);max-width:100%;min-width:0');
+    expect(authCss).toContain('.login-card>*{min-width:0}');
+    expect(authCss).toContain('.login-form{display:grid;grid-template-columns:minmax(0,1fr)');
+    const zoomStart=runtime.indexOf('const authZoom=async');
+    expect(runtime.indexOf("const image=await c.send('Page.captureScreenshot'",zoomStart)).toBeLessThan(runtime.indexOf("assert(proof.theme==='dark'",zoomStart));
   });
 
   it('supports errors, clear-to-retry, re-focus, pending and deliberate enrollment/logout',()=>{
