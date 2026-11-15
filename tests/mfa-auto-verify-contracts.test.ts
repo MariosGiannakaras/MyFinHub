@@ -39,7 +39,11 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(authCss).toContain('grid-template-columns:minmax(0,1fr);place-items:center');
     expect(authCss).toContain('width:min(430px,100%);max-width:100%;min-width:0');
     expect(authCss).toContain('.login-card>*{min-width:0}');
-    expect(authCss).toContain('.login-form{display:grid;grid-template-columns:minmax(0,1fr)');
+    expect(authCss).toContain('.login-form,.login-field{min-width:0;grid-template-columns:minmax(0,1fr)}');
+    expect(authCss).toContain('.login-input{min-width:0}');
+    expect(authCss).toContain('.login-shield{display:flex;align-items:center;gap:9px;min-width:0;width:100%');
+    expect(runtime).toContain('proof.cardOverflow<=1&&proof.clipped.length===0&&imageWidth<=641');
+    expect(runtime).toContain('.login-shield span,.login-form,.login-field,.login-input');
     const zoomStart=runtime.indexOf('const authZoom=async');
     expect(runtime.indexOf("const image=await c.send('Page.captureScreenshot'",zoomStart)).toBeLessThan(runtime.indexOf("assert(proof.theme==='dark'",zoomStart));
   });

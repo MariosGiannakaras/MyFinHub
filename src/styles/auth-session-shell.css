@@ -1,13 +1,14 @@
 .login-screen{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:24px;background:var(--canvas-gradient)}
 .login-card{width:min(430px,100%);max-width:100%;min-width:0;border-radius:20px;padding:26px;display:grid;gap:20px}
 .login-card>*{min-width:0}
-.login-brand{display:flex;align-items:center;gap:13px}
 .login-brand small{color:var(--muted);font-size:10px}
-.login-shield{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;padding:0;border:0;border-radius:0;background:transparent;color:var(--text-secondary);font-size:var(--ux-small-size);font-weight:700;line-height:1.45}
+.login-shield{display:flex;align-items:center;gap:9px;min-width:0;width:100%;overflow-wrap:anywhere;color:var(--text-secondary);font-size:var(--ux-small-size);font-weight:700;line-height:1.45}
 .login-shield svg{flex:0 0 auto;color:var(--accent,var(--blue))}
 .login-card h1{margin:0 0 6px;font-size:28px;letter-spacing:-.04em}
 .login-card p{margin:0;color:var(--text-secondary);font-size:var(--ux-small-size);line-height:1.55}
-.login-form{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.login-form,.login-field{min-width:0;grid-template-columns:minmax(0,1fr)}
+.login-form{display:grid;gap:14px}
+.login-input{min-width:0}
 .login-form label{display:grid;gap:6px;color:var(--ink-2);font-size:var(--ux-small-size);font-weight:750}
 .login-submit{width:100%;min-height:44px;margin-top:2px;color:#fff!important;-webkit-text-fill-color:#fff;font-size:12px;line-height:1.2}
 .login-submit-label{display:inline-block;color:#fff;-webkit-text-fill-color:#fff;font-weight:750;opacity:1}
