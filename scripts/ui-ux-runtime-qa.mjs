@@ -45,7 +45,14 @@ try{
   c.on('Network.responseReceived',params=>{const response=params.response;if(response?.status>=400)findings.push(`HTTP ${response.status}: ${response.url}`)});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const urlFor=params=>{const url=new URL(baseUrl);for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));return url.href};
-  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
+  // Read-only DOM probes can cross a Page.reload navigation while Chromium
+  // retires its previous execution context. Count that as one failed poll,
+  // never retry mutating CDP calls or ignore an unrelated browser exception.
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){
+    try{if(await c.call(fn,args))return}
+    catch(error){if(!/Cannot find context with specified id|Execution context was destroyed/.test(String(error)))throw error}
+    await sleep(100)
+  }throw new Error(`Timed out waiting for ${label}`)}
   const clean=async label=>{await sleep(260);assert(findings.length===0,`${label}: ${findings.join(' | ')}`);if(recoverableAssets.length){const fallback=await c.call("function(){return document.querySelectorAll('.bank-logo-fallback').length}");assert(fallback>0,`${label}: external bank-logo request failed without rendering a local fallback: ${recoverableAssets.join(' | ')}`);console.warn(`Runtime QA recovered ${recoverableAssets.length} external bank-logo image failure(s) with local fallback: ${recoverableAssets.join(' | ')}`)}recoverableAssets.length=0;requests.clear()};
   const navigate=async(params,heading)=>{findings.length=0;recoverableAssets.length=0;requests.clear();await c.send('Page.navigate',{url:urlFor(params)});if(heading)await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`heading ${heading}`,[heading]);else await waitFor("function(){return document.readyState==='complete'&&Boolean(document.body?.innerText.trim())}",'document ready');await clean(JSON.stringify(params))};
 

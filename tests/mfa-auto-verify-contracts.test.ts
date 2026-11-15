@@ -42,6 +42,9 @@ describe('automatic MFA and owner auth UX preservation',()=>{
     expect(authCss).toContain('.login-form,.login-field{min-width:0;grid-template-columns:minmax(0,1fr)}');
     expect(authCss).toContain('.login-shield{display:flex;align-items:center;gap:9px;min-width:0;width:100%');
     expect(runtime).toContain('proof.cardOverflow<=1&&proof.clipped.length===0&&imageWidth<=641');
+    expect(runtime).toContain('Cannot find context with specified id|Execution context was destroyed');
+    expect(runtime).toContain('if(await c.call(fn,args))return');
+    expect(runtime).toContain('if(!/Cannot find context with specified id|Execution context was destroyed/.test(String(error)))throw error');
     expect(runtime).toContain('.login-shield span,.login-form,.login-field,.login-input');
     const zoomStart=runtime.indexOf('const authZoom=async');
     expect(runtime.indexOf("const image=await c.send('Page.captureScreenshot'",zoomStart)).toBeLessThan(runtime.indexOf("assert(proof.theme==='dark'",zoomStart));
