@@ -41,6 +41,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     if (!root) return;
 
     const releaseScrollLock=acquireModalScrollLock();
+    const body=document.body;
 
     const preferredTarget = preferred ? root.querySelector<HTMLElement>(preferred) : null;
     const initial = canReceiveFocus(preferredTarget)

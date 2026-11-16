@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {acquireModalScrollLock} from '../src/lib/modalScrollLock';
+import {acquireModalScrollLock} from '../src/lib/modalScrollLock.js';
 
 type Style={position:string;top:string;left:string;right:string;width:string;overflow:string;overscrollBehavior:string};
 function setup(){
