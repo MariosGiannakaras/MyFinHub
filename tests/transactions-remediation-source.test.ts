@@ -84,7 +84,7 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).toContain("'category filter reset'");
     const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
     expect(workflow).toContain('<!-- run-649-transactions-filter-qa -->');
-    expect(workflow).toContain("'transactions-scanability' ||");
+    expect(workflow).toContain("'transactions-scanability command-palette' ||");
     expect(page).toContain('Εμφανίζονται {visibleRows.length} από {rows.length} συναλλαγές');
   });
 
@@ -104,6 +104,18 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('transactions-mobile-date-filter-375');
     expect(qa).toContain('transactions-mobile-date-filter-320');
     expect(qa).toContain('320px date controls remain readable without horizontal overflow');
+  });
+
+  it('restores keyboard focus on the exact visible command-selected transaction on desktop and mobile',()=>{
+    expect(page).toContain('const [pendingCommandFocus,setPendingCommandFocus]');
+    expect(page).toContain('setPendingCommandFocus({id:focusId,source:focusSource})');
+    expect(page).toContain('target.focus({preventScroll:true})');
+    expect(page).toContain('data-transaction-id={r.id}');
+    expect(page).toContain('role="listitem" tabIndex={-1}');
+    const commandQa=readFileSync(new URL('../scripts/command-palette-qa.mjs',import.meta.url),'utf8');
+    expect(commandQa).toContain('exact historic transaction receives keyboard focus');
+    expect(commandQa).toContain('exact historic mobile transaction receives keyboard focus');
+    expect(commandQa).toContain('command-exact-transaction-focus-mobile');
   });
 
   it('keeps transaction-count month-over-month movement neutral',()=>{
