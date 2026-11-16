@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type RefObject } from 'react';
 import { shortcutMatches } from '../lib/shortcuts';
+import { acquireModalScrollLock } from '../lib/modalScrollLock';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -39,19 +40,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     const root = ref.current;
     if (!root) return;
 
-    const body = document.body;
-    const html = document.documentElement;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    const bodyStyle = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow };
-    const htmlOverscroll = html.style.overscrollBehavior;
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = `-${scrollX}px`;
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    html.style.overscrollBehavior = 'none';
+    const releaseScrollLock=acquireModalScrollLock();
 
     const preferredTarget = preferred ? root.querySelector<HTMLElement>(preferred) : null;
     const initial = canReceiveFocus(preferredTarget)
@@ -104,13 +93,6 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       document.removeEventListener('keydown', trap);
       errorObserver.disconnect();
       if(associatedErrorId)removeDescription(root,associatedErrorId);
-      body.style.position = bodyStyle.position;
-      body.style.top = bodyStyle.top;
-      body.style.left = bodyStyle.left;
-      body.style.right = bodyStyle.right;
-      body.style.width = bodyStyle.width;
-      body.style.overflow = bodyStyle.overflow;
-      html.style.overscrollBehavior = htmlOverscroll;
       // A command may deliberately move focus and scroll into its destination
       // before the exiting dialog unmounts. Preserve that destination; restore
       // the opener and scroll only after ordinary dismissals.
@@ -120,8 +102,11 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       // destination merely because the two dialogs are DOM siblings.
       const inOtherModal=focused instanceof HTMLElement&&Boolean(focused.closest('[aria-modal="true"]'))&&!root.contains(focused);
       const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused)&&!inOtherModal;
+      // Only the last modal restores the original page scroll. A navigated
+      // destination keeps its own scroll, even when the last modal exits.
+      const unlocked=releaseScrollLock();
       if(!hasDestination){
-        window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
+        if(unlocked)window.scrollTo({ ...unlocked, behavior: 'auto' });
         if(inOtherModal){
           // Allow the child's opener-restoration microtask to settle first.
           // A deliberate focus move to a nonmodal route target wins instead.

@@ -35,6 +35,8 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain("shortcutMatches(event, 'dismiss')");
     expect(shortcutSource).toContain("if (id === 'dismiss') return 'Esc'");
     expect(modalFocusSource).toContain('onCloseRef.current()');
+    expect(modalFocusSource).toContain('acquireModalScrollLock()');
+    expect(modalFocusSource).toContain('const unlocked=releaseScrollLock()');
     expect(modalFocusSource).toContain('if(opener.current?.isConnected)opener.current.focus');
     expect(modalFocusSource).toContain('const hasDestination=focused instanceof HTMLElement');
     expect(modalFocusSource).toContain('requestAnimationFrame(()=>{');

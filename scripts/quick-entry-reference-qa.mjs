@@ -65,13 +65,15 @@ try{
     await waitFor("function(){const q=document.querySelector('.generic-quick-modal');return Boolean(q&&!document.querySelector('.app-confirm-dialog')&&q.contains(document.activeElement))}",'Escape cancels only nested confirmation and restores editor focus');
     const preserved=await c.call("function(){return document.querySelector('.generic-quick-modal [data-autofocus=true]')?.value||''}");
     assert(preserved===draft,'Escape preserves unsaved finance draft');
+    assert(await c.call("function(){return document.body.style.position==='fixed'&&document.documentElement.style.overscrollBehavior==='none'}"),'Escape retains the parent Quick Entry scroll lock');
     const reopened=await c.call("function(){const close=document.querySelector('.generic-quick-modal button[aria-label=\"Κλείσιμο καταχώρισης\"]');close?.click();return Boolean(close)}");
     assert(reopened,'dirty draft requests confirmation again');
     await waitFor("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&d.contains(document.activeElement))}",'reopened nested confirmation focuses');
     assert(await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]'),b=[...d?.querySelectorAll('button')||[]].find(x=>(x.textContent||'').trim()==='Απόρριψη');b?.click();return Boolean(b)}"),'explicit discard acknowledged');
     await waitFor("function(){return !document.querySelector('.generic-quick-modal,.app-confirm-dialog')}",'explicit discard closes both dialogs');
     await waitFor("function(){return [...document.querySelectorAll('[data-global-quick-entry]')].some(x=>x===document.activeElement)}",'nested discard restores original launcher focus');
-    assert(await c.call("function(){return document.body.style.position!=='fixed'}"),'nested discard releases global scroll lock');
+    assert(await c.call("function(){return document.body.style.position!=='fixed'&&document.documentElement.style.overscrollBehavior!=='none'}"),'nested discard releases global scroll lock');
+    await shot(theme+'-quick-entry-nested-discard-closed-desktop');
   };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
   const noOverflow=async label=>{const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(overflow<=1,`${label} document overflow ${overflow}px`)};
