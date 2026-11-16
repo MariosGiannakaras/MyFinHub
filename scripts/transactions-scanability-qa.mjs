@@ -144,8 +144,10 @@ try{
   await shot('transactions-mobile-date-filter-375');
   await viewport(320,760);await sleep(180);
   const narrowMobile=await c.call("function(){const dates=[...document.querySelectorAll('.mobile-transaction-date .owned-date-shell')].map(el=>el.getBoundingClientRect());return {dates:dates.map(rect=>rect.width),controls:[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>{const style=getComputedStyle(el),ctx=document.createElement('canvas').getContext('2d');if(ctx)ctx.font=style.font;return {label:el.value,font:parseFloat(style.fontSize),fits:!!ctx&&ctx.measureText(el.value).width<=el.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)+1}}),fonts:[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>parseFloat(getComputedStyle(el).fontSize)),within:dates.every(rect=>rect.left>=-1&&rect.right<=innerWidth+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(narrowMobile.dates.length===2&&narrowMobile.dates.every(width=>width>=100)&&narrowMobile.fonts.length===2&&narrowMobile.fonts.every(size=>size>=15.9)&&narrowMobile.controls.map(item=>item.label).join('|')==='24/8/2026|25/8/2026'&&narrowMobile.controls.every(item=>item.fits)&&narrowMobile.within&&!narrowMobile.overflow,'320px date controls remain readable without horizontal overflow');
+  console.log('Transactions QA 320px date text: '+JSON.stringify(narrowMobile));
+  await scrollTo('.mobile-transaction-date');
   await shot('transactions-mobile-date-filter-320');
+  assert(narrowMobile.dates.length===2&&narrowMobile.dates.every(width=>width>=100)&&narrowMobile.fonts.length===2&&narrowMobile.fonts.every(size=>size>=15.9)&&narrowMobile.controls.map(item=>item.label).join('|')==='24/8/2026|25/8/2026'&&narrowMobile.controls.every(item=>item.fits)&&narrowMobile.within&&!narrowMobile.overflow,'320px date controls remain readable without horizontal overflow');
   await viewport(375,812);await sleep(120);
   assert(await c.call("function(){const btn=document.querySelector('.mobile-transaction-filter-reset button');btn?.click();return Boolean(btn)}"),'mobile date range reset is available');
   await waitFor("function(){return document.querySelectorAll('.mobile-transaction-row').length>=10}",'mobile date reset restores full month');

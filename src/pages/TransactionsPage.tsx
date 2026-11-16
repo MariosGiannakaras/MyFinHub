@@ -229,7 +229,10 @@ export function TransactionsPage({
   const dateRangeControl=(mobile=false)=>mobile
     ?<div className="mobile-transaction-date" role="group" aria-label="Εύρος ημερομηνιών">
        <span>Περίοδος</span>
-       <div className="transactions-approved-date" style={{'--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('start',true)}<span>–</span>{datePicker('end',true)}</div>
+       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(158px,100%),1fr))',gap:8,minWidth:0}}>
+         <div className="filter-label"><span>Από</span><div className="transactions-approved-date" style={{gridTemplateColumns:'minmax(0,1fr)','--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('start',true)}</div></div>
+         <div className="filter-label"><span>Έως</span><div className="transactions-approved-date" style={{gridTemplateColumns:'minmax(0,1fr)','--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('end',true)}</div></div>
+       </div>
      </div>
     :<label className="transactions-approved-date" aria-label="Εύρος ημερομηνιών">{datePicker('start')}<span>–</span>{datePicker('end')}</label>;
   const filterControls=(mobile=false)=><div className={(mobile?'mobile-transaction-filters':'desktop-finance-table')+' transaction-filter-controls'} aria-label="Φίλτρα συναλλαγών">

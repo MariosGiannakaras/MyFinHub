@@ -97,6 +97,10 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(ownedDate).toContain("displayFormat==='numeric'?compactGreekDate:greekDate");
     expect(page).toContain("displayFormat={compact?'numeric':'short'}");
     expect(page).toContain("datePicker('start',true)");
+    expect(page).toContain("gridTemplateColumns:'repeat(auto-fit,minmax(min(158px,100%),1fr))'");
+    expect(page).toContain('<span>Από</span>');
+    expect(page).toContain('<span>Έως</span>');
+    expect(qa).toContain("Transactions QA 320px date text:");
     expect(qa).toContain("narrowMobile.controls.every(item=>item.fits)");
     expect(page).toContain('dateRangeControl(false)');
     expect(page).toContain('mobile-transaction-filter-reset');
