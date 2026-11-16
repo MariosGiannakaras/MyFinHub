@@ -110,12 +110,14 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(page).toContain('const [pendingCommandFocus,setPendingCommandFocus]');
     expect(page).toContain('setPendingCommandFocus({id:focusId,source:focusSource})');
     expect(page).toContain('target.focus({preventScroll:true})');
+    expect(page).toContain("target.scrollIntoView({block:'center',inline:'nearest'})");
     expect(page).toContain('data-transaction-id={r.id}');
     expect(page).toContain('role="listitem" tabIndex={-1}');
     const commandQa=readFileSync(new URL('../scripts/command-palette-qa.mjs',import.meta.url),'utf8');
     expect(commandQa).toContain('exact historic transaction receives keyboard focus');
     expect(commandQa).toContain('exact historic mobile transaction receives keyboard focus');
     expect(commandQa).toContain('command-exact-transaction-focus-mobile');
+    expect(commandQa).toContain('focused mobile transaction clears persistent bottom navigation');
   });
 
   it('keeps transaction-count month-over-month movement neutral',()=>{

@@ -198,7 +198,7 @@ export function TransactionsPage({
           &&node.getClientRects().length>0);
       if(!target)return;
       target.focus({preventScroll:true});
-      target.scrollIntoView({block:'nearest',inline:'nearest'});
+      target.scrollIntoView({block:'center',inline:'nearest'});
       setPendingCommandFocus(null);
     });
     return()=>cancelAnimationFrame(frame);

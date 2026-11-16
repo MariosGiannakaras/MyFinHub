@@ -189,6 +189,7 @@ try{
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'mobile historical search origin');
  await ctrlK();await setSearch('Crossmonth Lookup Entry');await activateExactTitle('Crossmonth Lookup Entry');await press('Enter');
  await waitFor("function(){const row=document.activeElement;return row?.classList.contains('mobile-transaction-row')&&row.dataset.transactionId==='qa-crossmonth-command-event'&&row.dataset.transactionSource==='event'&&row.getClientRects().length>0}",'exact historic mobile transaction receives keyboard focus');
+ await waitFor("function(){const row=document.activeElement;const nav=document.querySelector('.mobile-nav');if(!row||!nav)return false;const rect=row.getBoundingClientRect(),bottomNav=nav.getBoundingClientRect();return rect.top>=64&&rect.bottom<=bottomNav.top-6}",'focused mobile transaction clears persistent bottom navigation');
  await noOverflow('exact historic mobile transaction focus');
  await screenshot('command-exact-transaction-focus-mobile');
  await viewport(1440,1000);
