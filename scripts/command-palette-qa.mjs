@@ -172,14 +172,14 @@ try{
  await noOverflow('focused scheduled mobile route');
  await screenshot('command-exact-scheduled-item-mobile');
 
- console.log('Command Palette QA: exact transaction result from another reporting month');
+ console.log('Command Palette QA: exact transaction result from another reporting month');await viewport(1440,1000);
  const historyUrl=new URL(baseUrl);historyUrl.searchParams.set('page','reports');historyUrl.searchParams.set('state','command-transaction');
  await c.send('Page.navigate',{url:historyUrl.href});
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'historical search source');
  await ctrlK();await setSearch('Crossmonth Lookup Entry');await activateExactTitle('Crossmonth Lookup Entry');await press('Enter');
  await waitFor("function(){return document.querySelector('.transactions-detail-panel')?.textContent?.includes('Crossmonth Lookup Entry')}",'exact historical detail');
  assert(await c.call("function(){return !!document.querySelector('.transactions-approved-table tbody tr[aria-selected=true]')?.textContent?.includes('Crossmonth Lookup Entry')&&!new URL(location.href).searchParams.has('commandTx')}"),'exact historic transaction selected and one-time hint consumed');
- await waitFor("function(){const row=document.activeElement;return row?.dataset.transactionId==='qa-command-event'&&row.dataset.transactionSource==='event'&&row.getClientRects().length>0}",'exact historic transaction receives keyboard focus');
+ await waitFor("function(){const row=document.activeElement;return row?.dataset.transactionId==='qa-crossmonth-command-event'&&row.dataset.transactionSource==='event'&&row.getClientRects().length>0}",'exact historic transaction receives keyboard focus');
  await screenshot('command-exact-historical-transaction');
  await ctrlK();await setSearch('Crossmonth Lookup Entry');await activateExactTitle('Crossmonth Lookup Entry');await press('Enter');
  await waitFor("function(){return !!document.querySelector('.transactions-approved-table tbody tr[aria-selected=true]')?.textContent?.includes('Crossmonth Lookup Entry')}",'repeat selection on same route');
@@ -188,7 +188,7 @@ try{
  await viewport(375,812);await c.send('Page.navigate',{url:historyUrl.href});
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'mobile historical search origin');
  await ctrlK();await setSearch('Crossmonth Lookup Entry');await activateExactTitle('Crossmonth Lookup Entry');await press('Enter');
- await waitFor("function(){const row=document.activeElement;return row?.classList.contains('mobile-transaction-row')&&row.dataset.transactionId==='qa-command-event'&&row.dataset.transactionSource==='event'&&row.getClientRects().length>0}",'exact historic mobile transaction receives keyboard focus');
+ await waitFor("function(){const row=document.activeElement;return row?.classList.contains('mobile-transaction-row')&&row.dataset.transactionId==='qa-crossmonth-command-event'&&row.dataset.transactionSource==='event'&&row.getClientRects().length>0}",'exact historic mobile transaction receives keyboard focus');
  await noOverflow('exact historic mobile transaction focus');
  await screenshot('command-exact-transaction-focus-mobile');
  await viewport(1440,1000);
