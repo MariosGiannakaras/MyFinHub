@@ -88,6 +88,23 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(page).toContain('Εμφανίζονται {visibleRows.length} από {rows.length} συναλλαγές');
   });
 
+  it('shares category/date controls across desktop and mobile with reset and narrow-screen QA (#649 I05.05)',()=>{
+    expect(page).toContain('const categoryControl=()=>');
+    expect(page).toContain('const datePicker=(boundary:');
+    expect(page).toContain('dateRangeControl(true)');
+    expect(page).toContain('dateRangeControl(false)');
+    expect(page).toContain('mobile-transaction-filter-reset');
+    expect(page).toContain("if(dateEnd&&next>dateEnd)setDateEnd(next)");
+    expect(page).toContain("if(dateStart&&next<dateStart)setDateStart(next)");
+    expect(css).toContain('.transactions-approved .mobile-transaction-date');
+    expect(css).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');
+    expect(qa).toContain('Transactions QA: mobile category/date parity and explicit reset');
+    expect(qa).toContain('transactions-mobile-category-filter-375');
+    expect(qa).toContain('transactions-mobile-date-filter-375');
+    expect(qa).toContain('transactions-mobile-date-filter-320');
+    expect(qa).toContain('320px date controls remain readable without horizontal overflow');
+  });
+
   it('keeps transaction-count month-over-month movement neutral',()=>{
     expect(page).toContain('<span className="neutral">{countDelta===0?');
     expect(page).not.toContain("countDelta<=0?'positive':'negative'");

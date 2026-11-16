@@ -195,7 +195,30 @@ export function TransactionsPage({
     return()=>observer.disconnect();
   },[hasMore,rows.length,visibleRows.length]);
 
-  const filterControls=(mobile=false)=><div className={`${mobile?'mobile-transaction-filters':'desktop-finance-table'} transaction-filter-controls`} aria-label="Φίλτρα συναλλαγών"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></div>;
+  const categoryControl=()=><label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>;
+  // Desktop and mobile reuse the same owned category and date contract.
+  const datePicker=(boundary:'start'|'end')=><AppDateInput
+    aria-label={boundary==='start'?'Από ημερομηνία':'Έως ημερομηνία'}
+    value={boundary==='start'?dateStart:dateEnd} min={range.start} max={range.end}
+    onChange={e=>{
+      const next=e.target.value;
+      if(boundary==='start'){setDateStart(next);if(dateEnd&&next>dateEnd)setDateEnd(next)}
+      else {setDateEnd(next);if(dateStart&&next<dateStart)setDateStart(next)}
+      setRenderLimit(LEDGER_INITIAL_ROWS);
+    }}/>;
+  const dateRangeControl=(mobile=false)=>mobile
+    ?<div className="mobile-transaction-date" role="group" aria-label="Εύρος ημερομηνιών">
+       <label className="filter-label"><span>Από</span>{datePicker('start')}</label>
+       <label className="filter-label"><span>Έως</span>{datePicker('end')}</label>
+     </div>
+    :<label className="transactions-approved-date" aria-label="Εύρος ημερομηνιών">{datePicker('start')}<span>–</span>{datePicker('end')}</label>;
+  const filterControls=(mobile=false)=><div className={(mobile?'mobile-transaction-filters':'desktop-finance-table')+' transaction-filter-controls'} aria-label="Φίλτρα συναλλαγών">
+    <label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label>
+    <label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label>
+    {mobile?<>{categoryControl()}{dateRangeControl(true)}
+      {hasActiveFilters&&rows.length>0?<div className="mobile-transaction-filter-reset"><Button type="button" variant="secondary" onClick={resetFilters}>Επαναφορά φίλτρων</Button></div>:null}
+    </>:null}
+  </div>;
   const edit=(row:TransactionRow)=>{setMessage('');if(row.source==='event')onEditEvent(row.id);else if(row.legacy)setEditingLegacy(row.legacy)};
   const askDelete=(row:TransactionRow)=>{if(deleteBusy)return;setMessage('');setDeleteError('');setDeleteTarget({id:row.id,source:row.source})};
   const confirmDelete=async()=>{
@@ -234,9 +257,9 @@ export function TransactionsPage({
       <div className="transactions-approved-filters desktop-finance-table transaction-searchbar" aria-label="Φίλτρα συναλλαγών desktop">
         <label className="filter-label"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}} placeholder="Αναζήτηση συναλλαγών..."/></AppInputShell></label>
         <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></span>
-        <label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
+        {categoryControl()}
         <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label></span>
-        <label className="transactions-approved-date"><AppDateInput aria-label="Από ημερομηνία" value={dateStart} min={range.start} max={range.end} onChange={e=>{setDateStart(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}/><span>–</span><AppDateInput aria-label="Έως ημερομηνία" value={dateEnd} min={range.start} max={range.end} onChange={e=>{setDateEnd(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}/></label>
+        {dateRangeControl(false)}
         <span className="sort-direction-control transaction-filter-pass-through"><Tooltip label={`Σειρά: ${sortDirection==='desc'?'νεότερες πρώτα':'παλαιότερες πρώτα'}`} side="left"><button type="button" className="transactions-approved-filter-button" aria-label="Εναλλαγή ταξινόμησης κατά ημερομηνία" onClick={()=>setSortDirection(value=>value==='desc'?'asc':'desc')}><span className="sr-only">{sortDirection==='desc'?'ASC':'DESC'}</span><ArrowUpDown size={17}/></button></Tooltip></span>
       </div>
 
