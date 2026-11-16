@@ -98,7 +98,7 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(page).toContain("if(dateStart&&next<dateStart)setDateStart(next)");
     expect(page).toContain('className="mobile-transaction-date" role="group"');
     expect(page).toContain('className="transactions-approved-date"');
-    expect(css).toContain('.transactions-approved .mobile-transaction-date .owned-input{font-size:16px!important}');
+    expect(page).toContain("style={{'--ux-dense-label-size':'16px'} as CSSProperties}");
     expect(qa).toContain('mobileDate.fonts.length===2&&mobileDate.fonts.every(size=>size>=15.9)');
     expect(qa).toContain('narrowMobile.fonts.length===2&&narrowMobile.fonts.every(size=>size>=15.9)');
     expect(css).toContain('.transactions-approved-date{height:42px;');

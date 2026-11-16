@@ -1,5 +1,5 @@
 import { ArrowUpDown, List, MessageSquareText, Pencil, Search, Trash2, TrendingDown, TrendingUp, WalletCards, X } from 'lucide-react';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppInputShell } from '../components/AppInputShell';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -228,7 +228,7 @@ export function TransactionsPage({
   const dateRangeControl=(mobile=false)=>mobile
     ?<div className="mobile-transaction-date" role="group" aria-label="Εύρος ημερομηνιών">
        <span>Περίοδος</span>
-       <div className="transactions-approved-date">{datePicker('start')}<span>–</span>{datePicker('end')}</div>
+       <div className="transactions-approved-date" style={{'--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('start')}<span>–</span>{datePicker('end')}</div>
      </div>
     :<label className="transactions-approved-date" aria-label="Εύρος ημερομηνιών">{datePicker('start')}<span>–</span>{datePicker('end')}</label>;
   const filterControls=(mobile=false)=><div className={(mobile?'mobile-transaction-filters':'desktop-finance-table')+' transaction-filter-controls'} aria-label="Φίλτρα συναλλαγών">

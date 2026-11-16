@@ -111,4 +111,3 @@
   .transactions-approved-table td:last-child{width:48px}
 }
 @media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}
-@media(max-width:680px){.transactions-approved .mobile-transaction-date .owned-input{font-size:16px!important}}
