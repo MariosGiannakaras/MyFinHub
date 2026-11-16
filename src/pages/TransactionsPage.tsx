@@ -216,7 +216,8 @@ export function TransactionsPage({
 
   const categoryControl=()=><label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>;
   // Desktop and mobile reuse the same owned category and date contract.
-  const datePicker=(boundary:'start'|'end')=><AppDateInput
+  const datePicker=(boundary:'start'|'end',compact=false)=><AppDateInput
+    displayFormat={compact?'numeric':'short'}
     aria-label={boundary==='start'?'Από ημερομηνία':'Έως ημερομηνία'}
     value={boundary==='start'?dateStart:dateEnd} min={range.start} max={range.end}
     onChange={e=>{
@@ -228,7 +229,7 @@ export function TransactionsPage({
   const dateRangeControl=(mobile=false)=>mobile
     ?<div className="mobile-transaction-date" role="group" aria-label="Εύρος ημερομηνιών">
        <span>Περίοδος</span>
-       <div className="transactions-approved-date" style={{'--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('start')}<span>–</span>{datePicker('end')}</div>
+       <div className="transactions-approved-date" style={{'--ux-dense-label-size':'16px'} as CSSProperties}>{datePicker('start',true)}<span>–</span>{datePicker('end',true)}</div>
      </div>
     :<label className="transactions-approved-date" aria-label="Εύρος ημερομηνιών">{datePicker('start')}<span>–</span>{datePicker('end')}</label>;
   const filterControls=(mobile=false)=><div className={(mobile?'mobile-transaction-filters':'desktop-finance-table')+' transaction-filter-controls'} aria-label="Φίλτρα συναλλαγών">

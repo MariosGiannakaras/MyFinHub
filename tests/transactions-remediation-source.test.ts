@@ -92,6 +92,12 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(page).toContain('const categoryControl=()=>');
     expect(page).toContain('const datePicker=(boundary:');
     expect(page).toContain('dateRangeControl(true)');
+    const ownedDate=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
+    expect(ownedDate).toContain("displayFormat='short'");
+    expect(ownedDate).toContain("displayFormat==='numeric'?compactGreekDate:greekDate");
+    expect(page).toContain("displayFormat={compact?'numeric':'short'}");
+    expect(page).toContain("datePicker('start',true)");
+    expect(qa).toContain("narrowMobile.controls.every(item=>item.fits)");
     expect(page).toContain('dateRangeControl(false)');
     expect(page).toContain('mobile-transaction-filter-reset');
     expect(page).toContain("if(dateEnd&&next>dateEnd)setDateEnd(next)");
