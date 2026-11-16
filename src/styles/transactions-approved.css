@@ -111,15 +111,3 @@
   .transactions-approved-table td:last-child{width:48px}
 }
 @media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}
-
-/* #649 I05.05: mobile filter parity uses existing owned select/date shells.
-   Keep both dates readable at 320px without widening the application shell. */
-@media(max-width:680px){
-  .transactions-approved .mobile-transaction-filters{min-width:0}
-  .transactions-approved .mobile-transaction-date{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
-  .transactions-approved .mobile-transaction-date .filter-label{display:grid;gap:5px;min-width:0}
-  .transactions-approved .mobile-transaction-date .owned-date-shell{width:100%;min-width:0;box-sizing:border-box}
-  .transactions-approved .mobile-transaction-date .owned-date-shell .owned-input{min-width:0;width:100%;font-size:var(--ux-dense-data-size)}
-  .transactions-approved .mobile-transaction-filter-reset{grid-column:1/-1;display:flex;min-width:0}
-  .transactions-approved .mobile-transaction-filter-reset button{min-height:44px}
-}

@@ -96,8 +96,9 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(page).toContain('mobile-transaction-filter-reset');
     expect(page).toContain("if(dateEnd&&next>dateEnd)setDateEnd(next)");
     expect(page).toContain("if(dateStart&&next<dateStart)setDateStart(next)");
-    expect(css).toContain('.transactions-approved .mobile-transaction-date');
-    expect(css).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');
+    expect(page).toContain('className="mobile-transaction-date" role="group"');
+    expect(page).toContain('className="transactions-approved-date"');
+    expect(css).toContain('.transactions-approved-date{height:42px;');
     expect(qa).toContain('Transactions QA: mobile category/date parity and explicit reset');
     expect(qa).toContain('transactions-mobile-category-filter-375');
     expect(qa).toContain('transactions-mobile-date-filter-375');
