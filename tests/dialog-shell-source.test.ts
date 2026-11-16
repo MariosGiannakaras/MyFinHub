@@ -43,7 +43,11 @@ describe('DialogShell source contract',()=>{
     expect(focus).toContain('requestAnimationFrame(()=>{');
     expect(focus).toContain('if(opener.current?.isConnected)opener.current.focus({ preventScroll: true })');
     expect(focus).toContain('const hasDestination=');
-    expect(focus).toContain('window.scrollTo({ left: scrollX, top: scrollY');
+    expect(focus).toContain('const unlocked=releaseScrollLock()');
+    expect(focus).toContain("if(unlocked)window.scrollTo({ ...unlocked, behavior: 'auto' })");
+    const scrollLock=read('src/lib/modalScrollLock.ts');
+    expect(scrollLock).toContain('if(--held.holders!==0||active!==held)return null');
+    expect(scrollLock).toContain('html.style.overscrollBehavior=held.overscroll');
   });
 
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
