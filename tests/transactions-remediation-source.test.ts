@@ -75,6 +75,19 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('continuous ledger reveals additional rows on scroll');
   });
 
+  it('locks actual browser end-date/category filters and aligned semantic/footer counts (#649 I05.05)',()=>{
+    expect(qa).toContain('Transactions QA: dated and categorized ledger filters');
+    expect(qa).toContain('end-date filter preserves exact filtered/semantic rows');
+    expect(qa).toContain('exact persisted category option selected');
+    expect(qa).toContain('transactions-date-range-filter-desktop');
+    expect(qa).toContain('transactions-category-filter-desktop');
+    expect(qa).toContain("'category filter reset'");
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(workflow).toContain('<!-- run-649-transactions-filter-qa -->');
+    expect(workflow).toContain("'transactions-scanability' ||");
+    expect(page).toContain('Εμφανίζονται {visibleRows.length} από {rows.length} συναλλαγές');
+  });
+
   it('keeps transaction-count month-over-month movement neutral',()=>{
     expect(page).toContain('<span className="neutral">{countDelta===0?');
     expect(page).not.toContain("countDelta<=0?'positive':'negative'");
