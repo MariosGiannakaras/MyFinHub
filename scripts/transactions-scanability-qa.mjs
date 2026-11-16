@@ -73,26 +73,32 @@ try{
 
 
   console.log('Transactions QA: dated and categorized ledger filters');
-  const calendarDayNumbers=await c.call("function(){return [...new Set([...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')].map(row=>Number((row.cells[4]?.textContent||'').match(/\d+/)?.[0]||0)))].filter(day=>day>=1&&day<=31).sort((a,b)=>a-b)}");
-  assert(calendarDayNumbers.length>=2,'real fixture exposes different dated transactions for filter proof');
-  const firstDay=calendarDayNumbers[0];
-  const selectEndDate=async iso=>{
-    assert(await c.call("function(){const input=document.querySelector('input[aria-label=\"Έως ημερομηνία\"]');if(!input||!input.readOnly)return false;input.click();return true}"),'end-date owned calendar is reachable');
-    await waitFor("function(){return Boolean(document.querySelector('.owned-date-popover[aria-label=\"Έως ημερομηνία\"]'))}",'end-date calendar opens');
-    assert(await c.call("function(value){const cell=document.querySelector('.owned-date-popover[aria-label=\"Έως ημερομηνία\"] [data-date=\"'+value+'\"]');if(!cell||cell.disabled)return false;cell.click();return true}",[iso]),'end-date permits the selected in-range day');
+  // The real August fixture has entries on both days; [0-9] survives the CDP string boundary.
+  await clickText('.sort-direction-control button','DESC');
+  await waitFor("function(){const day=document.querySelector('.transactions-approved-table tbody .transaction-row td:nth-child(5)')?.textContent||'';return day.startsWith('26')}",'descending recent-first date order restored');
+  const calendarDayNumbers=await c.call("function(){return [...new Set([...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')].map(row=>Number((row.cells[4]?.textContent||'').match(/[0-9]+/)?.[0]||0)))].filter(day=>day>=1&&day<=31).sort((a,b)=>a-b)}");
+  assert(calendarDayNumbers.includes(24)&&calendarDayNumbers.includes(25),'real fixture exposes different dated transactions for filter proof');
+  const selectDate=async(label,iso)=>{
+    assert(await c.call("function(name){const input=[...document.querySelectorAll('input[aria-label]')].find(node=>node.getAttribute('aria-label')===name);if(!input||!input.readOnly)return false;input.click();return true}",[label]),label+' owned calendar is reachable');
+    await waitFor("function(name){return Boolean([...document.querySelectorAll('.owned-date-popover')].find(node=>node.getAttribute('aria-label')===name))}",label+' calendar opens',[label]);
+    assert(await c.call("function(name,value){const popup=[...document.querySelectorAll('.owned-date-popover')].find(node=>node.getAttribute('aria-label')===name);const cell=[...(popup?.querySelectorAll('[data-date]')||[])].find(node=>node.getAttribute('data-date')===value);if(!cell||cell.disabled)return false;cell.click();return true}",[label,iso]),label+' permits '+iso);
   };
-  await selectEndDate('2026-08-'+String(firstDay).padStart(2,'0'));
-  await waitFor("function(max){const rows=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];return rows.length>0&&rows.every(row=>Number((row.cells[4]?.textContent||'').match(/\d+/)?.[0]||0)<=max)}",'end-date filtered transactions',[firstDay]);
+  // August 1 contains many historical fixtures, so an end-date-only filter
+  // would correctly remain capped at 20 visible rows and prove no total change.
+  await selectDate('Από ημερομηνία','2026-08-24');
+  await selectDate('Έως ημερομηνία','2026-08-25');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];return rows.length>0&&rows.every(row=>{const day=Number((row.cells[4]?.textContent||'').match(/[0-9]+/)?.[0]||0);return day>=24&&day<=25})}",'end-date filtered transactions');
   const dated=await c.call("function(){const count=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;return {count,semantic:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||'',overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   assert(dated.count>0&&dated.count<baselineCount&&dated.semantic===dated.count
     &&dated.footer.includes('Εμφανίζονται '+dated.count+' από '+dated.count+' συναλλαγές')&&!dated.overflow,
     'end-date filter preserves exact filtered/semantic rows, truthful count and viewport containment');
   await shot('transactions-date-range-filter-desktop');
-  await selectEndDate('2026-08-31');
+  await selectDate('Έως ημερομηνία','2026-08-31');
+  await selectDate('Από ημερομηνία','2026-08-01');
   await waitFor("function(n){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length===n}",'date filter restores all rows',[baselineCount]);
 
-  const chosenCategory=await c.call("function(){return (document.querySelector('.transactions-approved-table tbody .transaction-row .transactions-category-cell > span')?.textContent||'').trim()}");
-  assert(Boolean(chosenCategory),'a real transaction supplies the category filter test value');
+  // This rare but persisted fixture category filters below the 20-row cap.
+  const chosenCategory='Τηλεπικοινωνίες';
   assert(await c.call("function(){const input=[...document.querySelectorAll('input[role=combobox][aria-label=\"Φίλτρο κατηγορίας\"]')].find(node=>node.getClientRects().length>0);if(!input)return false;input.click();return true}"),'category selector opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover[aria-label=\"Φίλτρο κατηγορίας\"]'))}",'category selector options');
   assert(await c.call("function(value){const list=document.querySelector('.owned-select-popover[aria-label=\"Φίλτρο κατηγορίας\"]');const item=[...(list?.querySelectorAll('[role=option]')||[])].find(node=>(node.textContent||'').trim()===value);if(!item)return false;item.click();return true}",[chosenCategory]),'exact persisted category option selected');
