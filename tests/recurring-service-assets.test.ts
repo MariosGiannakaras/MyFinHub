@@ -296,6 +296,30 @@ describe('recurring service asset foundation',()=>{
     expect(calls[4].url).toContain('rpc/rheomiq_purge_recurring_service_asset');
   });
 
+  it('does not delete Storage on an unconfirmed release response and safely resumes after explicit retry',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response(JSON.stringify({message:'release may have committed'}),{status:503});
+      if(calls.length===2)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(calls.length===3)return new Response('{}',{status:200});
+      if(calls.length===4)return new Response('null',{status:200});
+      throw new Error('Unexpected duplicate release/delete after retry');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,code:'ACCOUNT_METADATA_UNAVAILABLE',
+    });
+    expect(calls.map(x=>x.method)).toEqual(['POST']);
+    await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
+    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST']);
+    expect(calls[2].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
+    expect(calls[3].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
+  });
+
   it('releases metadata before Storage deletion and purges only after Storage succeeds',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';

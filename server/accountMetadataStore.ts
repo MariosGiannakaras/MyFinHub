@@ -585,15 +585,15 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
     : undefined;
   // A release receipt authorizes deletion of exactly this asset and nothing
   // else. Never turn a malformed or mismatched DB path into a Storage DELETE.
-  const returnedPath=row?.storage_path;
-  const matchedPath=typeof returnedPath==='string'
+  const returnedPath=typeof row?.storage_path==='string'?row.storage_path:null;
+  const matchedPath=returnedPath
     ? /^services\/(service-asset-[a-f0-9]{24})\.(?:png|jpg|webp|svg)$/.exec(returnedPath)
     : null;
-  if(!row||row.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||!matchedPath||matchedPath[1]!==assetKey){
+  if(!row||row.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||!returnedPath||!matchedPath||matchedPath[1]!==assetKey){
     throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image release response is invalid.',false);
   }
   const {url,apiKey,authorization}=config(accessToken);
-  const encodedPath=row.storage_path.split('/').map(encodeURIComponent).join('/');
+  const encodedPath=returnedPath.split('/').map(encodeURIComponent).join('/');
   const removal=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
     method:'DELETE',
     headers:{apikey:apiKey,authorization},
