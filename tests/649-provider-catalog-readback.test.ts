@@ -99,6 +99,58 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(getDatabaseSaveSnapshot().completion).toBe(before+1);
   });
 
+  it.each([
+    ['empty provider receipt',{}],
+    ['different provider receipt',{id:'another-bank',displayName:'QA Receipt Bank',shortName:'QA Receipt',providerKind:'bank',countryCode:'GR',sortOrder:111}],
+    ['stale metadata receipt',{id:'qa-receipt-bank',displayName:'Previous Name',shortName:'QA Receipt',providerKind:'bank',countryCode:'GR',sortOrder:111}],
+  ])('never treats HTTP 200 with %s as a verified provider write',async(_case,provider)=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const method=(init?.method||'GET').toUpperCase();
+      operations.push(method+' '+String(input));
+      if(method!=='POST')throw new Error('An unverified receipt must not trigger catalog readback or asset writes');
+      return new Response(JSON.stringify({provider}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const activityPath:string='../src/lib/databaseSaveActivity.js';
+    const {saveFinancialProvider}=await import(clientPath) as {
+      saveFinancialProvider:(input:{id:string;displayName:string;shortName:string;providerKind:'bank';countryCode:string;sortOrder:number},refresh?:boolean)=>Promise<unknown>;
+    };
+    const {getDatabaseSaveSnapshot}=await import(activityPath) as {
+      getDatabaseSaveSnapshot:()=>{pending:number;failed:boolean;completion:number};
+    };
+    const before=getDatabaseSaveSnapshot().completion;
+    await expect(saveFinancialProvider({
+      id:'qa-receipt-bank',displayName:'QA Receipt Bank',shortName:'QA Receipt',
+      providerKind:'bank',countryCode:'GR',sortOrder:111
+    })).rejects.toThrow(/δεν επιβεβαιώθηκε με έγκυρη απόκριση/);
+    expect(operations).toHaveLength(1);
+    expect(operations[0]).toContain('POST /api/account-metadata?resource=financial-providers');
+    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+  });
+
+  it('requires the confirmed PATCH receipt to match the exact edited provider fields before reporting success',async()=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET').toUpperCase()+' '+String(input));
+      return new Response(JSON.stringify({provider:{
+        id:'qa-edited-bank',displayName:'QA Edited Bank',shortName:'QA Edited',
+        providerKind:'bank',countryCode:'GR',sortOrder:123
+      }}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {updateFinancialProvider}=await import(clientPath) as {
+      updateFinancialProvider:(input:{id:string;displayName:string;shortName:string;providerKind:'bank';countryCode:string;sortOrder:number},refresh?:boolean)=>Promise<{id:string;displayName:string}>;
+    };
+    const confirmed=await updateFinancialProvider({
+      id:'qa-edited-bank',displayName:'QA Edited Bank',shortName:'QA Edited',
+      providerKind:'bank',countryCode:'gr',sortOrder:123
+    },false);
+    expect(confirmed).toMatchObject({id:'qa-edited-bank',displayName:'QA Edited Bank'});
+    expect(operations).toHaveLength(1);
+    expect(operations[0]).toContain('PATCH /api/account-metadata?resource=financial-providers');
+  });
+
   it('fails closed on an ambiguous metadata POST 503 without retrying or reporting a completed write',async()=>{
     const requests:string[]=[];
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{

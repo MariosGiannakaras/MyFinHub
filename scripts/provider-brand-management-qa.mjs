@@ -75,7 +75,10 @@ try{
         const method=String(init?.method||'GET').toUpperCase();
         const resource=requestUrl.searchParams.get('resource');
         if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='PATCH'){
-          return new Response(JSON.stringify({provider:{id:provider.id}}),{status:200,headers:{'content-type':'application/json'}});
+          return new Response(JSON.stringify({provider:{
+            id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
+            providerKind:provider.kind,countryCode:provider.countryCode??null,sortOrder:provider.sortOrder
+          }}),{status:200,headers:{'content-type':'application/json'}});
         }
         if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
           const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:assetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:'image/svg+xml',sizeBytes:svg.length,updatedAt:'2026-10-03T00:00:00.000Z'};
@@ -224,7 +227,7 @@ try{
   console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
   await c.call(`async function(){
     const original=globalThis.fetch.bind(globalThis);
-    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared'};
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared',invalidReceipts:0,badReceiptOnce:true};
     globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
       const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -232,8 +235,14 @@ try{
       const method=String(init?.method||'GET').toUpperCase();
       const resource=url.searchParams.get('resource');
       if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&(method==='POST'||method==='PATCH')){
+        if(method==='POST'&&provider.badReceiptOnce){
+          provider.badReceiptOnce=false;provider.invalidReceipts+=1;
+          // Ambiguous metadata response: even HTTP 200 must not imply durable
+          // success if it omitted the requested provider receipt.
+          return new Response(JSON.stringify({provider:{id:'qa-bank'}}),{status:200,headers:{'content-type':'application/json'}});
+        }
         if(method==='POST')provider.creates+=1;else provider.updates+=1;
-        return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
+        return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',countryCode:'GR',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
         provider.uploads+=1;
@@ -253,6 +262,14 @@ try{
     };
     return true;
   }`);
+  console.log('Provider save HTTP 200 without a valid matching receipt cannot show success or upload assets');
+  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  await waitFor("function(){return (document.querySelector('.provider-editor-error[role=alert]')?.textContent||'').includes('δεν επιβεβαιώθηκε με έγκυρη απόκριση')}",'metadata 200 without matching receipt is reported as unverified instead of green');
+  const invalidReceipt=await c.call("function(){const mock=globalThis.__qaNewProvider;return {bad:mock?.invalidReceipts,creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,editor:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(invalidReceipt.bad===1&&invalidReceipt.creates===0&&invalidReceipt.uploads===0&&invalidReceipt.bindings===0&&invalidReceipt.editor&&!invalidReceipt.success,
+    'invalid provider HTTP 200 receipt cannot trigger upload, binding or all-success; draft remains editable');
+  await shot('provider-create-invalid-200-receipt-warning-desktop');
+
   console.log('Provider save single-flight blocks same-tick double click before React busy state');
   const doubleProviderCreate=await c.call("function(){const button=[...document.querySelectorAll('.provider-editor-footer button')].find(el=>(el.textContent||'').includes('Δημιουργία παρόχου'));if(!button)return false;button.click();button.click();return true}");
   assert(doubleProviderCreate,'provider create can be activated twice synchronously in synthetic probe');

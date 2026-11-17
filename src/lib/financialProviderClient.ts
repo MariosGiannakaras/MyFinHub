@@ -115,8 +115,20 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
+  // Metadata and its optional asset writes can commit independently. An HTTP
+  // 200 with an absent/mismatched provider receipt is NOT proof that the
+  // requested metadata was saved. Never let the editor show an all-green save.
+  const acknowledged=parseProvider(payload?.provider);
+  if(!acknowledged||
+    acknowledged.id!==input.id||
+    acknowledged.displayName!==input.displayName.trim()||
+    acknowledged.shortName!==input.shortName.trim()||
+    acknowledged.kind!==input.providerKind||
+    (acknowledged.countryCode??'')!==(input.countryCode?.trim().toUpperCase()||'')||
+    acknowledged.sortOrder!==input.sortOrder)
+    throw new Error('Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε με έγκυρη απόκριση. Η κατάστασή της μπορεί να είναι αβέβαιη· έλεγξε τη λίστα πριν επιχειρήσεις ξανά.');
   if(refreshCatalog)await refreshFinancialProviders(true);
-  return payload?.provider as FinancialProvider;
+  return acknowledged;
   });
 }
 export function saveFinancialProvider(input:FinancialProviderWriteInput,refreshCatalog=true){return writeFinancialProvider(input,'POST',refreshCatalog)}

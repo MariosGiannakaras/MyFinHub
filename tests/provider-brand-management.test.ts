@@ -265,6 +265,19 @@ describe('provider branding management',()=>{
     expect(settingsStyles).toContain('font-size:var(--ux-tiny-size)');
   });
 
+  it('refuses a malformed metadata HTTP 200 receipt before claiming provider/asset persistence (#649 I19.04)',()=>{
+    const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
+    expect(client).toContain('const acknowledged=parseProvider(payload?.provider)');
+    expect(client).toContain('acknowledged.id!==input.id');
+    expect(client).toContain('acknowledged.displayName!==input.displayName.trim()');
+    expect(client).toContain('acknowledged.kind!==input.providerKind');
+    expect(client).toContain('acknowledged.sortOrder!==input.sortOrder');
+    expect(client).toContain('Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε με έγκυρη απόκριση');
+    expect(providerBrandingQaSource).toContain('Provider save HTTP 200 without a valid matching receipt cannot show success');
+    expect(providerBrandingQaSource).toContain('invalid provider HTTP 200 receipt cannot trigger upload');
+    expect(providerBrandingQaSource).toContain('provider-create-invalid-200-receipt-warning-desktop');
+  });
+
   it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{
     expect(settings).toContain('let metadataCommitted=false;');
     expect(settings).toContain('metadataCommitted=true;');
