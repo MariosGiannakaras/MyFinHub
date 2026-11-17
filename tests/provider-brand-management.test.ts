@@ -267,6 +267,9 @@ describe('provider branding management',()=>{
 
   it('refuses a malformed metadata HTTP 200 receipt before claiming provider/asset persistence (#649 I19.04)',()=>{
     const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
+    expect(client).toContain('const rows=Array.isArray(payload?.providers)?payload.providers:null');
+    expect(client).toContain('parsed.some(item=>!item)');
+    expect(client).toContain('new Set(parsed.map(item=>item?.id)).size!==parsed.length');
     expect(client).toContain('const acknowledged=parseProvider(payload?.provider)');
     expect(client).toContain('acknowledged.id!==input.id');
     expect(client).toContain('acknowledged.displayName!==input.displayName.trim()');

@@ -85,9 +85,16 @@ export async function refreshFinancialProviders(force=false){
       const response=await apiRequest('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των τραπεζών.');
-      const parsed=(Array.isArray(payload?.providers)?payload.providers:[]).map(parseProvider).filter(Boolean) as FinancialProvider[];
-      if(!parsed.length)throw new Error('Η λίστα τραπεζών είναι κενή.');
-      return publish({loaded:true,loading:false,providers:parsed.sort((a,b)=>a.sortOrder-b.sortOrder||a.displayName.localeCompare(b.displayName,'el')),error:null});
+      const rows=Array.isArray(payload?.providers)?payload.providers:null;
+      if(!rows?.length)throw new Error('Η λίστα τραπεζών είναι κενή.');
+      const parsed=rows.map(parseProvider);
+      // A malformed or duplicate provider must not silently disappear from a
+      // supposedly complete post-write catalog. Keep the fallback explicitly
+      // unverified so the editor cannot mistake partial data for a clean read.
+      if(parsed.some(item=>!item)||new Set(parsed.map(item=>item?.id)).size!==parsed.length)
+        throw new Error('Η λίστα παρόχων δεν επιβεβαιώθηκε πλήρως.');
+      const providers=parsed as FinancialProvider[];
+      return publish({loaded:true,loading:false,providers:providers.sort((a,b)=>a.sortOrder-b.sortOrder||a.displayName.localeCompare(b.displayName,'el')),error:null});
     }catch{
       return publish({loaded:true,loading:false,providers:FALLBACK,error:'Χρησιμοποιείται η ενσωματωμένη λίστα τραπεζών.'});
     }finally{pending=null}

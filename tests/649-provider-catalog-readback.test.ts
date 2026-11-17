@@ -4,6 +4,44 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it.each(['malformed-extra-provider','duplicate-provider-id'] as const)(
+    'rejects a 200 catalog with %s instead of silently publishing an incomplete provider list',async failure=>{
+      const record={
+        id:'qa-valid-recovered-bank',displayName:'QA Valid Bank',shortName:'QA Valid',
+        providerKind:'bank',countryCode:'GR',sortOrder:109,
+        logoAssetKey:null,wordmarkAssetKey:null,logoUrl:null,wordmarkUrl:null,
+        assets:[],bindings:[],
+      };
+      const operations:string[]=[];
+      let damaged=true;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=(init?.method||'GET').toUpperCase();
+        operations.push(method+' '+String(input));
+        expect(method).toBe('GET');
+        const records=damaged?[record,failure==='malformed-extra-provider'?{id:'qa-broken-without-required-fields'}:{...record}]:[record];
+        damaged=false;
+        return new Response(JSON.stringify({providers:records}),{status:200,headers:{'content-type':'application/json'}});
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {refreshFinancialProviders,getFinancialProviderSnapshot}=await import(clientPath) as {
+        refreshFinancialProviders:(force?:boolean)=>Promise<{loaded:boolean;loading:boolean;error:string|null;providers:Array<{id:string}>}>;
+        getFinancialProviderSnapshot:()=>{error:string|null};
+      };
+      const bad=await refreshFinancialProviders(true);
+      expect(bad).toMatchObject({loaded:true,loading:false});
+      expect(bad.error).toBeTruthy();
+      expect(bad.providers.some(row=>row.id===record.id)).toBe(false);
+      expect(getFinancialProviderSnapshot().error).toBeTruthy();
+
+      const recovered=await refreshFinancialProviders(true);
+      expect(recovered.error).toBeNull();
+      expect(recovered.providers.map(row=>row.id)).toContain(record.id);
+      expect(recovered.providers.filter(row=>row.id===record.id)).toHaveLength(1);
+      expect(operations).toHaveLength(2);
+      expect(operations.every(row=>row.startsWith('GET '))).toBe(true);
+    }
+  );
+
   it('keeps an acknowledged provider catalog unverified on 503 and verifies it on a later GET without replaying writes',async()=>{
     const requests:string[]=[];
     let failReadBack=true;
