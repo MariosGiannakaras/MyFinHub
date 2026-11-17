@@ -48,5 +48,44 @@ try{
  await screenshot('legacy-transaction-receipt-pending-mobile');
  await c.call("function(){globalThis.__myfinhubQaCompleteTransactionReceipt?.();return true}");
  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'tombstone closes after receipt');
+
+ // #649 I05.06: distinguish modern-event delete receipt failure/pending from
+ // confirmed removal; legacy override/tombstone proof above stays unchanged.
+ const modernSearch=async()=>{
+   await waitFor("function(){return Boolean(document.querySelector('input[aria-label]'))}",'modern transaction search ready');
+   await setInput('Αναζήτηση συναλλαγών','Freddo espresso');
+   await waitFor("function(){return [...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event');
+ };
+ const modernPresent=()=>c.call("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}");
+ const openModernDelete=async()=>{
+   const selected=await c.call("function(){const row=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-source=event]')].find(row=>(row.textContent||'').includes('Freddo espresso'));row?.click();return Boolean(row)}");
+   assert(selected,'modern event selectable in visible ledger');
+   await waitFor("function(){return (document.querySelector('.transactions-detail-panel')?.textContent||'').includes('Freddo espresso')}",'modern detail panel selected');
+   assert(await c.call("function(){const button=document.querySelector('.transactions-detail-actions button.delete');button?.click();return Boolean(button)}"),'modern event delete action exists');
+   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'modern delete confirmation');
+   const confirmed=await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...d?.querySelectorAll('button')||[]].find(button=>(button.textContent||'').trim()==='Διαγραφή');button?.click();return Boolean(button)}");
+   assert(confirmed,'modern event explicit delete confirmation');
+ };
+ console.log('Transactions lifecycle QA: failed modern deletion retains canonical event and retry action');
+ await viewport(1440,1000);await c.send('Page.navigate',{url:failureUrl.href});
+ await modernSearch();await openModernDelete();
+ await waitFor("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&(d.textContent||'').includes('δοκιμαστική αποθήκευση συναλλαγής απέτυχε'))}",'modern delete failure visible');
+ assert(await modernPresent(),'failed modern deletion retains the original canonical event');
+ assert(await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&d.getAttribute('aria-busy')!=='true'&&!document.querySelector('.action-status'))}"),'failed modern deletion remains retryable and cannot report success');
+ await screenshot('transactions-modern-delete-failed-desktop');
+ await viewport(390,844);await noOverflow('modern failure mobile');await screenshot('transactions-modern-delete-failed-mobile');
+
+ console.log('Transactions lifecycle QA: pending modern deletion retains event until exact save receipt');
+ await viewport(1440,1000);await c.send('Page.navigate',{url:pendingUrl.href});
+ await modernSearch();await openModernDelete();
+ await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog][aria-busy=true]'))&&typeof globalThis.__myfinhubQaCompleteTransactionReceipt==='function'}",'modern deletion pending exact receipt');
+ assert(await modernPresent(),'pending modern deletion retains original event');
+ assert(await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&[...d.querySelectorAll('button')].every(button=>button.disabled))}"),'pending modern delete disables every confirmation button');
+ await viewport(390,844);await noOverflow('modern pending mobile');await screenshot('transactions-modern-delete-pending-mobile');
+ await c.call("function(){globalThis.__myfinhubQaCompleteTransactionReceipt?.();return true}");
+ await waitFor("function(){return !document.querySelector('.app-confirm-dialog')}",'modern deletion confirmation dismissed after receipt');
+ await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'modern deletion applied only after receipt');
+ assert(await c.call("function(){return (document.querySelector('.action-status[role=status]')?.textContent||'').includes('αποθηκεύτηκε')}"),'modern delete only reports success after receipt');
+ await screenshot('transactions-modern-delete-receipt-complete-mobile');
  assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);c.close();console.log('Legacy transaction management rendered QA passed.');
 }finally{child.kill('SIGTERM')}

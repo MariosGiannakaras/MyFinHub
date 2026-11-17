@@ -133,6 +133,26 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(commandQa).toContain('focused mobile transaction clears persistent bottom navigation');
   });
 
+  it('keeps canonical modern and historical transaction deletes receipt-aware (#649 I05.06)',()=>{
+    const lifecycle=readFileSync(new URL('../scripts/legacy-transaction-management-qa.mjs',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const synthetic=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(app).toContain('const deleteEventDurably=(id:string)=>finance.updateDurably');
+    expect(app).toContain('withoutEventGroup(current,id)');
+    expect(page).toContain("if(target.source==='event')await onDeleteEvent(target.id)");
+    expect(page).toContain('else await onDeleteLegacy(target.id)');
+    expect(page).toContain('setDeleteError(userErrorMessage(reason');
+    expect(synthetic).toContain("params.get('transaction-save-failure')==='1'");
+    expect(synthetic).toContain("params.get('transaction-save-pending')==='1'");
+    expect(lifecycle).toContain('rejected override preserves draft but never the ledger mutation');
+    expect(lifecycle).toContain('pending tombstone does not change history or close');
+    expect(lifecycle).toContain('failed modern deletion retains the original canonical event');
+    expect(lifecycle).toContain('pending modern deletion retains original event');
+    expect(lifecycle).toContain('modern deletion applied only after receipt');
+    expect(lifecycle).toContain('transactions-modern-delete-failed-mobile');
+    expect(lifecycle).toContain('transactions-modern-delete-pending-mobile');
+  });
+
   it('keeps transaction-count month-over-month movement neutral',()=>{
     expect(page).toContain('<span className="neutral">{countDelta===0?');
     expect(page).not.toContain("countDelta<=0?'positive':'negative'");
