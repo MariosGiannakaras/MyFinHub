@@ -81,7 +81,11 @@ try{
  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog][aria-busy=true]'))&&typeof globalThis.__myfinhubQaCompleteTransactionReceipt==='function'}",'modern deletion pending exact receipt');
  assert(await modernPresent(),'pending modern deletion retains original event');
  assert(await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&[...d.querySelectorAll('button')].every(button=>button.disabled))}"),'pending modern delete disables every confirmation button');
- await viewport(390,844);await noOverflow('modern pending mobile');await screenshot('transactions-modern-delete-pending-mobile');
+ await viewport(390,844);await noOverflow('modern pending mobile');
+ // Wait for the actual settled confirmation, not a translucent Framer entrance
+ // frame; the strict pending receipt, disabled actions and original row stay asserted.
+ await waitFor("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]'),veil=d?.closest('.modal-backdrop');if(!d||!veil)return false;const alpha=Number(getComputedStyle(veil).opacity);const matrix=new DOMMatrixReadOnly(getComputedStyle(d).transform);return alpha>=0.98&&Math.abs(matrix.a-1)<0.005&&Math.abs(matrix.d-1)<0.005}",'settled modern pending delete confirmation');
+ await screenshot('transactions-modern-delete-pending-mobile');
  await c.call("function(){globalThis.__myfinhubQaCompleteTransactionReceipt?.();return true}");
  await waitFor("function(){return !document.querySelector('.app-confirm-dialog')}",'modern deletion confirmation dismissed after receipt');
  await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'modern deletion applied only after receipt');
