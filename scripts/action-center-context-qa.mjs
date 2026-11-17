@@ -260,7 +260,7 @@ try{
   const lendingWritesBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
   const lendingAttemptsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)}");
   await chooseProvenanceDate('2026-08-27');
-  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('μετά την ήδη καταγεγραμμένη αναμενόμενη επιστροφή')}",'due-date inconsistent lending edit visibly denied');
   assert(await c.call("function(attempts,writes){const alert=document.querySelector('.generic-quick-modal #quick-add-error');return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts&&Number(document.documentElement.dataset.qaFinanceWrites||0)===writes&&document.activeElement===alert&&Boolean(document.querySelector('.generic-quick-modal'))}",[lendingAttemptsBefore,lendingWritesBefore]),
     'rejected lending date must not even attempt a finance write; editor/accessible focus remain');
@@ -275,7 +275,7 @@ try{
   await chooseProvenanceDate('2026-08-16');
   const correctedLendingNote='QA lending note corrected with original return intact';
   await setProvenanceNote(correctedLendingNote);
-  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
   await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'confirmed lending note edit closes the actual editor');
   await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending');return event?.note==='QA lending note corrected with original return intact'&&event.source==='migration'&&event.expectedReturnDate==='2026-08-25'&&event.date==='2026-08-16'&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'confirmed same-ID lending edit preserves return date and original source',[lendingWritesBefore+1]);
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===expected}",[lendingAttemptsBefore+1]),
@@ -285,11 +285,11 @@ try{
   const savingWritesBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
   const savingNote='QA saving note corrected without source rewrite';
   await setProvenanceNote(savingNote);
-  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
   await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'confirmed savings note edit closes real editor');
   await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-saving');return event?.note==='QA saving note corrected without source rewrite'&&event.source==='review'&&event.savingSource==='pay_and_save'&&event.kind==='saving_cash_offset'&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'confirmed saving edit preserves owner-confirmed saving origin and original audit source',[savingWritesBefore+1]);
   await screenshot('quick-entry-saving-provenance-corrected-desktop');
-  
+
   console.log('Action Center QA: snooze, undo, empty state and responsive accessibility');
   await navigate('attention');
   const snoozed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>node.classList.contains('warning')||node.classList.contains('info'));const button=row?.querySelector('button[aria-label^=\"Αναβολή\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(snoozed),'non-danger item can be snoozed');
