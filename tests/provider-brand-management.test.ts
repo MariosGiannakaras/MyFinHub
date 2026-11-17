@@ -286,6 +286,7 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-mobile');
     expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-mobile');
+    expect(providerBrandingQaSource).toContain('[data-save-progress=error]');
   });
 
   it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{
@@ -296,6 +297,7 @@ describe('provider branding management',()=>{
     expect(settings).toContain('originalAssignments:{...current.originalAssignments,[slot.id]:finalKey}');
     expect(settings).toContain('if(metadataCommitted){');
     expect(settings).toContain('const confirmedCatalog=providerCatalogMatchesWrite(');
+    expect(settings).toContain('markDatabaseSaveUnverified()');
     expect(settings).toContain('if(!confirmedCatalog){');
     expect(settings).toContain('setEditorWarning(');
     expect(settings).toContain('<OperationFeedback tone="warning"');

@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {getDatabaseSaveSnapshot,subscribeDatabaseSaves,trackDatabaseWrite} from '../src/lib/databaseSaveActivity.js';
+import {getDatabaseSaveSnapshot,markDatabaseSaveUnverified,subscribeDatabaseSaves,trackDatabaseWrite} from '../src/lib/databaseSaveActivity.js';
 import {resolveSaveProgressStatus,transitionSaveProgress} from '../src/lib/saveProgressModel.js';
 
 function deferred<T>(){let resolve!:(value:T)=>void,reject!:(reason:unknown)=>void;const promise=new Promise<T>((res,rej)=>{resolve=res;reject=rej});return {promise,resolve,reject}}
@@ -29,6 +29,20 @@ describe('receipt-driven top-edge save indicator',()=>{
     expect(getDatabaseSaveSnapshot().pending).toBe(0);
     expect(resolveSaveProgressStatus('saved',getDatabaseSaveSnapshot())).toBe('error');
     expect(transitionSaveProgress('saving','error',true)).toBe('error');
+  });
+  it('signals a failed aggregate readback without losing independently committed DB receipts',async()=>{
+    await trackDatabaseWrite(async()=>undefined);
+    const before=getDatabaseSaveSnapshot();
+    markDatabaseSaveUnverified();
+    const unresolved=getDatabaseSaveSnapshot();
+    expect(unresolved.pending).toBe(0);
+    expect(unresolved.completion).toBe(before.completion);
+    expect(unresolved).toMatchObject({failed:true,unverified:true});
+    expect(resolveSaveProgressStatus('saved',unresolved)).toBe('error');
+    expect(transitionSaveProgress('success','error',true)).toBe('error');
+    await trackDatabaseWrite(async()=>undefined);
+    expect(getDatabaseSaveSnapshot().failed).toBe(false);
+    expect(getDatabaseSaveSnapshot().unverified).toBeUndefined();
   });
   it('does not show a false green after initial load or after conflict',async()=>{
     expect(transitionSaveProgress('idle','idle')).toBe('idle');

@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
+import { markDatabaseSaveUnverified } from '../lib/databaseSaveActivity';
 import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
@@ -291,6 +292,7 @@ export function FinancialProviderManagementSettings(){
       });
       const confirmedCatalog=providerCatalogMatchesWrite(reloaded,payload,intendedSlots,[...uploaded.values()]);
       if(!confirmedCatalog){
+        markDatabaseSaveUnverified();
         // All writes were acknowledged, but the read-back is not verified.
         // Do not report a fully refreshed catalog or hide the editor.
         if(editor.source==='new')setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);

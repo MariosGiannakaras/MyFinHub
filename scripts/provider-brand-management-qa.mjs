@@ -431,9 +431,11 @@ try{
   }`);
   await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
   await waitFor("function(){return (document.querySelector('.provider-editor-warning')?.textContent||'').includes('δεν επιβεβαίωσε ακόμη')}",'valid-looking stale catalog refuses all-green completion');
+  await waitFor("function(){const progress=document.querySelector('[data-save-progress=error]');return !!progress&&progress.getAttribute('role')==='alert'&&(progress.getAttribute('aria-label')||'').includes('επαλήθευση αποθήκευσης δεν ολοκληρώθηκε')}",'stale catalog readback has red top-edge feedback labelled unverified, not a green success receipt');
   const stale=await c.call("function(){const s=globalThis.__qaStaleReadback,w=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),a=w?.getBoundingClientRect(),b=save?.getBoundingClientRect();return {creates:s.creates,updates:s.updates,uploads:s.uploads,bindings:s.bindings,open:!!document.querySelector('.provider-editor-modal'),success:!!document.querySelector('.provider-management-message'),role:w?.getAttribute('role'),visible:!!(a&&b&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}}");
   assert(stale.creates===1&&stale.updates===0&&stale.uploads===1&&stale.bindings===2&&stale.open&&!stale.success,'HTTP 200 stale catalog retains editor with no false success after acknowledged writes');
   assert(stale.role==='alert'&&stale.visible,'stale catalog discrepancy appears visibly and accessibly before Save');
+  assert(await c.call("function(){return !document.querySelector('[data-save-progress=success]')&&!!document.querySelector('[data-save-progress=error]')}"),'unverified aggregate readback never retains a green save status');
   await shot('provider-create-stale-catalog-warning-desktop');
   await viewport(375,812,true);await noOverflow('stale provider catalog mobile');
   const staleMobile=await c.call("function(){const a=document.querySelector('.provider-editor-warning')?.getBoundingClientRect(),b=document.querySelector('.provider-editor-footer button:last-child')?.getBoundingClientRect();return !!(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
