@@ -52,6 +52,11 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('invalid funding subtotal never posts a finance event');
   });
 
+  it('does not erase lending due-date, saving source or original provenance during ordinary edits',()=>{
+    expect(quickAdd).toContain("import { preserveEntryEditProvenance } from '../lib/eventEditProvenance'");
+    expect(quickAdd).toContain('preserveEntryEditProvenance(event,initial)');
+  });
+
   it('renders the approved intent registry instead of maintaining a second label list',()=>{
     expect(quickAdd).toContain('ENTRY_INTENTS.map');
     expect(quickAdd).toContain('intentIcons');

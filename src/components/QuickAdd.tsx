@@ -32,6 +32,7 @@ import {
 } from '../lib/ledgerFoundations';
 import { preserveLoanPaymentLink } from '../lib/loans';
 import { preserveCreditEventEditLink } from '../lib/creditEventEdit';
+import { preserveEntryEditProvenance } from '../lib/eventEditProvenance';
 import { preserveRecurringPaymentLink } from '../lib/recurring';
 import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
@@ -283,7 +284,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         event.counterpartyId=counterpartyId;
       }else delete event.counterpartyId;
       if(kind!=='split')event.subcategory=subcategory||undefined;
-      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial);preserveCreditEventEditLink(event,initial)}
+      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial);preserveCreditEventEditLink(event,initial);preserveEntryEditProvenance(event,initial)}
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');
