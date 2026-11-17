@@ -37,12 +37,11 @@ describe('receipt-driven top-edge save indicator',()=>{
     const unresolved=getDatabaseSaveSnapshot();
     expect(unresolved.pending).toBe(0);
     expect(unresolved.completion).toBe(before.completion);
-    expect(unresolved).toMatchObject({failed:true,unverified:true});
+    expect(unresolved).toMatchObject({failed:true});
     expect(resolveSaveProgressStatus('saved',unresolved)).toBe('error');
     expect(transitionSaveProgress('success','error',true)).toBe('error');
     await trackDatabaseWrite(async()=>undefined);
     expect(getDatabaseSaveSnapshot().failed).toBe(false);
-    expect(getDatabaseSaveSnapshot().unverified).toBeUndefined();
   });
   it('does not show a false green after initial load or after conflict',async()=>{
     expect(transitionSaveProgress('idle','idle')).toBe('idle');

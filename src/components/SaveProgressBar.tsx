@@ -31,9 +31,7 @@ export function SaveProgressBar({saveState,savePending=false,saveReceiptCount=0,
   },[phase,confirmedReceipts]);
 
   if(phase==='idle')return null;
-  const label=phase==='saving'?'Αποθήκευση σε εξέλιξη':phase==='success'?'Αποθηκεύτηκε στη βάση':
-    saveState==='conflict'?'Σύγκρουση αλλαγών — δεν αποθηκεύτηκε':
-    requests.unverified?'Η τελική επαλήθευση αποθήκευσης δεν ολοκληρώθηκε':'Η αποθήκευση απέτυχε';
+  const label=phase==='saving'?'Αποθήκευση σε εξέλιξη':phase==='success'?'Αποθηκεύτηκε στη βάση':saveState==='conflict'?'Σύγκρουση αλλαγών — δεν αποθηκεύτηκε':'Η αποθήκευση απέτυχε';
   return <div className={`save-progress-bar ${phase}${reducedMotion?' reduced':''}`} data-save-progress={phase} role={phase==='error'?'alert':'status'} aria-label={label} aria-live={phase==='error'?'assertive':'polite'}>
     <div className="save-progress-track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={phase==='success'?100:undefined} aria-valuetext={label}><span className="save-progress-fill"/></div>
   </div>;
