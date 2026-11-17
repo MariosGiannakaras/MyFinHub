@@ -26,6 +26,11 @@ export function shouldWarnBeforeUnload(hasWork:boolean,lastSaveFailed:boolean){
   return hasWork||lastSaveFailed;
 }
 
+/** A durable no-op cannot bypass an optimistic finance write awaiting receipt. */
+export function canAcknowledgeDurableNoop(saveState:string,hasQueuedWork:boolean):boolean{
+  return saveState==='saved'&&!hasQueuedWork;
+}
+
 function parseRevision(value: string) {
   if (!/^\d+$/.test(value)) return null;
   try { return BigInt(value); }

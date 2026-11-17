@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
 import { reachableHistoryNavigation } from '../lib/historyView';
-import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
@@ -238,8 +238,16 @@ export function useFinance() {
       throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
     }
     const next=recipe(current);
-    if(next!==current)await persist(next,financeChangeLabel(current,next),true)!;
-  },[persist]);
+    if(next===current){
+      // A no-op is safe only after earlier writes receive their exact server
+      // revision/history receipt; never release dependent external cleanup early.
+      if(!canAcknowledgeDurableNoop(saveStateRef.current,coordinator.hasWork())){
+        throw new Error('Η προηγούμενη αποθήκευση δεν έχει επιβεβαιωθεί. Περίμενε ή επαναφόρτωσε πριν συνεχίσεις.');
+      }
+      return;
+    }
+    await persist(next,financeChangeLabel(current,next),true)!;
+  },[coordinator,persist]);
 
   const move=useCallback(async(direction:'undo'|'redo')=>{
     const current=dataRef.current;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LatestValueQueue, SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
+import { LatestValueQueue, SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
 
 function deferred() {
   let resolve!: () => void;
@@ -197,5 +197,15 @@ describe('finance reload request generation race safety',()=>{
     expect(apply(7,7,14,15,false,false,'loading')).toBe(false);
     expect(apply(7,7,15,15,false,false,'loading')).toBe(true);
     expect(apply(7,8,15,15,false,false,'loading')).toBe(false);
+  });
+});
+
+describe('durable no-op receipt gating (#649 I19.04)',()=>{
+  it('requires a saved, idle finance snapshot before acknowledging an unchanged recipe',()=>{
+    expect(canAcknowledgeDurableNoop('saved',false)).toBe(true);
+    expect(canAcknowledgeDurableNoop('saved',true)).toBe(false);
+    for(const state of ['saving','loading','error','conflict']){
+      expect(canAcknowledgeDurableNoop(state,false)).toBe(false);
+    }
   });
 });
