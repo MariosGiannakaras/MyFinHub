@@ -66,7 +66,14 @@ try{
     if(confirmed)await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'confirmed contextual discard');
     await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'context modal close');
   };
-  const closeGenericModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");assert(closed,'generic account context closes');await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close')};
+  const closeGenericModal=async()=>{
+    const closed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");
+    assert(closed,'generic account context closes');
+    await waitFor("function(){return !document.querySelector('.generic-quick-modal')||Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'generic close or unsaved discard prompt');
+    const discarded=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Απόρριψη'));button?.click();return Boolean(button)}");
+    if(discarded)await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'generic discarded draft confirmation closed');
+    await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close');
+  };
   const pressEscape=async()=>{for(const type of ['keyDown','keyUp'])await c.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27})};
   const approvedAttentionState=()=>c.call("function(){const groups=[...document.querySelectorAll('.attention-approved-desktop>.attention-approved-group')].filter(group=>!group.classList.contains('legacy-confirmation-panel')).slice(0,4).map(group=>{const title=group.querySelector('h2')?.textContent||'',match=title.match(/\\((\\d+)\\)/),count=Number(match?.[1]||0),link=group.querySelector('.attention-approved-group-link'),head=group.querySelector('.attention-approved-table-head');return {count,hasLink:Boolean(link),expanded:link?.getAttribute('aria-expanded')??null,hasTableHead:Boolean(head),emptyClass:group.classList.contains('is-empty'),height:group.getBoundingClientRect().height}});const rows=[...document.querySelectorAll('.attention-approved-desktop .attention-approved-row')],row=rows[0],primary=row?.querySelector('.attention-approved-actions>.save-button'),secondary=row?.querySelector('.attention-approved-icon-action'),reason=row?.querySelector('.attention-approved-copy>p'),context=row?.querySelector('.attention-approved-context'),dateSmall=row?.querySelector('.attention-approved-date>small'),table=document.querySelector('.attention-approved-table-head'),tableRect=table?.getBoundingClientRect(),style=node=>node?getComputedStyle(node):null,total=groups.reduce((sum,g)=>sum+g.count,0),danger=groups[0]?.count||0,clear=document.querySelector('.attention-approved-all-clear');return {groups,total,danger,allClearText:clear?.textContent||'',tableWidth:tableRect?.width||0,primaryBg:style(primary)?.backgroundColor||'',primaryImage:style(primary)?.backgroundImage||'',primaryShadow:style(primary)?.boxShadow||'',primaryBorder:style(primary)?.borderTopColor||'',secondaryBg:style(secondary)?.backgroundColor||'',secondaryImage:style(secondary)?.backgroundImage||'',secondaryShadow:style(secondary)?.boxShadow||'',secondaryBorder:style(secondary)?.borderTopColor||'',reasonSize:parseFloat(style(reason)?.fontSize||'0'),contextSize:parseFloat(style(context)?.fontSize||'0'),dateSize:parseFloat(style(dateSmall)?.fontSize||'0')}}");
 
@@ -161,6 +168,13 @@ try{
   const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] [data-account-quick-entry=\"piraeus-payroll\"]');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μισθοδοσία'))}"),'payroll context preselects originating payroll account');
+  const baselineWrites=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const genericNonDecimal=await c.call("function(){const input=document.querySelector('.generic-quick-modal input[data-autofocus=true]');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'1e3');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(genericNonDecimal,'generic Quick Entry accepts synthetic text for validation');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'generic nondecimal notation rejected before finance POST');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'generic exponent notation never posts a finance event');
+  await screenshot('quick-entry-nondecimal-rejected-desktop');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');
@@ -168,6 +182,13 @@ try{
   await closeGenericModal();
 
   await navigate('savings');await clickText('.savings-action','Μεταφορά στην άκρη');await waitModal('Μεταφορά στην αποταμίευση');
+  const contextualBeforeWrites=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const contextualNonDecimal=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[data-autofocus=true]');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'0x10');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(contextualNonDecimal,'contextual Quick Entry receives synthetic nondecimal amount');
+  await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'contextual hex notation rejected before canonical posting');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.contextual-quick-modal'))}",[contextualBeforeWrites]),'contextual hex notation never posts a savings event');
+  await screenshot('contextual-entry-hex-rejected-desktop');
   const before=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");
   const openedSelect=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[role=combobox]');input?.click();return Boolean(input)}");assert(openedSelect,'savings source selector opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'savings owned select');

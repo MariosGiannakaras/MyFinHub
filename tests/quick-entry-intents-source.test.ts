@@ -15,6 +15,14 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(quickAdd).not.toContain("amount:Number(row.amountText.replace(',','.'))");
   });
 
+  it('stages real-browser malformed notation guards without relying on unit assertions alone',()=>{
+    const browser=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(browser).toContain('quick-entry-nondecimal-rejected-desktop');
+    expect(browser).toContain('contextual-entry-hex-rejected-desktop');
+    expect(browser).toContain('generic exponent notation never posts a finance event');
+    expect(browser).toContain('contextual hex notation never posts a savings event');
+  });
+
   it('renders the approved intent registry instead of maintaining a second label list',()=>{
     expect(quickAdd).toContain('ENTRY_INTENTS.map');
     expect(quickAdd).toContain('intentIcons');
