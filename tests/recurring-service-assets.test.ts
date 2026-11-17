@@ -231,6 +231,71 @@ describe('recurring service asset foundation',()=>{
     expect(calls[4].url).toBe(calls[0].url);
   });
 
+  it.each([
+    ['different asset key','services/service-asset-aaaaaaaaaaaaaaaaaaaaaaaa.svg'],
+    ['unsafe relative path','services/../outside.svg'],
+    ['unrelated nested path','services/other/service-asset-1234567890abcdef12345678.svg'],
+  ])('never deletes Storage after a release response with %s',async(_label,badPath)=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push((init?.method||'GET')+' '+String(input));
+      if(requests.length===1)return new Response(JSON.stringify([{
+        storage_bucket:'recurring-service-assets',storage_path:badPath,
+      }]),{status:200});
+      throw new Error('Unverified release path must never authorize Storage deletion');
+    }));
+    await expect(deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token'))
+      .rejects.toMatchObject({status:500,code:'RECURRING_SERVICE_ASSET_INVALID_RESPONSE'});
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toContain('rpc/rheomiq_release_recurring_service_asset');
+  });
+
+  it('rejects an ambiguous multi-row release receipt before deleting a recurring asset',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const path='services/service-asset-1234567890abcdef12345678.svg';
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push((init?.method||'GET')+' '+String(input));
+      if(calls.length===1)return new Response(JSON.stringify([
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+      ]),{status:200});
+      throw new Error('Duplicate release records must not authorize deletion');
+    }));
+    await expect(deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token'))
+      .rejects.toMatchObject({status:500,code:'RECURRING_SERVICE_ASSET_INVALID_RESPONSE'});
+    expect(calls).toHaveLength(1);
+  });
+
+  it('can retry a partially released recurring asset without purging before Storage confirms deletion',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{method:string;url:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1||calls.length===3)return new Response(JSON.stringify([
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+      ]),{status:200});
+      if(calls.length===2)return new Response('{}',{status:503});
+      if(calls.length===4)return new Response('{}',{status:404});
+      if(calls.length===5)return new Response('null',{status:200});
+      throw new Error('No speculative extra delete or purge');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,code:'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE',
+    });
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE']);
+    await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST']);
+    expect(calls[1].url).toBe(calls[3].url);
+    expect(calls[4].url).toContain('rpc/rheomiq_purge_recurring_service_asset');
+  });
+
   it('releases metadata before Storage deletion and purges only after Storage succeeds',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';

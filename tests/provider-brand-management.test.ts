@@ -347,6 +347,47 @@ describe('provider branding management',()=>{
     expect(calls.some(call=>call.method==='DELETE')).toBe(false);
   });
 
+  it.each([
+    {label:'file name',field:'file_name',wrongValue:'different.png'},
+    {label:'MIME type',field:'mime_type',wrongValue:'image/webp'},
+    {label:'byte length',field:'size_bytes',wrongValue:9},
+  ])('never acknowledges a committed provider asset with a mismatched $label',async({field,wrongValue})=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');
+      calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({message:'RPC committed but response lost'}),{status:503});
+      if(calls.length===3){
+        const assetKey=decodeURIComponent(url.match(/asset_key=eq\.([^&]+)/)?.[1]||'');
+        const storagePath=new URL(calls[0].url).pathname.split('/financial-provider-assets/')[1];
+        const row={
+          asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',variant:'light',
+          file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+          storage_path:storagePath,size_bytes:bytes.byteLength,
+          updated_at:'2026-11-17T12:00:00Z',active:true,
+          [field]:wrongValue,
+        };
+        return new Response(JSON.stringify([row]),{status:200});
+      }
+      throw new Error('Mismatched provider receipt must never trigger Storage cleanup or retry');
+    }));
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,content:bytes,
+      },'access-token')).rejects.toMatchObject({
+        status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED',
+      });
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+      expect(calls[2].url).toContain('asset_key=eq.');
+    }finally{log.mockRestore()}
+  });
+
   it('never deletes after an ambiguous 503 despite an initially empty registry read (late commit race)',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';

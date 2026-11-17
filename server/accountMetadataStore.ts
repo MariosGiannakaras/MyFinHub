@@ -376,7 +376,8 @@ export async function uploadFinancialProviderAsset(input:{
     const asset=mapFinancialProviderAssetRow(value);
     if(asset.asset_key!==assetKey||asset.provider_id!==input.providerId||
       asset.storage_bucket!==PROVIDER_ASSET_BUCKET||asset.storage_path!==storagePath||
-      asset.asset_role!==input.role||asset.variant!==input.variant){
+      asset.asset_role!==input.role||asset.variant!==input.variant||
+      asset.file_name!==input.fileName||asset.mime_type!==input.mimeType||asset.size_bytes!==content.byteLength){
       throw new ApiError(503,'PROVIDER_ASSET_REGISTRATION_UNVERIFIED','Δεν επιβεβαιώθηκε η καταχώριση της εικόνας.');
     }
     return {
@@ -579,8 +580,15 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
     method:'POST',
     body:JSON.stringify({p_asset_key:assetKey}),
   },accessToken);
-  const row=Array.isArray(released)?released[0] as {storage_bucket?:unknown;storage_path?:unknown}|undefined:undefined;
-  if(!row||row.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||typeof row.storage_path!=='string'){
+  const row=Array.isArray(released)&&released.length===1
+    ? released[0] as {storage_bucket?:unknown;storage_path?:unknown}|undefined
+    : undefined;
+  // A release receipt authorizes deletion of exactly this asset and nothing
+  // else. Never turn a malformed or mismatched DB path into a Storage DELETE.
+  const matchedPath=typeof row?.storage_path==='string'
+    ? /^services\/(service-asset-[a-f0-9]{24})\.(?:png|jpg|webp|svg)$/.exec(row.storage_path)
+    : null;
+  if(!row||row.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||!matchedPath||matchedPath[1]!==assetKey){
     throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image release response is invalid.',false);
   }
   const {url,apiKey,authorization}=config(accessToken);
