@@ -70,6 +70,12 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(script).toContain('quick-entry-lending-return-conflict-desktop');
     expect(script).toContain('quick-entry-lending-return-conflict-tablet');
     expect(script).toContain('quick-entry-lending-return-conflict-mobile');
+    expect(script).toContain("await navigate('credit','entry-edit-provenance')");
+    expect(script).toContain('same-date credit edit preserves card, statement, origin and purchase debit');
+    expect(script).toContain('date-moved credit purchase recalculates next billing cycle');
+    expect(script).toContain('quick-entry-credit-same-statement-corrected-desktop');
+    expect(script).toContain('quick-entry-credit-new-statement-corrected-desktop');
+    expect(qa).toContain("purchase.statementId='qa-card:2026-08-12'");
   });
 
   it('renders the approved intent registry instead of maintaining a second label list',()=>{

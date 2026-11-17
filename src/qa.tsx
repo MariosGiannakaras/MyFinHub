@@ -513,8 +513,12 @@ function buildQaData(params:URLSearchParams){
     const saving=createEvent({kind:'saving_cash_offset',date:'2026-08-15',amount:17,
       note:'QA saving provenance entry',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'});
     saving.id='qa-provenance-saving';saving.source='review';saving.savingSource='pay_and_save';
+    const purchase=createEvent({kind:'card_purchase',date:'2026-08-06',amount:23.45,
+      note:'QA credit provenance purchase',category:'Τρόφιμα'});
+    purchase.id='qa-provenance-card';purchase.cardId='qa-card';
+    purchase.statementId='qa-card:2026-08-12';purchase.source='migration';
     next.seed.transactions=[];
-    next.state.events=[lending,saving];
+    next.state.events=[lending,saving,purchase];
   }
   if(params.get('state')==='account-delete-race'){
     next.state.settings.customAccounts=[...(next.state.settings.customAccounts??[]),{
@@ -541,7 +545,8 @@ function QaWorkspace(){
       return event?{id:event.id,kind:event.kind,date:event.date,note:event.note,
         amount:event.amount,source:event.source??null,
         savingSource:event.savingSource??null,expectedReturnDate:event.expectedReturnDate??null,
-        createdAt:event.createdAt,legs:event.legs,receivableDelta:event.receivableDelta??null}:null;
+        createdAt:event.createdAt,legs:event.legs,receivableDelta:event.receivableDelta??null,
+        cardId:event.cardId??null,statementId:event.statementId??null,creditDelta:event.creditDelta??null}:null;
     };
     return()=>{delete controls.__myfinhubQaEntryEditProvenance};
   },[data,entryEditProbe]);

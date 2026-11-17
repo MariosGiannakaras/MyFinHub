@@ -290,6 +290,30 @@ try{
   await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-saving');return event?.note==='QA saving note corrected without source rewrite'&&event.source==='review'&&event.savingSource==='pay_and_save'&&event.kind==='saving_cash_offset'&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'confirmed saving edit preserves owner-confirmed saving origin and original audit source',[savingWritesBefore+1]);
   await screenshot('quick-entry-saving-provenance-corrected-desktop');
 
+  console.log('Action Center QA: real Credit purchase same-statement and moved-cycle edit provenance');
+  await navigate('credit','entry-edit-provenance');
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-purchases] button[aria-label=\"Επεξεργασία QA credit provenance purchase\"]'))}",'owner credit purchase edit action visible');
+  const cardBefore=await c.call("function(){return globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card')}");
+  assert(cardBefore?.cardId==='qa-card'&&cardBefore.statementId==='qa-card:2026-08-12'&&cardBefore.source==='migration',
+    'the existing credit purchase links the exact owner card and first billing cycle');
+  const cardEditsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  await clickText('[data-credit-purchases] button[aria-label="Επεξεργασία QA credit provenance purchase"]','');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal h2')?.textContent||'').includes('Επεξεργασία κίνησης')}",'credit purchase edits through actual generic Quick Entry');
+  const creditNote='QA credit same-statement correction';
+  await setProvenanceNote(creditNote);
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'same-statement card edit confirms and closes');
+  await waitFor("function(expected,note){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card');return event?.note===note&&event.cardId==='qa-card'&&event.statementId==='qa-card:2026-08-12'&&event.source==='migration'&&event.creditDelta===-23.45&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'same-date credit edit preserves card, statement, origin and purchase debit',[cardEditsBefore+1,creditNote]);
+  await screenshot('quick-entry-credit-same-statement-corrected-desktop');
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-purchases] button[aria-label=\"Επεξεργασία QA credit same-statement correction\"]'))}",'updated credit purchase remains editable');
+  await clickText('[data-credit-purchases] button[aria-label="Επεξεργασία QA credit same-statement correction"]','');
+  await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal .owned-date-shell input'))}",'credit purchase date editor ready');
+  await chooseProvenanceDate('2026-08-14');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'changed-cycle card edit confirms and closes');
+  await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card');return event?.date==='2026-08-14'&&event.cardId==='qa-card'&&event.statementId==='qa-card:2026-09-12'&&event.source==='migration'&&event.creditDelta===-23.45&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'date-moved credit purchase recalculates next billing cycle without erasing card identity or creating a second expense',[cardEditsBefore+2]);
+  await screenshot('quick-entry-credit-new-statement-corrected-desktop');
+
   console.log('Action Center QA: snooze, undo, empty state and responsive accessibility');
   await navigate('attention');
   const snoozed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>node.classList.contains('warning')||node.classList.contains('info'));const button=row?.querySelector('button[aria-label^=\"Αναβολή\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(snoozed),'non-danger item can be snoozed');
