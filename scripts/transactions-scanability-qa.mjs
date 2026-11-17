@@ -187,8 +187,26 @@ try{
   assert(zoom200.zoom==='200%'&&zoom200.mobile&&zoom200.rowPresent&&zoom200.focused
     &&zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1,
     '200% Transactions zoom keeps long Greek note, dates, action focus and amount inside viewport: '+JSON.stringify(zoom200));
+  // The header is shared across routes. At 200% zoom the media width stays
+  // 640px, but the brand grid track becomes narrower than the brand lockup.
+  const sharedHeader=()=>c.call("function(){const topbar=document.querySelector('.topbar');const brand=document.querySelector('.mobile-brand .brand-home-button');const mark=document.querySelector('.mobile-brand .brand-mark-icon');const copy=document.querySelector('.mobile-brand .brand-mark-copy');const search=document.querySelector('.top-actions .top-action-command');const actions=[...document.querySelectorAll('.top-actions button')].filter(node=>node.getClientRects().length>0);const r=node=>node?.getBoundingClientRect();const bar=r(topbar),b=r(brand),m=r(mark),s=r(search);const actionBounds=actions.map(r);return {bar:bar?{left:bar.left,right:bar.right}:null,brand: b?{left:b.left,right:b.right}:null,mark:m?{left:m.left,right:m.right,width:m.width,height:m.height}:null,search:s?{left:s.left,right:s.right}:null,copyVisible:Boolean(copy&&copy.getClientRects().length&&getComputedStyle(copy).display!=='none'),actions:actionBounds.length,actionContained:Boolean(bar&&actionBounds.every(box=>box.left>=bar.left-1&&box.right<=bar.right+1)),buttonOrder:actionBounds.every((box,index)=>index===0||actionBounds[index-1].right<=box.left+1),separate:Boolean(b&&s&&b.right<=s.left-3),label:brand?.getAttribute('aria-label')||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  const zoomHeader=await sharedHeader();
+  assert(zoomHeader.actions>=3&&!zoomHeader.copyVisible&&zoomHeader.actionContained&&zoomHeader.buttonOrder
+    &&zoomHeader.separate&&zoomHeader.mark?.width>=25&&zoomHeader.label.includes('Dashboard')&&zoomHeader.overflow<=1,
+    '200% zoom AppShell brand/search/history controls must remain distinct and actionable: '+JSON.stringify(zoomHeader));
   await scrollTo('.mobile-transaction-row');
   await shot('transactions-extreme-200pct-zoom-mobile');
+  // Check the same shared header without zoom, including its existing
+  // 320px icon-only rule. This must not regress normal mobile branding.
+  await c.call("function(){document.documentElement.style.zoom='100%';return true}");
+  for(const width of [390,320]){
+    await viewport(width,844);
+    const header=await sharedHeader();
+    assert(header.actions>=3&&header.actionContained&&header.buttonOrder&&header.separate
+      &&header.mark?.width>=25&&header.overflow<=1,
+      width+'px standard mobile AppShell controls must not overlap: '+JSON.stringify(header));
+    await shot('transactions-shell-header-'+width);
+  }
 
   console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);

@@ -189,6 +189,12 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).toContain("zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1");
     expect(qa).toContain('zoom200.focused');
     expect(qa).toContain('transactions-extreme-200pct-zoom-mobile');
+    expect(qa).toContain('zoomHeader.actionContained&&zoomHeader.buttonOrder');
+    expect(qa).toContain('zoomHeader.separate&&zoomHeader.mark?.width>=25');
+    expect(qa).toContain('transactions-shell-header-');
+    const mobileShell=readFileSync(new URL('../src/styles/mobile-app-shell.css',import.meta.url),'utf8');
+    expect(mobileShell).toContain('.mobile-brand{gap:8px;min-width:0;container-type:inline-size}');
+    expect(mobileShell).toContain('@container (max-width:165px){.brand-mark-copy{display:none}}');
   });
 
   it('raises dense desktop metadata through shared semantic tokens',()=>{
