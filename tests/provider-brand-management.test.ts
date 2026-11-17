@@ -284,6 +284,8 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('provider-create-invalid-200-receipt-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-mobile');
+    expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-mobile');
   });
 
   it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{
@@ -293,7 +295,8 @@ describe('provider branding management',()=>{
     expect(settings).not.toContain('pending.uploadedKey=asset.assetKey');
     expect(settings).toContain('originalAssignments:{...current.originalAssignments,[slot.id]:finalKey}');
     expect(settings).toContain('if(metadataCommitted){');
-    expect(settings).toContain('if(reloaded.error){');
+    expect(settings).toContain('const confirmedCatalog=providerCatalogMatchesWrite(');
+    expect(settings).toContain('if(!confirmedCatalog){');
     expect(settings).toContain('setEditorWarning(');
     expect(settings).toContain('<OperationFeedback tone="warning"');
     expect(settings).toContain('Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.');

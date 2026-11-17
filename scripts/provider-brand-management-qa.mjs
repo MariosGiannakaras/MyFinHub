@@ -243,11 +243,26 @@ try{
           return new Response(JSON.stringify({provider:{id:'qa-bank'}}),{status:200,headers:{'content-type':'application/json'}});
         }
         if(method==='POST')provider.creates+=1;else provider.updates+=1;
-        return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',countryCode:'GR',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
+        const saved=JSON.parse(String(init?.body||'{}'));
+        const catalog=(await import('/src/lib/financialProviderClient.ts')).getFinancialProviderSnapshot().providers;
+        let row=catalog.find(item=>item.id===saved.id);
+        if(!row){
+          row={id:saved.id,displayName:saved.displayName,shortName:saved.shortName,kind:saved.providerKind,kindLabel:'Τράπεζα',
+            countryCode:saved.countryCode,sortOrder:saved.sortOrder,logoAssetKey:null,wordmarkAssetKey:null,
+            logoUrl:null,wordmarkUrl:null,assets:[],bindings:[]};
+          catalog.push(row);
+        }else{
+          Object.assign(row,{displayName:saved.displayName,shortName:saved.shortName,kind:saved.providerKind,countryCode:saved.countryCode,sortOrder:saved.sortOrder});
+        }
+        return new Response(JSON.stringify({provider:saved}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
         provider.uploads+=1;
         const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'https://assets.example/qa-new-provider.svg',fileName:'qa-new-provider.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0};
+        const catalog=(await import('/src/lib/financialProviderClient.ts')).getFinancialProviderSnapshot().providers;
+        const row=catalog.find(item=>item.id==='qa-bank');
+        if(!row)throw new Error('QA provider metadata missing before asset upload');
+        row.assets=[...(row.assets||[]).filter(item=>item.assetKey!==asset.assetKey),asset];
         return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
@@ -257,6 +272,15 @@ try{
         // First logo binding is durable, second wordmark binding fails.
         // Retry must not repeat the already acknowledged logo mutation.
         if(provider.bindings===2)return new Response(JSON.stringify({error:'Synthetic wordmark binding rejection after durable provider, upload and logo binding'}),{status:503,headers:{'content-type':'application/json'}});
+        const catalog=(await import('/src/lib/financialProviderClient.ts')).getFinancialProviderSnapshot().providers;
+        const row=catalog.find(item=>item.id===data.providerId);
+        if(!row)throw new Error('QA provider metadata missing before asset binding');
+        row.bindings=[...(row.bindings||[]).filter(item=>item.role!==data.role||item.variant!==data.variant)];
+        if(data.assetKey)row.bindings.push({role:data.role,variant:data.variant,assetKey:data.assetKey});
+        if(data.variant==='universal'&&(data.role==='logo'||data.role==='wordmark')){
+          const key=data.role==='logo'?'logoAssetKey':'wordmarkAssetKey',urlKey=data.role==='logo'?'logoUrl':'wordmarkUrl';
+          row[key]=data.assetKey??null;row[urlKey]=row.assets?.find(item=>item.assetKey===data.assetKey)?.url??null;
+        }
         return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
       }
       return original(input,init);
@@ -359,6 +383,70 @@ try{
   await clickText('.provider-editor-footer button','Ακύρωση');
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'close unverified provider without a second write');
   await c.call("function(){globalThis.fetch=globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__qaUnverifiedAsset;return true}");
+
+
+  console.log('Provider catalog 200 with stale metadata and absent asset/bindings must never close with all-success');
+  await viewport(1440,1000,false);
+  await clickText('.provider-management button','Νέος πάροχος');
+  await waitFor("function(){return !!document.querySelector('.provider-details-panel')}",'stale-catalog provider editor');
+  const entered=await c.call(`function(){
+    const field=[...document.querySelectorAll('.provider-details-panel input')].find(input=>input.placeholder==='π.χ. Νέα Τράπεζα');
+    if(!field)return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,'QA Stale');
+    field.dispatchEvent(new Event('input',{bubbles:true}));return true;
+  }`);
+  assert(entered,'stale provider name is edited through the real input');
+  await waitFor("function(){return document.querySelector('.provider-id-field input')?.value==='qa-stale'}",'stale provider id generated');
+  await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
+  await waitFor("function(){return !!document.querySelector('.provider-branding-panel')}",'stale provider branding');
+  await chooseSlot('Βασικό λογότυπο');
+  await uploadSyntheticSvg('qa-stale.svg');
+  await waitFor("function(){return !document.querySelector('.provider-asset-picker')}",'stale provider local image selected');
+  await chooseSlot('Βασικό λεκτικό σήμα');
+  await clickText('.provider-picker-asset','qa-stale.svg');
+  await c.call(`function(){
+    const original=globalThis.fetch.bind(globalThis),state=globalThis.__qaStaleReadback={creates:0,updates:0,uploads:0,bindings:0};
+    globalThis.__qaStaleOriginalFetch=original;
+    globalThis.fetch=async function(input,init){
+      const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      const url=new URL(raw,location.href),method=String(init?.method||'GET').toUpperCase(),resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&(method==='POST'||method==='PATCH')){
+        if(method==='POST')state.creates++;else state.updates++;
+        // The write receipt is valid but catalog readback remains stale.
+        return new Response(JSON.stringify({provider:JSON.parse(String(init?.body||'{}'))}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
+        state.uploads++;
+        return new Response(JSON.stringify({asset:{
+          assetKey:'qa-stale-asset-112233aabbcc',role:'logo',variant:'universal',fileName:'qa-stale.svg',
+          mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,
+          url:'https://assets.example/qa-stale.svg',
+        }}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
+        state.bindings++;return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      return original(input,init);
+    };return true;
+  }`);
+  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  await waitFor("function(){return (document.querySelector('.provider-editor-warning')?.textContent||'').includes('δεν επιβεβαίωσε ακόμη')}",'valid-looking stale catalog refuses all-green completion');
+  const stale=await c.call("function(){const s=globalThis.__qaStaleReadback,w=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),a=w?.getBoundingClientRect(),b=save?.getBoundingClientRect();return {creates:s.creates,updates:s.updates,uploads:s.uploads,bindings:s.bindings,open:!!document.querySelector('.provider-editor-modal'),success:!!document.querySelector('.provider-management-message'),role:w?.getAttribute('role'),visible:!!(a&&b&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}}");
+  assert(stale.creates===1&&stale.updates===0&&stale.uploads===1&&stale.bindings===2&&stale.open&&!stale.success,'HTTP 200 stale catalog retains editor with no false success after acknowledged writes');
+  assert(stale.role==='alert'&&stale.visible,'stale catalog discrepancy appears visibly and accessibly before Save');
+  await shot('provider-create-stale-catalog-warning-desktop');
+  await viewport(375,812,true);await noOverflow('stale provider catalog mobile');
+  const staleMobile=await c.call("function(){const a=document.querySelector('.provider-editor-warning')?.getBoundingClientRect(),b=document.querySelector('.provider-editor-footer button:last-child')?.getBoundingClientRect();return !!(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
+  assert(staleMobile,'375px stale-catalog warning is visible above Save');
+  await shot('provider-create-stale-catalog-warning-mobile');
+  await viewport(1440,1000,false);
+  await clickText('.provider-editor-footer button','Αποθήκευση');
+  await waitFor("function(){return globalThis.__qaStaleReadback?.updates===1}",'stale-catalog retry only reissues the idempotent metadata update');
+  const staleRetry=await c.call("function(){const s=globalThis.__qaStaleReadback;return {creates:s.creates,updates:s.updates,uploads:s.uploads,bindings:s.bindings}}");
+  assert(staleRetry.creates===1&&staleRetry.updates===1&&staleRetry.uploads===1&&staleRetry.bindings===2,'stale catalog retry never re-uploads acknowledged binary or already acknowledged slots');
+  await clickText('.provider-editor-footer button','Ακύρωση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'stale provider editor closes explicitly');
+  await c.call("function(){globalThis.fetch=globalThis.__qaStaleOriginalFetch;delete globalThis.__qaStaleOriginalFetch;delete globalThis.__qaStaleReadback;return true}");
 
   console.log('Shared compact Transactions filters remain at least 12px');
   const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');

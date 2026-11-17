@@ -136,6 +136,44 @@ export type FinancialProviderWriteInput={
   sortOrder:number;
 };
 
+// A successful GET is not a durable receipt for the preceding independent
+// metadata, Storage and binding writes unless the actual returned provider
+// matches every acknowledged value. This helper deliberately performs no writes.
+export type FinancialProviderReadbackSlot={
+  role:FinancialProviderAssetRole;
+  variant:'universal'|'light'|'dark';
+  assetKey:string|null;
+};
+export function providerCatalogMatchesWrite(
+  catalog:FinancialProviderSnapshot,
+  input:FinancialProviderWriteInput,
+  slots:FinancialProviderReadbackSlot[],
+  uploadedKeys:string[],
+):boolean{
+  if(!catalog.loaded||catalog.error)return false;
+  const provider=catalog.providers.find(item=>item.id===input.id);
+  if(!provider||
+    provider.displayName!==input.displayName.trim()||
+    provider.shortName!==input.shortName.trim()||
+    provider.kind!==input.providerKind||
+    (provider.countryCode??'')!==(input.countryCode?.trim().toUpperCase()||'')||
+    provider.sortOrder!==input.sortOrder)return false;
+
+  const assets=new Set((provider.assets??[]).map(asset=>asset.assetKey));
+  if(uploadedKeys.some(key=>!assets.has(key)))return false;
+  return slots.every(slot=>{
+    if(slot.assetKey&&!assets.has(slot.assetKey))return false;
+    const binding=provider.bindings?.find(item=>item.role===slot.role&&item.variant===slot.variant);
+    let committedKey:string|null=binding?.assetKey??null;
+    if(!binding&&slot.variant==='universal'){
+      const legacyKey=slot.role==='logo'?provider.logoAssetKey:
+        slot.role==='wordmark'?provider.wordmarkAssetKey:null;
+      if(legacyKey&&assets.has(legacyKey))committedKey=legacyKey;
+    }
+    return committedKey===slot.assetKey;
+  });
+}
+
 async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
   return trackDatabaseWrite(async()=>{
   const response=await apiRequest('/api/account-metadata?resource=financial-providers',{

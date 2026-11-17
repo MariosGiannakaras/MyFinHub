@@ -283,4 +283,45 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(operations).toHaveLength(1);
   });
 
+  it('requires complete durable provider metadata, registered assets and all intended slots after an acknowledged write',async()=>{
+    const modulePath:string='../src/lib/financialProviderClient.js';
+    const {providerCatalogMatchesWrite}=await import(modulePath) as {
+      providerCatalogMatchesWrite:(snapshot:unknown,input:unknown,slots:unknown[],uploads:string[])=>boolean;
+    };
+    const input={
+      id:'qa-checked',displayName:'QA Checked Bank',shortName:'QA Checked',
+      providerKind:'bank',countryCode:'GR',sortOrder:126,
+    };
+    const assetKey='qa-checked-asset-aabbccddeeff';
+    const asset={
+      assetKey,role:'logo',variant:'universal',url:'https://assets.example/checked.svg',
+      fileName:'checked.svg',mimeType:'image/svg+xml',sizeBytes:51,
+    };
+    const provider={
+      id:input.id,displayName:input.displayName,shortName:input.shortName,
+      kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',sortOrder:input.sortOrder,
+      logoAssetKey:assetKey,wordmarkAssetKey:assetKey,
+      assets:[asset],bindings:[
+        {role:'logo',variant:'universal',assetKey},
+        {role:'wordmark',variant:'universal',assetKey},
+      ],
+    };
+    const slots=[
+      {role:'logo',variant:'universal',assetKey},
+      {role:'wordmark',variant:'universal',assetKey},
+      {role:'card-mark',variant:'light',assetKey:null},
+    ];
+    const snapshot=(value:typeof provider|null,error:string|null=null)=>({
+      loaded:true,loading:false,error,providers:value?[value]:[],
+    });
+    expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey])).toBe(true);
+    expect(providerCatalogMatchesWrite(snapshot({...provider,displayName:'Stale Provider Name'}),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot({...provider,sortOrder:1}),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot(null),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot(provider,'Unverified'),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot({...provider,assets:[]}),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot({...provider,bindings:provider.bindings.filter(row=>row.role!=='wordmark'),wordmarkAssetKey:null}),input,slots,[assetKey])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,['unregistered-asset'])).toBe(false);
+  });
+
 });

@@ -5,6 +5,7 @@ import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
+  providerCatalogMatchesWrite,
   saveFinancialProvider,
   UnverifiedFinancialProviderWrite,
   setFinancialProviderAssetBinding,
@@ -279,11 +280,21 @@ export function FinancialProviderManagementSettings(){
         }
       }
       const reloaded=await refreshFinancialProviders(true);
-      if(reloaded.error){
+      // A syntactically valid HTTP-200 catalog can still be stale. Match all
+      // metadata and nine intended slots against its actual durable readback.
+      const intendedSlots=SLOTS.map(slot=>{
+        const ref=editor.assignments[slot.id];
+        const assetKey=ref?.startsWith('pending:')
+          ?uploaded.get(ref)??editor.pendingAssets.find(item=>item.ref===ref)?.uploadedKey??null
+          :ref;
+        return {role:slot.role,variant:slot.variant,assetKey};
+      });
+      const confirmedCatalog=providerCatalogMatchesWrite(reloaded,payload,intendedSlots,[...uploaded.values()]);
+      if(!confirmedCatalog){
         // All writes were acknowledged, but the read-back is not verified.
         // Do not report a fully refreshed catalog or hide the editor.
         if(editor.source==='new')setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
-        setEditorWarning('Τα στοιχεία και οι εικόνες έγιναν δεκτά, αλλά δεν επιβεβαιώθηκε η ενημέρωση της λίστας παρόχων. Το παράθυρο παραμένει ανοικτό για ασφαλή επανάληψη.');
+        setEditorWarning('Οι εγγραφές έγιναν δεκτές, αλλά η λίστα παρόχων δεν επιβεβαίωσε ακόμη όλα τα στοιχεία, τις εικόνες και τις αναθέσεις τους. Το παράθυρο παραμένει ανοικτό για ασφαλή επανάληψη χωρίς εκ νέου μεταφόρτωση ήδη επιβεβαιωμένων εικόνων.');
         return;
       }
       setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
