@@ -31,6 +31,7 @@ import {
   transferDraftError,
 } from '../lib/ledgerFoundations';
 import { preserveLoanPaymentLink } from '../lib/loans';
+import { preserveCreditEventEditLink } from '../lib/creditEventEdit';
 import { preserveRecurringPaymentLink } from '../lib/recurring';
 import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
@@ -103,7 +104,14 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [error,setError]=useState('');
   // Announcing a failed finance save is not enough for keyboard users: the
   // rejected operation's visible error becomes the recoverable focus target.
-  useEffect(()=>{if(open&&error)document.getElementById('quick-add-error')?.focus({preventScroll:true})},[open,error]);
+  useEffect(()=>{
+    if(!open||!error)return;
+    const alert=document.getElementById('quick-add-error');
+    alert?.focus({preventScroll:true});
+    // A tall multi-source form can place the alert below the scrollable body.
+    // Keyboard focus alone must not leave the owner staring at an empty footer.
+    alert?.scrollIntoView({block:'nearest'});
+  },[open,error]);
   const [saving,setSaving]=useState(false);
   const submitInFlight=useRef(false);
   const [dirty,setDirty]=useState(false);
@@ -275,7 +283,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         event.counterpartyId=counterpartyId;
       }else delete event.counterpartyId;
       if(kind!=='split')event.subcategory=subcategory||undefined;
-      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial)}
+      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);preserveRecurringPaymentLink(event,initial);preserveCreditEventEditLink(event,initial)}
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');

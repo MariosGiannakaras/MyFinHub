@@ -47,6 +47,8 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(quickAdd).not.toContain("money.format(fundingRows.reduce((sum,row)=>sum+(Number(");
     const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('quick-entry-multi-funding-invalid-subtotal-desktop');
+    expect(qa).toContain('quick-entry-multi-funding-invalid-subtotal-preview-desktop');
+    expect(qa).toContain('multi-source validation focus and alert are actually onscreen');
     expect(qa).toContain('invalid funding subtotal never posts a finance event');
   });
 

@@ -8,6 +8,22 @@ const popovers=readFileSync('src/styles/owned-entry-popovers.css','utf8');
 const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
 const rendered=readFileSync('scripts/quick-entry-reference-qa.mjs','utf8');
 describe('Quick Entry owner-reference contract',()=>{
+  it('preserves credit payment/purchase identity across same-kind edits instead of orphaning card statements',()=>{
+    expect(quick).toContain("import { preserveCreditEventEditLink } from '../lib/creditEventEdit'");
+    expect(quick).toContain('preserveCreditEventEditLink(event,initial)');
+    const helper=readFileSync('src/lib/creditEventEdit.ts','utf8');
+    expect(helper).toContain("next.kind==='card_payment'||next.date===previous.date");
+    expect(helper).toContain('next.cardId=previous.cardId');
+  });
+  it('brings large-form finance errors onscreen while preserving keyboard focus',()=>{
+    expect(quick).toContain("alert?.focus({preventScroll:true})");
+    expect(quick).toContain("alert?.scrollIntoView({block:'nearest'})");
+    expect(rendered).toContain('nested discard keyboard Tab stays in topmost alertdialog');
+    const context=readFileSync('scripts/action-center-context-qa.mjs','utf8');
+    expect(context).toContain('multi-source validation focus and alert are actually onscreen');
+    expect(context).toContain('quick-entry-multi-funding-invalid-subtotal-preview-desktop');
+  });
+
   it('keeps the production flow on shared React controls',()=>{for(const p of ['MoneyInput','AppTextInput','AppSelectInput','AppDateInput','CategorySelectInput','DialogShell'])expect(quick).toContain(p);expect(quick).not.toMatch(/<select\b/);expect(quick).not.toMatch(/<input\b[^>]*type=["']date["']/);expect(quick).toContain('className="generic-quick-modal"');expect(quick).toContain('className="quick-field"');expect(quick).toContain('data-filled=');expect(quick).toContain('--quick-intent-bg')});
   it('awaits exact finance receipts and preserves scanned receipt drafts on rejected writes',()=>{
     const app=readFileSync('src/App.tsx','utf8');
