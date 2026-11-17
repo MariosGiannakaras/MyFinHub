@@ -6,6 +6,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
   saveFinancialProvider,
+  UnverifiedFinancialProviderWrite,
   setFinancialProviderAssetBinding,
   updateFinancialProvider,
   uploadFinancialProviderAsset,
@@ -131,12 +132,13 @@ export function FinancialProviderManagementSettings(){
   const[message,setMessage]=useState('');
   const[editorError,setEditorError]=useState('');
   const[editorWarning,setEditorWarning]=useState('');
+  const[requiresCatalogReview,setRequiresCatalogReview]=useState(false);
   const fileInput=useRef<HTMLInputElement|null>(null);
   const objectUrls=useRef(new Set<string>());
   const releaseEditor=()=>{
     for(const url of objectUrls.current)URL.revokeObjectURL(url);
     objectUrls.current.clear();
-    setEditor(null);setEditorError('');setEditorWarning('');
+    setEditor(null);setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     if(fileInput.current)fileInput.current.value='';
   };
   const closeEditor=()=>{if(!busy)releaseEditor()};
@@ -144,7 +146,7 @@ export function FinancialProviderManagementSettings(){
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
   const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'[data-picker-autofocus="true"]',closePicker);
   const openNew=()=>{
-    setMessage('');setEditorError('');setEditorWarning('');
+    setMessage('');setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     const assignments=emptyAssignments();
     setEditor({
       source:'new',tab:'details',id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',
@@ -153,7 +155,7 @@ export function FinancialProviderManagementSettings(){
     });
   };
   const openEdit=(provider:FinancialProvider)=>{
-    setMessage('');setEditorError('');setEditorWarning('');
+    setMessage('');setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     const assignments=assignmentsForProvider(provider);
     setEditor({
       source:'existing',tab:'details',id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
@@ -230,7 +232,7 @@ export function FinancialProviderManagementSettings(){
     requestAnimationFrame(()=>document.getElementById(`provider-editor-tab-${tab}`)?.focus());
   };
   const save=async()=>{
-    if(!editor||busy||mutationInFlight.current||!validateDetails())return;
+    if(!editor||busy||mutationInFlight.current||requiresCatalogReview||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
       setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
@@ -287,7 +289,17 @@ export function FinancialProviderManagementSettings(){
       setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
       releaseEditor();
     }catch(error){
-      if(metadataCommitted){
+      if(error instanceof UnverifiedFinancialProviderWrite){
+        // A malformed HTTP-200 receipt is ambiguous, not a confirmed rollback.
+        // Re-read once without replaying any of the independently committed writes.
+        setRequiresCatalogReview(true);
+        if(editor.source==='new'&&metadataCommitted)
+          setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
+        const readback=await refreshFinancialProviders(true);
+        setEditorWarning(readback.error
+          ?'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη και η λίστα παρόχων δεν επιβεβαιώθηκε. Μην επαναλάβεις μεταφόρτωση πριν ελέγξεις τη διαρκή κατάσταση.'
+          :'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη. Η επανάληψη από το παράθυρο απενεργοποιήθηκε για την αποφυγή διπλής μεταφόρτωσης. Κλείσε, άνοιξε ξανά τον πάροχο και έλεγξε τις υπάρχουσες εικόνες πριν συνεχίσεις.');
+      }else if(metadataCommitted){
         // The provider metadata may already be durable. A later asset/binding
         // rejection is partial success, never a blanket "nothing was saved".
         if(editor.source==='new')setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
@@ -373,7 +385,7 @@ export function FinancialProviderManagementSettings(){
           <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
           {editor.source==='new'&&editor.tab==='details'
             ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
-            :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+            :<Button type="button" variant="primary" disabled={busy||requiresCatalogReview} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>

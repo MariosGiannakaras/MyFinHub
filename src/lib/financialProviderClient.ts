@@ -103,6 +103,30 @@ export async function refreshFinancialProviders(force=false){
 }
 
 
+export class UnverifiedFinancialProviderWrite extends Error{
+  constructor(operation:'asset'|'binding'){
+    super(operation==='asset'
+      ?'Η απόκριση μεταφόρτωσης εικόνας δεν επιβεβαιώθηκε· το αρχείο μπορεί ήδη να έχει καταχωριστεί.'
+      :'Η απόκριση ανάθεσης εικόνας δεν επιβεβαιώθηκε· η ανάθεση μπορεί ήδη να έχει αποθηκευτεί.');
+    this.name='UnverifiedFinancialProviderWrite';
+  }
+}
+
+function confirmedUploadedAsset(value:unknown,input:{
+  providerId:string;role:FinancialProviderAssetRole;variant:string;file:File;
+}):FinancialProviderAsset|null{
+  if(!value||typeof value!=='object'||Array.isArray(value))return null;
+  const asset=value as Record<string,unknown>;
+  const prefix=`${input.providerId}-asset-`;
+  const key=typeof asset.assetKey==='string'?asset.assetKey:'';
+  if(!key.startsWith(prefix)||!/^[a-f0-9]{12}$/.test(key.slice(prefix.length))||
+    asset.role!==input.role||asset.variant!==input.variant||
+    asset.fileName!==input.file.name||asset.mimeType!==input.file.type||
+    asset.sizeBytes!==input.file.size||
+    typeof asset.url!=='string'||!providerAssetUrlAllowed(asset.url))return null;
+  return value as FinancialProviderAsset;
+}
+
 export type FinancialProviderWriteInput={
   id:string;
   displayName:string;
@@ -166,8 +190,12 @@ export async function uploadFinancialProviderAsset(input:{
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  // A successful status without an exact receipt does not prove registration.
+  // Never replay a new-key Storage upload while the outcome is uncertain.
+  const asset=confirmedUploadedAsset(payload?.asset,input);
+  if(!asset)throw new UnverifiedFinancialProviderWrite('asset');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
-  return payload?.asset as FinancialProviderAsset;
+  return asset;
   });
 }
 
@@ -187,6 +215,7 @@ export async function setFinancialProviderAssetBinding(input:{
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
+  if(payload?.ok!==true)throw new UnverifiedFinancialProviderWrite('binding');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
   });
 }

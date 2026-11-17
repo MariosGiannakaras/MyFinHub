@@ -215,4 +215,72 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
   });
 
+  it.each([
+    ['missing asset receipt',{}],
+    ['foreign asset',{asset:{assetKey:'wrong-brand-asset-123456abcdef',role:'logo',variant:'universal',fileName:'logo.png',mimeType:'image/png',sizeBytes:2,url:'https://assets.example/brand.png'}}],
+    ['incorrect file length',{asset:{assetKey:'qa-brand-asset-123456abcdef',role:'logo',variant:'universal',fileName:'logo.png',mimeType:'image/png',sizeBytes:3,url:'https://assets.example/brand.png'}}],
+  ])('rejects HTTP 200 with %s and does not automatically upload another binary',async(_label,receipt)=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET')+' '+String(input));
+      return new Response(JSON.stringify(receipt),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    await expect(uploadFinancialProviderAsset({
+      providerId:'qa-brand',role:'logo',variant:'universal',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+    })).rejects.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+    expect(operations).toHaveLength(1);
+    expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-assets');
+  });
+
+  it('accepts a matching asset receipt with one binary upload',async()=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET')+' '+String(input));
+      return new Response(JSON.stringify({asset:{
+        assetKey:'qa-brand-asset-123456abcdef',role:'logo',variant:'universal',
+        fileName:'logo.png',mimeType:'image/png',sizeBytes:2,url:'https://assets.example/brand.png',
+      }}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset}=await import(clientPath);
+    const asset=await uploadFinancialProviderAsset({
+      providerId:'qa-brand',role:'logo',variant:'universal',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+    });
+    expect(asset.assetKey).toBe('qa-brand-asset-123456abcdef');
+    expect(operations).toHaveLength(1);
+  });
+
+  it.each([{}, {ok:false}, {ok:'true'}])(
+    'rejects unverified HTTP 200 slot binding receipt %j',async(receipt)=>{
+      const operations:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        operations.push((init?.method||'GET')+' '+String(input));
+        return new Response(JSON.stringify(receipt),{status:200,headers:{'content-type':'application/json'}});
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
+      await expect(setFinancialProviderAssetBinding({
+        providerId:'qa-brand',role:'logo',variant:'universal',assetKey:'qa-brand-asset-123456abcdef',refreshCatalog:false,
+      })).rejects.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+      expect(operations).toHaveLength(1);
+      expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-asset-binding');
+    }
+  );
+
+  it('accepts only explicit {ok:true} binding acknowledgement, once',async()=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET')+' '+String(input));
+      return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {setFinancialProviderAssetBinding}=await import(clientPath);
+    await setFinancialProviderAssetBinding({providerId:'qa-brand',role:'logo',variant:'universal',assetKey:null,refreshCatalog:false});
+    expect(operations).toHaveLength(1);
+  });
+
 });
