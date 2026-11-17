@@ -503,6 +503,19 @@ function buildQaData(params:URLSearchParams){
       category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
       alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
   }
+  if(params.get('state')==='entry-edit-provenance'){
+    // Synthetic, state-scoped records only. Exercise the actual Transactions
+    // edit flow without adding financial data to the shared visual fixture.
+    const lending=createEvent({kind:'lending',date:'2026-08-16',amount:42,
+      note:'QA lending provenance entry',person:'Νίκος',accountId:'piraeus-payroll',
+      expectedReturnDate:'2026-08-25'});
+    lending.id='qa-provenance-lending';lending.source='migration';
+    const saving=createEvent({kind:'saving_cash_offset',date:'2026-08-15',amount:17,
+      note:'QA saving provenance entry',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'});
+    saving.id='qa-provenance-saving';saving.source='review';saving.savingSource='pay_and_save';
+    next.seed.transactions=[];
+    next.state.events=[lending,saving];
+  }
   if(params.get('state')==='account-delete-race'){
     next.state.settings.customAccounts=[...(next.state.settings.customAccounts??[]),{
       id:'qa-account-delete-race',name:'QA λογαριασμός για έλεγχο διαγραφής',kind:'bank',providerId:'alpha',provider:'Alpha Bank',custom:true,showInQuickChoices:true,
@@ -515,6 +528,23 @@ function QaWorkspace(){
   const params=new URLSearchParams(location.search);
   const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
+  const entryEditProbe=params.get('state')==='entry-edit-provenance';
+  useEffect(()=>{
+    if(!entryEditProbe)return;
+    // A bounded read-only view of synthetic fixture state for actual React
+    // event-edit verification, never a production finance or API backdoor.
+    const controls=globalThis as typeof globalThis & {
+      __myfinhubQaEntryEditProvenance?:(id:string)=>unknown;
+    };
+    controls.__myfinhubQaEntryEditProvenance=(id:string)=>{
+      const event=(data.state.events??[]).find(item=>item.id===id);
+      return event?{id:event.id,kind:event.kind,date:event.date,note:event.note,
+        amount:event.amount,source:event.source??null,
+        savingSource:event.savingSource??null,expectedReturnDate:event.expectedReturnDate??null,
+        createdAt:event.createdAt,legs:event.legs,receivableDelta:event.receivableDelta??null}:null;
+    };
+    return()=>{delete controls.__myfinhubQaEntryEditProvenance};
+  },[data,entryEditProbe]);
   // QA-only graph and stack state to exercise the actual lazy HistoryDialog.
   // Never use this synthetic stack as proof of database Undo/Redo semantics.
   const historyCursorFixture=params.get('state')==='history-cursor';

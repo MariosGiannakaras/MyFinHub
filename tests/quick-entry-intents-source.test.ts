@@ -57,6 +57,21 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(quickAdd).toContain('preserveEntryEditProvenance(event,initial)');
   });
 
+  it('exercises real lending and savings metadata edits through the synthetic Transactions UI',()=>{
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    const script=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain("if(params.get('state')==='entry-edit-provenance')");
+    expect(qa).toContain('controls.__myfinhubQaEntryEditProvenance=(id:string)=>');
+    expect(script).toContain("await navigate('transactions','entry-edit-provenance')");
+    expect(script).toContain("await chooseProvenanceDate('2026-08-27')");
+    expect(script).toContain('rejected lending date must not even attempt a finance write');
+    expect(script).toContain('confirmed same-ID lending edit preserves return date and original source');
+    expect(script).toContain('confirmed saving edit preserves owner-confirmed saving origin and original audit source');
+    expect(script).toContain('quick-entry-lending-return-conflict-desktop');
+    expect(script).toContain('quick-entry-lending-return-conflict-tablet');
+    expect(script).toContain('quick-entry-lending-return-conflict-mobile');
+  });
+
   it('renders the approved intent registry instead of maintaining a second label list',()=>{
     expect(quickAdd).toContain('ENTRY_INTENTS.map');
     expect(quickAdd).toContain('intentIcons');
