@@ -183,6 +183,14 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.transactions-summary-copy span.neutral{color:var(--text-secondary)}');
   });
 
+  it('exercises 200% mobile zoom, long Greek notes and keyboard reachable action geometry (#649 I05.03)',()=>{
+    expect(qa).toContain('Transactions QA: 200% zoom, long Greek notes and keyboard-reachable mobile actions');
+    expect(qa).toContain("document.documentElement.style.zoom='200%'");
+    expect(qa).toContain("zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1");
+    expect(qa).toContain('zoom200.focused');
+    expect(qa).toContain('transactions-extreme-200pct-zoom-mobile');
+  });
+
   it('raises dense desktop metadata through shared semantic tokens',()=>{
     expect(css).toContain('font-size:var(--ux-dense-data-size);color:var(--ink-2)');
     expect(css).toContain('color:var(--text-secondary);padding:0 8px;border-bottom:1px solid var(--chart-grid)');

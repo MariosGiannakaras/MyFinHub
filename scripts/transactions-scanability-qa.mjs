@@ -178,6 +178,18 @@ try{
   assert(!unicode.overflow&&!unicode.hasUnexpectedMarkup,'Unicode/unbroken transaction remains contained and text-only');
 
 
+  console.log('Transactions QA: 200% zoom, long Greek notes and keyboard-reachable mobile actions');
+  await navigate(`${baseUrl}?page=transactions&state=extreme`,640,900);
+  assert(await c.call("async function(){document.documentElement.style.zoom='200%';await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);return document.documentElement.style.zoom==='200%'}"),'actual 200% browser zoom applied to Transactions');
+  await setInput('.transaction-searchbar input','Πολύ μεγάλη περιγραφή συναλλαγής');
+  await waitFor("function(){return [...document.querySelectorAll('.mobile-transaction-row')].some(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Πολύ μεγάλη περιγραφή συναλλαγής'))}",'200% zoom long Greek transaction row');
+  const zoom200=await c.call("function(){const row=[...document.querySelectorAll('.mobile-transaction-row')].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Πολύ μεγάλη περιγραφή συναλλαγής'));const first=row?.querySelector('.mobile-transaction-identity b')?.getBoundingClientRect();const money=row?.querySelector('.mobile-transaction-main>strong')?.getBoundingClientRect();const visible=node=>node.getClientRects().length>0&&getComputedStyle(node).visibility!=='hidden';const targets=[...document.querySelectorAll('.mobile-transaction-row,.mobile-transaction-row .mobile-transaction-main,.mobile-transaction-row .mobile-row-actions button,.mobile-transaction-date .owned-date-shell,.transaction-searchbar input')].filter(visible);const clipped=targets.map(node=>({label:node.getAttribute('aria-label')||node.className||node.tagName,left:node.getBoundingClientRect().left,right:node.getBoundingClientRect().right})).filter(item=>item.left<-.5||item.right>innerWidth+.5);const action=row?.querySelector('.mobile-row-actions button');action?.focus({preventScroll:true});return {zoom:document.documentElement.style.zoom,mobile:matchMedia('(max-width:680px)').matches,rowPresent:Boolean(row),clipped,overlap:Boolean(first&&money&&first.right>money.left&&first.bottom>money.top&&money.bottom>first.top),focused:document.activeElement===action,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(zoom200.zoom==='200%'&&zoom200.mobile&&zoom200.rowPresent&&zoom200.focused
+    &&zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1,
+    '200% Transactions zoom keeps long Greek note, dates, action focus and amount inside viewport: '+JSON.stringify(zoom200));
+  await scrollTo('.mobile-transaction-row');
+  await shot('transactions-extreme-200pct-zoom-mobile');
+
   console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
