@@ -316,9 +316,11 @@ try{
     const changed=await c.call("function(value){const modal=document.querySelector('.contextual-quick-modal'),label=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Ποσό'),input=label?.querySelector('input');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[value]);
     assert(changed,'contextual amount is editable in real dialog');
   };
+  const writesBeforeInvalidAmount=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
   await editContextualAmount('0');
   await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
-  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('Συμπλήρωσε ποσό')}",'contextual amount rejection announces error');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('Συμπλήρωσε θετικό ποσό σε ευρώ με έως δύο δεκαδικά ψηφία.')}",'contextual amount rejection announces the current cent-precision error');
+  assert(await c.call("function(expected){const modal=document.querySelector('.contextual-quick-modal'),field=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Ποσό')?.querySelector('input');return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(modal)&&field?.value==='0'}",[writesBeforeInvalidAmount]),'invalid contextual zero amount cannot post finance or discard the draft');
   await editContextualAmount('21');
   await waitFor("function(){return !document.querySelector('.contextual-quick-modal #context-quick-error')}",'corrected contextual amount removes stale validation message');
   await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
