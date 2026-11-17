@@ -117,6 +117,21 @@ try{
        const focusVisible=hasFocusRing(s)||(Boolean(focusOwner&&focusOwner.contains(el))&&hasFocusRing(getComputedStyle(focusOwner)));
        return {tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,80),visible,focusVisible,positive:Number(el.getAttribute('tabindex')||0)>0};
      }`);
+     if(!state||state.tag==='BODY'||!state.visible||!state.focusVisible){
+       // Do not reinterpret a missing focus as PASS. Save the actual preceding
+       // tab path, live candidates and screenshot so the missing stop is traceable.
+       const detail=await c.call(`function(){
+         const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+         return [...document.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]')].filter(visible).map(el=>({
+           tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,55),
+           tabIndex:el.tabIndex,disabled:el.matches(':disabled'),inert:Boolean(el.closest('[inert]')),
+           ariaHidden:Boolean(el.closest('[aria-hidden=true]')),hiddenDetails:Boolean(el.closest('details:not([open])')),
+           focusable:el.matches(':focus'),outer:el.outerHTML.slice(0,160)
+         })).slice(0,90);
+       }`);
+       console.error('Keyboard Tab failure evidence',JSON.stringify({label,step:i+1,setup,previous:seen.slice(-9),state,liveCandidates:detail}));
+       await shot('keyboard-tab-failure-'+label.replaceAll('/','-')+'-step-'+(i+1));
+     }
      assert(state&&state.visible,`${label}: Tab left the visible focus order at step ${i+1}: ${JSON.stringify(state)}`);
      assert(!state.positive,`${label}: positive tabindex at step ${i+1}`);
      assert(state.focusVisible,`${label}: focused control has no visible focus indicator at step ${i+1}: ${JSON.stringify(state)}`);

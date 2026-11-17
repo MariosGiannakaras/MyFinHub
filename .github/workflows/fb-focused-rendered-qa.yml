@@ -18,7 +18,8 @@ jobs:
     if: >-
       github.event.pull_request.draft == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
+      (contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-icon-packs-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-three-category-qa -->') ||
@@ -39,7 +40,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-payment-flow-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') &&
+          'keyboard-semantic-accessibility' ||
+          contains(github.event.pull_request.body, '<!-- run-649-payment-flow-qa -->') &&
           'payment-flow-normalization quick-entry-reference owned-controls' ||
           contains(github.event.pull_request.body, '<!-- run-649-transactions-filter-qa -->') &&
           'transactions-scanability command-palette' ||
