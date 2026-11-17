@@ -50,7 +50,9 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   it('focuses the actual rejection alert in generic and contextual Quick Entry without making it a Tab stop (#649 I19.05)',()=>{
     const formError=readFileSync(new URL('../src/components/FormError.tsx',import.meta.url),'utf8');
     expect(formError).toContain('role="alert" aria-live="assertive" tabIndex={-1}');
-    expect(generic).toContain("if(open&&error)document.getElementById('quick-add-error')?.focus({preventScroll:true})");
+    expect(generic).toContain("const alert=document.getElementById('quick-add-error')");
+    expect(generic).toContain("alert?.focus({preventScroll:true})");
+    expect(generic).toContain("alert?.scrollIntoView({block:'nearest'})");
     expect(contextual).toContain("if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})");
     expect(budgetQa).toContain('rejected Quick Entry focuses the visible error without losing draft');
     expect(generic).toContain('<FormError id="quick-add-error">{error}</FormError>');
