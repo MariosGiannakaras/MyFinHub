@@ -224,13 +224,17 @@ try{
   console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
   await c.call(`async function(){
     const original=globalThis.fetch.bind(globalThis);
-    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared'};
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],catalogFailures:0,failNextCatalogRefresh:false,assetKey:'qa-new-provider-shared'};
     globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
       const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
       const url=new URL(raw,location.href);
       const method=String(init?.method||'GET').toUpperCase();
       const resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='GET'&&provider.failNextCatalogRefresh){
+        provider.failNextCatalogRefresh=false;provider.catalogFailures+=1;
+        return new Response(JSON.stringify({error:'Synthetic failed catalog read-back after confirmed bindings'}),{status:503,headers:{'content-type':'application/json'}});
+      }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&(method==='POST'||method==='PATCH')){
         if(method==='POST')provider.creates+=1;else provider.updates+=1;
         return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
@@ -272,10 +276,22 @@ try{
   assert(mobileWarning,'375px partial save warning and retry button stay visible without scrolling the branding gallery');
   await shot('provider-create-partial-binding-warning-mobile');
   await viewport(1440,1000,false);
+  console.log('Provider branding task-flow QA: acknowledged writes survive failed catalog refresh without duplicate mutations');
+  assert(await c.call("function(){const p=globalThis.__qaNewProvider;if(!p)return false;p.failNextCatalogRefresh=true;return true}"),'catalog read-back rejection armed');
   await clickText('.provider-editor-footer button','Αποθήκευση');
-  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'retry completes provider bindings without retransmitting uploaded file');
-  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,slots:p.bindingSlots,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
-  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings===3,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
+  await waitFor("function(){const node=document.querySelector('.provider-editor-warning[data-feedback-tone=warning]');return Boolean(node&&(node.textContent||'').includes('δεν επιβεβαιώθηκε η ενημέρωση της λίστας παρόχων'))}",'catalog read-back failure shows actionable warning after acknowledged bindings');
+  const unverified=await c.call("function(){const p=globalThis.__qaNewProvider,notice=document.querySelector('.provider-editor-warning');return {open:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),hasError:Boolean(document.querySelector('.provider-editor-error')),role:notice?.getAttribute('role'),creates:p?.creates,updates:p?.updates,uploads:p?.uploads,bindings:p?.bindings,failures:p?.catalogFailures}}");
+  assert(unverified.open&&!unverified.success&&!unverified.hasError&&unverified.role==='alert'&&unverified.creates===1&&unverified.updates===1&&unverified.uploads===1&&unverified.bindings===3&&unverified.failures===1,'unverified read-back keeps editor open without false success or repeated writes: '+JSON.stringify(unverified));
+  await shot('provider-create-catalog-refresh-unverified-desktop');
+  await viewport(375,812,true);await noOverflow('unverified provider catalog read-back mobile');
+  const warningFits=await c.call("function(){const n=document.querySelector('.provider-editor-warning'),b=document.querySelector('.provider-editor-footer button:last-child');const r=n?.getBoundingClientRect(),s=b?.getBoundingClientRect();return Boolean(r&&s&&r.left>=-1&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=s.top&&s.bottom<=innerHeight)}");
+  assert(warningFits,'375px failed catalog read-back warning and retry remain visibly separate');
+  await shot('provider-create-catalog-refresh-unverified-mobile');
+  await viewport(1440,1000,false);
+  await clickText('.provider-editor-footer button','Αποθήκευση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'final retry refreshes catalog without retransmitting acknowledged binary or bindings');
+  const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,catalogFailures:p.catalogFailures,slots:p.bindingSlots,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(settled.creates===1&&settled.updates===2&&settled.uploads===1&&settled.bindings===3&&settled.catalogFailures===1,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
   assert(JSON.stringify(settled.slots)===JSON.stringify(['logo:universal','wordmark:universal','wordmark:universal']),'only rejected wordmark binding is retried');
   assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
   await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
