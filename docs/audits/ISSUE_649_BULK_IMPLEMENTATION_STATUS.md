@@ -1,3 +1,9 @@
+## 2026-11-18 — I19.04 readback test type preflight correction (new head candidate)
+
+**Implementations 6/23 completed · Sub-implementations 94/132 completed (unchanged; I19.04 PARTIAL).** Candidate `0b66fe76` [CI #44199980954](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44199980954) stops during TypeScript hygiene before Vitest: `tests/649-provider-catalog-readback.test.ts:323` inferred a slot fixture's `assetKey` as nonnullable `string`, then rejected the intentional `null` for an optional card-mark slot (TS2322). This is a test fixture typing error, not an observed app runtime defect. Explicitly type the mixed `assetKey:string|null` readback-intent fixture, preserving all six negative match cases and positive case; wait for the real retry button to leave busy state in the new browser QA before clicking Cancel. No weakened guard or source behavior change. **New exact-head CI, CodeQL and Chromium are NOT YET VERIFIED**. The mandatory six-high transitive picomatch dependency audit remains a separate owned blocker under #660. PR #654 Draft into develop; no production/Android/migration changes.
+
+---
+
 ## 2026-11-18 — I19.04 complete catalog readback (source + synthetic Chromium candidate)
 
 **Implementations 6/23 completed · Sub-implementations 94/132 completed (unchanged; I19.04 PARTIAL).** Previous exact Draft head `7279b1c0`: [CI #44198065836](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44198065836) passed 321/321 Vitest files, 1,912/1,912 tests, TypeScript/build/budgets/privacy/local PostgreSQL and **CodeQL SUCCESS**, but mandatory six-high transitive `picomatch` audit still **FAIL** under independent Dependabot #660; Unified failed, Ready gates skipped. [Focused Chromium #44198332876](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44198332876) passed provider + receipt suites; immutable #14379987570 desktop/375px warning images directly inspected and accepted. Marker OFF.

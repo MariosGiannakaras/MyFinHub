@@ -306,7 +306,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
         {role:'wordmark',variant:'universal',assetKey},
       ],
     };
-    const slots=[
+    const slots:Array<{role:string;variant:string;assetKey:string|null}>=[
       {role:'logo',variant:'universal',assetKey},
       {role:'wordmark',variant:'universal',assetKey},
       {role:'card-mark',variant:'light',assetKey:null},

@@ -441,7 +441,7 @@ try{
   await shot('provider-create-stale-catalog-warning-mobile');
   await viewport(1440,1000,false);
   await clickText('.provider-editor-footer button','Αποθήκευση');
-  await waitFor("function(){return globalThis.__qaStaleReadback?.updates===1}",'stale-catalog retry only reissues the idempotent metadata update');
+  await waitFor("function(){return globalThis.__qaStaleReadback?.updates===1&&!!document.querySelector('.provider-editor-warning')&&!document.querySelector('.provider-editor-footer button:last-child')?.disabled}",'stale-catalog retry finishes and remains unverified without duplicating the binary');
   const staleRetry=await c.call("function(){const s=globalThis.__qaStaleReadback;return {creates:s.creates,updates:s.updates,uploads:s.uploads,bindings:s.bindings}}");
   assert(staleRetry.creates===1&&staleRetry.updates===1&&staleRetry.uploads===1&&staleRetry.bindings===2,'stale catalog retry never re-uploads acknowledged binary or already acknowledged slots');
   await clickText('.provider-editor-footer button','Ακύρωση');
