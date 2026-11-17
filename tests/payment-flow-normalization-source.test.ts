@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
@@ -14,6 +16,9 @@ const staleHarness=readFileSync(new URL('../src/paymentFlowQa.tsx',import.meta.u
 const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
+  it('preflights the real payment browser runner syntax before Chromium',()=>{
+    expect(()=>execFileSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/payment-flow-normalization-qa.mjs',import.meta.url))],{stdio:'pipe'})).not.toThrow();
+  });
   it('routes page payment entry points through exact shared contexts in production and QA',()=>{
     const production=compact(app);
     const synthetic=compact(qa);

@@ -39,7 +39,7 @@ try{
     await screenshot('payment-flow-loan-discard-confirm');
     await sendEscape();
     await waitFor("function(){return !document.querySelector('.app-confirm-dialog')&&Boolean(document.querySelector('.contextual-quick-modal'))}",'Escape cancels dirty loan discard without closing editor');
-    assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')?.value==='31.47'"}),'cancelling discard retains unsaved loan amount');
+    assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')?.value==='31.47'}"),'cancelling discard retains unsaved loan amount');
     await sendEscape();
     await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'reopened dirty loan discard confirmation');
     const discarded=await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...d?.querySelectorAll('button')||[]].find(x=>(x.textContent||'').trim()==='Απόρριψη');button?.click();return Boolean(button)}");
