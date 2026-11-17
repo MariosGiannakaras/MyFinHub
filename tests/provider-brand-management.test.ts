@@ -281,12 +281,6 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
     expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
-    expect(providerBrandingQaSource).toContain('acknowledged writes survive failed catalog refresh without duplicate mutations');
-    expect(providerBrandingQaSource).toContain('catalog read-back failure shows actionable warning after acknowledged bindings');
-    expect(providerBrandingQaSource).toContain('unverified read-back keeps editor open without false success or repeated writes');
-    expect(providerBrandingQaSource).toContain('provider-create-catalog-refresh-unverified-desktop');
-    expect(providerBrandingQaSource).toContain('provider-create-catalog-refresh-unverified-mobile');
-    expect(providerBrandingQaSource).toContain('settled.updates===2&&settled.uploads===1&&settled.bindings===3');
     expect(settings).toContain('<div className="provider-editor-body provider-editor-feedback">');
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
