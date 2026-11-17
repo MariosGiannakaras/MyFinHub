@@ -85,7 +85,7 @@ export async function refreshFinancialProviders(force=false){
       const response=await apiRequest('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των τραπεζών.');
-      const rows=Array.isArray(payload?.providers)?payload.providers:null;
+      const rows:unknown[]|null=Array.isArray(payload?.providers)?payload.providers:null;
       if(!rows?.length)throw new Error('Η λίστα τραπεζών είναι κενή.');
       const parsed=rows.map(parseProvider);
       // A malformed or duplicate provider must not silently disappear from a
