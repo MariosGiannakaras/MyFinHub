@@ -80,6 +80,12 @@ describe('payment flow normalization source contracts',()=>{
     expect(paymentQa).toContain("{state:'empty'}");
     expect(paymentQa).toContain('normal loan amount is editable with exact cents');
     expect(paymentQa).toContain('multi-installment range preview');
+    expect(paymentQa).toContain('discardDirtyLoan()');
+    expect(paymentQa).toContain('dirty loan discard confirmation focused above editor');
+    expect(paymentQa).toContain('cancelling discard retains unsaved loan amount');
+    expect(paymentQa).toContain('confirmed loan discard restores document scroll lock');
+    expect(paymentQa).toContain('Escape closes only installment selector');
+    expect(readFileSync('.github/workflows/fb-focused-rendered-qa.yml','utf8')).toContain("'payment-flow-normalization quick-entry-reference owned-controls'");
     expect(paymentQa).toContain('linked loan payment from Recurring');
     expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
     expect(paymentQa).toContain('δεν είναι πλέον διαθέσιμο');

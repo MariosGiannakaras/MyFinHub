@@ -128,7 +128,9 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
   try{
     const launched=await launchBrowser(chrome,baseProfile);
     child=launched.child;profile=launched.profile;const port=launched.port;
-    const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(origin+'/#/transactions')}`,{method:'PUT'}).then(response=>response.json()) as any;
+    // Create a deterministic blank CDP target; Chromium can acknowledge CDP
+    // before /json/new?URL has actually navigated under CI runner pressure.
+    const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json()) as any;
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     const runtimeErrors:string[]=[];const apiFailures:string[]=[];const apiResponses:string[]=[];
@@ -195,17 +197,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
-    // A headless Chromium CDP endpoint can become ready before its first tab
-    // finishes navigating under CI runner pressure. Never skip login or MFA:
-    // diagnose the first paint, then allow one real navigation retry.
+    const loginUrl=origin+'/#/transactions';
+    const navigateLogin=async()=>{
+      const navigation=await c!.send('Page.navigate',{url:loginUrl});
+      if(navigation.errorText)throw new Error('Real browser login navigation failed: '+navigation.errorText);
+    };
+    // Explicitly navigate the CDP tab; reloading an about:blank bootstrap tab
+    // cannot reach login and hides real app/transport failures.
+    await navigateLogin();
     try{
-      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+      await waitFor("function(){return location.protocol!=='about:'&&Boolean(document.querySelector('#login-title'))}",'login screen');
     }catch(error){
-      const state=await c.call("function(){return {ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
-      console.warn('[real-browser] initial login paint unavailable; bounded navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
+      const state=await c.call("function(){return {url:location.href,ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
+      console.warn('[real-browser] initial login paint unavailable; bounded explicit-navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
       try{await shot('login-bootstrap-first-paint')}catch{}
-      await c.send('Page.reload',{ignoreCache:true});
-      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
+      await navigateLogin();
+      await waitFor("function(){return location.protocol!=='about:'&&Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
     }
     await setSelector('#login-email',email);await setSelector('#login-password',password);await clickText('.login-submit','Σύνδεση');
     await waitFor("function(){return document.querySelector('#mfa-title')?.textContent==='Επαλήθευση'}",'MFA challenge');

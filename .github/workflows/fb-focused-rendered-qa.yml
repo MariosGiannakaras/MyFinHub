@@ -34,11 +34,14 @@ jobs:
        contains(github.event.pull_request.body, '<!-- run-649-finance-entry-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-quick-layout-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-session-race-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-payment-flow-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-transactions-filter-qa -->'))
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-transactions-filter-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-payment-flow-qa -->') &&
+          'payment-flow-normalization quick-entry-reference owned-controls' ||
+          contains(github.event.pull_request.body, '<!-- run-649-transactions-filter-qa -->') &&
           'transactions-scanability command-palette' ||
           contains(github.event.pull_request.body, '<!-- run-649-session-race-qa -->') &&
           'ui-ux-runtime' ||

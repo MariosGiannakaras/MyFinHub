@@ -16,6 +16,12 @@ describe('actual-browser real-stack source contract',()=>{
 
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
+    expect(source).toContain('/json/new?about:blank');
+    expect(source).toContain("const navigation=await c!.send('Page.navigate',{url:loginUrl})");
+    expect(source).toContain('await navigateLogin()');
+    expect(source).toContain("if(navigation.errorText)throw new Error('Real browser login navigation failed: '");
+    expect(source).toContain("location.protocol!=='about:'");
+    expect(source).toContain('bounded explicit-navigation retry');
     expect(source).toContain("document.querySelector('#login-title')");
     expect(source).toContain("document.querySelector('#mfa-title')");
     expect(source).not.toContain("clickText('.login-submit','Επαλήθευση')");
