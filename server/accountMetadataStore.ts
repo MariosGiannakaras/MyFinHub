@@ -500,9 +500,28 @@ export async function uploadRecurringServiceAsset(input:{
     throw new ApiError(502,'RECURRING_SERVICE_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας υπηρεσίας.');
   }
 
-  let payload:unknown;
+  // The registration RPC can COMMIT before an upstream 5xx/timeout. Treat
+  // Storage and PostgreSQL as independent stores: reconcile by the unique,
+  // server-generated key before considering deletion of the uploaded object.
+  const asRegisteredAsset=(value:unknown):RecurringServiceAssetRow=>{
+    const asset=mapRecurringServiceAssetRow(value);
+    if(asset.asset_key!==assetKey||asset.recurring_id!==input.recurringId||
+      asset.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||asset.storage_path!==storagePath||
+      asset.file_name!==input.fileName||asset.mime_type!==input.mimeType||asset.size_bytes!==content.byteLength){
+      throw new ApiError(503,'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
+    }
+    return {
+      assetKey:asset.asset_key,
+      recurringId:asset.recurring_id,
+      url:publicStorageUrl(url,asset),
+      fileName:asset.file_name,
+      mimeType:asset.mime_type,
+      sizeBytes:asset.size_bytes,
+      updatedAt:asset.updated_at,
+    };
+  };
   try{
-    payload=await request('rpc/rheomiq_register_recurring_service_asset',{
+    const payload=await request('rpc/rheomiq_register_recurring_service_asset',{
       method:'POST',
       body:JSON.stringify({
         p_recurring_id:input.recurringId,
@@ -513,30 +532,46 @@ export async function uploadRecurringServiceAsset(input:{
         p_size_bytes:content.byteLength,
       }),
     },accessToken);
+    if(!Array.isArray(payload)||payload.length!==1)throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image response is invalid.',false);
+    return asRegisteredAsset(payload[0]);
   }catch(error){
     try{
-      const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
-        method:'DELETE',
-        headers:{apikey:apiKey,authorization},
-      },'DATA');
-      if(!cleanup.ok)console.error('[RheomIQ recurring service asset cleanup]',{status:cleanup.status});
+      const records=await request(
+        `rheomiq_recurring_service_assets?select=asset_key,recurring_id,file_name,mime_type,storage_bucket,storage_path,size_bytes,updated_at,active&asset_key=eq.${encodeURIComponent(assetKey)}`,
+        {method:'GET'},accessToken);
+      if(!Array.isArray(records)||records.length>1)throw new Error('Invalid recurring service asset reconciliation result');
+      if(records.length)return asRegisteredAsset(records[0]);
     }catch{
-      console.error('[RheomIQ recurring service asset cleanup]',{status:'request-failed'});
+      // A read failure, malformed registered row or mismatched asset cannot
+      // authorize deleting an object that may already be committed or in use.
+      console.error('[RheomIQ recurring service asset reconciliation]',{assetKey,status:'unverified'});
+      throw new ApiError(503,'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
     }
+
+    // An empty read after 5xx/timeout is not proof of rollback: the database
+    // may still commit. Only a definite validation rejection and a verified
+    // absent registry permit cleanup of this newly generated Storage object.
+    const definiteRejection=error instanceof ApiError&&error.status===400&&error.code==='INVALID_RECURRING_SERVICE_ASSET';
+    if(!definiteRejection){
+      console.error('[RheomIQ recurring service asset reconciliation]',{assetKey,status:'ambiguous-register-response'});
+      throw new ApiError(503,'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED','Η καταχώριση εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+    }
+    let cleaned=false;
+    for(let attempt=1;attempt<=2;attempt++){
+      try{
+        const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
+          method:'DELETE',
+          headers:{apikey:apiKey,authorization},
+        },'DATA');
+        if(cleanup.ok||cleanup.status===404){cleaned=true;break}
+        console.error('[RheomIQ recurring service asset cleanup]',{assetKey,status:cleanup.status,attempt});
+      }catch{
+        console.error('[RheomIQ recurring service asset cleanup]',{assetKey,status:'request-failed',attempt});
+      }
+    }
+    if(!cleaned)throw new ApiError(503,'RECURRING_SERVICE_ASSET_CLEANUP_PENDING','Η καταχώριση εικόνας υπηρεσίας απέτυχε και ο προσωρινός καθαρισμός δεν επιβεβαιώθηκε.');
     throw error;
   }
-  const row=Array.isArray(payload)?payload[0]:null;
-  if(!row)throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image response is invalid.',false);
-  const asset=mapRecurringServiceAssetRow(row);
-  return {
-    assetKey:asset.asset_key,
-    recurringId:asset.recurring_id,
-    url:publicStorageUrl(url,asset),
-    fileName:asset.file_name,
-    mimeType:asset.mime_type,
-    sizeBytes:asset.size_bytes,
-    updatedAt:asset.updated_at,
-  };
 }
 
 export async function deleteRecurringServiceAsset(assetKey:string,accessToken:string){
