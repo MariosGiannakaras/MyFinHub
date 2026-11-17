@@ -80,7 +80,12 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(screenshots).toContain("getComputedStyle(row).opacity");
     expect(screenshots).toContain("document.querySelectorAll('.mobile-transaction-row')");
     expect(screenshots).toContain("document.querySelectorAll('.transactions-approved-table tbody tr')");
-    expect(screenshots).toContain("last.rows>=3&&!last.faded");
+    // Require every rendered row to match the footer rather than accepting
+    // three rows while twenty are claimed (I05.04).
+    expect(screenshots).toContain('lastPaint=await c.call(transactionPaintState.toString())');
+    expect(screenshots).toContain("page!=='transactions'||lastPaint?.ready");
+    const probe=source('../scripts/transaction-paint-probe.mjs');
+    expect(probe).toContain('rows.length===expected&&painted===rows.length&&overlapping===0&&footerAfterRows');
     expect(screenshots).toContain('const pendingImages=');
     expect(screenshots).toContain('!last.pendingImages');
     expect(screenshots).toContain('await waitForVisualPaint(page)');
