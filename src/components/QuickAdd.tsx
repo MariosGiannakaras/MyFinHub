@@ -15,7 +15,7 @@ import { categoryTree, defaultCategory, subcategoriesFor } from '../lib/categori
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
 import { manualReconciliationPreview, manualReconciliationDraftError } from '../lib/manualReconciliation';
 // Only load the linked fee builder for a confirmed paid transfer.
-import {parseMoneyInputAmount} from '../lib/moneyInput';
+import {parseMoneyInputAmount,sumValidMoneyInputAmounts} from '../lib/moneyInput';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
@@ -25,6 +25,7 @@ import {
   defaultTransferPair,
   defaultSavingContributionPair,
   savingContributionDraftError,
+  singleAccountDraftError,
   splitAllocation,
   splitDraftError,
   transferDraftError,
@@ -218,8 +219,20 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         const reviewError=manualReconciliationDraftError(reconciliation,reconciliationConfirmed);
         if(reviewError)throw new Error(reviewError);
       }
-      const numeric=Number(amount);
-      const actual=kind==='reconciliation'?Number(actualBalance):undefined;
+      const numeric=kind==='split'||kind==='reconciliation'?0:parseMoneyInputAmount(amount);
+      if(numeric===null)throw new Error('Συμπλήρωσε έγκυρο ποσό σε ευρώ και λεπτά.');
+      const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined;
+      if(actual===null)throw new Error('Συμπλήρωσε έγκυρο επαληθευμένο υπόλοιπο.');
+      if(kind==='withdrawal'){
+        const error=transferDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric});
+        if(error)throw new Error(error);
+      }else if(kind==='card_payment'){
+        const error=singleAccountDraftError(data,from);
+        if(error)throw new Error(error);
+      }else if(['expense','income','refund','lending','repayment'].includes(kind)&&!(kind==='expense'&&multiFundingOpen)){
+        const error=singleAccountDraftError(data,accountId);
+        if(error)throw new Error(error);
+      }
       let event:FinanceEvent;
       if(kind==='expense'&&multiFundingOpen){
         const {createMultiSourcePurchaseEvent}=await import('../lib/multiFunding');
@@ -279,6 +292,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     finally{submitInFlight.current=false;setSaving(false)}
   };
 
+  const fundingPreview=sumValidMoneyInputAmounts(fundingRows.map(row=>row.amountText));
+  const feePreview=parseMoneyInputAmount(feeAmount);
   const accountOptions=(current:string,pool=accounts)=>{
     const poolIds=new Set(pool.map(account=>account.id));
     return current&&!poolIds.has(current)?<><option value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>{pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
@@ -296,10 +311,10 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           {!transferLike && kind!=='card_purchase'?<label className="quick-field" data-filled="true"><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);setReconciliationConfirmed(false);mark()}}>{accountOptions(accountId,quickAccounts)}</AppSelectInput></label>:null}
           {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)}</AppSelectInput></label>:null}</>:null}
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<label className="quick-field" data-filled="true"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} aria-label="Κατηγορία ή υποκατηγορία κίνησης" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory);mark()}}/></label>:null}
-          {kind==='transfer'?<><label className="quick-field" data-filled={filled(feeAmount)}><span>Προμήθεια μεταφοράς (€) · προαιρετική</span><MoneyInput value={feeAmount} onValueChange={value=>{setFeeAmount(value);mark()}}/></label>{feeAmount.trim()&&Number(feeAmount)>0?<label className="quick-field"><span>Κατηγορία προμήθειας</span><AppSelectInput value={feeCategory} onChange={e=>{setFeeCategory(e.target.value);mark()}}>{data.state.settings.expenseCategories.map(name=><option value={name} key={name}>{name}</option>)}</AppSelectInput></label>:null}<div className="logic-note compact wide" role="note">Η κύρια μεταφορά δεν είναι έξοδο. Μόνο η πραγματική προμήθεια καταχωρίζεται ως ξεχωριστή δαπάνη, συνδεδεμένη με τη μεταφορά και στην ίδια αποθήκευση.</div></>:null}
+          {kind==='transfer'?<><label className="quick-field" data-filled={filled(feeAmount)}><span>Προμήθεια μεταφοράς (€) · προαιρετική</span><MoneyInput value={feeAmount} onValueChange={value=>{setFeeAmount(value);mark()}}/></label>{feePreview!==null&&feePreview>0?<label className="quick-field"><span>Κατηγορία προμήθειας</span><AppSelectInput value={feeCategory} onChange={e=>{setFeeCategory(e.target.value);mark()}}>{data.state.settings.expenseCategories.map(name=><option value={name} key={name}>{name}</option>)}</AppSelectInput></label>:null}<div className="logic-note compact wide" role="note">Η κύρια μεταφορά δεν είναι έξοδο. Μόνο η πραγματική προμήθεια καταχωρίζεται ως ξεχωριστή δαπάνη, συνδεδεμένη με τη μεταφορά και στην ίδια αποθήκευση.</div></>:null}
           {kind==='expense'?<div className="multi-funding-editor wide" data-multi-funding>
             <label className="multi-funding-choice"><input type="checkbox" disabled={linkedRecurringPayment} checked={multiFundingOpen} onChange={e=>{setMultiFundingOpen(e.target.checked);if(e.target.checked&&fundingRows.length<2)setFundingRows(freshFundingRows());mark()}}/><span>Πληρωμή από περισσότερες πηγές</span></label>
-            {multiFundingOpen?<><div className="split-head"><b>Πηγές χρηματοδότησης</b><span aria-live="polite">Άθροισμα: {money.format(fundingRows.reduce((sum,row)=>sum+(Number(row.amountText.replace(',','.'))||0),0))}</span></div>
+            {multiFundingOpen?<><div className="split-head"><b>Πηγές χρηματοδότησης</b><span aria-live="polite">Άθροισμα: {fundingPreview===null?'—':money.format(fundingPreview)}</span></div>
             {fundingRows.map((row,index)=><div className="multi-funding-row" role="group" aria-label={`Πηγή πληρωμής ${index+1}`} key={row.id}>
               <AppSelectInput aria-label={`Λογαριασμός ή πιστωτική πηγής ${index+1}`} value={row.sourceKey} onChange={e=>{setFundingRows(rows=>rows.map(item=>item.id===row.id?{...item,sourceKey:e.target.value}:item));mark()}}>
                 <option value="">Διάλεξε πηγή</option>

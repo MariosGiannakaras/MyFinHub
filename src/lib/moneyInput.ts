@@ -10,3 +10,15 @@ export function parseMoneyInputAmount(value:string,allowNegative=false):number|n
   const amount=Number(trimmed.replace(',','.'));
   return isSafeMoneyValue(amount)?amount:null;
 }
+
+/** No financial subtotal may be displayed from unverified lexical inputs. */
+export function sumValidMoneyInputAmounts(values:readonly string[]):number|null{
+  let cents=0;
+  for(const text of values){
+    const amount=parseMoneyInputAmount(text);
+    if(amount===null||amount<=0)return null;
+    cents+=Math.round(amount*100);
+    if(!Number.isSafeInteger(cents))return null;
+  }
+  return cents/100;
+}

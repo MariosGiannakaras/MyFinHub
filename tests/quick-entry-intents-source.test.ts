@@ -35,6 +35,21 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('split malformed entry stays in draft without a posted event');
   });
 
+  it('guards all ordinary Quick Entry account legs and prevents coerced multi-funding previews',()=>{
+    expect(quickAdd).toContain("const numeric=kind==='split'||kind==='reconciliation'?0:parseMoneyInputAmount(amount)");
+    expect(quickAdd).toContain("const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined");
+    expect(quickAdd).toContain("if(kind==='withdrawal'){");
+    expect(quickAdd).toContain("const error=transferDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric})");
+    expect(quickAdd).toContain('singleAccountDraftError(data,accountId)');
+    expect(quickAdd).toContain('singleAccountDraftError(data,from)');
+    expect(quickAdd).toContain('const fundingPreview=sumValidMoneyInputAmounts');
+    expect(quickAdd).toContain("fundingPreview===null?'—':money.format(fundingPreview)");
+    expect(quickAdd).not.toContain("money.format(fundingRows.reduce((sum,row)=>sum+(Number(");
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('quick-entry-multi-funding-invalid-subtotal-desktop');
+    expect(qa).toContain('invalid funding subtotal never posts a finance event');
+  });
+
   it('renders the approved intent registry instead of maintaining a second label list',()=>{
     expect(quickAdd).toContain('ENTRY_INTENTS.map');
     expect(quickAdd).toContain('intentIcons');

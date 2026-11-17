@@ -9,6 +9,12 @@ function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
 }
 
+/** Existing hidden-but-real legacy accounts remain valid for non-destructive edits. */
+export function singleAccountDraftError(data:FinanceData,id:string){
+  return transferEligibleAccounts(data).some(account=>account.id===id)
+    ?null:'Διάλεξε υπαρκτό λογαριασμό για την κίνηση.';
+}
+
 export function defaultTransferPair(data: FinanceData) {
   const accounts = transferEligibleAccounts(data);
   const preferredFrom = data.state.settings.defaultExpenseAccount;

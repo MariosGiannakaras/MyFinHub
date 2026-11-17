@@ -6,6 +6,7 @@ import {
   defaultTransferPair,
   defaultSavingContributionPair,
   savingContributionDraftError,
+  singleAccountDraftError,
   splitAllocation,
   splitDraftError,
   transferDraftError,
@@ -41,6 +42,21 @@ const splitParts = (): SplitPart[] => [
 ];
 
 describe('ledger foundations', () => {
+  it('rejects missing/virtual account references and invalid withdrawal pairs before posting',()=>{
+    const data=minimal();
+    expect(singleAccountDraftError(data,'bank')).toBeNull();
+    expect(singleAccountDraftError(data,'cash')).toBeNull();
+    expect(singleAccountDraftError(data,'savings')).toBeNull();
+    data.seed.accounts[0]!.showInQuickChoices=false;
+    expect(singleAccountDraftError(data,'cash')).toBeNull(); // Existing hidden account remains editable.
+    expect(singleAccountDraftError(data,'missing')).toMatch(/υπαρκτό λογαριασμό/);
+    expect(singleAccountDraftError(data,'credit-card')).toMatch(/υπαρκτό λογαριασμό/);
+    expect(singleAccountDraftError(data,'')).toMatch(/υπαρκτό λογαριασμό/);
+    expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'bank',amount:5})).toMatch(/διαφορετικοί/);
+    expect(transferDraftError(data,{fromAccountId:'missing',toAccountId:'cash',amount:5})).toMatch(/προέλευσης/);
+    expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'missing',amount:5})).toMatch(/προορισμού/);
+  });
+
   it('chooses a valid transfer pair from current accounts', () => {
     const data = minimal();
     expect(defaultTransferPair(data)).toEqual({ from: 'bank', to: 'savings' });
