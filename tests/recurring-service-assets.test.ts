@@ -183,7 +183,7 @@ describe('recurring service asset foundation',()=>{
     const calls:string[]=[];
     let body:Record<string,unknown>={};
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
-      const url=String(input),method=String(init?.method||'GET');calls.push(method);
+      const method=String(init?.method||'GET');calls.push(method);
       if(calls.length===1)return new Response('{}',{status:200});
       if(calls.length===2){body=JSON.parse(String(init?.body)) as Record<string,unknown>;return new Response('{}',{status:503})}
       if(calls.length===3)return new Response(JSON.stringify([{...recurringAssetRow(body),recurring_id:'different-recurring'}]),{status:200});
