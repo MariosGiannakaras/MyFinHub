@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { transactionPaintState } from './transaction-paint-probe.mjs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-transactions-scanability-qa';
@@ -34,6 +35,7 @@ try{
   const chooseOwned=async(label,option)=>{assert(await c.call("function(label){const input=[...document.querySelectorAll(`input[role=\"combobox\"][aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);if(!input)return false;input.click();return true}",[label]),`could not open ${label}`);await waitFor("function(label){return Boolean([...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0))}",`${label} options`,[label]);assert(await c.call("function(label,option){const dialog=[...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);const button=[...(dialog?.querySelectorAll('[role=option]')||[])].find(item=>(item.textContent||'').trim().includes(option));if(!button)return false;button.click();return true}",[label,option]),`could not choose ${option}`);await sleep(120)};
   const scrollTo=async selector=>{assert(await c.call("function(selector){const node=document.querySelector(selector);if(!node)return false;node.scrollIntoView({block:'center',inline:'nearest'});return true}",[selector]),`could not scroll to ${selector}`);await sleep(160)};
   const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
+  const shotFullPage=async name=>{const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:Math.ceil(size.width),height:Math.min(16000,Math.ceil(size.height)),scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const shotElement=async(name,selector)=>{await scrollTo(selector);const rect=await c.call("function(selector){const node=document.querySelector(selector);if(!node)return null;const r=node.getBoundingClientRect();return {x:Math.max(0,r.left+scrollX-12),y:Math.max(0,r.top+scrollY-12),width:Math.min(document.documentElement.scrollWidth,Math.max(1,r.width+24)),height:Math.max(1,r.height+24)}}",[selector]);assert(rect,`missing screenshot target ${selector}`);const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{...rect,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
 
   console.log('Transactions QA: desktop baseline hierarchy');
@@ -170,6 +172,25 @@ try{
   assert(initialLedgerCount&&Number(initialLedgerCount[1])===large.visible&&Number(initialLedgerCount[2])>=1500,
     `large dataset keeps a truthful initial visible/total count (including baseline transactions): ${JSON.stringify(large)}`);
   assert(large.domRows<500&&!large.pager&&!large.overflow,'large continuous list has no pagination and bounded initial DOM');
+  // I05.04: screenshot only a fully painted 20-row ledger, not a misleading
+  // footer count while sibling rows are still transparent.
+  const waitForFirstPaint=async mode=>{
+    let state=null;
+    for(let i=0;i<100;i++){
+      state=await c.call(transactionPaintState.toString());
+      if(state.ready&&state.total>=1500&&state.mode===mode)return state;
+      await sleep(60);
+    }
+    throw new Error('Transactions initial paint differs from footer count: '+JSON.stringify(state));
+  };
+  const firstDesktopPaint=await waitForFirstPaint('desktop');
+  assert(firstDesktopPaint.rendered===large.visible,'all initially claimed desktop ledger rows are painted');
+  await shotFullPage('transactions-first-20-painted-desktop');
+  await viewport(375,812);
+  const firstMobilePaint=await waitForFirstPaint('mobile');
+  assert(firstMobilePaint.rendered===large.visible,'all initially claimed mobile ledger rows are painted');
+  await shotFullPage('transactions-first-20-painted-mobile');
+  await viewport(1280,900);
   await c.call("function(){document.querySelector('.transactions-ledger-footer')?.scrollIntoView({block:'end'});return true}");
   await waitFor("function(previous){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>previous}",'continuous ledger reveals additional rows on scroll',[large.visible]);
   const appended=await c.call("function(){const visual=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;const semantic=document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length;const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visual,semantic,footer,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size'))}}");

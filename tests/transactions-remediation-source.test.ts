@@ -60,6 +60,20 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.transactions-detail-comment-row b{white-space:pre-line;color:var(--text-secondary)}');
   });
 
+  it('proves first full-page screenshot row count equals the actually painted ledger (#649 I05.04)',()=>{
+    const visual=readFileSync(new URL('../scripts/ui-ux-visual-evidence-qa.mjs',import.meta.url),'utf8');
+    const probe=readFileSync(new URL('../scripts/transaction-paint-probe.mjs',import.meta.url),'utf8');
+    expect(probe).toContain('rows.length===expected&&painted===rows.length');
+    expect(probe).toContain('opacity*=value');
+    expect(probe).toContain('overlapping===0&&footerAfterRows');
+    expect(visual).toContain("lastPaint=await c.call(transactionPaintState.toString())");
+    expect(visual).toContain("page!=='transactions'||lastPaint?.ready");
+    expect(qa).toContain("await waitForFirstPaint('desktop')");
+    expect(qa).toContain("await waitForFirstPaint('mobile')");
+    expect(qa).toContain('transactions-first-20-painted-desktop');
+    expect(qa).toContain('transactions-first-20-painted-mobile');
+  });
+
   it('renders a progressive continuous ledger without numeric pages or page-size controls',()=>{
     expect(page).toContain('const LEDGER_RENDER_BATCH=28');
     expect(page).toContain('const LEDGER_INITIAL_ROWS=20');

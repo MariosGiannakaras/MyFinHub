@@ -2,6 +2,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { visualEvidenceContext } from './visual-evidence-store.mjs';
+import { transactionPaintState } from './transaction-paint-probe.mjs';
 
 const context=visualEvidenceContext();
 const {appVersion,timeZone,timestamp,generatedAt,sourceSha,shortSha,sourceBranch,evidenceRoot}=context;
@@ -50,7 +51,7 @@ try{
   // populated rows; do not turn a premature screenshot into a ledger-loss finding.
   const waitForVisualPaint=async(page)=>{
     await c.call("async function(){if(document.fonts?.ready)await document.fonts.ready}");
-    let last=null;
+    let last=null,lastPaint=null;
     for(let attempt=0;attempt<60;attempt++){
       last=await c.call(`function(){
         const nodes=[...document.querySelectorAll('[data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr')]
@@ -73,15 +74,16 @@ try{
         const faded=rows.filter(row=>Number.parseFloat(getComputedStyle(row).opacity)<.98).length;
         return {nodes:nodes.length,pending,pendingImages,rows:rows.length,faded,mode:isMobile?'mobile':'desktop'};
       }`);
-      // The synthetic Transactions QA fixture contains many records; never
-      // report a blank or partly painted ledger as accepted visual evidence.
-      if(!last.pending&&!last.pendingImages&&(page!=='transactions'||(last.rows>=3&&!last.faded))){
+      // I05.04: require every claimed row to be actually painted, with no
+      // overlap or clipping, before accepting full-page desktop/mobile images.
+      if(page==='transactions')lastPaint=await c.call(transactionPaintState.toString());
+      if(!last.pending&&!last.pendingImages&&(page!=='transactions'||lastPaint?.ready)){
         await c.call("async function(){await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame)}");
         return;
       }
       await sleep(50);
     }
-    throw new Error(`Visual evidence did not reach painted content state for ${page}: ${JSON.stringify(last)}`);
+    throw new Error(`Visual evidence did not reach painted content state for ${page}: ${JSON.stringify({animations:last,ledger:lastPaint})}`);
   };
   const navigate=async(page,heading)=>{const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');await c.send('Page.navigate',{url:url.href});for(let i=0;i<100;i++){if(await c.call("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading]))break;if(i===99)throw new Error(`Timed out waiting for visual route ${page}`);await sleep(100)}await waitForVisualPaint(page);if(page==='dashboard'){await revealDashboardForVisualEvidence();await waitForDashboardSteadyState()}if(page==='reports')await assertReportCreditLayout();const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");if(visibleQaControl)throw new Error(`QA-only crash control is visible in visual capture for ${page}`)};
   const assertMobileCreditHistory=async()=>{const state=await c.call(`function(){const rows=[...document.querySelectorAll('.credit-purchases-table tbody tr,.credit-payments-table tbody tr')];const details=rows.map(row=>{const cells=[...row.querySelectorAll('td')],amount=row.querySelector('td.amount'),actions=row.querySelector('td.actions');const rect=row.getBoundingClientRect(),amountRect=amount?.getBoundingClientRect(),actionsRect=actions?.getBoundingClientRect();return {cells:cells.length,rowWidth:rect.width,amountVisible:Boolean(amountRect&&amountRect.width>0&&amountRect.left>=0&&amountRect.right<=innerWidth+1),actionsVisible:!actions||Boolean(actionsRect&&actionsRect.width>0&&actionsRect.left>=0&&actionsRect.right<=innerWidth+1)}});return {rows:details.length,details,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);if(!state.rows)throw new Error('Visual QA expected populated mobile credit history rows');if(state.overflow>1||state.details.some(item=>!item.amountVisible||!item.actionsVisible))throw new Error(`Mobile credit history is clipped or unreadable: ${JSON.stringify(state)}`)};
