@@ -16,6 +16,47 @@ const response=(status:number,body:unknown)=>new Response(JSON.stringify(body),{
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 finance write and cross-session revision recovery',()=>{
+  it('treats a dropped post-commit transport receipt as uncertain, never replays dependent finance writes',async()=>{
+    // A lost network response must not imply that PostgreSQL rolled back.
+    // Reconciliation belongs to explicit, read-only finance + history reload.
+    let writes=0;
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const path=String(input);
+      const method=init?.method??'GET';
+      requests.push(method+' '+path);
+      if(path==='/api/data'&&method==='PUT'){
+        writes+=1;
+        expect(new Headers(init?.headers).get('if-match')).toBe('17');
+        throw new TypeError('Synthetic connection dropped after database COMMIT');
+      }
+      if(path==='/api/data'&&method==='GET')return response(200,snapshot('18'));
+      if(path==='/api/history'&&method==='GET')return response(200,history('18'));
+      throw new Error('Unexpected write/retry '+method+' '+path);
+    }));
+    const queue=new SequentialQueue<string>(async()=>{
+      await saveData(candidate,'17','9','Synthetic lost receipt');
+    });
+    const results=await Promise.allSettled([
+      queue.enqueueWithReceipt('unconfirmed'),
+      queue.enqueueWithReceipt('must-not-run'),
+    ]);
+    expect(results).toHaveLength(2);
+    expect(results.every(result=>result.status==='rejected'
+      &&result.reason instanceof ApiError
+      &&result.reason.status===0
+      &&result.reason.code==='NETWORK_ERROR')).toBe(true);
+    await queue.whenIdle();
+    expect(queue.hasWork()).toBe(false);
+    expect(writes).toBe(1);
+    expect(remoteRevisionAction('17','18',false,true)).toBe('conflict');
+    const [verifiedData,verifiedHistory]=await Promise.all([loadData(),loadHistory()]);
+    expect(verifiedData.revision).toBe('18');
+    expect(verifiedHistory.financeRevision).toBe(verifiedData.revision);
+    expect(requests).toEqual(['PUT /api/data','GET /api/data','GET /api/history']);
+    expect(writes).toBe(1);
+  });
+
   it('never replays a 503 finance write that already committed; only read-back can verify it',async()=>{
     let writes=0;
     const requests:string[]=[];
