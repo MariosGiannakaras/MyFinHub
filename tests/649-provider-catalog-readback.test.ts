@@ -23,7 +23,14 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
       }]}),{status:200,headers:{'content-type':'application/json'}});
     });
     vi.stubGlobal('fetch',fetchMock);
-    const {getFinancialProviderSnapshot,refreshFinancialProviders}=await import('../src/lib/financialProviderClient.js');
+    // Resolve at runtime: the NodeNext test-hygiene project must not pull the
+    // browser/Vite-only provider module into its static TypeScript dependency graph.
+    type CatalogSnapshot={loaded:boolean;loading:boolean;error:string|null;providers:Array<{id:string}>};
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {getFinancialProviderSnapshot,refreshFinancialProviders}=await import(clientPath) as {
+      getFinancialProviderSnapshot:()=>CatalogSnapshot;
+      refreshFinancialProviders:(force?:boolean)=>Promise<CatalogSnapshot>;
+    };
     const unverified=await refreshFinancialProviders(true);
     expect(unverified.loaded).toBe(true);
     expect(unverified.loading).toBe(false);
