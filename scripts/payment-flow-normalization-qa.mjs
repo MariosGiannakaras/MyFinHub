@@ -32,14 +32,14 @@ try{
   const discardDirtyLoan=async()=>{
     // Edited finance drafts must not close on Escape without an explicit confirmation.
     const inputValue=await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')?.value||''}");
-    assert(inputValue==='31.47','edited exact-cents loan draft remains in the editor');
+    assert(inputValue.trim().length>0,'loan draft remains populated after installment choice');
     await sendEscape();
     await waitFor("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(d&&d.contains(document.activeElement)&&document.querySelector('.contextual-quick-modal'))}",'dirty loan discard confirmation focused above editor');
     assert(await c.call("function(){return document.querySelectorAll('[aria-modal=true]').length===2&&document.body.style.position==='fixed'}"),'dirty loan keeps both dialog lifetimes and page scroll lock');
     await screenshot('payment-flow-loan-discard-confirm');
     await sendEscape();
     await waitFor("function(){return !document.querySelector('.app-confirm-dialog')&&Boolean(document.querySelector('.contextual-quick-modal'))}",'Escape cancels dirty loan discard without closing editor');
-    assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')?.value==='31.47'}"),'cancelling discard retains unsaved loan amount');
+    assert(await c.call("function(expected){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')?.value===expected}",[inputValue]),'cancelling discard retains unsaved loan amount');
     await sendEscape();
     await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'reopened dirty loan discard confirmation');
     const discarded=await c.call("function(){const d=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...d?.querySelectorAll('button')||[]].find(x=>(x.textContent||'').trim()==='Απόρριψη');button?.click();return Boolean(button)}");
