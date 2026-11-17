@@ -126,6 +126,14 @@ try{
         }finally{
           await c.call("function(){window.__qaRestoreBackupRead?.();delete window.__qaRestoreBackupRead;return true}");
         }
+        // A 503 after backup RPC may mean a committed backup with lost reply.
+        // The UI must not present definite failure or start JSON download.
+        assert(await c.call("function(){window.__myfinhubQaLoseNextBackupReceipt=true;return true}"),'arm synthetic lost database backup receipt');
+        assert(await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();return Boolean(button)}"),'attempt backup with lost server receipt');
+        await waitFor("function(){const n=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(n&&(n.textContent||'').includes('Δεν επιβεβαιώθηκε αν δημιουργήθηκε')&&(n.textContent||'').includes('Δεν κατέβηκε JSON'))}",'lost backup receipt stays a warning without false success');
+        const uncertainty=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
+        assert(uncertainty.warnings===1&&uncertainty.errors===0&&uncertainty.successes===0,'uncertain backup remains a single warning rather than an error or fake success');
+        await screenshot('settings-backup-uncertain-commit-warning-desktop');
         const oversized=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([new Uint8Array(4*1024*1024+1)],'qa-oversized.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
         assert(oversized,'oversized import fixture enters through the real input');
         await waitFor("function(){return (document.querySelector('.settings-data-tab [role=alert]')?.textContent||'').includes('4 MB')}",'oversized import exposes error alert');

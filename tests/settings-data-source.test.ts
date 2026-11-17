@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { ApiError, backupOutcomeMayBeCommitted } from '../src/lib/api.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const settings=read('src/pages/SettingsPage.tsx');
@@ -18,6 +19,12 @@ describe('Settings Data source contract',()=>{
     expect(settings).toMatch(/await onBackup\(\);\s*databaseBackupConfirmed=true;/);
     expect(settings).toContain("if(databaseBackupConfirmed){");
     expect(qa).toContain('settings-backup-db-ack-download-unavailable-desktop');
+    expect(qa).toContain('settings-backup-uncertain-commit-warning-desktop');
+    expect(settings).toContain('else if(backupOutcomeMayBeCommitted(error))');
+    expect(settings).toContain('Δεν επιβεβαιώθηκε αν δημιουργήθηκε αντίγραφο ασφαλείας στη βάση');
+    expect(backupOutcomeMayBeCommitted(new ApiError('lost',0,'NETWORK_ERROR'))).toBe(true);
+    expect(backupOutcomeMayBeCommitted(new ApiError('remote unavailable',503,'BACKUP_UNAVAILABLE'))).toBe(true);
+    expect(backupOutcomeMayBeCommitted(new ApiError('bad request',400,'INVALID_DATA'))).toBe(false);
     expect(qa).toContain('confirmed database backup is never reported as a total failure');
     expect(qa).toContain('settings-json-import-oversize-error-desktop');
     expect(confirmCss).toContain('.quick-modal.app-confirm-dialog{width:min(520px,100%);background:');

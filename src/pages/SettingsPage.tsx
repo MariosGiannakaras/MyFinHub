@@ -12,7 +12,7 @@ import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { DesktopBackupPanel } from '../components/DesktopBackupPanel';
-import { importOutcomeMayBeCommitted, loadData } from '../lib/api';
+import { backupOutcomeMayBeCommitted, importOutcomeMayBeCommitted, loadData } from '../lib/api';
 import { desktopBackupBridge } from '../lib/desktopBackups';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
@@ -317,6 +317,10 @@ export function SettingsPage({
     } catch (error) {
       if(databaseBackupConfirmed){
         setOperationResult('Το backup στη βάση δημιουργήθηκε, αλλά απέτυχε η ανάκτηση ή η λήψη του JSON στη συσκευή. Το αντίγραφο στη βάση παραμένει διαθέσιμο.','warning');
+      }else if(backupOutcomeMayBeCommitted(error)){
+        // A lost 5xx/HTTP receipt cannot prove the backup RPC rolled back.
+        // Do not download JSON, report complete success or auto-repeat it.
+        setOperationResult('Δεν επιβεβαιώθηκε αν δημιουργήθηκε αντίγραφο ασφαλείας στη βάση. Δεν κατέβηκε JSON. Έλεγξε την κατάσταση του backup πριν ζητήσεις νέο.','warning');
       }else{
         setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'),'error');
       }

@@ -18,6 +18,7 @@ import { ReceiptCleanupNotice } from './components/ReceiptCleanupNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { SaveProgressBar } from './components/SaveProgressBar';
+import { ApiError } from './lib/api';
 import { useSession } from './hooks/useSession';
 import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import type { AttentionItem } from './lib/attention';
@@ -762,7 +763,15 @@ function QaWorkspace(){
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenRules={()=>{setSettingsTab('rules');setPage('settings')}} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
-    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('account-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteAccountReceipt?:()=>void}).__myfinhubQaCompleteAccountReceipt=resolve});if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});document.documentElement.dataset.qaSettingsDurableWrites=String(Number(document.documentElement.dataset.qaSettingsDurableWrites||0)+1);update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
+    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>{
+      const probe=globalThis as typeof globalThis & {__myfinhubQaLoseNextBackupReceipt?:boolean};
+      if(probe.__myfinhubQaLoseNextBackupReceipt){
+        probe.__myfinhubQaLoseNextBackupReceipt=false;
+        // Synthetic commit may have happened; do not claim rollback.
+        throw new ApiError('QA backup reply lost after possible commit',503,'QA_BACKUP_RECEIPT_LOST');
+      }
+      return {path:'synthetic/backup.json'};
+    }} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('account-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteAccountReceipt?:()=>void}).__myfinhubQaCompleteAccountReceipt=resolve});if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});document.documentElement.dataset.qaSettingsDurableWrites=String(Number(document.documentElement.dataset.qaSettingsDurableWrites||0)+1);update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
