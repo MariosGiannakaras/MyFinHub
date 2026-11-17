@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
 import { reachableHistoryNavigation } from '../lib/historyView';
-import { SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, canStartFinanceMaintenance, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
@@ -119,7 +119,7 @@ export function useFinance() {
 
   useEffect(()=>{
     const guardUnload = (event: BeforeUnloadEvent) => {
-      if(!shouldWarnBeforeUnload(coordinator.hasWork(),lastSaveFailed.current))return;
+      if(!shouldWarnBeforeUnload(coordinator.hasWork()||exclusiveOperation.current,lastSaveFailed.current))return;
       event.preventDefault();
       event.returnValue='';
     };
@@ -322,7 +322,12 @@ export function useFinance() {
   },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
-    if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
+    if (!canStartFinanceMaintenance('import',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      // A queued write may fail and be discarded; never replace its unverified
+      // optimistic state with a destructive import after whenIdle resolves.
+      throw new Error('Η εισαγωγή απαιτεί επιβεβαιωμένη οικονομική κατάσταση χωρίς εκκρεμείς ή αποτυχημένες αποθηκεύσεις. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.');
+    }
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
     mutationEpochRef.current+=1;
@@ -367,11 +372,20 @@ export function useFinance() {
   }, [applyDataEnvelope,applyHistory, coordinator,saveFailureMessage,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
+    // Unlike import, an ordinary backup may wait for existing FIFO writes,
+    // but only a confirmed saved/history state may authorize the snapshot.
     await coordinator.whenIdle();
-    if (lastSaveFailed.current) {
-      throw new Error('Το backup ακυρώθηκε επειδή υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί επιτυχώς.');
+    if(!canStartFinanceMaintenance('backup',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      throw new Error('Το backup ακυρώθηκε επειδή η οικονομική κατάσταση δεν έχει επαληθευτεί ή υπάρχει άλλη λειτουργία σε εξέλιξη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
     }
-    return createBackup();
+    // Keep import/cursor/finance mutations out of the snapshot operation.
+    exclusiveOperation.current=true;
+    try{
+      return await createBackup();
+    }finally{
+      exclusiveOperation.current=false;
+    }
   }, [coordinator]);
 
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();

@@ -128,6 +128,42 @@ try{
   assert(afterFailedRead.budget===beforeFailedRead+13&&afterFailedRead.state==='saved'&&!afterFailedRead.failedBar,`obsolete database GET error cannot replace a confirmed import: ${JSON.stringify(afterFailedRead)}`);
   await shot('history-refresh-stale-error-after-import-1440-dark');
 
+  // Guard destructive import against optimistic finance changes that have
+  // not received a server revision. These real-hook checks must never post an
+  // import while the FIFO write is pending or has failed.
+  const guardedImportUrl=new URL(url.href);
+  guardedImportUrl.searchParams.set('history-test','1');
+  await c.send('Page.navigate',{url:guardedImportUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'guarded import baseline ready');
+  const guardedBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  await callMode('held');
+  assert(await mutate(),'hold a real optimistic finance write before import');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saving'&&globalThis.__myfinhubQaPersistencePutCount?.()===1}",'held finance receipt pending');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'request import during queued write');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'}",'queued finance receipt prevents import from posting');
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===0&&globalThis.__myfinhubQaImportCommitCount?.()===0&&document.querySelector('[data-persistence-state]')?.textContent==='saving'}"),'held finance write is not silently overwritten by destructive import');
+  await shot('history-import-denied-while-finance-pending-1440-dark');
+  assert(await release(),'acknowledge original finance write');
+  await waitFor("function(expected){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'finance write confirmed after rejected import',[guardedBudget+1]);
+  await callMode('success');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'explicit new import only after confirmed FIFO receipt');
+  await waitFor("function(expected){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='complete'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",'import after confirmed finance receipt',[guardedBudget+14]);
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===1&&globalThis.__myfinhubQaImportCommitCount?.()===1}"),'one explicit successful import, no queued replay');
+
+  await c.send('Page.navigate',{url:guardedImportUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'failed-write import guard initialized');
+  const failedBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  await callMode('conflict');
+  assert(await mutate(),'trigger a rejected optimistic finance write');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'rejected finance receipt remains conflicted');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'attempt destructive import after rejected finance receipt');
+  await waitFor("function(){return document.querySelector('[data-persistence-import-outcome]')?.textContent==='error'}",'failed finance receipt blocks destructive import until read-only recovery');
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===0&&globalThis.__myfinhubQaImportCommitCount?.()===0&&document.querySelector('[data-persistence-state]')?.textContent==='conflict'}"),'failed finance receipt never permits an import POST');
+  await shot('history-import-denied-after-finance-conflict-1440-dark');
+  assert(await c.call("function(){document.querySelector('[data-persistence-reload]')?.click();return true}"),'read-only reload after failed save and denied import');
+  await waitFor("function(expected){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===expected}",'read-only recovery after failed write',[failedBudget]);
+  assert(await c.call("function(){return globalThis.__myfinhubQaImportAttemptCount?.()===0}"),'recovery did not retry rejected import');
+
   // Synthetic DB receipts run the production useFinance hook through Do / Undo /
   // Redo / Undo / divergent Do and one rejected history move. No live services.
   const historyHookUrl=new URL(url.href);

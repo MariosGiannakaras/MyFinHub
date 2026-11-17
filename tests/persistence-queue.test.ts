@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LatestValueQueue, SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
+import { LatestValueQueue, SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, canStartFinanceMaintenance, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
 
 function deferred() {
   let resolve!: () => void;
@@ -207,5 +207,35 @@ describe('durable no-op receipt gating (#649 I19.04)',()=>{
     for(const state of ['saving','loading','error','conflict']){
       expect(canAcknowledgeDurableNoop(state,false)).toBe(false);
     }
+  });
+});
+
+describe('finance maintenance concurrency and import safety (#649 I18.04/I19.04)',()=>{
+  const allowed=(kind:'import'|'backup',state:string,queued=false,exclusive=false,failed=false,history=true,loaded=true)=>
+    canStartFinanceMaintenance(kind,state,queued,exclusive,failed,history,loaded);
+
+  it('preserves an explicit import outrunning a stale read-only reload, but not a first load',()=>{
+    expect(allowed('import','saved')).toBe(true);
+    expect(allowed('import','loading')).toBe(true); // Already loaded; stale GET is epoch-guarded.
+    expect(allowed('import','loading',false,false,false,true,false)).toBe(false);
+    expect(allowed('backup','loading')).toBe(false);
+    expect(allowed('backup','saved')).toBe(true);
+  });
+
+  it.each(['import','backup'] as const)('%s refuses queued writes, partial receipts and exclusive operations',kind=>{
+    expect(allowed(kind,'saved',true)).toBe(false);
+    expect(allowed(kind,'saved',false,true)).toBe(false);
+    expect(allowed(kind,'saved',false,false,true)).toBe(false);
+    expect(allowed(kind,'saved',false,false,false,false)).toBe(false);
+    expect(allowed(kind,'saved',false,false,false,true,false)).toBe(false);
+    for(const state of ['saving','error','conflict']){
+      expect(allowed(kind,state)).toBe(false);
+    }
+  });
+
+  it('treats an in-flight exclusive operation as unsaved work for browser unload',()=>{
+    const queued=false,exclusive=true,failed=false;
+    expect(shouldWarnBeforeUnload(queued||exclusive,failed)).toBe(true);
+    expect(shouldWarnBeforeUnload(false,false)).toBe(false);
   });
 });

@@ -10,6 +10,16 @@ const browser=readFileSync(new URL('../scripts/save-progress-qa.mjs',import.meta
 const importPath=hook.slice(hook.indexOf('const doImport = useCallback'),hook.indexOf('const doBackup = useCallback'));
 
 describe('#649 I18.04 import receipt with unverified history',()=>{
+  it('blocks import before any POST when finance FIFO writes or a failed receipt remain, without blocking stale-GET recovery',()=>{
+    expect(importPath).toContain("canStartFinanceMaintenance('import',saveStateRef.current,coordinator.hasWork()");
+    expect(importPath.indexOf("canStartFinanceMaintenance('import'")).toBeLessThan(importPath.indexOf('const res = await importData'));
+    expect(hook).toContain("canStartFinanceMaintenance('backup',saveStateRef.current,coordinator.hasWork()");
+    expect(hook).toContain('exclusiveOperation.current=true;\n    try{\n      return await createBackup();');
+    expect(hook).toContain('coordinator.hasWork()||exclusiveOperation.current,lastSaveFailed.current');
+    expect(browser).toContain('queued finance receipt prevents import from posting');
+    expect(browser).toContain('failed finance receipt blocks destructive import until read-only recovery');
+  });
+
   it('recognizes committed finance before checking history and does not silently claim full success',()=>{
     const receipt=importPath.indexOf('const res = await importData');
     expect(receipt).toBeGreaterThan(-1);

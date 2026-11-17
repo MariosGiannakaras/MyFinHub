@@ -26,6 +26,25 @@ export function shouldWarnBeforeUnload(hasWork:boolean,lastSaveFailed:boolean){
   return hasWork||lastSaveFailed;
 }
 
+/**
+ * Import and backup cannot start from a failed, conflicted or pending write:
+ * the FIFO queue may have dropped dependent mutations even after it becomes
+ * idle. A deliberate import can still supersede an in-flight *read-only*
+ * reload of an already loaded document (the server If-Match remains final).
+ */
+export function canStartFinanceMaintenance(
+  kind:'import'|'backup',
+  saveState:string,
+  hasQueuedWork:boolean,
+  exclusiveOperation:boolean,
+  lastSaveFailed:boolean,
+  historyAvailable:boolean,
+  hasData:boolean,
+):boolean{
+  if(hasQueuedWork||exclusiveOperation||lastSaveFailed||!historyAvailable||!hasData)return false;
+  return saveState==='saved'||(kind==='import'&&saveState==='loading');
+}
+
 /** A durable no-op cannot bypass an optimistic finance write awaiting receipt. */
 export function canAcknowledgeDurableNoop(saveState:string,hasQueuedWork:boolean):boolean{
   return saveState==='saved'&&!hasQueuedWork;
