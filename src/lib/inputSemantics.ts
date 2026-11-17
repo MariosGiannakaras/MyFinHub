@@ -2,6 +2,7 @@ import type { EventKind, FinanceSettings, Loan, RecurringItem, SplitPart } from 
 import { isValidDateOnly } from './dateOnly.js';
 import { defaultCategory } from './categories.js';
 import { isSafeMoneyValue } from './money.js';
+import { parseMoneyInputAmount } from './moneyInput.js';
 import { recurringVariableAmountError } from './recurringVariable.js';
 
 type RecurringCadenceDraft=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
@@ -25,10 +26,10 @@ export function entryDraftError(kind: EventKind, draft: { amount: string; person
     if (draft.parts.some((part) => !isSafeMoneyValue(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
     return null;
   }
-  const amount = Number(draft.amount);
-  if (kind !== 'reconciliation' && (!isSafeMoneyValue(amount) || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό εντός επιτρεπτού εύρους.';
+  const amount = parseMoneyInputAmount(draft.amount);
+  if (kind !== 'reconciliation' && (amount === null || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό εντός επιτρεπτού εύρους.';
   if ((kind === 'lending' || kind === 'repayment') && !draft.person.trim()) return 'Συμπλήρωσε το πρόσωπο για τα δανεικά.';
-  if (kind === 'reconciliation' && (!draft.actualBalance.trim() || !isSafeMoneyValue(Number(draft.actualBalance)))) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο εντός επιτρεπτού εύρους.';
+  if (kind === 'reconciliation' && parseMoneyInputAmount(draft.actualBalance,true)===null) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο εντός επιτρεπτού εύρους.';
   return null;
 }
 

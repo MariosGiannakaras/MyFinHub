@@ -30,6 +30,19 @@ describe('finance input semantics', () => {
     expect(entryDraftError('split', { amount: '', person: '', actualBalance: '', parts: [part, secondPart] })).toBeNull();
   });
 
+  it('refuses exponent, hex and overprecision input before generic or reconciliation finance posting',()=>{
+    const draft={amount:'1e3',person:'Someone',actualBalance:'12.00',parts:[part,secondPart]};
+    for(const kind of ['expense','income','transfer','refund','lending','repayment','saving_cash_offset'] as const){
+      expect(entryDraftError(kind,draft)).toMatch(/ποσό/i);
+    }
+    expect(entryDraftError('expense',{...draft,amount:'0x10'})).toMatch(/ποσό/i);
+    expect(entryDraftError('expense',{...draft,amount:'1.234'})).toMatch(/ποσό/i);
+    expect(entryDraftError('expense',{...draft,amount:'0,01'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,amount:'',actualBalance:'-12,34'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,actualBalance:'-1e3'})).toMatch(/υπόλοιπο/i);
+    expect(entryDraftError('reconciliation',{...draft,actualBalance:'0xFF'})).toMatch(/υπόλοιπο/i);
+  });
+
   it('rejects invalid loan installment counts and paid baselines', () => {
     const valid: Loan = { id: 'loan', name: 'Loan', total: 100, installment: 25, installments: 4, paidCount: 1 };
     expect(loanDraftError(valid)).toBeNull();

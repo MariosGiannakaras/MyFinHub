@@ -15,7 +15,7 @@ import { categoryTree, defaultCategory, subcategoriesFor } from '../lib/categori
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
 import { manualReconciliationPreview, manualReconciliationDraftError } from '../lib/manualReconciliation';
 // Only load the linked fee builder for a confirmed paid transfer.
-import {isSafeMoneyValue} from '../lib/money';
+import {parseMoneyInputAmount} from '../lib/moneyInput';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
@@ -219,11 +219,15 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       let event:FinanceEvent;
       if(kind==='expense'&&multiFundingOpen){
         const {createMultiSourcePurchaseEvent}=await import('../lib/multiFunding');
-        const sources=fundingRows.map(row=>({
-          kind:row.sourceKey.startsWith('credit:')?'credit' as const:'account' as const,
-          ...(row.sourceKey.startsWith('credit:')?{cardId:row.sourceKey.slice(7)}:{accountId:row.sourceKey.startsWith('account:')?row.sourceKey.slice(8):''}),
-          amount:Number(row.amountText.replace(',','.'))
-        }));
+        const sources=fundingRows.map(row=>{
+          const share=parseMoneyInputAmount(row.amountText);
+          if(share===null||share<=0)throw new Error('Κάθε πηγή χρηματοδότησης χρειάζεται έγκυρο θετικό ποσό με έως δύο δεκαδικά ψηφία.');
+          return {
+            kind:row.sourceKey.startsWith('credit:')?'credit' as const:'account' as const,
+            ...(row.sourceKey.startsWith('credit:')?{cardId:row.sourceKey.slice(7)}:{accountId:row.sourceKey.startsWith('account:')?row.sourceKey.slice(8):''}),
+            amount:share,
+          };
+        });
         event=createMultiSourcePurchaseEvent(data,{date,amount:numeric,note:note||'Αγορά με πολλαπλές πηγές',
           category,subcategory:subcategory||undefined,sources});
       }else if(kind==='transfer'){
@@ -258,8 +262,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');
-        const feeValue=feeAmount.trim()?Number(feeAmount.replace(',','.')):0;
-        if(!isSafeMoneyValue(feeValue)||feeValue<0)throw new Error('Η προμήθεια πρέπει να είναι μη αρνητικό ποσό σε λεπτά του ευρώ.');
+        const feeValue=feeAmount.trim()?parseMoneyInputAmount(feeAmount,true):0;
+        if(feeValue===null||feeValue<0)throw new Error('Η προμήθεια πρέπει να είναι μη αρνητικό ποσό σε λεπτά του ευρώ.');
         const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:feeCategory});
         await onCreateLinkedTransfer(event,fee);

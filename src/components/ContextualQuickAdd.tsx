@@ -26,7 +26,7 @@ import { pendingScheduled, scheduledToEvent, transitionScheduled } from '../lib/
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
 // The fee contract is loaded only when a real card-payment commission is saved.
-import { isSafeMoneyValue } from '../lib/money';
+import { parseMoneyInputAmount } from '../lib/moneyInput';
 import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
 import { userErrorMessage } from '../lib/userMessage';
@@ -129,8 +129,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
     // New attempts must not retain feedback from an earlier rejected receipt.
     setError('');
     try{
-      if(context.mode==='loan'&&!/^\d+(?:[.,]\d{1,2})?$/.test(amount.trim()))throw new Error('Το πραγματικό ποσό δόσης πρέπει να έχει έως δύο δεκαδικά ψηφία.');
-      const numeric=Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0)throw new Error('Συμπλήρωσε ποσό μεγαλύτερο από μηδέν.');
+      const numeric=parseMoneyInputAmount(amount);
+      if(context.mode==='loan'&&numeric===null)throw new Error('Το πραγματικό ποσό δόσης πρέπει να έχει έως δύο δεκαδικά ψηφία.');
+      if(numeric===null||numeric<=0)throw new Error('Συμπλήρωσε θετικό ποσό σε ευρώ με έως δύο δεκαδικά ψηφία.');
       let event:FinanceEvent;
       if(context.mode==='credit'){
         if(!card||card.active===false)throw new Error('Η επιλεγμένη πιστωτική δεν είναι πλέον διαθέσιμη.');
@@ -198,8 +199,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         event.savingSource=context.savingSource??'manual_transfer';
       }
       if(context.mode==='credit'&&context.action==='payment'&&paymentFee.trim()){
-        const feeValue=Number(paymentFee.replace(',','.'));
-        if(!isSafeMoneyValue(feeValue)||feeValue<0)throw new Error('Η προμήθεια χρειάζεται έγκυρο ποσό σε ευρώ και λεπτά.');
+        const feeValue=parseMoneyInputAmount(paymentFee,true);
+        if(feeValue===null||feeValue<0)throw new Error('Η προμήθεια χρειάζεται έγκυρο ποσό σε ευρώ και λεπτά.');
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ενιαία ασφαλής αποθήκευση πληρωμής και προμήθειας.');
         const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:paymentFeeCategory});
