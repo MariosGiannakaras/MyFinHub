@@ -65,9 +65,10 @@ try{
       const provider=mod.getFinancialProviderSnapshot().providers.find(item=>item.id==='piraeus');
       if(!provider)return false;
       const original=globalThis.fetch.bind(globalThis);
-      const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><rect width="120" height="60" rx="12" fill="#0f766e"/><path d="M18 42 34 18h12L30 42zm32 0 16-24h12L62 42z" fill="white"/></svg>';
-      const assetUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-      const assetKey='qa-provider-replacement-logo';
+      // Reuse a real served QA asset URL; the server never returns data: URLs.
+      const assetUrl=provider.assets?.find(asset=>asset.role==='wordmark'&&asset.variant==='light'&&asset.url!==provider.logoUrl)?.url;
+      if(!assetUrl)return false;
+      const assetKey='piraeus-asset-123456abcdef';
       control.__myfinhubProviderReplaceOriginalFetch=original;
       globalThis.fetch=async function(input,init){
         const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -81,7 +82,7 @@ try{
           }}),{status:200,headers:{'content-type':'application/json'}});
         }
         if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
-          const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:assetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:'image/svg+xml',sizeBytes:svg.length,updatedAt:'2026-10-03T00:00:00.000Z'};
+          const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:assetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,updatedAt:'2026-10-03T00:00:00.000Z'};
           provider.assets=[...(provider.assets||[]).filter(item=>item.assetKey!==assetKey),asset];
           return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
         }
@@ -92,7 +93,7 @@ try{
           if(bindingKey)provider.bindings.push({role,variant,assetKey:bindingKey});
           if(role==='logo'&&variant==='universal'){provider.logoAssetKey=bindingKey||null;provider.logoUrl=bindingKey===assetKey?assetUrl:null}
           if(role==='wordmark'&&variant==='universal'){provider.wordmarkAssetKey=bindingKey||null;provider.wordmarkUrl=bindingKey===assetKey?assetUrl:null}
-          return new Response(JSON.stringify({binding:{providerId:provider.id,role,variant,assetKey:bindingKey}}),{status:200,headers:{'content-type':'application/json'}});
+          return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
         }
         return original(input,init);
       };
@@ -227,7 +228,7 @@ try{
   console.log('Provider branding task-flow QA: partial provider metadata commit must not look like a failed initial write');
   await c.call(`async function(){
     const original=globalThis.fetch.bind(globalThis);
-    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-new-provider-shared',invalidReceipts:0,badReceiptOnce:true};
+    const provider=globalThis.__qaNewProvider={creates:0,updates:0,uploads:0,bindings:0,bindingSlots:[],assetKey:'qa-bank-asset-abcdef123456',invalidReceipts:0,badReceiptOnce:true};
     globalThis.__myfinhubOriginalFetch=original;
     globalThis.fetch=async function(input,init){
       const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -246,7 +247,7 @@ try{
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
         provider.uploads+=1;
-        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E',fileName:'qa-new-provider.svg'};
+        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'https://assets.example/qa-new-provider.svg',fileName:'qa-new-provider.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0};
         return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
@@ -256,7 +257,7 @@ try{
         // First logo binding is durable, second wordmark binding fails.
         // Retry must not repeat the already acknowledged logo mutation.
         if(provider.bindings===2)return new Response(JSON.stringify({error:'Synthetic wordmark binding rejection after durable provider, upload and logo binding'}),{status:503,headers:{'content-type':'application/json'}});
-        return new Response(JSON.stringify({binding:{}}),{status:200,headers:{'content-type':'application/json'}});
+        return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
       }
       return original(input,init);
     };
@@ -296,6 +297,68 @@ try{
   assert(JSON.stringify(settled.slots)===JSON.stringify(['logo:universal','wordmark:universal','wordmark:universal']),'only rejected wordmark binding is retried');
   assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
   await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
+
+
+  console.log('Provider upload HTTP 200 with an invalid binary receipt cannot silently succeed or replay a fresh-key upload');
+  await clickText('.provider-management button','Νέος πάροχος');
+  await waitFor("function(){return !!document.querySelector('.provider-details-panel')}",'new provider for ambiguous asset response');
+  const filled=await c.call(`function(){
+    const field=[...document.querySelectorAll('.provider-details-panel input')].find(input=>input.placeholder==='π.χ. Νέα Τράπεζα');
+    if(!field)return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,'QA Unverified');
+    field.dispatchEvent(new Event('input',{bubbles:true}));return true;
+  }`);
+  assert(filled,'provider details accept synthetic ambiguous receipt fixture');
+  await waitFor("function(){return document.querySelector('.provider-id-field input')?.value==='qa-unverified'}",'unverified provider key is derived from name');
+  await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
+  await waitFor("function(){return !!document.querySelector('.provider-branding-panel')}",'ambiguous provider branding');
+  await chooseSlot('Βασικό λογότυπο');
+  await uploadSyntheticSvg('qa-unverified.svg');
+  await waitFor("function(){return !!document.querySelector('.provider-picker-asset')===false&&!document.querySelector('.provider-asset-picker')}",'local upload selects pending logo');
+  await chooseSlot('Βασικό λεκτικό σήμα');
+  await clickText('.provider-picker-asset','qa-unverified.svg');
+  await c.call(`function(){
+    const original=globalThis.fetch.bind(globalThis);
+    globalThis.__myfinhubUnverifiedOriginalFetch=original;
+    const state=globalThis.__qaUnverifiedAsset={creates:0,uploads:0,bindings:0};
+    globalThis.fetch=async function(input,init){
+      const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      const url=new URL(raw,location.href),method=String(init?.method||'GET').toUpperCase();
+      const resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='POST'){
+        state.creates++;
+        return new Response(JSON.stringify({provider:JSON.parse(String(init?.body||'{}'))}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
+        state.uploads++;
+        // The upstream write might have committed, but its HTTP-200 body
+        // does not identify the binary. Retrying could generate a second key.
+        return new Response(JSON.stringify({asset:{assetKey:'unexpected-key'}}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
+        state.bindings++;return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      return original(input,init);
+    };
+    return true;
+  }`);
+  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  await waitFor("function(){const warning=document.querySelector('.provider-editor-warning');const save=document.querySelector('.provider-editor-footer button:last-child');return !!warning&&(warning.textContent||'').includes('αβέβαιη')&&save?.disabled}",'unverified binary receipt warning prevents blind repeat');
+  const unknown=await c.call("function(){const mock=globalThis.__qaUnverifiedAsset,warning=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),bounds=warning?.getBoundingClientRect(),button=save?.getBoundingClientRect();return {creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,disabled:save?.disabled,editorOpen:!!document.querySelector('.provider-editor-modal'),warningRole:warning?.getAttribute('role'),visible:!!(bounds&&button&&bounds.top>=0&&bounds.bottom<=button.top&&button.bottom<=innerHeight),success:!!document.querySelector('.provider-management-message')}}");
+  assert(unknown.creates===1&&unknown.uploads===1&&unknown.bindings===0&&unknown.disabled&&unknown.editorOpen&&!unknown.success,
+    'an ambiguous HTTP-200 upload is neither all-green nor eligible for automatic replay');
+  assert(unknown.warningRole==='alert'&&unknown.visible,'the warning remains accessible and visibly above disabled actions');
+  await shot('provider-create-unverified-asset-warning-desktop');
+  await c.call("function(){document.querySelector('.provider-editor-footer button:last-child')?.click();return true}");
+  const afterDisabled=await c.call("function(){const p=globalThis.__qaUnverifiedAsset;return {creates:p.creates,uploads:p.uploads,bindings:p.bindings}}");
+  assert(afterDisabled.creates===1&&afterDisabled.uploads===1&&afterDisabled.bindings===0,'clicking disabled Save never duplicates any uncertain write');
+  await viewport(375,812,true);await noOverflow('unverified asset warning mobile');
+  const unknownMobile=await c.call("function(){const a=document.querySelector('.provider-editor-warning')?.getBoundingClientRect(),b=document.querySelector('.provider-editor-footer button:last-child')?.getBoundingClientRect();return !!(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
+  assert(unknownMobile,'375px unverified receipt warning and disabled Save fit without clipping');
+  await shot('provider-create-unverified-asset-warning-mobile');
+  await clickText('.provider-editor-footer button','Ακύρωση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'close unverified provider without a second write');
+  await c.call("function(){globalThis.fetch=globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__qaUnverifiedAsset;return true}");
 
   console.log('Shared compact Transactions filters remain at least 12px');
   const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');

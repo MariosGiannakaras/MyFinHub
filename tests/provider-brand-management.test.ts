@@ -57,7 +57,9 @@ function provider():FinancialProvider{
 describe('provider branding management',()=>{
   it('serializes provider metadata and asset binding attempts before state repaint (#649 I19.04)',()=>{
     expect(settings).toContain('const mutationInFlight=useRef(false)');
-    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||!validateDetails())return;');
+    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||requiresCatalogReview||!validateDetails())return;');
+    expect(settings).toContain('disabled={busy||requiresCatalogReview}');
+    expect(settings).toContain('if(error instanceof UnverifiedFinancialProviderWrite)');
     expect(settings).toContain('mutationInFlight.current=true;setBusy(true)');
     expect(settings).toContain('finally{mutationInFlight.current=false;setBusy(false)}');
     expect(providerBrandingQaSource).toContain('Provider save single-flight blocks same-tick double click');
@@ -277,8 +279,11 @@ describe('provider branding management',()=>{
     expect(client).toContain('acknowledged.sortOrder!==input.sortOrder');
     expect(client).toContain('Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε με έγκυρη απόκριση');
     expect(providerBrandingQaSource).toContain('Provider save HTTP 200 without a valid matching receipt cannot show success');
+    expect(providerBrandingQaSource).toContain('Provider upload HTTP 200 with an invalid binary receipt cannot silently succeed');
     expect(providerBrandingQaSource).toContain('invalid provider HTTP 200 receipt cannot trigger upload');
     expect(providerBrandingQaSource).toContain('provider-create-invalid-200-receipt-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-mobile');
   });
 
   it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{

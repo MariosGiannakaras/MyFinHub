@@ -1,3 +1,13 @@
+## 2026-11-18 — I19.04 source guard + browser fixture reconciliation (new verification candidate)
+
+**Implementations 6/23 completed · Sub-implementations 94/132 completed (unchanged; I19.04 PARTIAL).** [CI #44197397874](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44197397874) at prior `3b722624` ran the full 321-file Vitest suite: **1,911 PASS, one FAIL** in an obsolete source-literal assertion that required the older single-flight guard without the new `requiresCatalogReview` fail-closed state. This is a known guard maintenance failure, not evidence of a broken runtime operation. CodeQL and later CI stages are not claimed PASS until observed. The existing mandatory six-high `picomatch` audit remains independently blocked under Dependabot #660.
+
+**Grouped correction:** strengthen the stale source guard to require both the original mutation lock and the new no-replay lock and disabled button. Update both existing synthetic provider browser backends to the real `{asset:{...server-generated-key,role,variant,filename,MIME,byte-size,URL}}` and `{ok:true}` response contracts; previously they returned impossible generic binding receipts, data URLs and non-generated keys now correctly rejected by the production client. Add real Chromium create→valid metadata→HTTP-200 invalid binary receipt→visible warning and disabled retry (desktop 1440 and mobile 375), assert one POST/one PUT/zero bindings, no success and disabled Save cannot repost. Save new `provider-create-unverified-asset-warning-{desktop,mobile}.png` rendered artifacts for direct review. Positive provider replacement and confirmed partial-binding retry assertions remain intact.
+
+**Next:** verify exact-head source checks; enable one existing Draft-only provider+receipt focused QA opt-in after source check passes, inspect actual browser results/screenshots, disable opt-in, then continue provider multi-store readback integrity. No main/production deploy, Android work or production Database/Storage write.
+
+---
+
 ## 2026-11-18 — I19.04 asset/binding HTTP-200 receipt verification (new source candidate)
 
 **Implementations 6/23 completed · Sub-implementations 94/132 completed (UNCHANGED; I19.04 PARTIAL).** Previous `06cdcd97` [CI #44194132440](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44194132440) completed: source hygiene, Vitest, TypeScript/build and CodeQL **PASS**, mandatory six-high `picomatch` npm audit **FAIL**, Unified **FAIL**, Draft-only Ready/WebKit/Windows/Lighthouse skipped. Dependabot #660 owns that dependency boundary; do not suppress audits or merge.
