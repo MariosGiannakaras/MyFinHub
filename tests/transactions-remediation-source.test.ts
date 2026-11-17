@@ -66,6 +66,16 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(probe).toContain('rows.length===expected&&painted===rows.length');
     expect(probe).toContain('opacity*=value');
     expect(probe).toContain('overlapping===0&&footerAfterRows');
+    // A CDP capture of the larger page can rasterize offscreen animated table
+    // layers as blank despite DOM opacity=1; neutralize only settled entrance
+    // motion during capture, never force content opacity or change product CSS.
+    expect(probe).toContain("style.dataset.transactionCaptureOnly='true'");
+    expect(probe).toContain('animation:none!important');
+    expect(probe).not.toContain('opacity:1!important');
+    expect(visual).toContain('await c.call(settleTransactionCapture.toString())');
+    expect(visual).toContain('await c.call(releaseTransactionCapture.toString())');
+    expect(qa).toContain('await c.call(settleTransactionCapture.toString())');
+    expect(qa).toContain('await c.call(releaseTransactionCapture.toString())');
     expect(visual).toContain("lastPaint=await c.call(transactionPaintState.toString())");
     expect(visual).toContain("page!=='transactions'||lastPaint?.ready");
     expect(qa).toContain("await waitForFirstPaint('desktop')");

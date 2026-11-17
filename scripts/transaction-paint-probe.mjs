@@ -25,3 +25,27 @@ export function transactionPaintState(){
   const ready=expected>=20&&total>=expected&&rows.length===expected&&painted===rows.length&&overlapping===0&&footerAfterRows;
   return {mode:mobile?'mobile':'desktop',expected,total,rendered:rows.length,painted,overlapping,footerAfterRows,ready};
 }
+
+// Headless Chromium full-page CDP clips can re-rasterize completed entrance
+// animation layers as transparent although the ordinary viewport paints them.
+// Only AFTER strict live paint readiness, suppress finite entrance animations
+// for one screenshot. Do not force opacity, hide rows or change app CSS.
+export async function settleTransactionCapture(){
+  if(document.querySelector('style[data-transaction-capture-only]'))
+    throw new Error('Transactions capture override already installed');
+  const rows=document.querySelectorAll('.transactions-approved-table tbody[data-content-entrance="table"] > tr,.mobile-transaction-list[data-content-entrance="list"] > .mobile-transaction-row');
+  if(!rows.length)throw new Error('No Transactions rows exist for settled screenshot');
+  const style=document.createElement('style');
+  style.dataset.transactionCaptureOnly='true';
+  style.textContent='.transactions-approved-table tbody[data-content-entrance="table"] > tr,.mobile-transaction-list[data-content-entrance="list"] > .mobile-transaction-row{animation:none!important}';
+  document.head.append(style);
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+  return rows.length;
+}
+export function releaseTransactionCapture(){
+  const style=document.querySelector('style[data-transaction-capture-only]');
+  if(!style)throw new Error('Missing temporary Transactions screenshot style');
+  style.remove();
+  return true;
+}

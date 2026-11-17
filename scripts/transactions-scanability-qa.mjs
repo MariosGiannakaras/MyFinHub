@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { transactionPaintState } from './transaction-paint-probe.mjs';
+import { transactionPaintState, settleTransactionCapture, releaseTransactionCapture } from './transaction-paint-probe.mjs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-transactions-scanability-qa';
@@ -35,7 +35,21 @@ try{
   const chooseOwned=async(label,option)=>{assert(await c.call("function(label){const input=[...document.querySelectorAll(`input[role=\"combobox\"][aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);if(!input)return false;input.click();return true}",[label]),`could not open ${label}`);await waitFor("function(label){return Boolean([...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0))}",`${label} options`,[label]);assert(await c.call("function(label,option){const dialog=[...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);const button=[...(dialog?.querySelectorAll('[role=option]')||[])].find(item=>(item.textContent||'').trim().includes(option));if(!button)return false;button.click();return true}",[label,option]),`could not choose ${option}`);await sleep(120)};
   const scrollTo=async selector=>{assert(await c.call("function(selector){const node=document.querySelector(selector);if(!node)return false;node.scrollIntoView({block:'center',inline:'nearest'});return true}",[selector]),`could not scroll to ${selector}`);await sleep(160)};
   const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
-  const shotFullPage=async name=>{const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:Math.ceil(size.width),height:Math.min(16000,Math.ceil(size.height)),scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
+  const shotFullPage=async name=>{
+    const before=await c.call(transactionPaintState.toString());
+    assert(before.ready,'Transactions screenshot requires all claimed rows painted');
+    await c.call(settleTransactionCapture.toString());
+    try{
+      const after=await c.call(transactionPaintState.toString());
+      assert(after.ready&&after.expected===before.expected&&after.total===before.total,
+        'settled screenshot motion override preserves exact ledger count and layout');
+      const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
+      const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:Math.ceil(size.width),height:Math.min(16000,Math.ceil(size.height)),scale:1}});
+      writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'));
+    }finally{
+      await c.call(releaseTransactionCapture.toString());
+    }
+  };
   const shotElement=async(name,selector)=>{await scrollTo(selector);const rect=await c.call("function(selector){const node=document.querySelector(selector);if(!node)return null;const r=node.getBoundingClientRect();return {x:Math.max(0,r.left+scrollX-12),y:Math.max(0,r.top+scrollY-12),width:Math.min(document.documentElement.scrollWidth,Math.max(1,r.width+24)),height:Math.max(1,r.height+24)}}",[selector]);assert(rect,`missing screenshot target ${selector}`);const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{...rect,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
 
   console.log('Transactions QA: desktop baseline hierarchy');
