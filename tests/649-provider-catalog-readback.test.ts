@@ -300,7 +300,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     const provider={
       id:input.id,displayName:input.displayName,shortName:input.shortName,
       kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',sortOrder:input.sortOrder,
-      logoAssetKey:assetKey,wordmarkAssetKey:assetKey,
+      logoAssetKey:assetKey,wordmarkAssetKey:assetKey as string|null,
       assets:[asset],bindings:[
         {role:'logo',variant:'universal',assetKey},
         {role:'wordmark',variant:'universal',assetKey},
