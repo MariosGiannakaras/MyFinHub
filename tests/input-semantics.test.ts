@@ -43,6 +43,15 @@ describe('finance input semantics', () => {
     expect(entryDraftError('reconciliation',{...draft,actualBalance:'0xFF'})).toMatch(/υπόλοιπο/i);
   });
 
+  it('rejects a malformed optional reconciliation statement movement without changing valid signed cents',()=>{
+    const draft={amount:'',person:'',actualBalance:'12,34',statementMovement:'1e3',parts:[part,secondPart]};
+    expect(entryDraftError('reconciliation',draft)).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'0x10'})).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'-0,001'})).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'-10,05'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:''})).toBeNull();
+  });
+
   it('rejects invalid loan installment counts and paid baselines', () => {
     const valid: Loan = { id: 'loan', name: 'Loan', total: 100, installment: 25, installments: 4, paidCount: 1 };
     expect(loanDraftError(valid)).toBeNull();

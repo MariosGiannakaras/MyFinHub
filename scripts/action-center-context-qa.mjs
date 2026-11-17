@@ -175,6 +175,16 @@ try{
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'generic nondecimal notation rejected before finance POST');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'generic exponent notation never posts a finance event');
   await screenshot('quick-entry-nondecimal-rejected-desktop');
+  const splitSelected=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .generic-kind-grid button')].find(node=>(node.textContent||'').includes('Σύνθετη αγορά'));button?.click();return Boolean(button)}");
+  assert(splitSelected,'generic Quick Entry selects split purchase for independent cent-precision validation');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=Ποσό]').length>=2}",'split part amount controls ready');
+  const splitInvalid=await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input')].filter(node=>node.getAttribute('aria-label')?.startsWith('Ποσό μέρους'));if(fields.length<2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [node,value] of [[fields[0],'1e3'],[fields[1],'2.00']]){setter?.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}))}return true}");
+  assert(splitInvalid,'synthetic split amount editor receives malformed and valid independent parts');
+  await waitFor("function(){const field=[...document.querySelectorAll('.generic-quick-modal .split-box input')].find(node=>node.getAttribute('aria-label')==='Ποσό μέρους 1');return field?.value==='1e3'&&field.getAttribute('aria-invalid')==='true'}",'split malformed amount remains visible and explicitly invalid');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('επιμέρους')}",'split amount cannot silently coerce exponent notation');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'split malformed entry stays in draft without a posted event');
+  await screenshot('quick-entry-split-nondecimal-rejected-desktop');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');

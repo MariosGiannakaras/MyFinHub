@@ -23,6 +23,18 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(browser).toContain('contextual hex notation never posts a savings event');
   });
 
+  it('keeps raw split-part values visible but maps only valid cents to finance state',()=>{
+    expect(quickAdd).toContain('const [splitAmountText,setSplitAmountText]=useState<Record<string,string>>({})');
+    expect(quickAdd).toContain('value={rawSplitAmount??(p.amount||\'\')}');
+    expect(quickAdd).toContain('setSplitAmountText(current=>({...current,[p.id]:text}))');
+    expect(quickAdd).toContain('amount:parsed??0');
+    expect(quickAdd).toContain('parseMoneyInputAmount(statementMovement,true)');
+    expect(quickAdd).not.toContain("const parsed=Number(e.target.value.replace(',','.'))");
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('quick-entry-split-nondecimal-rejected-desktop');
+    expect(qa).toContain('split malformed entry stays in draft without a posted event');
+  });
+
   it('renders the approved intent registry instead of maintaining a second label list',()=>{
     expect(quickAdd).toContain('ENTRY_INTENTS.map');
     expect(quickAdd).toContain('intentIcons');

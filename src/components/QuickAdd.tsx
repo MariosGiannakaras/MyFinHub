@@ -96,6 +96,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [fundingRows,setFundingRows]=useState<FundingSourceRow[]>([]);
   const [reconciliationConfirmed,setReconciliationConfirmed]=useState(false);
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0},{id:'p2',label:'',category:defaultCategory(data.state.settings,'expense'),amount:0}]);
+  // Only UI draft text lives here. Invalid split input must not be coerced into
+  // numeric finance state before the owner confirms a cent-exact value.
+  const [splitAmountText,setSplitAmountText]=useState<Record<string,string>>({});
   const [error,setError]=useState('');
   // Announcing a failed finance save is not enough for keyboard users: the
   // rejected operation's visible error becomes the recoverable focus target.
@@ -123,6 +126,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   useEffect(()=>{
     if(!open)return;
     setDiscardOpen(false);
+    setSplitAmountText({});
     if(initial){
       const defaults=entryDefaults(initial.kind,data.state.settings,fallbackAccount);
       setKind(initial.kind);
@@ -171,8 +175,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const reconciliation=useMemo(()=>{
     if(kind!=='reconciliation')return null;
     try{
-      const verified=actualBalance.trim()?Number(actualBalance.replace(',','.')):null;
-      const movement=statementMovement.trim()?Number(statementMovement.replace(',','.')):null;
+      const verified=actualBalance.trim()?parseMoneyInputAmount(actualBalance,true):null;
+      const movement=statementMovement.trim()?parseMoneyInputAmount(statementMovement,true):null;
       return manualReconciliationPreview(data,accountId,date,{verifiedBalance:verified,statementMovement:movement,editingEventId:initial?.kind==='reconciliation'?initial.id:undefined});
     }catch{return null}
   },[data,kind,accountId,date,actualBalance,statementMovement,initial]);
@@ -207,7 +211,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     setError('');
     try{
       if(linkedRecurringPayment&&(kind!=='expense'||multiFundingOpen))throw new Error('Η πληρωμή είναι συνδεδεμένη με πάγιο. Διατήρησε τον τύπο και τον έναν λογαριασμό της. Για νέα πληρωμή χρησιμοποίησε τα Πάγια.');
-      const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
+      const draftError=entryDraftError(kind,{amount,person,actualBalance,statementMovement,parts});
       if(draftError) throw new Error(draftError);
       if(kind==='reconciliation'){
         if(!reconciliation)throw new Error('Δεν ήταν δυνατός ο έλεγχος υπολοίπου στη συγκεκριμένη ημερομηνία.');
@@ -313,7 +317,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           {data.state.counterparties?.length?<Suspense fallback={null}><CounterpartyQuickSelector data={data} kind={kind} note={note} value={counterpartyId} onChange={value=>{setCounterpartyId(value);mark()}}/></Suspense>:null}
           <label className="quick-field wide" data-filled={filled(note)}><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>{setNote(e.target.value);mark()}} placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"/></label>
         </div>
-        {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
+        {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);const rawSplitAmount=splitAmountText[p.id];return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={rawSplitAmount??(p.amount||'')} aria-invalid={Boolean(rawSplitAmount&&parseMoneyInputAmount(rawSplitAmount)===null)} onChange={e=>{const text=e.target.value;const parsed=parseMoneyInputAmount(text);setSplitAmountText(current=>({...current,[p.id]:text}));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:parsed??0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
         {error?<FormError id="quick-add-error">{error}</FormError>:null}
       </div>
       {/* The receipt launch is portalled into this footer: lock it too while the

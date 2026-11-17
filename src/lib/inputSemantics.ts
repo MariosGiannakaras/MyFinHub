@@ -20,7 +20,7 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
   };
 }
 
-export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; parts: SplitPart[] }) {
+export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; statementMovement?:string; parts: SplitPart[] }) {
   if (kind === 'split') {
     if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο επιμέρους μέρη.';
     if (draft.parts.some((part) => !isSafeMoneyValue(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
@@ -30,6 +30,8 @@ export function entryDraftError(kind: EventKind, draft: { amount: string; person
   if (kind !== 'reconciliation' && (amount === null || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό εντός επιτρεπτού εύρους.';
   if ((kind === 'lending' || kind === 'repayment') && !draft.person.trim()) return 'Συμπλήρωσε το πρόσωπο για τα δανεικά.';
   if (kind === 'reconciliation' && parseMoneyInputAmount(draft.actualBalance,true)===null) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο εντός επιτρεπτού εύρους.';
+  if(kind==='reconciliation'&&draft.statementMovement?.trim()&&parseMoneyInputAmount(draft.statementMovement,true)===null)
+    return 'Η κίνηση λογαριασμού χρειάζεται έγκυρο ποσό με έως δύο δεκαδικά ψηφία.';
   return null;
 }
 
