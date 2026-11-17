@@ -10,6 +10,7 @@ const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const dashboardCharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
@@ -26,6 +27,18 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('expected one visible H1');
     expect(qa).toContain('visible table missing caption/header semantics');
     expect(qa).toContain('positive tabindex');
+    expect(qa).toContain('focused control has no visible focus indicator');
+  });
+
+  it('counts only sequential Tab stops and checks roving Settings Arrow/Home focus (#649)',()=>{
+    expect(settings).toContain('tabIndex={activeTab===tab.id?0:-1}');
+    expect(settings).toContain('rovingTabDestination(event.key,index,SETTINGS_TABS.length)');
+    expect(qa).toContain('el.tabIndex>=0');
+    expect(qa).toContain("!el.matches(':disabled')");
+    expect(qa).toContain("!el.closest('[inert]')");
+    expect(qa).toContain('roving.excluded===6');
+    expect(qa).toContain('Settings ArrowRight focuses and activates next tab');
+    expect(qa).toContain('Settings Home restores first tab and focus');
     expect(qa).toContain('focused control has no visible focus indicator');
   });
 
