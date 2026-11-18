@@ -54,6 +54,9 @@ function parseProvider(value:unknown):FinancialProvider|null{
     if(sizeBytes!==null&&(!Number.isFinite(sizeBytes)||sizeBytes<0))return null;
     assets.push({assetKey,role,variant,url,fileName,mimeType,sizeBytes,updatedAt});
   }
+  // An asset key identifies one registration, not multiple variants.
+  // Ambiguous HTTP-200 readback must not be interpreted as verified.
+  if(new Set(assets.map(asset=>asset.assetKey)).size!==assets.length)return null;
   const rawBindings=Array.isArray(row.bindings)?row.bindings:[];
   const bindings:FinancialProviderAssetBinding[]=[];
   for(const value of rawBindings){
@@ -65,6 +68,8 @@ function parseProvider(value:unknown):FinancialProvider|null{
     if(!roles.includes(role)||!['universal','light','dark'].includes(variant)||!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey))return null;
     bindings.push({role,variant:variant as FinancialProviderAssetBinding['variant'],assetKey});
   }
+  // One assignment per (provider, role, variant); do not choose an arbitrary match.
+  if(new Set(bindings.map(binding=>binding.role+':'+binding.variant)).size!==bindings.length)return null;
   const sortOrder=Number(row.sortOrder);
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
