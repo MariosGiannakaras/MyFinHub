@@ -289,11 +289,32 @@ try{
   }`);
   console.log('Provider save HTTP 200 without a valid matching receipt cannot show success or upload assets');
   await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
-  await waitFor("function(){return (document.querySelector('.provider-editor-error[role=alert]')?.textContent||'').includes('δεν επιβεβαιώθηκε με έγκυρη απόκριση')}",'metadata 200 without matching receipt is reported as unverified instead of green');
-  const invalidReceipt=await c.call("function(){const mock=globalThis.__qaNewProvider;return {bad:mock?.invalidReceipts,creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,editor:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
-  assert(invalidReceipt.bad===1&&invalidReceipt.creates===0&&invalidReceipt.uploads===0&&invalidReceipt.bindings===0&&invalidReceipt.editor&&!invalidReceipt.success,
-    'invalid provider HTTP 200 receipt cannot trigger upload, binding or all-success; draft remains editable');
+  await waitFor("function(){const w=document.querySelector('.provider-editor-warning[role=alert]'),save=document.querySelector('.provider-editor-footer button:last-child');return !!w&&!!save?.disabled&&(w.textContent||'').includes('αβέβαιο αποτέλεσμα')}",'metadata 200 without matching receipt disables the unsafe repeat POST');
+  await waitFor("function(){return !!document.querySelector('[data-save-progress=error][role=alert]')&&!document.querySelector('[data-save-progress=success]')}",'metadata 200 missing receipt keeps top-edge save red');
+  const invalidReceipt=await c.call("function(){const mock=globalThis.__qaNewProvider,notice=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child');const a=notice?.getBoundingClientRect(),b=save?.getBoundingClientRect();return {bad:mock?.invalidReceipts,creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,editor:Boolean(document.querySelector('.provider-editor-modal')),disabled:save?.disabled,role:notice?.getAttribute('role'),visible:!!(a&&b&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight),success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
+  assert(invalidReceipt.bad===1&&invalidReceipt.creates===0&&invalidReceipt.uploads===0&&invalidReceipt.bindings===0&&invalidReceipt.editor&&invalidReceipt.disabled&&invalidReceipt.role==='alert'&&invalidReceipt.visible&&!invalidReceipt.success,
+    'invalid provider HTTP 200 receipt cannot trigger upload, binding or all-success; draft remains blocked until catalog review');
   await shot('provider-create-invalid-200-receipt-warning-desktop');
+  await c.call("function(){document.querySelector('.provider-editor-footer button:last-child')?.click();return true}");
+  assert(await c.call("function(){const p=globalThis.__qaNewProvider;return p?.invalidReceipts===1&&p?.creates===0&&p?.uploads===0&&p?.bindings===0}"),'disabled metadata 200 Save never repeats POST');
+  await clickText('.provider-editor-footer button','Ακύρωση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'explicitly close unverified metadata editor before a new attempt');
+
+  // The next fixture is a fresh, consciously initiated create—not a replay of
+  // the unverified POST. Keep the existing single-flight + partial-binding
+  // idempotency proof intact on this separate editor lifecycle.
+  await clickText('.provider-management button','Νέος πάροχος');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-details-panel'))}",'independent provider create after unverified dialog closed');
+  const reentered=await c.call(`function(){const input=[...document.querySelectorAll('.provider-details-panel input')].find(item=>item.placeholder==='π.χ. Νέα Τράπεζα');if(!(input instanceof HTMLInputElement))return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'QA Bank');input.dispatchEvent(new Event('input',{bubbles:true}));return true}`);
+  assert(reentered,'independent provider create details are editable');
+  await waitFor("function(){return document.querySelector('.provider-id-field input')?.value==='qa-bank'}",'independent provider create id ready');
+  await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-branding-panel'))}",'independent provider branding ready');
+  await chooseSlot('Βασικό λογότυπο');
+  await uploadSyntheticSvg('qa-new-provider.svg');
+  await waitFor("function(){return !document.querySelector('.provider-asset-picker')}",'independent logo selection completed');
+  await chooseSlot('Βασικό λεκτικό σήμα');
+  await clickText('.provider-picker-asset','qa-new-provider.svg');
 
   console.log('Provider save single-flight blocks same-tick double click before React busy state');
   const doubleProviderCreate=await c.call("function(){const button=[...document.querySelectorAll('.provider-editor-footer button')].find(el=>(el.textContent||'').includes('Δημιουργία παρόχου'));if(!button)return false;button.click();button.click();return true}");

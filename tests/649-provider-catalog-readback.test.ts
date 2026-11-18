@@ -161,7 +161,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     await expect(saveFinancialProvider({
       id:'qa-receipt-bank',displayName:'QA Receipt Bank',shortName:'QA Receipt',
       providerKind:'bank',countryCode:'GR',sortOrder:111
-    })).rejects.toThrow(/δεν επιβεβαιώθηκε με έγκυρη απόκριση/);
+    })).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'metadata'});
     expect(operations).toHaveLength(1);
     expect(operations[0]).toContain('POST /api/account-metadata?resource=financial-providers');
     expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});

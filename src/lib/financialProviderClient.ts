@@ -208,7 +208,9 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
     acknowledged.kind!==input.providerKind||
     (acknowledged.countryCode??'')!==(input.countryCode?.trim().toUpperCase()||'')||
     acknowledged.sortOrder!==input.sortOrder)
-    throw new Error('Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε με έγκυρη απόκριση. Η κατάστασή της μπορεί να είναι αβέβαιη· έλεγξε τη λίστα πριν επιχειρήσεις ξανά.');
+    // Even HTTP 200 can conceal a committed POST/PATCH when its receipt is
+    // malformed. Treat it as uncertain, never as safe for blind new-key POST.
+    throw new UnverifiedFinancialProviderWrite('metadata');
   if(refreshCatalog)await refreshFinancialProviders(true);
   return acknowledged;
   });

@@ -277,11 +277,16 @@ describe('provider branding management',()=>{
     expect(client).toContain('acknowledged.displayName!==input.displayName.trim()');
     expect(client).toContain('acknowledged.kind!==input.providerKind');
     expect(client).toContain('acknowledged.sortOrder!==input.sortOrder');
-    expect(client).toContain('Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε με έγκυρη απόκριση');
+    expect(client).toContain("throw new UnverifiedFinancialProviderWrite('metadata')");
+    expect(settings).toContain("setEditorWarning(error.operation==='metadata'");
+    expect(settings).toContain('setRequiresCatalogReview(true)');
     expect(providerBrandingQaSource).toContain('Provider save HTTP 200 without a valid matching receipt cannot show success');
     expect(providerBrandingQaSource).toContain('Provider upload HTTP 200 with an invalid binary receipt cannot silently succeed');
     expect(providerBrandingQaSource).toContain('invalid provider HTTP 200 receipt cannot trigger upload');
     expect(providerBrandingQaSource).toContain('provider-create-invalid-200-receipt-warning-desktop');
+    expect(providerBrandingQaSource).toContain('metadata 200 without matching receipt disables the unsafe repeat POST');
+    expect(providerBrandingQaSource).toContain('disabled metadata 200 Save never repeats POST');
+    expect(providerBrandingQaSource).toContain('explicitly close unverified metadata editor before a new attempt');
     expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-mobile');
     expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-desktop');
