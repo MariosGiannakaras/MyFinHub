@@ -158,12 +158,12 @@ export function createEvent(args: {
   if (!isValidDateOnly(args.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
   const amount = Number(args.amount);
-  if (!isSafeMoneyValue(amount) || (args.kind !== 'reconciliation' && amount <= 0) || amount < 0) throw new Error('Το ποσό είναι εκτός επιτρεπτού εύρους.');
-  // The event factory creates NEW economic events. Never let another caller
-  // bypass an editor and book a rounded sub-cent cash/credit/receivable leg.
-  // Reconciliation is separately derived from two verified balances below.
-  if(args.kind!=='reconciliation'&&!isPositiveCentExactMoneyValue(amount))
-    throw new Error('Το ποσό πρέπει να είναι θετικό και ακριβές σε λεπτά ευρώ.');
+  // New money movement is strict cents; reconciliation has a separate
+  // owner-confirmed as-of balance contract and may describe a zero delta.
+  if(args.kind==='reconciliation'
+    ?(!isSafeMoneyValue(amount)||amount<0)
+    :!isPositiveCentExactMoneyValue(amount))
+    throw new Error('Το ποσό πρέπει να είναι εντός επιτρεπτού εύρους και ακριβές σε λεπτά ευρώ.');
   if (args.kind === 'reconciliation') {
     const actual = Number(args.actualBalance);
     const current = Number(args.currentBalance);
@@ -206,8 +206,6 @@ export function createEvent(args: {
     case 'lending_writeoff':
       if(!args.person?.trim()||args.accountId||args.fromAccountId||args.toAccountId)
         throw new Error('Η διαγραφή απαίτησης χρειάζεται πρόσωπο χωρίς ταμειακό λογαριασμό.');
-      if(Math.abs(amount*100-Math.round(amount*100))>1e-6)
-        throw new Error('Η διαγραφή απαίτησης πρέπει να έχει ακριβώς δύο δεκαδικά σε λεπτά ευρώ.');
       if(args.loanId||args.recurringId||args.cardId||args.parts?.length)
         throw new Error('Η διαγραφή απαίτησης δεν συνδέεται με δόση, κάρτα ή διάσπαση δαπάνης.');
       receivableDelta = -amount;
@@ -231,8 +229,7 @@ export function createEvent(args: {
       if(parts.some(part=>!isPositiveCentExactMoneyValue(Number(part.amount))))
         throw new Error('Ο διαχωρισμός χρειάζεται θετικά επιμέρους ποσά ακριβή σε λεπτά του ευρώ.');
       const total = parts.reduce((sum, part) => sum + Number(part.amount), 0);
-      const totalCents=parts.reduce((sum, part) => sum + moneyToCents(Number(part.amount)),0);
-      if(!Number.isSafeInteger(totalCents)||totalCents!==moneyToCents(amount))
+      if(moneyToCents(total)!==moneyToCents(amount))
         throw new Error(`Τα επιμέρους ποσά (${total.toFixed(2)}€) δεν ισούνται με το σύνολο (${amount.toFixed(2)}€).`);
       // Preserve the established mismatch message first; a one-part exact
       // match is still invalid, even though no amount differs.
