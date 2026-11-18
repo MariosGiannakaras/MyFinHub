@@ -65,12 +65,24 @@ const releasePending=[
   "20261024160000_shared_owner_app_lock.sql",
   "20261105204000_guard_stale_import_revision.sql",
   "20261112220000_guard_mutable_receivable_chronology.sql",
+  "20261119081500_guard_changed_event_cent_precision.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
   it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
+  });
+
+  it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{
+    const sql=readFileSync('supabase/migrations/20261119081500_guard_changed_event_cent_precision.sql','utf8');
+    expect(sql).toContain('security invoker');
+    expect(sql).not.toContain('security definer');
+    expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
+    expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_event_cents(');
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_event_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;');
   });
 
   it('tracks the relational cutover and provider management as production-applied history',()=>{
@@ -87,6 +99,8 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261024160000_shared_owner_app_lock.sql');
     expect(releasePending).toContain('20261105204000_guard_stale_import_revision.sql');
     expect(releasePending).toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(releasePending).toContain('20261119081500_guard_changed_event_cent_precision.sql');
+    expect(productionApplied).not.toContain('20261119081500_guard_changed_event_cent_precision.sql');
     expect(productionApplied).not.toContain('20261112220000_guard_mutable_receivable_chronology.sql');
     expect(productionApplied).not.toContain('20261105204000_guard_stale_import_revision.sql');
   });

@@ -29,10 +29,11 @@ END $$;
 
 SET ROLE authenticated;
 DO $$
-DECLARE prior jsonb:='{"events":[]}';
-DECLARE good jsonb;
-DECLARE historical jsonb;
-DECLARE altered jsonb;
+DECLARE
+  prior jsonb:='{"events":[]}';
+  good jsonb;
+  historical jsonb;
+  altered jsonb;
 BEGIN
   good:='{"events":[{"id":"evt","kind":"transfer","amount":10.01,
     "legs":[{"accountId":"payroll","amount":-10.01},{"accountId":"cash","amount":10.01}],
