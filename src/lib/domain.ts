@@ -163,7 +163,7 @@ export function createEvent(args: {
   // bypass an editor and book a rounded sub-cent cash/credit/receivable leg.
   // Reconciliation is separately derived from two verified balances below.
   if(args.kind!=='reconciliation'&&!isPositiveCentExactMoneyValue(amount))
-    throw new Error('Το ποσό πρέπει να είναι θετικό και ακριβές σε λεπτά του ευρώ.');
+    throw new Error('Το ποσό πρέπει να είναι θετικό και ακριβές σε λεπτά ευρώ.');
   if (args.kind === 'reconciliation') {
     const actual = Number(args.actualBalance);
     const current = Number(args.currentBalance);
@@ -228,12 +228,15 @@ export function createEvent(args: {
     }
     case 'split': {
       const parts=args.parts??[];
-      if(parts.length<2||parts.some(part=>!isPositiveCentExactMoneyValue(Number(part.amount))))
-        throw new Error('Ο διαχωρισμός χρειάζεται τουλάχιστον δύο θετικά μέρη ακριβή σε λεπτά του ευρώ.');
+      if(parts.some(part=>!isPositiveCentExactMoneyValue(Number(part.amount))))
+        throw new Error('Ο διαχωρισμός χρειάζεται θετικά επιμέρους ποσά ακριβή σε λεπτά του ευρώ.');
       const total = parts.reduce((sum, part) => sum + Number(part.amount), 0);
       const totalCents=parts.reduce((sum, part) => sum + moneyToCents(Number(part.amount)),0);
       if(!Number.isSafeInteger(totalCents)||totalCents!==moneyToCents(amount))
         throw new Error(`Τα επιμέρους ποσά (${total.toFixed(2)}€) δεν ισούνται με το σύνολο (${amount.toFixed(2)}€).`);
+      // Preserve the established mismatch message first; a one-part exact
+      // match is still invalid, even though no amount differs.
+      if(parts.length<2)throw new Error('Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.');
       legs.push({ accountId: requireAccount(args.accountId), amount: -amount });
       break;
     }

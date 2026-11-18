@@ -65,6 +65,12 @@ describe('safe monetary boundaries',()=>{
     expect(()=>createEvent({kind:'split',date:day,amount:1.01,note:'Unbookable',accountId:'bank',parts:[
       {id:'a',label:'A',category:'Άλλο',amount:1.005},{id:'b',label:'B',category:'Άλλο',amount:0.005},
     ]})).toThrow(/λεπτά/);
+    expect(()=>createEvent({kind:'split',date:day,amount:2,note:'Mismatch',accountId:'bank',parts:[
+      {id:'a',label:'One',category:'Άλλο',amount:1},
+    ]})).toThrow(/δεν ισούνται/);
+    expect(()=>createEvent({kind:'split',date:day,amount:1,note:'Too few',accountId:'bank',parts:[
+      {id:'a',label:'One',category:'Άλλο',amount:1},
+    ]})).toThrow(/τουλάχιστον δύο/);
     const validSplit=createEvent({kind:'split',date:day,amount:0.3,note:'Valid split',accountId:'bank',parts:[
       {id:'a',label:'A',category:'Άλλο',amount:0.1},{id:'b',label:'B',category:'Άλλο',amount:0.2},
     ]});
