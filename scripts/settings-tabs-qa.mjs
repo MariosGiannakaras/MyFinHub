@@ -137,15 +137,16 @@ try{
       if(mode.name==='desktop'&&tab.id==='data'){
         // The backup acknowledgement succeeds in the isolated QA fixture,
         // but the subsequent JSON read is intentionally unavailable.
-        const blockedRead=await c.call("function(){const original=window.fetch;window.__qaBackupPostCount=0;window.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;const url=new URL(raw,location.href);if(url.pathname==='/api/backup'&&String(init?.method||'GET').toUpperCase()==='POST')window.__qaBackupPostCount++;if(url.pathname==='/api/data')return Promise.reject(new Error('QA_BACKUP_READ_UNAVAILABLE'));return original(input,init)};window.__qaRestoreBackupRead=()=>{window.fetch=original;delete window.__qaBackupPostCount};return true}");
+        const blockedRead=await c.call("function(){const original=window.fetch;window.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;const url=new URL(raw,location.href);if(url.pathname==='/api/data')return Promise.reject(new Error('QA_BACKUP_READ_UNAVAILABLE'));return original(input,init)};window.__qaRestoreBackupRead=()=>{window.fetch=original};return true}");
         assert(blockedRead,'synthetic post-backup JSON read rejection installed');
         try{
+          const backupCallsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaBackupCalls||0)}");
           const clicked=await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();button?.click();return Boolean(button)}");
           assert(clicked,'backup action invoked in isolated fixture');
           await waitFor("function(){const node=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(node&&(node.textContent||'').includes('Το backup στη βάση δημιουργήθηκε')&&(node.textContent||'').includes('λήψη του JSON'))}",'database backup acknowledged but JSON retrieval fails with partial-success warning');
           const truthful=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
           assert(truthful.warnings===1&&truthful.errors===0&&truthful.successes===0,'confirmed database backup is never reported as a total failure on JSON retrieval error');
-          assert(await c.call("function(){return window.__qaBackupPostCount===1}"),'same-turn backup clicks invoke one backup RPC');
+          assert(await c.call("function(before){return Number(document.documentElement.dataset.qaBackupCalls||0)===before+1}",[backupCallsBefore]),'same-turn backup clicks invoke one backup action');
           await screenshot('settings-backup-db-ack-download-unavailable-desktop');
         }finally{
           await c.call("function(){window.__qaRestoreBackupRead?.();delete window.__qaRestoreBackupRead;return true}");

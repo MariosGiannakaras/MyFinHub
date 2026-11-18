@@ -318,7 +318,7 @@ describe('provider branding management',()=>{
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
     expect(focusedQaWorkflow).toContain('PASS after Chromium bootstrap retry: $suite');
-    expect(focusedQaWorkflow).toContain('Provider Chromium CDP bootstrap failed|Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version');
+    expect(focusedQaWorkflow).toContain('Provider Chromium CDP bootstrap failed|Settings Chromium CDP bootstrap failed|Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version');
     expect(providerBrandingQaSource).toContain("'--remote-debugging-port=0'");
     expect(providerBrandingQaSource).toContain('DevToolsActivePort');
     expect(providerBrandingQaSource).toContain(String.raw`raw.split(/\r?\n/,1)`);

@@ -23,8 +23,9 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('if (busy || maintenanceInFlight.current) return;');
     expect(settings).toContain('if(busy||maintenanceInFlight.current)return;');
     expect(qa).toContain('button?.click();button?.click()');
-    expect(qa).toContain('same-turn backup clicks invoke one backup RPC');
-    expect(qa).toContain('window.__qaBackupPostCount===1');
+    expect(qa).toContain('same-turn backup clicks invoke one backup action');
+    expect(qa).toContain('document.documentElement.dataset.qaBackupCalls||0)===before+1');
+    expect(read('src/qa.tsx')).toContain('document.documentElement.dataset.qaBackupCalls=String(Number(document.documentElement.dataset.qaBackupCalls||0)+1)');
     expect(qa).toContain("'--remote-debugging-port=0'");
     expect(qa).toContain('DevToolsActivePort');
     expect(qa).toContain('Settings Chromium CDP bootstrap failed');

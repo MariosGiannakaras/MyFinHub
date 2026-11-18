@@ -799,6 +799,8 @@ function QaWorkspace(){
     :page==='attention'?<AttentionPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenRules={()=>{setSettingsTab('rules');setPage('settings')}} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(k=>k+1)}setPage('credit')}}/>
     :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>{
+      // QA-only counter proves a same-turn user double click invokes one backup action.
+      document.documentElement.dataset.qaBackupCalls=String(Number(document.documentElement.dataset.qaBackupCalls||0)+1);
       const probe=globalThis as typeof globalThis & {__myfinhubQaLoseNextBackupReceipt?:boolean};
       if(probe.__myfinhubQaLoseNextBackupReceipt){
         probe.__myfinhubQaLoseNextBackupReceipt=false;
