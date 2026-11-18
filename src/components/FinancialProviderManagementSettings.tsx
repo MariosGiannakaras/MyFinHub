@@ -128,6 +128,9 @@ export function FinancialProviderManagementSettings(){
   const reduce=useReducedMotion();
   const catalog=useFinancialProviders();
   const providers=catalog.providers;
+  // The built-in fallback keeps ordinary bank marks readable, but is not an
+  // authoritative editable catalog after a failed GET.
+  const catalogUnavailable=!catalog.loaded||catalog.loading||Boolean(catalog.error);
   const[editor,setEditor]=useState<ProviderEditor|null>(null);
   const[busy,setBusy]=useState(false);
   const mutationInFlight=useRef(false);
@@ -234,7 +237,7 @@ export function FinancialProviderManagementSettings(){
     requestAnimationFrame(()=>document.getElementById(`provider-editor-tab-${tab}`)?.focus());
   };
   const save=async()=>{
-    if(!editor||busy||mutationInFlight.current||requiresCatalogReview||!validateDetails())return;
+    if(!editor||busy||mutationInFlight.current||requiresCatalogReview||catalogUnavailable||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
       setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
@@ -338,9 +341,13 @@ export function FinancialProviderManagementSettings(){
     <input ref={fileInput} type="file" accept={ACCEPT} hidden onChange={event=>handleUpload(event.target.files?.[0])}/>
     <header className="provider-management-head">
       <div><span className="provider-management-kicker">ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ</span><h2 id="provider-management-title">Τράπεζες & πάροχοι</h2><p>Τα στοιχεία και οι εικόνες κάθε παρόχου διαχειρίζονται από την ίδια επεξεργασία.</p></div>
-      <Button type="button" variant="secondary" onClick={openNew}><Plus/> Νέος πάροχος</Button>
+      <Button type="button" variant="secondary" disabled={busy||catalogUnavailable} onClick={openNew}><Plus/> Νέος πάροχος</Button>
     </header>
 
+    {catalog.error?<OperationFeedback tone="error" className="logic-note compact provider-catalog-error">
+      Η λίστα παρόχων δεν επιβεβαιώθηκε. Η δημιουργία και επεξεργασία έχουν απενεργοποιηθεί ώσπου να φορτωθούν ξανά τα πραγματικά στοιχεία.
+      <Button type="button" variant="secondary" disabled={busy||catalog.loading} onClick={()=>void refreshFinancialProviders(true)}>Επανάληψη φόρτωσης</Button>
+    </OperationFeedback>:null}
     {message?<div className="provider-management-message" role="status" aria-live="polite">{message}</div>:null}
 
     <div className="provider-list">{providers.map(provider=>{
@@ -352,7 +359,7 @@ export function FinancialProviderManagementSettings(){
           <span>{bindings.length} χρήσεις</span>
           <div className="provider-list-thumbs">{assets.slice(0,3).map(asset=><span key={asset.assetKey}><img src={asset.url} alt="" draggable={false}/></span>)}</div>
         </div>
-        <Button type="button" variant="secondary" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</Button>
+        <Button type="button" variant="secondary" className="provider-edit-action" disabled={busy||catalogUnavailable} onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</Button>
       </article>;
     })}</div>
 
@@ -402,7 +409,7 @@ export function FinancialProviderManagementSettings(){
           <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
           {editor.source==='new'&&editor.tab==='details'
             ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
-            :<Button type="button" variant="primary" disabled={busy||requiresCatalogReview} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+            :<Button type="button" variant="primary" disabled={busy||requiresCatalogReview||catalogUnavailable} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>

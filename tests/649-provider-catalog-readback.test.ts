@@ -1,9 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it('blocks catalog edits during fallback/error and permits only an explicit read-only recovery',()=>{
+    const owner=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+    expect(owner).toContain('const catalogUnavailable=!catalog.loaded||catalog.loading||Boolean(catalog.error)');
+    expect(owner).toContain('mutationInFlight.current||requiresCatalogReview||catalogUnavailable||!validateDetails()');
+    expect(owner).toContain('disabled={busy||catalogUnavailable} onClick={openNew}');
+    expect(owner).toContain('disabled={busy||catalogUnavailable} onClick={()=>openEdit(provider)}');
+    expect(owner).toContain('disabled={busy||requiresCatalogReview||catalogUnavailable} onClick={()=>void save()}');
+    expect(owner).toContain('catalog.error?<OperationFeedback tone="error"');
+    expect(owner).toContain('onClick={()=>void refreshFinancialProviders(true)}');
+    expect(owner).toContain('Η δημιουργία και επεξεργασία έχουν απενεργοποιηθεί');
+  });
   it.each(['duplicate-asset-key','duplicate-binding-slot','object-assets','object-bindings','null-assets','null-bindings','missing-assets','missing-bindings'] as const)(
     'rejects a superficially successful catalog with %s and recovers with GET only',async failure=>{
       const asset={
