@@ -4,6 +4,46 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it.each(['duplicate-asset-key','duplicate-binding-slot'] as const)(
+    'rejects a superficially successful catalog with %s and recovers with GET only',async failure=>{
+      const asset={
+        assetKey:'qa-integrity-asset-aabbccddee11',role:'logo' as const,
+        variant:'universal',url:'https://assets.example/logo.png',
+        fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+      };
+      const binding={role:'logo' as const,variant:'universal' as const,assetKey:asset.assetKey};
+      const record={
+        id:'qa-integrity-bank',displayName:'QA Integrity Bank',shortName:'QA Integrity',
+        providerKind:'bank',countryCode:'GR',sortOrder:119,
+        logoAssetKey:null,wordmarkAssetKey:null,logoUrl:null,wordmarkUrl:null,
+        assets:[asset],bindings:[binding],
+      };
+      const corrupted=failure==='duplicate-asset-key'
+        ?{...record,assets:[asset,{...asset,variant:'dark'}]}
+        :{...record,bindings:[binding,{...binding,assetKey:'qa-integrity-asset-other'}]};
+      const operations:string[]=[];
+      let reads=0;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=(init?.method||'GET').toUpperCase();
+        operations.push(method+' '+String(input));
+        expect(method).toBe('GET');
+        return new Response(JSON.stringify({providers:[reads++===0?corrupted:record]}),{
+          status:200,headers:{'content-type':'application/json'},
+        });
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {refreshFinancialProviders}=await import(clientPath);
+      const invalid=await refreshFinancialProviders(true);
+      expect(invalid.error).toBeTruthy();
+      expect(invalid.providers.some(row=>row.id===record.id)).toBe(false);
+      const recovered=await refreshFinancialProviders(true);
+      expect(recovered.error).toBeNull();
+      expect(recovered.providers.filter(row=>row.id===record.id)).toHaveLength(1);
+      expect(operations).toHaveLength(2);
+      expect(operations.every(operation=>operation.startsWith('GET '))).toBe(true);
+    }
+  );
+
   it.each(['malformed-extra-provider','duplicate-provider-id'] as const)(
     'rejects a 200 catalog with %s instead of silently publishing an incomplete provider list',async failure=>{
       const record={
