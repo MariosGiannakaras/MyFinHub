@@ -6,7 +6,10 @@ afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
   it('skips acknowledged provider metadata on asset-only retry but detects every changed field',async()=>{
-    const {providerMetadataMatchesInput}=await import('../src/lib/financialProviderClient.js');
+    // Keep the runtime import dynamic: the NodeNext hygiene check does not
+    // resolve the browser-only provider client's extensionless imports.
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {providerMetadataMatchesInput}=await import(clientPath);
     const payload={
       id:'qa-metadata-bank',displayName:' QA Bank ',shortName:' QA ',
       providerKind:'bank' as const,countryCode:'gr',sortOrder:105,
