@@ -4,7 +4,7 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
-  it.each(['duplicate-asset-key','duplicate-binding-slot','object-assets','object-bindings','null-assets','null-bindings'] as const)(
+  it.each(['duplicate-asset-key','duplicate-binding-slot','object-assets','object-bindings','null-assets','null-bindings','missing-assets','missing-bindings'] as const)(
     'rejects a superficially successful catalog with %s and recovers with GET only',async failure=>{
       const asset={
         assetKey:'qa-integrity-asset-aabbccddee11',role:'logo' as const,
@@ -28,7 +28,11 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
               ?{...record,bindings:{...binding}}
               :failure==='null-assets'
                 ?{...record,assets:null}
-                :{...record,bindings:null};
+                :failure==='null-bindings'
+                  ?{...record,bindings:null}
+                  :failure==='missing-assets'
+                    ?{...record,assets:undefined}
+                    :{...record,bindings:undefined};
       const operations:string[]=[];
       let reads=0;
       vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{

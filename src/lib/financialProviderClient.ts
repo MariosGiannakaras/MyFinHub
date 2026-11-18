@@ -24,7 +24,7 @@ function publish(next:FinancialProviderSnapshot){snapshot=next;for(const listene
 export function getFinancialProviderSnapshot(){return snapshot}
 export function subscribeFinancialProviders(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 
-function parseProvider(value:unknown):FinancialProvider|null{
+function parseProvider(value:unknown,requireCollections=false):FinancialProvider|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
   const row=value as Record<string,unknown>;
   const id=typeof row.id==='string'?row.id.trim():'';
@@ -38,7 +38,7 @@ function parseProvider(value:unknown):FinancialProvider|null{
   const wordmarkUrl=row.wordmarkUrl===null||row.wordmarkUrl===undefined?null:typeof row.wordmarkUrl==='string'?row.wordmarkUrl.trim():'';
   // Explicitly malformed HTTP-200 collections are not an empty catalog.
   // In particular, do not turn missing read-back evidence into a verified save.
-  if(row.assets!==undefined&&!Array.isArray(row.assets))return null;
+  if((requireCollections||row.assets!==undefined)&&!Array.isArray(row.assets))return null;
   const rawAssets=Array.isArray(row.assets)?row.assets:[];
   const roles:FinancialProviderAssetRole[]=['logo','wordmark','card-mark'];
   const assets:FinancialProviderAsset[]=[];
@@ -60,7 +60,7 @@ function parseProvider(value:unknown):FinancialProvider|null{
   // An asset key identifies one registration, not multiple variants.
   // Ambiguous HTTP-200 readback must not be interpreted as verified.
   if(new Set(assets.map(asset=>asset.assetKey)).size!==assets.length)return null;
-  if(row.bindings!==undefined&&!Array.isArray(row.bindings))return null;
+  if((requireCollections||row.bindings!==undefined)&&!Array.isArray(row.bindings))return null;
   const rawBindings=Array.isArray(row.bindings)?row.bindings:[];
   const bindings:FinancialProviderAssetBinding[]=[];
   for(const value of rawBindings){
@@ -96,7 +96,9 @@ export async function refreshFinancialProviders(force=false){
       if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των τραπεζών.');
       const rows:unknown[]|null=Array.isArray(payload?.providers)?payload.providers:null;
       if(!rows?.length)throw new Error('Η λίστα τραπεζών είναι κενή.');
-      const parsed=rows.map(parseProvider);
+      // The catalog API always returns both collections. Missing keys are
+      // incomplete read-back evidence, even when the intended slots are empty.
+      const parsed=rows.map(row=>parseProvider(row,true));
       // A malformed or duplicate provider must not silently disappear from a
       // supposedly complete post-write catalog. Keep the fallback explicitly
       // unverified so the editor cannot mistake partial data for a clean read.
