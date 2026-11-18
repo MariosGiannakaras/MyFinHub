@@ -1,3 +1,13 @@
+## 2026-11-18 — I19.04 malformed provider collection readback fails closed
+
+**Implementations 6/23 completed · Sub-implementations 96/132 completed (UNCHANGED; I19.04 PARTIAL).** Concrete source contract gap: the HTTP-200 catalog reader treated explicitly malformed non-array `assets` or `bindings` as empty arrays. Such an incomplete catalog could be mistaken for a verified readback when the intended write had no values in those collections. `parseProvider` now rejects non-array/null collections when explicitly returned, while preserving absent optional collections in legacy receipt/test payloads. The existing safe fallback and read-only GET recovery are reused without any replay of metadata, new-key Storage uploads or binding writes. The focused `tests/649-provider-catalog-readback.test.ts` table now covers duplicate asset/binding identities as well as object/null collections, and verifies that a later valid GET can recover with **GET only**.
+
+**Validation:** New code and negative cases committed together; no CI, QA, full build or browser rerun initiated solely for this bounded source edit. Prior source [CI #44269715130](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44269715130) passed 1,931 Vitest tests, TS/build and local SQL proof on the prior runtime source; do **not** attribute it to this new source commit. Mandatory six-high transitive `picomatch` audit in independently owned #660 remains hard-blocking; PR #654 remains Draft. No finance/SQL/RLS/auth changes, no hosted DB/Storage, production/Android or release action.
+
+**Next:** continue independently unblocked I19.04 provider/revision cross-store work only where concrete gaps remain, then run proportionate focused source verification for the coherent batch and final full gates once dependency/security blocker and remaining action plan permit. Do not inflate counters or reopen accepted I19.05/I22.05.
+
+---
+
 ## 2026-11-18 — Reconcile proven I19.05 and I22.05 source closures, no redundant QA
 
 **Implementations 6/23 completed · Sub-implementations 96/132 completed (+2: I19.05 and I22.05).** This is a reconciliation of already implemented, accepted code/contract evidence, **not two new source changes or a full application release**. All 23 audit areas and the 132 classified actions retain their original denominators. The I19 and I22 whole areas remain PARTIAL; I19.04 remains PARTIAL and is not silently closed.

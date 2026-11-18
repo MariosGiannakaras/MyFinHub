@@ -36,6 +36,9 @@ function parseProvider(value:unknown):FinancialProvider|null{
   const wordmarkAssetKey=row.wordmarkAssetKey===null||row.wordmarkAssetKey===undefined?null:typeof row.wordmarkAssetKey==='string'?row.wordmarkAssetKey.trim():'';
   const logoUrl=row.logoUrl===null||row.logoUrl===undefined?null:typeof row.logoUrl==='string'?row.logoUrl.trim():'';
   const wordmarkUrl=row.wordmarkUrl===null||row.wordmarkUrl===undefined?null:typeof row.wordmarkUrl==='string'?row.wordmarkUrl.trim():'';
+  // Explicitly malformed HTTP-200 collections are not an empty catalog.
+  // In particular, do not turn missing read-back evidence into a verified save.
+  if(row.assets!==undefined&&!Array.isArray(row.assets))return null;
   const rawAssets=Array.isArray(row.assets)?row.assets:[];
   const roles:FinancialProviderAssetRole[]=['logo','wordmark','card-mark'];
   const assets:FinancialProviderAsset[]=[];
@@ -57,6 +60,7 @@ function parseProvider(value:unknown):FinancialProvider|null{
   // An asset key identifies one registration, not multiple variants.
   // Ambiguous HTTP-200 readback must not be interpreted as verified.
   if(new Set(assets.map(asset=>asset.assetKey)).size!==assets.length)return null;
+  if(row.bindings!==undefined&&!Array.isArray(row.bindings))return null;
   const rawBindings=Array.isArray(row.bindings)?row.bindings:[];
   const bindings:FinancialProviderAssetBinding[]=[];
   for(const value of rawBindings){
