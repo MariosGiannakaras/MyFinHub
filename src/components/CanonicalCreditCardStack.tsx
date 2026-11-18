@@ -188,7 +188,12 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
     async function loadSecrets(card:RuntimeCard){
       const cached=secretsRef.current.get(card.id);if(cached)return cached;
       let server:Awaited<ReturnType<typeof revealCardSecret>>={};
-      try{server=await revealCardSecret(card.id)}catch(error){if(!(error instanceof CardVaultClientError&&error.code==='CARD_SECRET_NOT_FOUND')){announce(cardVaultErrorMessage(error),'error');return null}}
+      try{server=await revealCardSecret(card.id)}catch(error){
+        if(!(error instanceof CardVaultClientError&&error.code==='CARD_SECRET_NOT_FOUND')){
+          if(effectActive&&currentCard(card.id)&&orderRef.current[0]===card.id)announce(cardVaultErrorMessage(error),'error');
+          return null;
+        }
+      }
       const result:Secrets={...server};secretsRef.current.set(card.id,result);return result;
     }
 
@@ -231,7 +236,16 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       cvvEl.textContent=revealed&&secret?.cvv?secret.cvv:maskCvv(secret?.cvv);cvvEl.classList.toggle('masked',!revealed);cardEl.dataset.revealed=revealed?'true':'false';
       const button=cardEl.querySelector<HTMLButtonElement>('.reveal-btn');if(button){const label=revealed?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων';button.innerHTML=icon(revealed?'eyeoff':'eye');button.setAttribute('aria-pressed',revealed?'true':'false');button.setAttribute('aria-label',label);button.setAttribute('title',label)}
     }
-    async function toggleReveal(id:string,cardEl:HTMLElement|null){const card=currentCard(id);if(!card||!cardEl)return;if(revealedRef.current.has(id)){revealedRef.current.delete(id);updateSecretDom(card,cardEl,false);return}const secret=await loadSecrets(card);if(!secret||(!secret.pan&&!secret.expiry&&!secret.cvv))return;revealedRef.current.add(id);updateSecretDom(card,cardEl,true)}
+    async function toggleReveal(id:string,cardEl:HTMLElement|null){
+      const card=currentCard(id);if(!card||!cardEl)return;
+      if(revealedRef.current.has(id)){revealedRef.current.delete(id);updateSecretDom(card,cardEl,false);return}
+      const secret=await loadSecrets(card);
+      // Do not reveal a formerly selected card when its vault read resolves
+      // after restack, re-render or unmount. A detached node is not authority.
+      if(!effectActive||!currentCard(id)||orderRef.current[0]!==id||!cardEl.isConnected)return;
+      if(!secret||(!secret.pan&&!secret.expiry&&!secret.cvv))return;
+      revealedRef.current.add(id);updateSecretDom(card,cardEl,true);
+    }
     async function copyField(id:string,field:keyof Secrets){
       if(copyInFlight)return;
       const card=currentCard(id);if(!card)return;

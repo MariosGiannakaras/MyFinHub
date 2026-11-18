@@ -187,5 +187,26 @@ try{
   await shot('credit-stack-stale-card-copy-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCreditStaleCopyRestore?.();return true}"),'stale card copy fixture removed');
 
+
+  console.log('Sensitive credit-stack stale pending-vault reveal must remain masked after restack');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  assert(await c.call("function(){const original=globalThis.fetch,probe=globalThis.__qaCreditStaleReveal={reads:0,release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.reads++;return new Promise(resolve=>{probe.release=()=>resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))})}return original(input,init)};globalThis.__qaCreditStaleRevealRestore=()=>{globalThis.fetch=original;delete globalThis.__qaCreditStaleReveal;delete globalThis.__qaCreditStaleRevealRestore};return true}"),'install isolated delayed Credit Card Vault reveal response');
+  const originalRevealCard=(await state()).topId;
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .reveal-btn');b?.click();return Boolean(b)}"),'top credit card starts pending vault reveal');
+  await waitFor("function(){return globalThis.__qaCreditStaleReveal?.reads===1&&typeof globalThis.__qaCreditStaleReveal?.release==='function'}",'top-card vault reveal deliberately pending');
+  await pressArrow('ArrowDown');
+  await waitFor("function(original){return document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')!==original}",'credit stack changes active card while reveal is pending',[originalRevealCard]);
+  await sleep(550);
+  assert(await c.call("function(){globalThis.__qaCreditStaleReveal?.release?.();return true}"),'old card vault read returns only after restack');
+  await sleep(200);
+  const revealWhileInactive=await c.call("function(original){const card=[...document.querySelectorAll('#myfinhub-card-stack .stack-card')].find(node=>node.getAttribute('data-card-id')===original);return {active:document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id'),revealed:card?.querySelector('.payment-card')?.dataset.revealed,numberMasked:Boolean(card?.querySelector('.card-number.masked')),status:document.querySelector('#myfinhub-card-stack .sr-status')?.textContent||''}}",[originalRevealCard]);
+  assert(revealWhileInactive.active!==originalRevealCard&&revealWhileInactive.revealed==='false'&&revealWhileInactive.numberMasked&&!revealWhileInactive.status,'obsolete reveal does not unmask old inactive card or announce vault error');
+  for(let cycle=0;cycle<5;cycle++){await pressArrow('ArrowDown');await sleep(530)}
+  await waitFor("function(original){return document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')===original}",'original card returns to front without any new reveal',[originalRevealCard]);
+  const staleRevealMasked=await c.call("function(){const card=document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card');return Boolean(card&&card.dataset.revealed==='false'&&card.querySelector('.card-number.masked')&&card.querySelector('.reveal-btn[aria-pressed=false]')&&!document.querySelector('#myfinhub-card-stack .sr-status')?.textContent)}");
+  assert(staleRevealMasked,'staleRevealMasked: original card stays masked after full rotation; old vault read never latches visible');
+  await shot('credit-stack-stale-vault-reveal-cancelled-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditStaleRevealRestore?.();return true}"),'restore isolated credit vault reveal mock');
+
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

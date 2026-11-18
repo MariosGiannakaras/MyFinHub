@@ -25,6 +25,19 @@ function emulateLegacyCopy(result:'success'|'false'|'throw'){
 }
 
 describe('#649 sensitive clipboard copy and truthful feedback',()=>{
+  it('cancels obsolete credit-card reveal after a pending vault read and does not expose it on a later restack',()=>{
+    const reveal=stack.slice(stack.indexOf('async function toggleReveal('),stack.indexOf('async function copyField('));
+    const load=stack.slice(stack.indexOf('async function loadSecrets('),stack.indexOf('function renderCard('));
+    const creditQa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    const guard='if(!effectActive||!currentCard(id)||orderRef.current[0]!==id||!cardEl.isConnected)return;';
+    expect(reveal.indexOf(guard)).toBeGreaterThan(reveal.indexOf('await loadSecrets(card)'));
+    expect(reveal.indexOf(guard)).toBeLessThan(reveal.indexOf('revealedRef.current.add(id)'));
+    expect(load).toContain('if(effectActive&&currentCard(card.id)&&orderRef.current[0]===card.id)announce(cardVaultErrorMessage(error)');
+    expect(creditQa).toContain('Sensitive credit-stack stale pending-vault reveal must remain masked after restack');
+    expect(creditQa).toContain('credit-stack-stale-vault-reveal-cancelled-desktop');
+    expect(creditQa).toContain('staleRevealMasked');
+  });
+
   it('cancels an obsolete credit card vault read before copying after restack/unmount',()=>{
     const credit=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     const code=stack.slice(stack.indexOf('async function copyField('),stack.indexOf('function bindTopCard()'));
