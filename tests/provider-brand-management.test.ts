@@ -314,6 +314,9 @@ describe('provider branding management',()=>{
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
     expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
     expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
+    expect(providerBrandingQaSource).toContain('settled.creates===1&&settled.updates===0&&settled.uploads===1&&settled.bindings===3');
+    expect(providerBrandingQaSource).toContain('deliberate provider metadata change before retry');
+    expect(providerBrandingQaSource).toContain('staleRetry.creates===1&&staleRetry.updates===1&&staleRetry.uploads===1&&staleRetry.bindings===2');
     expect(settings).toContain('<div className="provider-editor-body provider-editor-feedback">');
     expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
     expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");

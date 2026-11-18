@@ -338,7 +338,7 @@ try{
   await clickText('.provider-editor-footer button','Αποθήκευση');
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'retry completes provider bindings without retransmitting uploaded file');
   const settled=await c.call("function(){const p=globalThis.__qaNewProvider;return {creates:p.creates,updates:p.updates,uploads:p.uploads,bindings:p.bindings,slots:p.bindingSlots,success:(document.querySelector('.provider-management-message')?.textContent||'').trim()}}");
-  assert(settled.creates===1&&settled.updates===1&&settled.uploads===1&&settled.bindings===3,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
+  assert(settled.creates===1&&settled.updates===0&&settled.uploads===1&&settled.bindings===3,'acknowledged upload and logo binding are not duplicated after later wordmark failure');
   assert(JSON.stringify(settled.slots)===JSON.stringify(['logo:universal','wordmark:universal','wordmark:universal']),'only rejected wordmark binding is retried');
   assert(settled.success.includes('ενημερώθηκε')||settled.success.includes('δημιουργήθηκε'),'eventual provider success follows accepted bindings');
   await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch;delete globalThis.__qaNewProvider}return true}");
@@ -462,7 +462,16 @@ try{
   const staleMobile=await c.call("function(){const a=document.querySelector('.provider-editor-warning')?.getBoundingClientRect(),b=document.querySelector('.provider-editor-footer button:last-child')?.getBoundingClientRect();return !!(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
   assert(staleMobile,'375px stale-catalog warning is visible above Save');
   await shot('provider-create-stale-catalog-warning-mobile');
+  // Make an intentional metadata change: this retry MUST PATCH once, while
+  // the earlier partial binding retry above MUST NOT PATCH unchanged metadata.
   await viewport(1440,1000,false);
+  await clickText('.provider-editor-tabs button','Στοιχεία');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-details-panel'))}",'stale provider details reopened');
+  const renamedStale=await c.call("function(){const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.placeholder==='π.χ. Νέα Τράπεζα');if(!(input instanceof HTMLInputElement))return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'QA Stale Updated');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  assert(renamedStale,'deliberate provider metadata change before retry');
+  await waitFor("function(){return [...document.querySelectorAll('.provider-details-panel input')].some(node=>node.value==='QA Stale Updated')}",'modified metadata retained');
+  await clickText('.provider-editor-tabs button','Εικόνες');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-branding-panel'))}",'stale provider branding reopened');
   await clickText('.provider-editor-footer button','Αποθήκευση');
   await waitFor("function(){return globalThis.__qaStaleReadback?.updates===1&&!!document.querySelector('.provider-editor-warning')&&!document.querySelector('.provider-editor-footer button:last-child')?.disabled}",'stale-catalog retry finishes and remains unverified without duplicating the binary');
   const staleRetry=await c.call("function(){const s=globalThis.__qaStaleReadback;return {creates:s.creates,updates:s.updates,uploads:s.uploads,bindings:s.bindings}}");
