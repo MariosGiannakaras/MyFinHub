@@ -51,7 +51,12 @@ export function savingContributionDraftError(data:FinanceData,draft:{fromAccount
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {
   const ids = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό μεταφοράς.';
-  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
+  const cents=moneyToCents(draft.amount);
+  if (!Number.isSafeInteger(cents)) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
+  // Domain callers must not bypass MoneyInput and silently round a posted
+  // transfer or savings contribution to zero/sub-cent-adjusted ledger legs.
+  if(cents<=0||Math.abs(draft.amount*100-cents)>1e-6)
+    return 'Το ποσό μεταφοράς πρέπει να είναι τουλάχιστον ένα λεπτό με έως δύο δεκαδικά.';
   if (!draft.fromAccountId || !ids.has(draft.fromAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προέλευσης.';
   if (!draft.toAccountId || !ids.has(draft.toAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προορισμού.';
   if (draft.fromAccountId === draft.toAccountId) return 'Ο λογαριασμός προέλευσης και προορισμού πρέπει να είναι διαφορετικοί.';

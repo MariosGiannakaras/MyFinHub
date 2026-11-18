@@ -57,6 +57,19 @@ describe('ledger foundations', () => {
     expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'missing',amount:5})).toMatch(/προορισμού/);
   });
 
+  it('rejects fractional-cent or zero-cent transfers and savings at the canonical draft boundary',()=>{
+    const data=minimal();
+    const pair={fromAccountId:'bank',toAccountId:'cash'};
+    for(const amount of [0.0001,0.001,0.005,1.005,2.999]){
+      expect(transferDraftError(data,{...pair,amount})).toMatch(/λεπτό.*δύο δεκαδικά/);
+      expect(()=>createTransferEvent(data,{date:'2026-08-21',...pair,amount})).toThrow(/λεπτό.*δύο δεκαδικά/);
+    }
+    expect(transferDraftError(data,{...pair,amount:0.01})).toBeNull();
+    expect(createTransferEvent(data,{date:'2026-08-21',...pair,amount:0.01}).amount).toBe(0.01);
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'savings',amount:0.001})).toMatch(/λεπτό.*δύο δεκαδικά/);
+    expect(transferDraftError(data,{...pair,amount:100_000_000_000_000})).toMatch(/εκτός επιτρεπτού εύρους/);
+  });
+
   it('chooses a valid transfer pair from current accounts', () => {
     const data = minimal();
     expect(defaultTransferPair(data)).toEqual({ from: 'bank', to: 'savings' });
