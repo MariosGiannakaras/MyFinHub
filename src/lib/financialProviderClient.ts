@@ -164,11 +164,20 @@ export type FinancialProviderReadbackSlot={
   variant:'universal'|'light'|'dark';
   assetKey:string|null;
 };
+export type FinancialProviderReadbackUpload={
+  assetKey:string;
+  role:FinancialProviderAssetRole;
+  variant:'universal'|'light'|'dark';
+  fileName:string;
+  mimeType:string;
+  sizeBytes:number;
+};
 export function providerCatalogMatchesWrite(
   catalog:FinancialProviderSnapshot,
   input:FinancialProviderWriteInput,
   slots:FinancialProviderReadbackSlot[],
   uploadedKeys:string[],
+  expectedUploads?:FinancialProviderReadbackUpload[],
 ):boolean{
   if(!catalog.loaded||catalog.error)return false;
   const provider=catalog.providers.find(item=>item.id===input.id);
@@ -181,6 +190,19 @@ export function providerCatalogMatchesWrite(
 
   const assets=new Set((provider.assets??[]).map(asset=>asset.assetKey));
   if(uploadedKeys.some(key=>!assets.has(key)))return false;
+  // A matching Storage/DB key alone does not prove the catalog registered
+  // the actual uploaded binary. Check independent role, variant and bytes.
+  if(expectedUploads){
+    if(expectedUploads.length!==uploadedKeys.length||
+      new Set(expectedUploads.map(upload=>upload.assetKey)).size!==uploadedKeys.length)return false;
+    if(expectedUploads.some(expected=>{
+      if(!assets.has(expected.assetKey))return true;
+      const actual=provider.assets?.find(asset=>asset.assetKey===expected.assetKey);
+      return !actual||actual.role!==expected.role||actual.variant!==expected.variant||
+        actual.fileName!==expected.fileName||actual.mimeType!==expected.mimeType||
+        actual.sizeBytes!==expected.sizeBytes;
+    }))return false;
+  }
   return slots.every(slot=>{
     if(slot.assetKey&&!assets.has(slot.assetKey))return false;
     const binding=provider.bindings?.find(item=>item.role===slot.role&&item.variant===slot.variant);

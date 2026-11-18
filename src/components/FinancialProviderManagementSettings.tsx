@@ -293,7 +293,17 @@ export function FinancialProviderManagementSettings(){
           :ref;
         return {role:slot.role,variant:slot.variant,assetKey};
       });
-      const confirmedCatalog=providerCatalogMatchesWrite(reloaded,payload,intendedSlots,[...uploaded.values()]);
+      const verifiedUploads=editor.pendingAssets
+        .filter(asset=>referencedPending.has(asset.ref))
+        .map(asset=>{
+          const origin=SLOT_BY_ID.get(asset.originSlot)!;
+          return {
+            assetKey:uploaded.get(asset.ref)??asset.uploadedKey??'',
+            role:origin.role,variant:origin.variant,
+            fileName:asset.file.name,mimeType:asset.file.type,sizeBytes:asset.file.size,
+          };
+        });
+      const confirmedCatalog=providerCatalogMatchesWrite(reloaded,payload,intendedSlots,[...uploaded.values()],verifiedUploads);
       if(!confirmedCatalog){
         markDatabaseSaveUnverified();
         // All writes were acknowledged, but the read-back is not verified.

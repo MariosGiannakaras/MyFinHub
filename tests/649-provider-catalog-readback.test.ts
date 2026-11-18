@@ -364,7 +364,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
   it('requires complete durable provider metadata, registered assets and all intended slots after an acknowledged write',async()=>{
     const modulePath:string='../src/lib/financialProviderClient.js';
     const {providerCatalogMatchesWrite}=await import(modulePath) as {
-      providerCatalogMatchesWrite:(snapshot:unknown,input:unknown,slots:unknown[],uploads:string[])=>boolean;
+      providerCatalogMatchesWrite:(snapshot:unknown,input:unknown,slots:unknown[],uploads:string[],expectedUploads?:Array<{assetKey:string;role:string;variant:string;fileName:string;mimeType:string;sizeBytes:number}>)=>boolean;
     };
     const input={
       id:'qa-checked',displayName:'QA Checked Bank',shortName:'QA Checked',
@@ -393,6 +393,22 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
       loaded:true,loading:false,error,providers:value?[value]:[],
     });
     expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey])).toBe(true);
+    const registeredBinary={assetKey,role:'logo',variant:'universal',fileName:'checked.svg',mimeType:'image/svg+xml',sizeBytes:51};
+    expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey],[registeredBinary])).toBe(true);
+    // New-key upload receipts must not turn a mismatched registry binary into
+    // a full-green save merely because the identifier and slot are unchanged.
+    for(const wrong of [
+      {...registeredBinary,role:'wordmark'},
+      {...registeredBinary,variant:'dark'},
+      {...registeredBinary,fileName:'other.svg'},
+      {...registeredBinary,mimeType:'image/png'},
+      {...registeredBinary,sizeBytes:52},
+      {...registeredBinary,assetKey:'unregistered-asset'},
+    ]){
+      expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey],[wrong])).toBe(false);
+    }
+    expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey],[])).toBe(false);
+    expect(providerCatalogMatchesWrite(snapshot({...provider,assets:[{...asset,mimeType:'image/png'}]}),input,slots,[assetKey],[registeredBinary])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot({...provider,displayName:'Stale Provider Name'}),input,slots,[assetKey])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot({...provider,sortOrder:1}),input,slots,[assetKey])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot(null),input,slots,[assetKey])).toBe(false);
