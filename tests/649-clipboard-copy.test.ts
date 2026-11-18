@@ -30,9 +30,11 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     const credit=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     for(const suite of [debit,credit]){
       expect(suite).toContain('clipboard single-flight');
-      expect(suite).toContain('button?.click();button?.click()' .replaceAll('button?.','b?.').replaceAll('button','b')||'');
+      expect(suite).toContain('document.execCommand=()=>false');
       expect(suite).toContain('document.execCommand=()=>false');
     }
+    expect(debit).toContain('button?.click();button?.click()');
+    expect(credit).toContain('b?.click();b?.click()');
     expect(debit).toContain('cards-sensitive-copy-singleflight-mobile');
     expect(credit).toContain('credit-stack-sensitive-copy-singleflight-mobile');
     expect(debit).toContain('globalThis.__qaCardSensitiveCopy?.copies===2');
