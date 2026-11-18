@@ -165,5 +165,21 @@ try{
   await shot('cards-sensitive-copy-singleflight-mobile');
   assert(await c.call("function(){globalThis.__qaCardSensitiveCopyRestore?.();return true}"),'release isolated payment-card clipboard fixture');
 
+
+  console.log('Sensitive debit/prepaid pending vault read canceled after route unmount');
+  await viewport(1440,1000);await navigate('');
+  assert(await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard');const staleVault=globalThis.__qaCardStaleVault={requests:0,writes:0,release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){staleVault.requests++;return new Promise(resolve=>{staleVault.release=()=>resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))})}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{staleVault.writes++;return Promise.resolve()}}});globalThis.__qaCardStaleVaultRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;delete globalThis.__qaCardStaleVault;delete globalThis.__qaCardStaleVaultRestore};return true}"),'isolated deferred synthetic Card Vault read and clipboard spy');
+  assert(await c.call("function(){const button=document.querySelector('.prototype-payment-card button.copy-mini[aria-label=\"Αντιγραφή αριθμού\"]');button?.click();return Boolean(button)}"),'start synthetic card PAN copy with pending vault read');
+  await waitFor("function(){return globalThis.__qaCardStaleVault?.requests===1&&typeof globalThis.__qaCardStaleVault?.release==='function'}",'held vault request starts before route change');
+  assert(await c.call("function(){const button=document.querySelector('.sidebar button.brand-home-button');button?.click();return Boolean(button)}"),'navigate away while the vault response remains pending');
+  await waitFor("function(){return document.querySelector('.app-shell')?.dataset.page==='dashboard'&&!document.querySelector('.prototype-payment-card')}",'old card unmounts before vault resolves');
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.sidebar nav button')].find(node=>node.textContent?.includes('Κάρτες'));button?.click();return Boolean(button)}"),'return to Cards with a new mounted instance before old vault resolves');
+  await waitFor("function(){return document.querySelector('.app-shell')?.dataset.page==='cards'&&Boolean(document.querySelector('.prototype-payment-card'))}",'Cards route remounts');
+  assert(await c.call("function(){globalThis.__qaCardStaleVault?.release?.();return true}"),'complete old vault result after unmount');
+  await sleep(200);
+  assert(await c.call("function(){const staleVault=globalThis.__qaCardStaleVault,card=document.querySelector('.prototype-payment-card');return staleVault.writes===0&&Boolean(card?.querySelector('.card-number.masked'))&&!document.querySelector('.r-card-status')}"),'staleVault.writes===0; stale PAN never copied, revealed or announced after returning to Cards');
+  await shot('cards-sensitive-copy-unmounted-cancelled-desktop');
+  assert(await c.call("function(){globalThis.__qaCardStaleVaultRestore?.();return true}"),'restore isolated pending vault and clipboard spies');
+
   c.close();console.log(`Cards remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

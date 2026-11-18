@@ -82,6 +82,10 @@ export function InteractivePaymentCard({
   const cardRef=useRef<HTMLElement>(null);
   const archivingRef=useRef(false);
   const copyInFlight=useRef(false);
+  const mountedRef=useRef(false);
+  const activeCardIdRef=useRef(card.id);
+  activeCardIdRef.current=card.id;
+  const isActiveCard=(id:string)=>mountedRef.current&&activeCardIdRef.current===id&&!archivingRef.current;
   const deleteProgressRef=useRef(0);
   const archivePointerIdRef=useRef<number|null>(null);
   const archiveDragCleanupRef=useRef<(()=>void)|null>(null);
@@ -90,41 +94,53 @@ export function InteractivePaymentCard({
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
   const tiltRectRef=useRef<DOMRect|null>(null);
   const tiltFrameRef=useRef<number|null>(null);
+  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false}},[]);
 
   const loadSecrets=async()=>{
+    const requestedId=card.id;
     setBusy(true);setMessage('');
     try{
       // A missing server vault entry is not a successful reveal.
-      const server=await revealCardSecret(card.id);
+      const server=await revealCardSecret(requestedId);
+      if(!isActiveCard(requestedId))return null;
       if(!server.pan&&!server.expiry&&!server.cvv){
         setMessageTone('error');setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
         setRevealed({});
         return null;
       }
       setRevealed(server);return server;
-    }catch(error){setRevealed({});setMessageTone('error');setMessage(cardVaultErrorMessage(error));return null}
-    finally{setBusy(false)}
+    }catch(error){
+      if(!isActiveCard(requestedId))return null;
+      setRevealed({});setMessageTone('error');setMessage(cardVaultErrorMessage(error));return null;
+    }finally{if(isActiveCard(requestedId))setBusy(false)}
   };
 
   const toggleReveal=async()=>{if(visible){setRevealed({});return}await loadSecrets()};
   const copy=async(field:keyof Secrets,label:string)=>{
-    if(busy||copyInFlight.current||archivingRef.current)return;
+    const requestedId=card.id;
+    if(busy||copyInFlight.current||!isActiveCard(requestedId))return;
     // The DOM can dispatch two clicks before React repaints disabled buttons.
     // Lock before either the vault read or the clipboard promise is awaited.
     copyInFlight.current=true;setCopyBusy(true);setMessage('');
     try{
       const available=revealed[field]?revealed:await loadSecrets();
       if(!available)return; // Preserve an actual vault error from loadSecrets.
+      // Route unmount, replacement or archive may happen during vault retrieval.
+      // A stale sensitive value must never reach the system clipboard.
+      if(!isActiveCard(requestedId))return;
       const current=available[field];
       if(!current){
         setMessageTone('error');setMessage('Δεν υπάρχει αποθηκευμένη τιμή για αντιγραφή.');
         return;
       }
       await copyTextWithFallback(current);
-      if(!archivingRef.current){setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}
+      if(isActiveCard(requestedId)){setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}
     }catch{
-      if(!archivingRef.current){setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
-    }finally{copyInFlight.current=false;setCopyBusy(false)}
+      if(isActiveCard(requestedId)){setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    }finally{
+      copyInFlight.current=false;
+      if(mountedRef.current&&activeCardIdRef.current===requestedId)setCopyBusy(false);
+    }
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
   const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};

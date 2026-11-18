@@ -60,10 +60,11 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     expect(paymentCard).toContain('const copyInFlight=useRef(false)');
     expect(paymentCard).toContain('const [copyBusy,setCopyBusy]=useState(false)');
     const direct=paymentCard.slice(paymentCard.indexOf('const copy=async(field:keyof Secrets,label:string)=>'),paymentCard.indexOf('const setArchiveProgress='));
-    expect(direct).toContain('if(busy||copyInFlight.current||archivingRef.current)return');
+    expect(direct).toContain('if(busy||copyInFlight.current||!isActiveCard(requestedId))return');
     expect(direct.indexOf('copyInFlight.current=true')).toBeLessThan(direct.indexOf('await loadSecrets()'));
     expect(direct).toContain("setCopyBusy(true);setMessage('')");
-    expect(direct).toContain('finally{copyInFlight.current=false;setCopyBusy(false)}');
+    expect(direct).toContain('copyInFlight.current=false;');
+    expect(direct).toContain('if(mountedRef.current&&activeCardIdRef.current===requestedId)setCopyBusy(false)');
     expect(direct).toContain("setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')");
     expect(paymentCard.match(/className="copy-mini" type="button" disabled=\{busy\|\|copyBusy\}/g)).toHaveLength(3);
     const canonical=stack.slice(stack.indexOf('async function copyField('),stack.indexOf('function bindTopCard()'));
@@ -82,6 +83,25 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     expect(canonical).toContain('finally{copyInFlight=false}');
   });
 
+
+  it('blocks a stale debit/prepaid vault result before revealing or copying after route unmount',()=>{
+    const load=paymentCard.slice(paymentCard.indexOf('const loadSecrets=async()=>'),paymentCard.indexOf('const toggleReveal=async()=>'));
+    const direct=paymentCard.slice(paymentCard.indexOf('const copy=async(field:keyof Secrets,label:string)=>'),paymentCard.indexOf('const setArchiveProgress='));
+    const qa=readFileSync(new URL('../scripts/cards-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(paymentCard).toContain('const mountedRef=useRef(false)');
+    expect(paymentCard).toContain('const activeCardIdRef=useRef(card.id)');
+    expect(paymentCard).toContain('useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false}},[])');
+    expect(load.indexOf('if(!isActiveCard(requestedId))return null;')).toBeGreaterThan(load.indexOf('await revealCardSecret(requestedId)'));
+    expect(load.indexOf('if(!isActiveCard(requestedId))return null;')).toBeLessThan(load.indexOf('setRevealed(server)'));
+    const guard=direct.indexOf('if(!isActiveCard(requestedId))return;');
+    expect(guard).toBeGreaterThan(direct.indexOf('await loadSecrets()'));
+    expect(guard).toBeLessThan(direct.indexOf('await copyTextWithFallback(current)'));
+    expect(direct).toContain('if(isActiveCard(requestedId)){setMessageTone(\'success\')');
+    expect(direct).toContain('if(isActiveCard(requestedId)){setMessageTone(\'error\')');
+    expect(qa).toContain('Sensitive debit/prepaid pending vault read canceled after route unmount');
+    expect(qa).toContain('staleVault.writes===0');
+    expect(qa).toContain('cards-sensitive-copy-unmounted-cancelled-desktop');
+  });
 
   it('serializes IBAN copy attempts before React repaint, clears stale status and old success timer',()=>{
     expect(iban).toContain('const copyInFlight=useRef(false)');
