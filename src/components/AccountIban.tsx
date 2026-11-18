@@ -1,5 +1,5 @@
 import { Check, Copy, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { formatIban } from '../lib/iban';
 import { copyTextWithFallback } from '../lib/copyTextWithFallback';
@@ -15,6 +15,9 @@ export function AccountIban({accountId,variant='default',fallback}:{accountId:st
   const metadata=useAccountMetadata();
   const [copied,setCopied]=useState(false);
   const [copyError,setCopyError]=useState(false);
+  const copyInFlight=useRef(false);
+  const successResetTimer=useRef<number|null>(null);
+  useEffect(()=>()=>{if(successResetTimer.current!==null)window.clearTimeout(successResetTimer.current)},[]);
   const record=metadata.records[accountId];
   const iban=record?.iban??null;
   const formattedIban=iban?formatIban(iban):'';
@@ -22,8 +25,23 @@ export function AccountIban({accountId,variant='default',fallback}:{accountId:st
   const visibleIban=iban?(compact?compactIban(formattedIban):formattedIban):'';
   const copyLabel=formattedIban?(compact?'Αντιγραφή IBAN':`Αντιγραφή IBAN ${formattedIban}`):'';
   const copy=async()=>{
-    if(!iban)return;
-    try{await copyTextWithFallback(iban);setCopyError(false);setCopied(true);window.setTimeout(()=>setCopied(false),1800)}catch{setCopied(false);setCopyError(true)}
+    if(!iban||copyInFlight.current)return;
+    // Lock before any clipboard promise. A second click must not race the
+    // first result or leave an earlier success/error announcement visible.
+    copyInFlight.current=true;
+    if(successResetTimer.current!==null){
+      window.clearTimeout(successResetTimer.current);
+      successResetTimer.current=null;
+    }
+    setCopied(false);setCopyError(false);
+    try{
+      await copyTextWithFallback(iban);
+      setCopied(true);
+      successResetTimer.current=window.setTimeout(()=>{
+        setCopied(false);successResetTimer.current=null;
+      },1800);
+    }catch{setCopyError(true)}
+    finally{copyInFlight.current=false}
   };
   return <div className={`account-iban${compact?' account-iban-dashboard':''}`} data-account-iban={accountId}>
     {!compact?<span className="account-iban-label">IBAN</span>:null}

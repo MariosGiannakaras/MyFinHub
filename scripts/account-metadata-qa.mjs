@@ -75,6 +75,22 @@ try{
   }
 
 
+  console.log('Account metadata QA: IBAN same-turn clipboard copy single-flight and stale alert recovery');
+  const clipboardPending=await c.call("function(){const original=Object.getOwnPropertyDescriptor(navigator,'clipboard');const state={clipboardRequests:0,release:null};window.__qaIbanPending=state;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{state.clipboardRequests++;return new Promise(resolve=>{state.release=resolve})}}});window.__qaRestorePendingIban=()=>{if(original)Object.defineProperty(navigator,'clipboard',original);else delete navigator.clipboard;delete window.__qaIbanPending};return true}");
+  assert(clipboardPending,'pending clipboard fixture installed');
+  try{
+    const clicked=await c.call("function(){const button=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] .account-iban-copy');button?.click();button?.click();return Boolean(button)}");
+    assert(clicked,'two same-turn IBAN copy clicks reached real button');
+    const clipboardRequests=await c.call("function(){return window.__qaIbanPending?.clipboardRequests}");
+    assert(clipboardRequests===1,'exactly one pending clipboard request despite two same-turn clicks');
+    await waitFor("function(){const root=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"]');return !root?.querySelector('[role=alert]')&&!root?.querySelector('[role=status]')}",'previous IBAN failure feedback clears on new attempt');
+    assert(await c.call("function(){const state=window.__qaIbanPending;state?.release?.();return Boolean(state?.release)}"),'acknowledge pending clipboard once');
+    await waitFor("function(){const root=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"]');return Boolean(root?.querySelector('[role=status]'))&&!root?.querySelector('[role=alert]')}",'only the acknowledged IBAN copy announces success');
+    await screenshot('account-metadata-clipboard-singleflight-desktop');
+  }finally{
+    await c.call("function(){window.__qaRestorePendingIban?.();delete window.__qaRestorePendingIban;return true}");
+  }
+
   console.log('Account metadata QA: Account Management edit saves IBAN independently');
   await navigate('settings');await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'settings tabs');
   await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'Account Management settings');

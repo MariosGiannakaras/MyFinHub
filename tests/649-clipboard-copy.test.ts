@@ -25,6 +25,22 @@ function emulateLegacyCopy(result:'success'|'false'|'throw'){
 }
 
 describe('#649 sensitive clipboard copy and truthful feedback',()=>{
+  it('serializes IBAN copy attempts before React repaint, clears stale status and old success timer',()=>{
+    expect(iban).toContain('const copyInFlight=useRef(false)');
+    expect(iban).toContain('const successResetTimer=useRef<number|null>(null)');
+    expect(iban).toContain('if(!iban||copyInFlight.current)return;');
+    const owner=iban.slice(iban.indexOf('const copy=async()=>'),iban.indexOf('return <div'));
+    expect(owner.indexOf('copyInFlight.current=true')).toBeLessThan(owner.indexOf('await copyTextWithFallback(iban)'));
+    expect(owner).toContain('setCopied(false);setCopyError(false)');
+    expect(owner).toContain('window.clearTimeout(successResetTimer.current)');
+    expect(owner).toContain('finally{copyInFlight.current=false}');
+    expect(iban).toContain('window.clearTimeout(successResetTimer.current)},[])');
+    expect(ibanBrowserQa).toContain('IBAN same-turn clipboard copy single-flight');
+    expect(ibanBrowserQa).toContain('clipboardRequests===1');
+    expect(ibanBrowserQa).toContain('account-metadata-clipboard-singleflight-desktop');
+  });
+
+
   it('uses the native API without creating a hidden field when it succeeds',async()=>{
     const writeText=vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('navigator',{clipboard:{writeText}});
