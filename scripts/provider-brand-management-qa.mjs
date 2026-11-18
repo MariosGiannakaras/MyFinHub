@@ -450,6 +450,63 @@ try{
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'stale provider editor closes explicitly');
   await c.call("function(){globalThis.fetch=globalThis.__qaStaleOriginalFetch;delete globalThis.__qaStaleOriginalFetch;delete globalThis.__qaStaleReadback;return true}");
 
+
+  console.log('Provider metadata 503 after possible commit must forbid blind POST replay and any asset uploads');
+  await viewport(1440,1000,false);
+  await clickText('.provider-management button','Νέος πάροχος');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-details-panel'))}",'metadata-uncertain provider details');
+  const metadataNameSet=await c.call(`function(){
+    const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.placeholder==='π.χ. Νέα Τράπεζα');
+    if(!(input instanceof HTMLInputElement))return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'QA Metadata Timeout');
+    input.dispatchEvent(new Event('input',{bubbles:true}));return true;
+  }`);
+  assert(metadataNameSet,'metadata-uncertain provider details can be entered');
+  await waitFor("function(){return document.querySelector('.provider-id-field input')?.value==='qa-metadata-timeout'}",'metadata-uncertain provider id derived');
+  await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
+  await waitFor("function(){return Boolean(document.querySelector('.provider-branding-panel'))}",'metadata-uncertain branding editor');
+  await chooseSlot('Βασικό λογότυπο');
+  await uploadSyntheticSvg('qa-metadata-timeout.svg');
+  await waitFor("function(){return !document.querySelector('.provider-asset-picker')}",'metadata-uncertain local logo assigned');
+  await chooseSlot('Βασικό λεκτικό σήμα');
+  await clickText('.provider-picker-asset','qa-metadata-timeout.svg');
+  await c.call(`function(){
+    const original=globalThis.fetch.bind(globalThis);
+    globalThis.__qaMetadataFailureOriginalFetch=original;
+    const state=globalThis.__qaMetadataFailure={posts:0,patches:0,uploads:0,bindings:0};
+    globalThis.fetch=async function(input,init){
+      const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      const url=new URL(raw,location.href),method=String(init?.method||'GET').toUpperCase(),resource=url.searchParams.get('resource');
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='POST'){
+        state.posts++;
+        // An upstream 503 can be returned after the provider RPC committed.
+        return new Response(JSON.stringify({error:'Synthetic uncertain provider response'}),{status:503,headers:{'content-type':'application/json'}});
+      }
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='PATCH'){state.patches++;throw new Error('Unexpected retry after uncertain provider POST')}
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){state.uploads++;throw new Error('Asset upload must not follow uncertain provider metadata')}
+      if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){state.bindings++;throw new Error('Binding must not follow uncertain provider metadata')}
+      return original(input,init);
+    };return true;
+  }`);
+  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  await waitFor("function(){const w=document.querySelector('.provider-editor-warning[role=alert]'),save=document.querySelector('.provider-editor-footer button:last-child');return Boolean(w&&save?.disabled&&(w.textContent||'').includes('αβέβαιο αποτέλεσμα'))}",'metadata 503 announces uncertain save and disables replay');
+  await waitFor("function(){const p=document.querySelector('[data-save-progress=error]');return p?.getAttribute('role')==='alert'&&!document.querySelector('[data-save-progress=success]')}",'metadata 503 marks top save status red rather than green');
+  const uncertainMetadata=await c.call("function(){const m=globalThis.__qaMetadataFailure,w=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),a=w?.getBoundingClientRect(),b=save?.getBoundingClientRect();return {posts:m?.posts,patches:m?.patches,uploads:m?.uploads,bindings:m?.bindings,role:w?.getAttribute('role'),disabled:save?.disabled,editorOpen:!!document.querySelector('.provider-editor-modal'),green:!!document.querySelector('.provider-management-message'),visible:!!(a&&b&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}}");
+  assert(uncertainMetadata.posts===1&&uncertainMetadata.patches===0&&uncertainMetadata.uploads===0&&uncertainMetadata.bindings===0,'uncertain metadata writes never start asset/binding mutations or duplicate POST/PATCH');
+  assert(uncertainMetadata.role==='alert'&&uncertainMetadata.disabled&&uncertainMetadata.editorOpen&&!uncertainMetadata.green&&uncertainMetadata.visible,'uncertain metadata shows visible accessible blocked-save guidance');
+  await shot('provider-create-unverified-metadata-503-desktop');
+  await c.call("function(){document.querySelector('.provider-editor-footer button:last-child')?.click();return true}");
+  const metadataAfterDisabled=await c.call("function(){const m=globalThis.__qaMetadataFailure;return {posts:m.posts,patches:m.patches,uploads:m.uploads,bindings:m.bindings}}");
+  assert(metadataAfterDisabled.posts===1&&metadataAfterDisabled.patches===0&&metadataAfterDisabled.uploads===0&&metadataAfterDisabled.bindings===0,'disabled metadata retry does not repeat any uncertain mutation');
+  await viewport(375,812,true);
+  await noOverflow('unverified metadata 503 warning mobile');
+  const metadataWarningMobile=await c.call("function(){const a=document.querySelector('.provider-editor-warning')?.getBoundingClientRect(),b=document.querySelector('.provider-editor-footer button:last-child')?.getBoundingClientRect();return !!(a&&b&&a.left>=-1&&a.right<=innerWidth+1&&a.top>=0&&a.bottom<=b.top&&b.bottom<=innerHeight)}");
+  assert(metadataWarningMobile,'375px uncertain metadata warning and disabled Save remain visible above the actions');
+  await shot('provider-create-unverified-metadata-503-mobile');
+  await clickText('.provider-editor-footer button','Ακύρωση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'uncertain metadata editor closes explicitly without resubmit');
+  await c.call("function(){globalThis.fetch=globalThis.__qaMetadataFailureOriginalFetch;delete globalThis.__qaMetadataFailureOriginalFetch;delete globalThis.__qaMetadataFailure;return true}");
+
   console.log('Shared compact Transactions filters remain at least 12px');
   const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');
   await viewport(1440,1000,false);
