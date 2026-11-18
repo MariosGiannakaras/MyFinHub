@@ -35,6 +35,15 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('split malformed entry stays in draft without a posted event');
   });
 
+  it('shows only actual funded accounts in multi-source expense mode and preserves ordinary account editing on exit',()=>{
+    expect(quickAdd).toContain("!transferLike && kind!=='card_purchase'&&!(kind==='expense'&&multiFundingOpen)");
+    expect(quickAdd).toContain("event=createMultiSourcePurchaseEvent(data");
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('multi-source entry hides the unrelated single-account selector');
+    expect(qa).toContain('ordinary expense account selector returns when multi-source mode closes');
+    expect(qa).toContain('quick-entry-multi-funding-real-sources-mobile-375');
+  });
+
   it('guards all ordinary Quick Entry account legs and prevents coerced multi-funding previews',()=>{
     expect(quickAdd).toContain("const numeric=kind==='split'||kind==='reconciliation'?0:parseMoneyInputAmount(amount)");
     expect(quickAdd).toContain("const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined");

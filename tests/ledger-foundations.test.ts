@@ -278,6 +278,18 @@ describe('ledger foundations', () => {
     expect(accountBalances(data,'2026-08-21').bank).toBe(900);
   });
 
+  it('rejects sub-cent split writes and unsafe aggregate cents instead of silently rounding the booked purchase',()=>{
+    const data=minimal();
+    const subcent=[{...splitParts()[0],amount:0.001},splitParts()[1]];
+    expect(splitDraftError(data,{accountId:'bank',parts:subcent})).toMatch(/μέρος 1.*δύο δεκαδικά/);
+    expect(()=>createExpenseSplitEvent(data,{date:'2026-08-21',accountId:'bank',parts:subcent})).toThrow(/μέρος 1.*δύο δεκαδικά/);
+    // Each source is individually safe in cents; their sum is not.
+    const huge=[{...splitParts()[0],amount:50_000_000_000_000},{...splitParts()[1],amount:50_000_000_000_000}];
+    expect(splitDraftError(data,{accountId:'bank',parts:huge})).toMatch(/συνολικό ποσό.*ασφαλές όριο/);
+    expect(()=>createExpenseSplitEvent(data,{date:'2026-08-21',accountId:'bank',parts:huge})).toThrow(/συνολικό ποσό/);
+    expect(splitDraftError(data,{accountId:'bank',parts:[{...splitParts()[0],amount:.1},{...splitParts()[1],amount:.2}]})).toBeNull();
+  });
+
   it('requires at least two positive split parts and a current account', () => {
     const data=minimal();
     expect(splitDraftError(data,{accountId:'bank',parts:[{id:'a',label:'A',category:'Άλλο',amount:10}]})).toMatch(/τουλάχιστον δύο/);

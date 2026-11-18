@@ -106,8 +106,15 @@ export function splitDraftError(data: FinanceData, draft: { accountId: string; p
   if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
   const invalidPartIndex=draft.parts.findIndex((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0);
   if (invalidPartIndex >= 0) return `Το ποσό στο μέρος ${invalidPartIndex + 1} πρέπει να είναι θετικό.`;
+  // Do not let direct/domain callers silently round a user-confirmed amount.
+  // Legacy read-only allocations can remain normalized; new writes cannot.
+  const imprecisePartIndex=draft.parts.findIndex((part)=>{
+    const amount=Number(part.amount),cents=moneyToCents(amount);
+    return !Number.isSafeInteger(cents)||Math.abs(amount*100-cents)>1e-6;
+  });
+  if(imprecisePartIndex>=0)return `Το ποσό στο μέρος ${imprecisePartIndex+1} πρέπει να έχει έως δύο δεκαδικά και ασφαλή λεπτά ευρώ.`;
   const allocation = splitAllocation(draft.parts);
-  if (!Number.isFinite(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isFinite(moneyToCents(part.amount)))) return 'Έλεγξε τα επιμέρους ποσά.';
+  if (!Number.isSafeInteger(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isSafeInteger(moneyToCents(part.amount)))) return 'Το συνολικό ποσό διαχωρισμού υπερβαίνει το ασφαλές όριο.';
   if (allocation.totalCents <= 0) return 'Το σύνολο των επιμέρους ποσών πρέπει να είναι θετικό.';
   return null;
 }

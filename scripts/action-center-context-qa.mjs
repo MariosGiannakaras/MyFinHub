@@ -178,6 +178,22 @@ try{
   const fundingDraft=await c.call("function(){const modal=document.querySelector('.generic-quick-modal'),amount=modal?.querySelector('input[data-autofocus=true]'),choice=modal?.querySelector('.multi-funding-choice input[type=checkbox]');if(!(amount instanceof HTMLInputElement)||!(choice instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(amount,'10.00');amount.dispatchEvent(new Event('input',{bubbles:true}));amount.dispatchEvent(new Event('change',{bubbles:true}));choice.click();return true}");
   assert(fundingDraft,'open multi-source purchase with a valid parent amount');
   await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control').length>=2}",'multi-source amount editors ready');
+
+  console.log('Quick Entry multi-source account choice must mean an actual funding source');
+  const multiAccountHidden=await c.call("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return !labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===2}");
+  assert(multiAccountHidden,'multi-source entry hides the unrelated single-account selector');
+  await viewport(375,812);
+  assert(await c.call("function(){const rows=document.querySelectorAll('.generic-quick-modal .multi-funding-row');const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];rows[0]?.scrollIntoView({block:'center'});return rows.length===2&&!labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px purchase form displays only actual funding sources, without horizontal overflow');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-real-sources-mobile-375');
+  await viewport(1440,1000);
+  const toggledSingle=await c.call("function(){const choice=document.querySelector('.generic-quick-modal .multi-funding-choice input[type=checkbox]');if(!choice?.checked)return false;choice.click();return true}");
+  assert(toggledSingle,'switch multi-source mode off without changing entered amount');
+  await waitFor("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&!document.querySelector('.generic-quick-modal .multi-funding-row')}",'ordinary expense account selector returns when multi-source mode closes');
+  assert(await c.call("function(){const label=[...document.querySelectorAll('.generic-quick-modal label.quick-field')].find(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός');return (label?.querySelector('input[role=combobox]')?.value||'').includes('Μισθοδοσία')}"),'single-source account selection preserved on mode toggle');
+  const toggledBack=await c.call("function(){const choice=document.querySelector('.generic-quick-modal .multi-funding-choice input[type=checkbox]');if(!choice||choice.checked)return false;choice.click();return true}");
+  assert(toggledBack,'switch back to multi-source edit without losing source rows');
+  await waitFor("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===2&&!labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')}",'two funding rows retained; unrelated account remains hidden');
   const malformedFunding=await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];if(fields.length<2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [field,value] of [[fields[0],'1e3'],[fields[1],'2.00']]){setter?.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}return true}");
   assert(malformedFunding,'set a malformed exponent-source and a valid cent-source');
   await waitFor("function(){const total=document.querySelector('.generic-quick-modal .multi-funding-editor .split-head span[aria-live=polite]');return Boolean(total&&(total.textContent||'').includes('Άθροισμα: —'))}",'invalid funding preview never advertises fabricated 1002 Euro subtotal');
