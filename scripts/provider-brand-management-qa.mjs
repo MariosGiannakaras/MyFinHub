@@ -528,6 +528,47 @@ try{
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'uncertain metadata editor closes explicitly without resubmit');
   await c.call("function(){globalThis.fetch=globalThis.__qaMetadataFailureOriginalFetch;delete globalThis.__qaMetadataFailureOriginalFetch;delete globalThis.__qaMetadataFailure;return true}");
 
+  console.log('Provider catalog unavailable state blocks all edits and recovers through GET only');
+  const fallbackUrl=new URL(baseUrl);
+  fallbackUrl.searchParams.set('page','settings');
+  fallbackUrl.searchParams.set('visual','1');
+  fallbackUrl.searchParams.set('qaProviderCatalogFallback','1');
+  await viewport(1440,1000,false);
+  await c.send('Page.navigate',{url:fallbackUrl.href});
+  await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'synthetic failed-catalog Settings ready');
+  await clickAccounts();
+  await waitFor("function(){return !!document.querySelector('.provider-catalog-error[role=alert]')}",'failed catalog error alert');
+  const blockedCatalog=await c.call(`function(){
+    const root=document.querySelector('.provider-management');
+    const alert=root?.querySelector('.provider-catalog-error');
+    const newButton=root?.querySelector('.provider-management-head button');
+    const editButtons=[...(root?.querySelectorAll('.provider-edit-action')||[])];
+    const retry=alert?.querySelector('button');
+    return {
+      alert:alert?.getAttribute('role'),error:(alert?.textContent||'').includes('απενεργοποιηθεί'),
+      newDisabled:newButton?.disabled,editDisabled:editButtons.length>=8&&editButtons.every(button=>button.disabled),
+      retryEnabled:retry&&!retry.disabled,editorOpen:!!document.querySelector('.provider-editor-modal'),
+    };
+  }`);
+  assert(blockedCatalog.alert==='alert'&&blockedCatalog.error&&blockedCatalog.newDisabled&&blockedCatalog.editDisabled&&blockedCatalog.retryEnabled&&!blockedCatalog.editorOpen,
+    'failed catalog cannot offer edits of fallback bank records: '+JSON.stringify(blockedCatalog));
+  await noOverflow('provider unavailable catalog desktop');
+  await shot('provider-catalog-fallback-blocked-desktop');
+  await viewport(375,812,true);
+  await noOverflow('provider unavailable catalog mobile');
+  const mobileFallback=await c.call("function(){const e=document.querySelector('.provider-catalog-error'),b=e?.querySelector('button'),r=e?.getBoundingClientRect(),a=b?.getBoundingClientRect();return Boolean(r&&a&&r.left>=-1&&r.right<=innerWidth+1&&a.left>=-1&&a.right<=innerWidth+1&&a.width>=44&&a.height>=44)}");
+  assert(mobileFallback,'375px failed-catalog alert and recovery action remain accessible');
+  await shot('provider-catalog-fallback-blocked-mobile');
+  await clickText('.provider-catalog-error button','Επανάληψη φόρτωσης');
+  await waitFor("function(){const n=document.querySelector('.provider-management-head button');return !document.querySelector('.provider-catalog-error')&&!!n&&!n.disabled&&[...document.querySelectorAll('.provider-edit-action')].length>=8&&[...document.querySelectorAll('.provider-edit-action')].every(b=>!b.disabled)}",'read-only catalog recovery re-enables real provider editing');
+  await noOverflow('provider catalog recovered mobile');
+  await shot('provider-catalog-recovered-mobile');
+  const recoveredEditor=await c.call("function(){const b=document.querySelector('.provider-edit-action');if(!b||b.disabled)return false;b.click();return true}");
+  assert(recoveredEditor,'recovered catalog allows real provider editor');
+  await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'recovered provider editor');
+  await clickText('.provider-editor-footer button','Ακύρωση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'recovered provider editor closed');
+
   console.log('Shared compact Transactions filters remain at least 12px');
   const transactionUrl=new URL(baseUrl);transactionUrl.searchParams.set('page','transactions');
   await viewport(1440,1000,false);

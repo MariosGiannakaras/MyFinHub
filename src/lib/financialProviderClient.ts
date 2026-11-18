@@ -7,9 +7,16 @@ import { providerAssetUrlAllowed } from './providerAssetUrl';
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
+// An opt-in synthetic QA-only failed catalog lets rendered QA exercise
+// fail-closed editing and read-only recovery without changing production fetches.
+const QA_CATALOG_FAILURE=QA_MODE&&new URLSearchParams(location.search).has('qaProviderCatalogFallback');
 const FALLBACK=FINANCIAL_PROVIDERS.map(provider=>({...provider}));
 const QA_PROVIDERS=QA_FINANCIAL_PROVIDERS.map(provider=>({...provider,assets:provider.assets?.map(asset=>({...asset})),bindings:provider.bindings?.map(binding=>({...binding}))}));
-let snapshot:FinancialProviderSnapshot={loaded:QA_MODE,loading:false,providers:QA_MODE?QA_PROVIDERS:FALLBACK,error:null};
+let snapshot:FinancialProviderSnapshot={
+  loaded:QA_MODE,loading:false,
+  providers:QA_CATALOG_FAILURE?FALLBACK:QA_MODE?QA_PROVIDERS:FALLBACK,
+  error:QA_CATALOG_FAILURE?'Συνθετική QA αποτυχία ανάγνωσης καταλόγου παρόχων.':null,
+};
 let pending:Promise<FinancialProviderSnapshot>|null=null;
 const listeners=new Set<()=>void>();
 

@@ -5,6 +5,18 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it('stages the genuine 1440/375px failed-catalog, no-edit and read-only recovery browser proof',()=>{
+    const qa=readFileSync(new URL('../scripts/provider-brand-management-qa.mjs',import.meta.url),'utf8');
+    const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
+    expect(client).toContain("QA_MODE&&new URLSearchParams(location.search).has('qaProviderCatalogFallback')");
+    expect(client).toContain("error:QA_CATALOG_FAILURE?");
+    expect(qa).toContain("fallbackUrl.searchParams.set('qaProviderCatalogFallback','1')");
+    expect(qa).toContain("'provider-catalog-fallback-blocked-desktop'");
+    expect(qa).toContain("'provider-catalog-fallback-blocked-mobile'");
+    expect(qa).toContain("'provider-catalog-recovered-mobile'");
+    expect(qa).toContain("blockedCatalog.alert==='alert'&&blockedCatalog.error&&blockedCatalog.newDisabled&&blockedCatalog.editDisabled");
+    expect(qa).toContain("'read-only catalog recovery re-enables real provider editing'");
+  });
   it('blocks catalog edits during fallback/error and permits only an explicit read-only recovery',()=>{
     const owner=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
     expect(owner).toContain('const catalogUnavailable=!catalog.loaded||catalog.loading||Boolean(catalog.error)');
