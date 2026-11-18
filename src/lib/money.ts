@@ -11,6 +11,13 @@ export function centsToMoney(value:number){
   return Number((value/CENTS).toFixed(2));
 }
 
+/** For newly confirmed positive finance drafts. Never round a non-cent into a booked amount. */
+export function isPositiveCentExactMoneyValue(value:number){
+  const cents=moneyToCents(value);
+  return Number.isFinite(value)&&Number.isSafeInteger(cents)&&cents>0&&
+    Math.abs(value*CENTS-cents)<=1e-6;
+}
+
 export function isSafeMoneyValue(value:number){
   return Number.isFinite(value)&&Number.isSafeInteger(moneyToCents(value));
 }

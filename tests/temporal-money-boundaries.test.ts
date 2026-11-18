@@ -3,7 +3,7 @@ import { addCalendarDays, calendarMonthRange, isValidDateOnly, isValidMonthOnly 
 import { createEvent, monthRange } from '../src/lib/domain.js';
 import { addDays } from '../src/lib/forecast.js';
 import { entryDraftError, loanDraftError, recurringDraftError } from '../src/lib/inputSemantics.js';
-import { centsToMoney, isSafeMoneyValue, moneyToCents } from '../src/lib/money.js';
+import { centsToMoney, isPositiveCentExactMoneyValue, isSafeMoneyValue, moneyToCents } from '../src/lib/money.js';
 import { validRecurringAnchor } from '../src/lib/recurringCadence.js';
 import { monthEnd } from '../src/lib/reports.js';
 import { shiftReportingMonth } from '../src/lib/reportingPeriod.js';
@@ -57,6 +57,16 @@ describe('safe monetary boundaries',()=>{
     expect(centsToMoney(30)).toBe(0.3);
     expect(moneyToCents(12.345)).toBe(1235);
     expect(centsToMoney(1235)).toBe(12.35);
+  });
+
+  it('keeps legacy range/read semantics separate from new positive cent-exact write constraints',()=>{
+    expect(isSafeMoneyValue(1.005)).toBe(true); // Do not reinterpret persisted legacy numbers on read.
+    for(const amount of [0,0.0001,0.001,0.005,1.005,2.999,-0.01,Number.POSITIVE_INFINITY,Number.MAX_SAFE_INTEGER]){
+      expect(isPositiveCentExactMoneyValue(amount)).toBe(false);
+    }
+    for(const amount of [0.01,0.1,0.2,0.3,10.05,123456789.12]){
+      expect(isPositiveCentExactMoneyValue(amount)).toBe(true);
+    }
   });
 
   it('rejects non-finite and values that cannot be represented as safe integer cents',()=>{
