@@ -271,24 +271,17 @@ export async function setFinancialProviderAssetBinding(input:{
   refreshCatalog?:boolean;
 }){
   return trackDatabaseWrite(async()=>{
-  let response:Response;
-  try{
-    response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
-      method:'PUT',
-      credentials:'same-origin',
-      headers:{accept:'application/json','content-type':'application/json'},
-      body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
-    });
-  }catch{
-    // The binding RPC can commit despite a lost transport acknowledgement.
-    throw new UnverifiedFinancialProviderWrite('binding');
-  }
+  // Binding PUT sets one explicit provider/role/variant key. A known 5xx or
+  // lost response is safe to retry explicitly using the same idempotent input;
+  // unlike a binary upload it never generates a fresh Storage key.
+  const response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
+    method:'PUT',
+    credentials:'same-origin',
+    headers:{accept:'application/json','content-type':'application/json'},
+    body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
+  });
   const payload=await json(response);
-  if(!response.ok){
-    if(response.status===408||response.status===429||response.status>=500)
-      throw new UnverifiedFinancialProviderWrite('binding');
-    throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
-  }
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
   if(payload?.ok!==true)throw new UnverifiedFinancialProviderWrite('binding');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
   });

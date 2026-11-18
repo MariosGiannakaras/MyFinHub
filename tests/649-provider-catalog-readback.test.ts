@@ -443,27 +443,45 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     }
   );
 
-  it.each([408,429,503])('never resends an uncertain provider slot binding after HTTP %i',async status=>{
-    const requests:string[]=[];
-    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
-      requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
-      return new Response(JSON.stringify({error:'Uncertain binding commit'}),{status,headers:{'content-type':'application/json'}});
-    }));
-    const clientPath:string='../src/lib/financialProviderClient.js';
-    const activityPath:string='../src/lib/databaseSaveActivity.js';
-    const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
-    const {getDatabaseSaveSnapshot}=await import(activityPath);
-    const before=getDatabaseSaveSnapshot().completion;
-    try{
-      await setFinancialProviderAssetBinding({providerId:'qa-uncertain-bank',role:'logo',variant:'universal',assetKey:null,refreshCatalog:false});
-      throw new Error('Expected uncertain binding outcome');
-    }catch(error){
-      expect(error).toBeInstanceOf(UnverifiedFinancialProviderWrite);
-      expect((error as InstanceType<typeof UnverifiedFinancialProviderWrite>).operation).toBe('binding');
+  it.each(['server-503','lost-connection'] as const)(
+    'permits deliberate idempotent slot-binding retry after %s without automatically repeating the first attempt',async mode=>{
+      const requests:Array<{method:string;url:string;body:string}>=[];
+      let attempts=0;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=(init?.method||'GET').toUpperCase(),url=String(input);
+        const body=String(init?.body||'');
+        requests.push({method,url,body});
+        expect(method).toBe('PUT');
+        expect(url).toContain('resource=financial-provider-asset-binding');
+        attempts++;
+        if(attempts===1){
+          if(mode==='lost-connection')throw new TypeError('Response lost after binding PUT');
+          return new Response(JSON.stringify({error:'Binding outcome uncertain'}),{status:503,headers:{'content-type':'application/json'}});
+        }
+        return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const activityPath:string='../src/lib/databaseSaveActivity.js';
+      const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
+      const {getDatabaseSaveSnapshot}=await import(activityPath);
+      const original=getDatabaseSaveSnapshot().completion;
+      const input={providerId:'qa-uncertain-bank',role:'logo' as const,variant:'universal' as const,assetKey:'qa-uncertain-bank-asset-112233aabbcc',refreshCatalog:false};
+      try{
+        await setFinancialProviderAssetBinding(input);
+        throw new Error('Expected failed first attempt');
+      }catch(error){
+        expect(error).toBeInstanceOf(Error);
+        expect(error).not.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+      }
+      expect(requests).toHaveLength(1);
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:original});
+      // Only a deliberate user-requested retry reissues this idempotent PUT.
+      await setFinancialProviderAssetBinding(input);
+      expect(requests).toHaveLength(2);
+      expect(requests[0]).toEqual(requests[1]);
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:original+1});
     }
-    expect(requests).toEqual(['PUT /api/account-metadata?resource=financial-provider-asset-binding']);
-    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
-  });
+  );
 
   it('does not turn a definitive metadata 403 into an unverified commit',async()=>{
     const requests:string[]=[];
@@ -479,19 +497,5 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(requests).toEqual(['POST /api/account-metadata?resource=financial-providers']);
   });
 
-  it('treats a lost provider binding response as unverified rather than a definite rejected write',async()=>{
-    const requests:string[]=[];
-    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
-      requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
-      throw new TypeError('Connection dropped after binding request');
-    }));
-    const clientPath:string='../src/lib/financialProviderClient.js';
-    const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
-    await expect(setFinancialProviderAssetBinding({
-      providerId:'qa-uncertain-bank',role:'logo',variant:'universal',assetKey:null,refreshCatalog:false,
-    })).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'binding'});
-    expect(UnverifiedFinancialProviderWrite.name).toBe('UnverifiedFinancialProviderWrite');
-    expect(requests).toEqual(['PUT /api/account-metadata?resource=financial-provider-asset-binding']);
-  });
 
 });
