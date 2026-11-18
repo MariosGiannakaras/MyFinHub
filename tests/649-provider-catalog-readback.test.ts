@@ -324,4 +324,68 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,['unregistered-asset'])).toBe(false);
   });
 
+  it.each([408,429,500,502,503])(
+    'does not automatically replay an uncertain asset upload after HTTP %i',async status=>{
+      const operations:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        operations.push((init?.method||'GET')+' '+String(input));
+        return new Response(JSON.stringify({error:'Synthetic uncertain upstream outcome'}),{
+          status,headers:{'content-type':'application/json'}
+        });
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const activityPath:string='../src/lib/databaseSaveActivity.js';
+      const {uploadFinancialProviderAsset,UnverifiedFinancialProviderWrite}=await import(clientPath);
+      const {getDatabaseSaveSnapshot}=await import(activityPath);
+      const before=getDatabaseSaveSnapshot().completion;
+      await expect(uploadFinancialProviderAsset({
+        providerId:'qa-brand',role:'logo',variant:'universal',
+        file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+      })).rejects.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+      expect(operations).toHaveLength(1);
+      expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-assets');
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+    }
+  );
+
+  it('treats a dropped upload connection as unverified, without retrying a fresh-key write',async()=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET')+' '+String(input));
+      throw new TypeError('Synthetic network disconnect after request transmission');
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    await expect(uploadFinancialProviderAsset({
+      providerId:'qa-brand',role:'logo',variant:'universal',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+    })).rejects.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+    expect(operations).toHaveLength(1);
+    expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-assets');
+  });
+
+  it('preserves a definite 403 asset rejection as a normal error, not an uncertain write',async()=>{
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      operations.push((init?.method||'GET')+' '+String(input));
+      return new Response(JSON.stringify({error:'FORBIDDEN'}),{
+        status:403,headers:{'content-type':'application/json'}
+      });
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    try{
+      await uploadFinancialProviderAsset({
+        providerId:'qa-brand',role:'logo',variant:'universal',
+        file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+      });
+      throw new Error('Expected rejection');
+    }catch(error){
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+      expect((error as Error).message).toContain('FORBIDDEN');
+    }
+    expect(operations).toHaveLength(1);
+  });
+
 });

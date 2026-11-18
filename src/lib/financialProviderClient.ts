@@ -220,14 +220,27 @@ export async function uploadFinancialProviderAsset(input:{
     primary:input.makePrimary?'1':'0',
     fileName:input.file.name,
   });
-  const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
-    method:'PUT',
-    credentials:'same-origin',
-    headers:{accept:'application/json','content-type':input.file.type},
-    body:input.file,
-  });
+  let response:Response;
+  try{
+    response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
+      method:'PUT',
+      credentials:'same-origin',
+      headers:{accept:'application/json','content-type':input.file.type},
+      body:input.file,
+    });
+  }catch{
+    // A dropped connection does not prove the one-time server-generated asset
+    // was rolled back. Do not create a new key by blindly retrying this upload.
+    throw new UnverifiedFinancialProviderWrite('asset');
+  }
   const payload=await json(response);
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  if(!response.ok){
+    // A timeout/rate limit or upstream 5xx may arrive after Storage/DB commit.
+    // Only explicit validation/auth rejections are safe to treat as definite.
+    if(response.status===408||response.status===429||response.status>=500)
+      throw new UnverifiedFinancialProviderWrite('asset');
+    throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  }
   // A successful status without an exact receipt does not prove registration.
   // Never replay a new-key Storage upload while the outcome is uncertain.
   const asset=confirmedUploadedAsset(payload?.asset,input);
