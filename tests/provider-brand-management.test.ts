@@ -57,8 +57,8 @@ function provider():FinancialProvider{
 describe('provider branding management',()=>{
   it('serializes provider metadata and asset binding attempts before state repaint (#649 I19.04)',()=>{
     expect(settings).toContain('const mutationInFlight=useRef(false)');
-    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||requiresCatalogReview||!validateDetails())return;');
-    expect(settings).toContain('disabled={busy||requiresCatalogReview}');
+    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||requiresCatalogReview||catalogUnavailable||!validateDetails())return;');
+    expect(settings).toContain('disabled={busy||requiresCatalogReview||catalogUnavailable}');
     expect(settings).toContain('if(error instanceof UnverifiedFinancialProviderWrite)');
     expect(settings).toContain('mutationInFlight.current=true;setBusy(true)');
     expect(settings).toContain('finally{mutationInFlight.current=false;setBusy(false)}');
@@ -236,7 +236,9 @@ describe('provider branding management',()=>{
     ]));
     expect(qaFinancialProviderSource).toContain("https://ahsukppxwaiagampsuzb.supabase.co");
     expect(financialProviderClientSource).toContain('QA_FINANCIAL_PROVIDERS');
-    expect(financialProviderClientSource).toContain('providers:QA_MODE?QA_PROVIDERS:FALLBACK');
+    expect(financialProviderClientSource).toContain("QA_MODE&&new URLSearchParams(location.search).has('qaProviderCatalogFallback')");
+    expect(financialProviderClientSource).toContain('providers:QA_CATALOG_FAILURE?FALLBACK:QA_MODE?QA_PROVIDERS:FALLBACK');
+    expect(financialProviderClientSource).toContain('if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null})');
   });
 
   it('uses one edit/create provider editor with a visual asset library instead of native-file-input UX',()=>{
