@@ -50,6 +50,8 @@ jobs:
         run: bash scripts/app-lock-local-postgres-smoke.sh
       - name: Local PostgreSQL dated receivable security smoke (disposable DB only)
         run: bash scripts/repayment-chronology-local-postgres-smoke.sh
+      - name: Local PostgreSQL changed finance event cents smoke (disposable DB only)
+        run: bash scripts/finance-event-cents-local-postgres-smoke.sh
       - name: Rendered frontend QA
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         run: |
