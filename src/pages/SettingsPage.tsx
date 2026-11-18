@@ -169,6 +169,9 @@ export function SettingsPage({
   const [operationFeedback,setOperationFeedback] = useState<{message:string;tone:OperationFeedbackTone}|null>(null);
   const setOperationResult=(message:string,tone:OperationFeedbackTone='success')=>setOperationFeedback(message?{message,tone}:null);
   const [busy, setBusy] = useState(false);
+  // React state may not repaint before two same-turn clicks. Lock maintenance
+  // synchronously, before reading import files or awaiting backup RPCs.
+  const maintenanceInFlight=useRef(false);
   const [backupRefreshToken, setBackupRefreshToken] = useState(0);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<FinanceImportPreview | null>(null);
@@ -218,7 +221,8 @@ export function SettingsPage({
   const ownerTaxonomyApplied=JSON.stringify(categoryTree(data.state.settings,'expense'))===JSON.stringify(OWNER_EXPENSE_TREE)
     &&JSON.stringify(categoryTree(data.state.settings,'income'))===JSON.stringify(OWNER_INCOME_TREE);
   const confirmOwnerTaxonomy=async()=>{
-    if(busy)return;
+    if(busy||maintenanceInFlight.current)return;
+    maintenanceInFlight.current=true;
     setBusy(true);
     setOperationResult('');
     try{
@@ -226,11 +230,11 @@ export function SettingsPage({
       setPendingOwnerTaxonomy(false);
     }catch(reason){
       setOperationResult(userErrorMessage(reason,'Η εφαρμογή των κατηγοριών δεν αποθηκεύτηκε. Τα προηγούμενα δεδομένα παραμένουν ανέπαφα.'),'error');
-    }finally{setBusy(false)}
+    }finally{maintenanceInFlight.current=false;setBusy(false)}
   };
 
   const requestImport = async (file?: File) => {
-    if (!file || busy) return;
+    if (!file || busy || maintenanceInFlight.current) return;
     // Discard any previous preview before opening another file, including
     // a rejected oversized or malformed file.
     setPendingImportFile(null);
@@ -241,6 +245,7 @@ export function SettingsPage({
       return;
     }
     setOperationResult('');
+    maintenanceInFlight.current=true;
     setBusy(true);
     try {
       // Never open destructive confirmation for malformed JSON. Full structural,
@@ -253,11 +258,11 @@ export function SettingsPage({
         ? 'Το επιλεγμένο αρχείο δεν περιέχει έγκυρο JSON. Δεν έγινε εισαγωγή.'
         : userErrorMessage(reason,'Δεν μπόρεσε να διαβαστεί το αρχείο JSON. Δεν έγινε εισαγωγή.'),'error');
       if (fileRef.current) fileRef.current.value = '';
-    } finally { setBusy(false); }
+    } finally { maintenanceInFlight.current=false;setBusy(false); }
   };
 
   const cancelImport = () => {
-    if (busy) return;
+    if (busy || maintenanceInFlight.current) return;
     setPendingImportFile(null);
     setImportPreview(null);
     if (fileRef.current) fileRef.current.value = '';
@@ -265,8 +270,9 @@ export function SettingsPage({
 
   const confirmImport = async () => {
     const file = pendingImportFile;
-    if (!file || busy) return;
+    if (!file || busy || maintenanceInFlight.current) return;
     setOperationResult('');
+    maintenanceInFlight.current=true;
     setBusy(true);
     try {
       const result=await onImport(JSON.parse(await file.text()));
@@ -283,6 +289,7 @@ export function SettingsPage({
         setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να εισαγάγουμε το αρχείο. Έλεγξε ότι είναι έγκυρο αντίγραφο ασφαλείας του MyFinHub και δοκίμασε ξανά.'),'error');
       }
     } finally {
+      maintenanceInFlight.current=false;
       setBusy(false);
       setPendingImportFile(null);
       setImportPreview(null);
@@ -291,8 +298,9 @@ export function SettingsPage({
   };
 
   const backup = async () => {
-    if (busy) return;
+    if (busy || maintenanceInFlight.current) return;
     setOperationResult('');
+    maintenanceInFlight.current=true;
     setBusy(true);
     let databaseBackupConfirmed=false;
     try {
@@ -325,6 +333,7 @@ export function SettingsPage({
         setOperationResult(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'),'error');
       }
     } finally {
+      maintenanceInFlight.current=false;
       setBusy(false);
     }
   };

@@ -9,6 +9,24 @@ const qa=read('scripts/settings-tabs-qa.mjs');
 const confirmCss=read('src/styles/confirm-dialog.css');
 
 describe('Settings Data source contract',()=>{
+  it('locks Settings data maintenance before the first await so same-turn clicks cannot replay import or backup',()=>{
+    expect(settings).toContain('const maintenanceInFlight=useRef(false)');
+    const preview=settings.slice(settings.indexOf('const requestImport = async'),settings.indexOf('const cancelImport ='));
+    const confirmation=settings.slice(settings.indexOf('const confirmImport = async'),settings.indexOf('const backup = async'));
+    const backup=settings.slice(settings.indexOf('const backup = async'),settings.indexOf('return (\n    <div className="page-stack'));
+    for(const owner of [preview,confirmation,backup]){
+      expect(owner).toContain('maintenanceInFlight.current');
+      expect(owner).toContain('maintenanceInFlight.current=true');
+      expect(owner.indexOf('maintenanceInFlight.current=true')).toBeLessThan(owner.indexOf('await '));
+      expect(owner).toContain('maintenanceInFlight.current=false');
+    }
+    expect(settings).toContain('if (busy || maintenanceInFlight.current) return;');
+    expect(settings).toContain('if(busy||maintenanceInFlight.current)return;');
+    expect(qa).toContain('button?.click();button?.click()');
+    expect(qa).toContain('same-turn backup clicks invoke one backup RPC');
+    expect(qa).toContain('window.__qaBackupPostCount===1');
+  });
+
   it('preserves the canonical backup and import safety semantics',()=>{
     expect(settings).toContain('MAX_FINANCE_DOCUMENT_BYTES');
     expect(settings).toContain('await onBackup()');
