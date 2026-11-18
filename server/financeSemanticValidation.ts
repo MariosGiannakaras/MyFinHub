@@ -344,6 +344,39 @@ export function validateChangedFinanceEventCents(next:FinanceData,previous:Finan
   }
 }
 
+/**
+ * Mutable configuration amounts are persisted separately from ledger events.
+ * Preserve unchanged imported/seed values; fail closed for owner edits and
+ * newly added loans, obligations, goals, planned movements and budgets.
+ */
+export function validateChangedFinanceDraftCents(next:FinanceData,previous:FinanceData){
+  const check=<T extends {id:string}>(scope:string,fields:(keyof T)[],current:readonly T[],original:readonly T[])=>{
+    const old=new Map(original.map(item=>[item.id,item]));
+    for(const item of current){
+      const before=old.get(item.id);
+      for(const field of fields){
+        const value=item[field];
+        if(value===undefined)continue;
+        if(before&&Object.is(before[field],value))continue;
+        if(typeof value!=='number')invalid(`Invalid mutable ${scope} ${item.id} ${String(field)}.`);
+        const centsValue=moneyToCents(value);
+        if(!Number.isSafeInteger(centsValue)||Math.abs(value*100-centsValue)>1e-6)
+          invalid(`Sub-cent mutable ${scope} ${item.id} ${String(field)}.`);
+      }
+    }
+  };
+  const nextState=next.state,oldState=previous.state;
+  check('recurring',['amount','estimateMin','estimateMax'],
+    [...(nextState.recurringCustom??[]),...Object.values(nextState.recurringOverrides??{})],
+    [...(previous.seed.recurring??[]),...(oldState.recurringCustom??[]),...Object.values(oldState.recurringOverrides??{})]);
+  check('loan',['total','installment','legacyPaidAmount','forgivenAmount'],
+    [...(nextState.customLoans??[]),...Object.values(nextState.loanOverrides??{})],
+    [...(previous.seed.loans??[]),...(oldState.customLoans??[]),...Object.values(oldState.loanOverrides??{})]);
+  check('scheduled',['amount'],nextState.scheduled??[],oldState.scheduled??[]);
+  check('budget',['amount'],nextState.budgets??[],oldState.budgets??[]);
+  check('saving-goal',['targetAmount'],nextState.savingsGoals??[],oldState.savingsGoals??[]);
+}
+
 export function validateCompleteFinanceSemantics(data:FinanceData){
   validateFinanceStateSemantics(data.state);
   validateWriteoffOutstanding(data);

@@ -5,7 +5,7 @@ import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
 import { validateCompleteFinanceData } from './financeDataValidation.js';
-import { validateChangedFinanceEventCents, validateMutableReceivableChronology } from './financeSemanticValidation.js';
+import { validateChangedFinanceDraftCents, validateChangedFinanceEventCents, validateMutableReceivableChronology } from './financeSemanticValidation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
@@ -234,6 +234,7 @@ export async function writeMutableState(
   const candidate:FinanceData={...snapshot.data,state,updatedAt};
   validateCompleteFinanceData(candidate);
   validateChangedFinanceEventCents(candidate,snapshot.data);
+  validateChangedFinanceDraftCents(candidate,snapshot.data);
   validateMutableReceivableChronology(candidate,snapshot.data);
 
   const row = first(await supabase<MutableStateRow[] | MutableStateRow>('rpc/rheomiq_save_mutable_state_history', {

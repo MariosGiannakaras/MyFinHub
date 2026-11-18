@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
-import { validateChangedFinanceEventCents, validateCompleteFinanceSemantics, validateFinanceStateSemantics } from '../server/financeSemanticValidation.js';
+import { validateChangedFinanceDraftCents, validateChangedFinanceEventCents, validateCompleteFinanceSemantics, validateFinanceStateSemantics } from '../server/financeSemanticValidation.js';
 
 function baseData():FinanceData{
   return {
@@ -137,6 +137,52 @@ describe('finance persistence semantic invariants',()=>{
     expect(()=>validateChangedFinanceEventCents(
       {...fundData,state:{...fundData.state,events:[{...funded,funding:[{...funded.funding[0]!,amount:4.001},funded.funding[1]!]}]}},fundData
     )).toThrow(/Sub-cent mutable event field.*funding/);
+  });
+
+
+  it('rejects direct mutable fractional-cent obligations and budgets while leaving unchanged historical amounts untouched',()=>{
+    const old=baseData();
+    const next:FinanceData={...old,state:{...old.state,
+      recurringCustom:[{id:'bill',name:'Bill',amount:10.001,accountId:'bank',category:'Άλλο',active:true}],
+    }};
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable recurring.*amount/);
+    const recurring={...next.state.recurringCustom![0]!,amount:10.01};
+    next.state.recurringCustom=[recurring];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).not.toThrow();
+    next.state.recurringCustom=[{...recurring,estimateMin:1.001,estimateMax:20}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable recurring.*estimateMin/);
+    next.state.recurringCustom=[recurring];
+    next.state.customLoans=[{id:'loan',name:'Loan',total:100,installment:0.001,installments:10}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable loan.*installment/);
+    next.state.customLoans=[{id:'loan',name:'Loan',total:100,installment:10,installments:10}];
+    next.state.scheduled=[{id:'scheduled',kind:'expense',dueDate:'2026-10-01',amount:5.001,note:'Due',accountId:'bank',status:'pending',createdAt:old.updatedAt,updatedAt:old.updatedAt}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable scheduled.*amount/);
+    next.state.scheduled=[];
+    next.state.budgets=[{id:'budget',month:'2026-10',scope:'overall',amount:20.001,createdAt:old.updatedAt,updatedAt:old.updatedAt}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable budget.*amount/);
+    next.state.budgets=[];
+    next.state.savingsGoals=[{id:'goal',name:'Goal',targetAmount:30.001,createdAt:old.updatedAt,updatedAt:old.updatedAt}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).toThrow(/Sub-cent mutable saving-goal.*targetAmount/);
+    next.state.savingsGoals=[{...next.state.savingsGoals[0]!,targetAmount:30.01}];
+    expect(()=>validateChangedFinanceDraftCents(next,old)).not.toThrow();
+  });
+
+  it('allows note-only edits to pre-existing sub-cent loan, recurring and budget values, not newly changed money',()=>{
+    const previous=baseData();
+    const oldRecurring={id:'bill',name:'Old bill',amount:10.001,accountId:'bank',category:'Άλλο',active:true};
+    const oldLoan={id:'loan',name:'Old loan',total:100.001,installment:10.001,installments:10};
+    const oldBudget={id:'budget',month:'2026-10',scope:'overall' as const,amount:20.001,createdAt:previous.updatedAt,updatedAt:previous.updatedAt};
+    previous.state.recurringCustom=[oldRecurring];
+    previous.state.customLoans=[oldLoan];
+    previous.state.budgets=[oldBudget];
+    const edited:FinanceData={...previous,state:{...previous.state,
+      recurringCustom:[{...oldRecurring,name:'Updated bill'}],
+      customLoans:[{...oldLoan,name:'Updated loan'}],
+      budgets:[{...oldBudget,updatedAt:'2026-10-02T00:00:00.000Z'}],
+    }};
+    expect(()=>validateChangedFinanceDraftCents(edited,previous)).not.toThrow();
+    edited.state.customLoans=[{...oldLoan,installment:10.002}];
+    expect(()=>validateChangedFinanceDraftCents(edited,previous)).toThrow(/Sub-cent mutable loan.*installment/);
   });
 
   it('rejects tampered transfer legs in mutable-state validation',()=>{
