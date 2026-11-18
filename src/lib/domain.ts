@@ -158,12 +158,13 @@ export function createEvent(args: {
   if (!isValidDateOnly(args.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
   const amount = Number(args.amount);
-  // New money movement is strict cents; reconciliation has a separate
-  // owner-confirmed as-of balance contract and may describe a zero delta.
+  // Reconciliation has its own as-of balance contract; all other new
+  // economic events require exact positive cents.
+  const exactCentError='Το ποσό είναι εκτός εύρους ή δεν έχει ακριβή λεπτά ευρώ.';
   if(args.kind==='reconciliation'
     ?(!isSafeMoneyValue(amount)||amount<0)
     :!isPositiveCentExactMoneyValue(amount))
-    throw new Error('Το ποσό πρέπει να είναι εντός επιτρεπτού εύρους και ακριβές σε λεπτά ευρώ.');
+    throw new Error(exactCentError);
   if (args.kind === 'reconciliation') {
     const actual = Number(args.actualBalance);
     const current = Number(args.currentBalance);
@@ -226,14 +227,17 @@ export function createEvent(args: {
     }
     case 'split': {
       const parts=args.parts??[];
-      if(parts.some(part=>!isPositiveCentExactMoneyValue(Number(part.amount))))
-        throw new Error('Ο διαχωρισμός χρειάζεται θετικά επιμέρους ποσά ακριβή σε λεπτά του ευρώ.');
-      const total = parts.reduce((sum, part) => sum + Number(part.amount), 0);
+      let total=0;
+      for(const part of parts){
+        const value=Number(part.amount);
+        if(!isPositiveCentExactMoneyValue(value))throw new Error(exactCentError);
+        total+=value;
+      }
       if(moneyToCents(total)!==moneyToCents(amount))
         throw new Error(`Τα επιμέρους ποσά (${total.toFixed(2)}€) δεν ισούνται με το σύνολο (${amount.toFixed(2)}€).`);
       // Preserve the established mismatch message first; a one-part exact
       // match is still invalid, even though no amount differs.
-      if(parts.length<2)throw new Error('Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.');
+      if(parts.length<2)throw new Error('Χρειάζονται τουλάχιστον δύο μέρη.');
       legs.push({ accountId: requireAccount(args.accountId), amount: -amount });
       break;
     }

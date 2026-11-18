@@ -1,3 +1,13 @@
+## 2026-11-18 — I22.01 compact shared new-event cent guard, retain main-JS hard size contract
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Previous `2bcf1b3` [CI #44417257882](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44417257882) `validate` passed all **1,959/1,959 tests**, TS/build and privacy guard, but hard bundle FAILED: **528.2 KiB main JS > 528.0 KiB cap** (gzip 159.9/165.0 KiB; CSS unaffected). This is a ~0.2-KiB real regression from canonical event validation, not an excuse to increase the budget or weaken regression tests.
+
+**Bounded in-owner optimization:** Reuse one truthful, short `exactCentError` for both factory new economic-event and direct split-part exact-cent rejection (the regular GUI split editor separately uses indexed validation for per-row detail). Replace split `.some` + `.reduce` traversals with a **single** loop that rejects any nonpositive or fractional-cent part and accumulates its numeric amount; retain exact `moneyToCents(total)===moneyToCents(parent)` guard, old detailed mismatch diagnostic first, and the minimum-two guard even when a one-part sum matches. Shorten only minimum-two copy, retaining `τουλάχιστον δύο`; do not suppress finance/account authorization or change the accepted invariant behavior, CodeQL, CSS or main JS hard limit. No source/test regressions expected from this runtime-equivalent refactor; **exact new-head CI required** before acceptance.
+
+**Validation boundary:** not yet validated, retain Draft PR #654→develop and no merge/release/hosted DB/Storage/Android/destructive import. Final Ready WebKit/Windows/Lighthouse/real-stack gates on coherent review head only. Next: inspect main-JS size and full source CI once; repair actual remaining cause if >528.0 KiB, never raise the cap. Dependabot #660 separate.
+
+---
+
 ## 2026-11-18 — I22.01 new-event exact-cent preservation with bounded main-JS bundle correction
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Previous exact source `bd9b739` [CI #44416354403](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44416354403) passed **321/321 files and 1,959/1,959 tests**, TypeScript and Vite compile/privacy guard, but **validate FAILED** on the hard main application JS bundle budget: **528.5 KiB raw > 528.0 KiB allowed** (gzip 160.0 KiB <165.0 KiB), while CSS and other checks had not started and CodeQL/Unified were independently pending. No increase in hard budget or weakening of tests is permissible.
