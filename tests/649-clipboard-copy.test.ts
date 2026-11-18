@@ -71,7 +71,14 @@ describe('#649 sensitive clipboard copy and truthful feedback',()=>{
     expect(canonical).toContain('if(copyInFlight)return;');
     expect(canonical.indexOf('copyInFlight=true')).toBeLessThan(canonical.indexOf('await loadSecrets(card)'));
     expect(canonical).toContain("copyInFlight=true;announce('')");
-    expect(canonical).toContain('if(currentCard(id)&&orderRef.current[0]===id)');
+    // The pending vault result must be discarded before touching the clipboard
+    // if the original card ceased to be top/current, or the stack unmounted.
+    const staleGuard=canonical.indexOf('if(!effectActive||!currentCard(id)||orderRef.current[0]!==id)return;');
+    const clipboardCall=canonical.indexOf('await copyTextWithFallback(value)');
+    expect(staleGuard).toBeGreaterThan(canonical.indexOf('await loadSecrets(card)'));
+    expect(clipboardCall).toBeGreaterThan(staleGuard);
+    expect(canonical).toContain("if(effectActive&&currentCard(id)&&orderRef.current[0]===id)announce('Αντιγράφηκε')");
+    expect(canonical).toContain("if(effectActive&&currentCard(id)&&orderRef.current[0]===id)announce('Δεν ήταν δυνατή η αντιγραφή','error')");
     expect(canonical).toContain('finally{copyInFlight=false}');
   });
 
