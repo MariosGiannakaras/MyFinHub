@@ -88,6 +88,19 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('cap remains exactly twelve before any finance receipt');
   });
 
+  it('keeps split updates and both removal owners tied to stable row IDs and the two-row minimum',()=>{
+    expect(quickAdd).not.toContain('setParts(ps=>ps.map((x,j)=>j===i?');
+    expect(quickAdd).toContain('setParts(ps=>ps.map(x=>x.id===p.id?');
+    expect(quickAdd).toContain('setParts(ps=>ps.length<=2?ps:ps.filter(item=>item.id!==p.id))');
+    expect(quickAdd).toContain('setFundingRows(rows=>rows.length<=2?rows:rows.filter(item=>item.id!==row.id))');
+    expect(quickAdd).toContain('disabled={fundingRows.length<=2}');
+    expect(quickAdd).toContain('disabled={parts.length<=2}');
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('same-turn funding removals never reduce below two independent source rows');
+    expect(qa).toContain('same-turn split removals never reduce below two independently keyed parts');
+    expect(qa).toContain('no finance write for rapid source or split draft removals');
+  });
+
   it('does not erase lending due-date, saving source or original provenance during ordinary edits',()=>{
     expect(quickAdd).toContain("import { preserveEntryEditProvenance } from '../lib/eventEditProvenance'");
     expect(quickAdd).toContain('preserveEntryEditProvenance(event,initial)');

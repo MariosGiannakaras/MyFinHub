@@ -216,6 +216,17 @@ try{
   await screenshot('quick-entry-multi-funding-stable-rows-mobile-375');
   await viewport(1440,1000);
 
+  console.log('Quick Entry same-turn funding removals never reduce below two independent source rows');
+  assert(await c.call("function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row button[aria-label^=\"Αφαίρεση πηγής\"]')];if(buttons.length!==4)return false;buttons[3].click();return true}"),'remove fourth funding row while exactly three must remain');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===3}",'three funding source rows before double remove');
+  const removedFunding=await c.call("async function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row button[aria-label^=\"Αφαίρεση πηγής\"]')];if(buttons.length!==3)return false;buttons[0].click();buttons[1].click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(removedFunding,'two funding remove actions requested before next render');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row')],controls=rows.flatMap(row=>[...row.querySelectorAll('button[aria-label^=\"Αφαίρεση πηγής\"]')]);return rows.length===2&&controls.length===2&&controls.every(control=>control.disabled)}",'funding removal retains required two-source minimum');
+  for(const count of [3,4]){
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();return true}"),'restore funding source row before cap test');
+    await waitFor("function(count){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===count}",'funding rows restored for cap proof',[count]);
+  }
+
   console.log('Quick Entry funding source limit survives two same-turn Add clicks at 11 rows');
   for(let target=5;target<=11;target++){
     assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();return true}"),'sequential funding source Add remains available below twelve');
@@ -251,6 +262,15 @@ try{
   await sleep(160);
   await screenshot('quick-entry-split-stable-rows-mobile-375');
   await viewport(1440,1000);
+
+  console.log('Quick Entry same-turn split removals never reduce below two independently keyed parts');
+  assert(await c.call("function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .split-box button[aria-label^=\"Αφαίρεση μέρους\"]')];if(buttons.length!==4)return false;buttons[3].click();return true}"),'remove fourth split part before double Remove');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-line').length===3}",'three split parts before double Remove');
+  const removedSplit=await c.call("async function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .split-box button[aria-label^=\"Αφαίρεση μέρους\"]')];if(buttons.length!==3)return false;buttons[0].click();buttons[1].click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(removedSplit,'two split-part remove actions requested before next render');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.generic-quick-modal .split-line')],controls=rows.flatMap(row=>[...row.querySelectorAll('button[aria-label^=\"Αφαίρεση μέρους\"]')]);return rows.length===2&&controls.length===2&&controls.every(control=>control.disabled)}",'split removal retains required two-part minimum');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[baselineWrites]),'no finance write for rapid source or split draft removals');
+
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[baselineWrites]),'two rapid row additions never post any finance event');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
