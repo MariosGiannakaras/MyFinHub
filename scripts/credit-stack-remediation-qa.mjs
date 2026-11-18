@@ -169,5 +169,23 @@ try{
   await shot('credit-stack-sensitive-copy-singleflight-mobile');
   assert(await c.call("function(){globalThis.__qaCreditSensitiveCopyRestore?.();return true}"),'credit stack clipboard fixture restored');
 
+
+  console.log('Sensitive credit-stack stale-card pending-vault copy is cancelled before clipboard after restack');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  const staleCardFixture=await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard'),probe=globalThis.__qaCreditStaleCopy={reads:0,writes:0,release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.reads++;return new Promise(resolve=>{probe.release=()=>resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))})}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{probe.writes++;return Promise.resolve()}}});globalThis.__qaCreditStaleCopyRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;delete globalThis.__qaCreditStaleCopy;delete globalThis.__qaCreditStaleCopyRestore};return true}");
+  assert(staleCardFixture,'isolated delayed Card Vault read and counted clipboard writes installed');
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();return Boolean(b)}"),'original top-card copy requested');
+  await waitFor("function(){return globalThis.__qaCreditStaleCopy?.reads===1&&typeof globalThis.__qaCreditStaleCopy.release==='function'}",'confidential original-card read deliberately held pending');
+  const originalCopyCard=(await state()).topId;
+  await pressArrow('ArrowDown');
+  await waitFor("function(original){const top=document.querySelector('#myfinhub-card-stack .stack-card.top');return Boolean(top&&top.getAttribute('data-card-id')!==original)}",'top card changes while original-card vault read is pending',[originalCopyCard]);
+  await sleep(550);
+  assert(await c.call("function(){globalThis.__qaCreditStaleCopy.release?.();return true}"),'release stale card vault response after selected card switches');
+  await sleep(240);
+  const staleCopyOutcome=await c.call("function(){const p=globalThis.__qaCreditStaleCopy,n=document.querySelector('#myfinhub-card-stack .sr-status');return {reads:p?.reads,writes:p?.writes,role:n?.getAttribute('role'),status:n?.textContent||'',top:document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')}}");
+  assert(staleCopyOutcome.reads===1&&staleCopyOutcome.writes===0&&staleCopyOutcome.top!==originalCopyCard&&!staleCopyOutcome.status,'the old card never reaches clipboard or announces success/error after restack: '+JSON.stringify(staleCopyOutcome));
+  await shot('credit-stack-stale-card-copy-cancelled-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditStaleCopyRestore?.();return true}"),'stale card copy fixture removed');
+
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

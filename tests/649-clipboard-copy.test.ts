@@ -25,6 +25,20 @@ function emulateLegacyCopy(result:'success'|'false'|'throw'){
 }
 
 describe('#649 sensitive clipboard copy and truthful feedback',()=>{
+  it('cancels an obsolete credit card vault read before copying after restack/unmount',()=>{
+    const credit=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    const code=stack.slice(stack.indexOf('async function copyField('),stack.indexOf('function bindTopCard()'));
+    expect(stack).toContain('let effectActive=true;');
+    expect(code).toContain('if(!effectActive||!currentCard(id)||orderRef.current[0]!==id)return;');
+    expect(code.indexOf('if(!effectActive||!currentCard(id)||orderRef.current[0]!==id)return;')).toBeLessThan(code.indexOf('await copyTextWithFallback(value)'));
+    expect(stack).toContain('return()=>{effectActive=false;stage.removeEventListener');
+    expect(code).toContain("if(effectActive&&currentCard(id)&&orderRef.current[0]===id)announce('Αντιγράφηκε')");
+    expect(credit).toContain('Sensitive credit-stack stale-card pending-vault copy is cancelled before clipboard after restack');
+    expect(credit).toContain('staleCopyOutcome.writes===0');
+    expect(credit).toContain('credit-stack-stale-card-copy-cancelled-desktop');
+  });
+
+
   it('stages actual debit and credit desktop/mobile sensitive copy denial and single-flight browser proof',()=>{
     const debit=readFileSync(new URL('../scripts/cards-remediation-qa.mjs',import.meta.url),'utf8');
     const credit=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
