@@ -314,6 +314,8 @@ describe('provider branding management',()=>{
     expect(focusedQaWorkflow).toContain('Provider Chromium CDP bootstrap failed|Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version');
     expect(providerBrandingQaSource).toContain("'--remote-debugging-port=0'");
     expect(providerBrandingQaSource).toContain('DevToolsActivePort');
+    expect(providerBrandingQaSource).toContain(String.raw`raw.split(/\r?\n/,1)`);
+    expect(providerBrandingQaSource).not.toContain(String.raw`raw.split(/\\r?\\n/,1)`);
     expect(providerBrandingQaSource).toContain('const port=await waitForChromiumCdp()');
     expect(providerBrandingQaSource).toContain('if(response.ok)return port');
     expect(providerBrandingQaSource).not.toContain("listener.listen(0,'127.0.0.1'");

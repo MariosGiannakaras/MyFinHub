@@ -22,7 +22,7 @@ async function waitForChromiumCdp(){
       // Chrome only writes this file after binding the actual socket. The
       // profile is exclusive to this run and was deleted before spawning.
       const raw=readFileSync(`${profile}/DevToolsActivePort`,'utf8');
-      const first=raw.split(/\\r?\\n/,1)[0]?.trim()||'';
+      const first=raw.split(/\r?\n/,1)[0]?.trim()||'';
       if(/^[1-9][0-9]{1,4}$/.test(first)){
         const port=Number(first);
         if(port>0&&port<=65535){
