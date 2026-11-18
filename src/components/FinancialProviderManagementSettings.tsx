@@ -7,6 +7,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
   providerCatalogMatchesWrite,
+  providerMetadataMatchesInput,
   saveFinancialProvider,
   UnverifiedFinancialProviderWrite,
   setFinancialProviderAssetBinding,
@@ -59,6 +60,7 @@ type ProviderEditor={
   sortOrder:number;
   assignments:AssignmentMap;
   originalAssignments:AssignmentMap;
+  acknowledgedMetadata:FinancialProviderWriteInput|null;
   pendingAssets:PendingAsset[];
   pickerSlot:SlotId|null;
 };
@@ -156,7 +158,7 @@ export function FinancialProviderManagementSettings(){
     setEditor({
       source:'new',tab:'details',id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',
       sortOrder:Math.max(1000,...providers.map(provider=>provider.sortOrder+10)),
-      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+      assignments,originalAssignments:{...assignments},acknowledgedMetadata:null,pendingAssets:[],pickerSlot:null,
     });
   };
   const openEdit=(provider:FinancialProvider)=>{
@@ -165,7 +167,11 @@ export function FinancialProviderManagementSettings(){
     setEditor({
       source:'existing',tab:'details',id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
       providerKind:provider.kind,countryCode:provider.countryCode??'',sortOrder:provider.sortOrder,
-      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+      assignments,originalAssignments:{...assignments},
+      acknowledgedMetadata:{
+        id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
+        providerKind:provider.kind,countryCode:provider.countryCode??null,sortOrder:provider.sortOrder,
+      },pendingAssets:[],pickerSlot:null,
     });
   };
   const updateName=(displayName:string)=>{
@@ -249,8 +255,15 @@ export function FinancialProviderManagementSettings(){
         id:editor.id,displayName:editor.displayName.trim(),shortName:editor.shortName.trim(),providerKind:editor.providerKind,
         countryCode:editor.countryCode.trim().toUpperCase()||null,sortOrder:editor.sortOrder,
       };
-      if(editor.source==='new')await saveFinancialProvider(payload,false);
-      else await updateFinancialProvider(payload,false);
+      if(!providerMetadataMatchesInput(editor.acknowledgedMetadata,payload)){
+        if(editor.source==='new')await saveFinancialProvider(payload,false);
+        else await updateFinancialProvider(payload,false);
+        // Save the confirmed receipt before independently fallible asset writes.
+        // An acknowledged new provider must not be created twice on retry.
+        setEditor(current=>current?.id===editor.id?{
+          ...current,source:'existing',acknowledgedMetadata:payload,
+        }:current);
+      }
       metadataCommitted=true;
 
       const uploaded=new Map<string,string>();

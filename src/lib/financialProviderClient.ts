@@ -159,6 +159,19 @@ export type FinancialProviderWriteInput={
 // A successful GET is not a durable receipt for the preceding independent
 // metadata, Storage and binding writes unless the actual returned provider
 // matches every acknowledged value. This helper deliberately performs no writes.
+// Reuse exact acknowledged metadata on image-only retry, not a duplicate RPC.
+export function providerMetadataMatchesInput(
+  acknowledged:FinancialProviderWriteInput|null|undefined,
+  requested:FinancialProviderWriteInput,
+):boolean{
+  return Boolean(acknowledged&&acknowledged.id===requested.id&&
+    acknowledged.displayName.trim()===requested.displayName.trim()&&
+    acknowledged.shortName.trim()===requested.shortName.trim()&&
+    acknowledged.providerKind===requested.providerKind&&
+    (acknowledged.countryCode?.trim().toUpperCase()||'')===(requested.countryCode?.trim().toUpperCase()||'')&&
+    acknowledged.sortOrder===requested.sortOrder);
+}
+
 export type FinancialProviderReadbackSlot={
   role:FinancialProviderAssetRole;
   variant:'universal'|'light'|'dark';

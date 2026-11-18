@@ -5,6 +5,29 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it('skips acknowledged provider metadata on asset-only retry but detects every changed field',async()=>{
+    const {providerMetadataMatchesInput}=await import('../src/lib/financialProviderClient.js');
+    const payload={
+      id:'qa-metadata-bank',displayName:' QA Bank ',shortName:' QA ',
+      providerKind:'bank' as const,countryCode:'gr',sortOrder:105,
+    };
+    expect(providerMetadataMatchesInput(null,payload)).toBe(false);
+    expect(providerMetadataMatchesInput({...payload,displayName:'QA Bank',shortName:'QA',countryCode:'GR'},payload)).toBe(true);
+    for(const changed of [
+      {id:'other-bank'}, {displayName:'Changed'}, {shortName:'Changed'},
+      {providerKind:'wallet' as const},{countryCode:'US'},{sortOrder:106},
+    ])expect(providerMetadataMatchesInput({...payload,...changed},payload)).toBe(false);
+    const editor=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+    expect(editor).toContain('acknowledgedMetadata:FinancialProviderWriteInput|null');
+    expect(editor).toContain('if(!providerMetadataMatchesInput(editor.acknowledgedMetadata,payload))');
+    expect(editor).toContain("...current,source:'existing',acknowledgedMetadata:payload");
+    expect(editor).toContain("if(editor.source==='new')await saveFinancialProvider(payload,false)");
+    expect(editor).toContain('else await updateFinancialProvider(payload,false)');
+    expect(editor).toContain('metadataCommitted=true');
+    expect(editor).toContain('acknowledgedMetadata:null,pendingAssets:[]');
+  });
+
+
   it('stages the genuine 1440/375px failed-catalog, no-edit and read-only recovery browser proof',()=>{
     const qa=readFileSync(new URL('../scripts/provider-brand-management-qa.mjs',import.meta.url),'utf8');
     const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
