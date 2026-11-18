@@ -74,6 +74,18 @@ describe('#649 cohesive Settings and rendered evidence regression',()=>{
     expect(settingsCss).toContain('.settings-general-appearance .text-size-picker button b,.keyboard-shortcut-row b,');
     expect(settingsCss).toContain('.settings-app-list>div:first-child,.keyboard-shortcut-row:first-child{border-top:0}');
   });
+  it('checks actual contextual savings validation through accessible error and invalid amount instead of stale copy',()=>{
+    const qa=source('../scripts/ui-ux-hardening-qa.mjs');
+    const contextual=source('../src/components/ContextualQuickAdd.tsx');
+    expect(contextual).toContain("throw new Error('Συμπλήρωσε θετικό ποσό σε ευρώ με έως δύο δεκαδικά ψηφία.')");
+    expect(qa).toContain("'saving validation addresses the user and flags the amount'");
+    expect(qa).toContain("dialog?.querySelector('.form-error[role=alert]')");
+    expect(qa).toContain("dialog?.querySelector('input[aria-invalid=true]')");
+    expect(qa).toContain("includes('δύο δεκαδικά ψηφία')");
+    expect(qa).not.toContain("includes('Συμπλήρωσε ποσό μεγαλύτερο από μηδέν')");
+    expect(qa).toContain("await screenshot('desktop-validation-savings')");
+  });
+
   it('captures full-page screenshots only once table/list content has finished painting',()=>{
     expect(screenshots).toContain('const waitForVisualPaint=async(page)');
     expect(screenshots).toContain("node.getAnimations()");

@@ -625,6 +625,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const historyButton=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");assert(historyButton,'Change History action is missing.');
     await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν αναιρείται μέσω Undo/Redo'))}",'import history point');
     assert(await c.call<boolean>("function(){const b=[...document.querySelectorAll('button[aria-label]')].find(n=>n.getAttribute('aria-label')==='Αναίρεση τελευταίας αλλαγής');return Boolean(b&&b.disabled)}"),'Import boundary must disable unsafe history Undo.');
+    // DOM/text readiness alone can capture the 160ms History entrance at
+    // intermediate opacity, producing misleading proof of visual contrast.
+    // Wait for both modal and backdrop to be fully painted before screenshot.
+    await waitFor("function(){const dialog=document.querySelector('.change-history-dialog'),backdrop=dialog?.closest('.command-backdrop');if(!(dialog instanceof HTMLElement)||!(backdrop instanceof HTMLElement))return false;const animations=backdrop.getAnimations({subtree:true}).filter(item=>item.playState==='running');return animations.length===0&&Number(getComputedStyle(dialog).opacity)>=.995&&Number(getComputedStyle(backdrop).opacity)>=.995}",'history dialog visually settled after import');
     await shot('data-management-import-history-persisted');
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));

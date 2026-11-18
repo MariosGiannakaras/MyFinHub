@@ -159,6 +159,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).not.toContain("expectedInvalidImport=true");
     expect(source).toContain('Imported QA Cash');
     expect(source).toContain('change-history-title');
+    expect(source).toContain("'history dialog visually settled after import'");
+    expect(source).toContain("backdrop.getAnimations({subtree:true})");
+    expect(source).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
+    expect(source).toContain("Number(getComputedStyle(backdrop).opacity)>=.995");
+    expect(source).not.toContain("await shot('data-management-import-history-persisted');\n\n    assert(runtimeErrors");
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
     expect(source).toContain('actual browser auth + modern/legacy/quick-intents/credit/savings/loans/lending/recurring/planning/attention/budgets/rules/cards/taxonomy/icons/providers/accounts/data-management persistence across hard reload');
