@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
-import { validateCompleteFinanceSemantics, validateFinanceStateSemantics } from '../server/financeSemanticValidation.js';
+import { validateChangedFinanceEventCents, validateCompleteFinanceSemantics, validateFinanceStateSemantics } from '../server/financeSemanticValidation.js';
 
 function baseData():FinanceData{
   return {
@@ -86,6 +86,57 @@ describe('finance persistence semantic invariants',()=>{
     expect(()=>validateFinanceStateSemantics(data.state)).not.toThrow();
     expect(()=>validateCompleteFinanceSemantics(data)).not.toThrow();
     expect(()=>validateCompleteFinanceData(data)).not.toThrow();
+  });
+
+
+  it('rejects newly added or changed sub-cent events before the revision-locked persistence RPC',()=>{
+    const previous=baseData();
+    const event=createEvent({kind:'expense',date:'2026-10-01',amount:10,note:'Valid',accountId:'bank'});
+    previous.state.events=[event];
+    const tampered={...event,amount:10.001,legs:[{accountId:'bank',amount:-10.001}]};
+    const candidate:FinanceData={...previous,state:{...previous.state,events:[tampered]}};
+    // Existing range/leg semantic validation rounds both values; the mutable
+    // write gate must reject the actual unrounded values before RPC.
+    expect(()=>validateFinanceStateSemantics(candidate.state)).not.toThrow();
+    expect(()=>validateChangedFinanceEventCents(candidate,previous)).toThrow(/Sub-cent mutable event field.*amount/);
+    const newEvent={...tampered,id:'new-unsafe-event'};
+    expect(()=>validateChangedFinanceEventCents(
+      {...previous,state:{...previous.state,events:[event,newEvent]}},previous
+    )).toThrow(/Sub-cent mutable event field/);
+    const amountOkLegBad={...event,legs:[{accountId:'bank',amount:-10.001}]};
+    expect(()=>validateChangedFinanceEventCents(
+      {...previous,state:{...previous.state,events:[amountOkLegBad]}},previous
+    )).toThrow(/Sub-cent mutable event field.*leg/);
+    expect(()=>validateChangedFinanceEventCents(previous,previous)).not.toThrow();
+  });
+
+  it('permits unrelated edits to grandfathered monetary fields but rejects monetary changes and split/funding tampering',()=>{
+    const previous=baseData();
+    const old=createEvent({kind:'expense',date:'2026-10-01',amount:10,note:'Old',accountId:'bank'});
+    const historical={...old,amount:10.001,legs:[{accountId:'bank',amount:-10.001}]};
+    previous.state.events=[historical];
+    const noteOnly:FinanceData={...previous,state:{...previous.state,events:[{...historical,note:'Corrected note'}]}};
+    expect(()=>validateChangedFinanceEventCents(noteOnly,previous)).not.toThrow();
+    const changed={...historical,amount:10.002,legs:[{accountId:'bank',amount:-10.002}]};
+    expect(()=>validateChangedFinanceEventCents(
+      {...previous,state:{...previous.state,events:[changed]}},previous
+    )).toThrow(/Sub-cent mutable event field/);
+
+    const split=createEvent({kind:'split',date:'2026-10-01',amount:10,note:'Split',accountId:'bank',parts:[
+      {id:'p1',label:'A',category:'Άλλο',amount:4},
+      {id:'p2',label:'B',category:'Άλλο',amount:6},
+    ]});
+    const splitData={...previous,state:{...previous.state,events:[split]}};
+    const tamperedSplit={...split,parts:[{...split.parts![0]!,amount:4.001},split.parts![1]!]};
+    expect(()=>validateChangedFinanceEventCents(
+      {...splitData,state:{...splitData.state,events:[tamperedSplit]}},splitData
+    )).toThrow(/Sub-cent mutable event field.*part/);
+
+    const funded={...old,funding:[{kind:'account' as const,sourceId:'bank',amount:4},{kind:'account' as const,sourceId:'cash',amount:6}],legs:[{accountId:'bank',amount:-4},{accountId:'cash',amount:-6}]};
+    const fundData={...previous,state:{...previous.state,events:[funded]}};
+    expect(()=>validateChangedFinanceEventCents(
+      {...fundData,state:{...fundData.state,events:[{...funded,funding:[{...funded.funding[0]!,amount:4.001},funded.funding[1]!]}]}},fundData
+    )).toThrow(/Sub-cent mutable event field.*funding/);
   });
 
   it('rejects tampered transfer legs in mutable-state validation',()=>{

@@ -314,6 +314,36 @@ export function validateMutableReceivableChronology(next:FinanceData,previous:Fi
   }
 }
 
+/**
+ * Revisioned mutable-save preflight: check only newly written money fields.
+ * An unchanged imported historical value (even a sub-cent legacy anomaly)
+ * must not make unrelated owner edits fail. The existing state semantic check
+ * continues to validate event/leg relationships on the entire document.
+ */
+export function validateChangedFinanceEventCents(next:FinanceData,previous:FinanceData){
+  const prior=new Map((previous.state.events??[]).map(event=>[event.id,event]));
+  const moneyFields=(event:FinanceEvent)=>{
+    const fields=new Map<string,number>([['amount',event.amount]]);
+    for(const leg of event.legs)fields.set('leg:'+leg.accountId,leg.amount);
+    for(const part of event.parts??[])fields.set('part:'+part.id,part.amount);
+    for(const part of event.funding??[])fields.set('funding:'+part.kind+':'+part.sourceId,part.amount);
+    for(const name of ['savingAmount','receivableDelta','creditDelta'] as const){
+      if(event[name]!==undefined)fields.set(name,event[name]!);
+    }
+    return fields;
+  };
+  for(const event of next.state.events??[]){
+    const old=prior.get(event.id);
+    const oldFields=old&&old.kind===event.kind?moneyFields(old):null;
+    for(const [name,value] of moneyFields(event)){
+      if(oldFields?.has(name)&&Object.is(oldFields.get(name),value))continue;
+      const centsValue=moneyToCents(value);
+      if(!Number.isSafeInteger(centsValue)||Math.abs(value*100-centsValue)>1e-6)
+        invalid(`Sub-cent mutable event field ${event.id} ${name}.`);
+    }
+  }
+}
+
 export function validateCompleteFinanceSemantics(data:FinanceData){
   validateFinanceStateSemantics(data.state);
   validateWriteoffOutstanding(data);
