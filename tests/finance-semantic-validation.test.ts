@@ -218,6 +218,37 @@ describe('finance persistence semantic invariants',()=>{
     expect(()=>validateChangedFinanceDraftCents(noteOnly,historical)).toThrow(/Sub-cent mutable credit-card/);
   });
 
+
+  it('rejects changed mutable legacy transaction amounts and review split parts while grandfathering original imported values',()=>{
+    const prior=baseData();
+    const imported={id:'imported',date:'2026-10-01',type:'expense' as const,accountId:'bank',amount:10.001,note:'Historical import',category:'Άλλο'};
+    prior.seed.transactions=[imported];
+    const newManual={...imported,id:'manual',amount:10.001,note:'Manual entered'};
+    const next:FinanceData={...prior,state:{...prior.state,customTransactions:[newManual]}};
+    expect(()=>validateChangedFinanceDraftCents(next,prior)).toThrow(/Sub-cent mutable legacy-transaction.*amount/);
+    next.state.customTransactions=[];
+    next.state.overrides={imported:{...imported,note:'Corrected historical note'}};
+    expect(()=>validateChangedFinanceDraftCents(next,prior)).not.toThrow();
+    next.state.overrides={imported:{...imported,amount:10.002}};
+    expect(()=>validateChangedFinanceDraftCents(next,prior)).toThrow(/Sub-cent mutable legacy-transaction.*amount/);
+    next.state.overrides={};
+    next.state.reviewDecisions={imported:{status:'confirmed',semanticKind:'split_required',decidedAt:prior.updatedAt,parts:[
+      {id:'food',label:'Food',category:'Άλλο',amount:4.001},
+      {id:'other',label:'Other',category:'Άλλο',amount:6},
+    ]}};
+    expect(()=>validateChangedFinanceDraftCents(next,prior)).toThrow(/Sub-cent mutable review-split.*amount/);
+    const saved={...prior,state:{...prior.state,reviewDecisions:next.state.reviewDecisions}};
+    const kept:FinanceData={...saved,state:{...saved.state,reviewDecisions:{imported:{
+      ...saved.state.reviewDecisions!.imported!,decidedAt:'2026-10-02T00:00:00.000Z',
+    }}}};
+    expect(()=>validateChangedFinanceDraftCents(kept,saved)).not.toThrow();
+    kept.state.reviewDecisions={imported:{...kept.state.reviewDecisions!.imported!,parts:[
+      {...kept.state.reviewDecisions!.imported!.parts![0]!,amount:4.002},
+      kept.state.reviewDecisions!.imported!.parts![1]!,
+    ]}};
+    expect(()=>validateChangedFinanceDraftCents(kept,saved)).toThrow(/Sub-cent mutable review-split.*amount/);
+  });
+
   it('rejects tampered transfer legs in mutable-state validation',()=>{
     const data=baseData();
     const event=createEvent({kind:'transfer',date:'2026-10-01',amount:30,note:'Transfer',fromAccountId:'bank',toAccountId:'savings'});

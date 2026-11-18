@@ -379,6 +379,12 @@ export function validateChangedFinanceDraftCents(next:FinanceData,previous:Finan
   check('credit-card',['creditLimit'],nextState.cards??[],oldState.cards??[]);
   check('settings',['monthlyBudget','creditLimit'],
     [{id:'finance-settings',...nextState.settings}],[{id:'finance-settings',...oldState.settings}]);
+  check('legacy-transaction',['amount'],
+    [...(nextState.customTransactions??[]),...Object.values(nextState.overrides??{})],
+    [...(previous.seed.transactions??[]),...(oldState.customTransactions??[]),...Object.values(oldState.overrides??{})]);
+  for(const [transactionId,decision] of Object.entries(nextState.reviewDecisions??{})){
+    check('review-split '+transactionId,['amount'],decision.parts??[],oldState.reviewDecisions?.[transactionId]?.parts??[]);
+  }
 }
 
 export function validateCompleteFinanceSemantics(data:FinanceData){
