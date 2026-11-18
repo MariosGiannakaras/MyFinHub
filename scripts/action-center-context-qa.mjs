@@ -187,6 +187,18 @@ try{
   await waitFor("function(){const modal=document.querySelector('.generic-quick-modal'),alert=modal?.querySelector('#quick-add-error'),body=modal?.querySelector('.entry-body');if(!alert||!body)return false;const rect=alert.getBoundingClientRect(),panel=body.getBoundingClientRect();return document.activeElement===alert&&rect.top>=panel.top-2&&rect.bottom<=panel.bottom+2}",'multi-source validation focus and alert are actually onscreen');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'invalid funding subtotal never posts a finance event');
   await screenshot('quick-entry-multi-funding-invalid-subtotal-desktop');
+
+  console.log('Quick Entry multi-source same-turn row additions retain independent controlled fields');
+  const addedFundingRows=await c.call("async function(){const node=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!node)return false;const now=Date.now;Date.now=()=>1795011000000;try{node.click();node.click();await new Promise(resolve=>setTimeout(resolve,0))}finally{Date.now=now}return true}");
+  assert(addedFundingRows,'two same-turn funding-row Add clicks executed under identical Date.now');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===4}",'four finance-source rows after two rapid Add actions');
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(fields[2],'3.00');fields[2].dispatchEvent(new Event('input',{bubbles:true}));fields[2].dispatchEvent(new Event('change',{bubbles:true}));return fields.length===4}"),'edit only third funding source amount');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''}",'fourth source remains independent and empty after third edited');
+  await viewport(375,812);
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];fields[2]?.scrollIntoView({block:'center'});return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px funding rows do not share input or widen viewport');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-stable-rows-mobile-375');
+  await viewport(1440,1000);
   const splitSelected=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .generic-kind-grid button')].find(node=>(node.textContent||'').includes('Σύνθετη αγορά'));button?.click();return Boolean(button)}");
   assert(splitSelected,'generic Quick Entry selects split purchase for independent cent-precision validation');
   await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=Ποσό]').length>=2}",'split part amount controls ready');
@@ -197,6 +209,19 @@ try{
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('επιμέρους')}",'split amount cannot silently coerce exponent notation');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'split malformed entry stays in draft without a posted event');
   await screenshot('quick-entry-split-nondecimal-rejected-desktop');
+
+  console.log('Quick Entry split same-turn row additions retain independent raw amount fields');
+  const addedSplitParts=await c.call("async function(){const node=[...document.querySelectorAll('.generic-quick-modal .split-box button')].find(b=>(b.textContent||'').includes('Προσθήκη μέρους'));if(!node)return false;const now=Date.now;Date.now=()=>1795011000000;try{node.click();node.click();await new Promise(resolve=>setTimeout(resolve,0))}finally{Date.now=now}return true}");
+  assert(addedSplitParts,'two same-turn split-part Add clicks executed under identical Date.now');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box .split-line').length===4}",'four split parts after two rapid Add actions');
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];if(fields.length!==4)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(fields[2],'3.00');fields[2].dispatchEvent(new Event('input',{bubbles:true}));fields[2].dispatchEvent(new Event('change',{bubbles:true}));return true}"),'edit only third split part amount');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''}",'fourth split part remains distinct; no shared raw amount ID');
+  await viewport(375,812);
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];fields[2]?.scrollIntoView({block:'center'});return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px split editor retains independent fourth row and no page overflow');
+  await sleep(160);
+  await screenshot('quick-entry-split-stable-rows-mobile-375');
+  await viewport(1440,1000);
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[baselineWrites]),'two rapid row additions never post any finance event');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');

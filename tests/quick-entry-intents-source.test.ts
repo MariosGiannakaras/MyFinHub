@@ -52,6 +52,23 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('invalid funding subtotal never posts a finance event');
   });
 
+
+  it('allocates distinct draft row IDs outside state updaters, including two same-turn Add clicks and imported IDs',()=>{
+    expect(quickAdd).toContain('const draftRowSerial=useRef(0)');
+    expect(quickAdd).toContain("const nextDraftRowId=(scope:'funding'|'part',existing:readonly {id:string}[])=>");
+    expect(quickAdd).toContain('while(occupied.has(id))');
+    expect(quickAdd).toContain("const id=nextDraftRowId('funding',fundingRows)");
+    expect(quickAdd).toContain("const id=nextDraftRowId('part',parts)");
+    expect(quickAdd).not.toContain("id:'funding-'+Date.now()");
+    expect(quickAdd).not.toContain("id:`p${Date.now()}`");
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('multi-source same-turn row additions retain independent controlled fields');
+    expect(qa).toContain('split same-turn row additions retain independent raw amount fields');
+    expect(qa).toContain('quick-entry-multi-funding-stable-rows-mobile-375');
+    expect(qa).toContain('quick-entry-split-stable-rows-mobile-375');
+    expect(qa).toContain('two rapid row additions never post any finance event');
+  });
+
   it('does not erase lending due-date, saving source or original provenance during ordinary edits',()=>{
     expect(quickAdd).toContain("import { preserveEntryEditProvenance } from '../lib/eventEditProvenance'");
     expect(quickAdd).toContain('preserveEntryEditProvenance(event,initial)');
