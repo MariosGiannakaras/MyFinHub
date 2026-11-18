@@ -375,6 +375,10 @@ export function validateChangedFinanceDraftCents(next:FinanceData,previous:Finan
   check('scheduled',['amount'],nextState.scheduled??[],oldState.scheduled??[]);
   check('budget',['amount'],nextState.budgets??[],oldState.budgets??[]);
   check('saving-goal',['targetAmount'],nextState.savingsGoals??[],oldState.savingsGoals??[]);
+  check('lending-settlement',['total'],nextState.lendingPlans??[],oldState.lendingPlans??[]);
+  check('credit-card',['creditLimit'],nextState.cards??[],oldState.cards??[]);
+  check('settings',['monthlyBudget','creditLimit'],
+    [{id:'finance-settings',...nextState.settings}],[{id:'finance-settings',...oldState.settings}]);
 }
 
 export function validateCompleteFinanceSemantics(data:FinanceData){

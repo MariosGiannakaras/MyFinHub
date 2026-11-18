@@ -185,6 +185,39 @@ describe('finance persistence semantic invariants',()=>{
     expect(()=>validateChangedFinanceDraftCents(edited,previous)).toThrow(/Sub-cent mutable loan.*installment/);
   });
 
+
+  it('protects new/edited credit limits, global budget and owner-confirmed lending plans while preserving unchanged legacy values',()=>{
+    const previous=baseData();
+    const card={id:'card',bankId:'bank',nickname:'Credit',kind:'credit' as const,network:'visa' as const,active:true,createdAt:previous.updatedAt,updatedAt:previous.updatedAt};
+    const plan={id:'settlement',person:'Alex',asOf:'2026-10-01',firstDueDate:'2026-11-01',total:30,installments:3,everyMonths:1,confirmedAt:previous.updatedAt};
+    const next:FinanceData={...previous,state:{...previous.state,
+      cards:[{...card,creditLimit:100.001}],
+    }};
+    expect(()=>validateChangedFinanceDraftCents(next,previous)).toThrow(/Sub-cent mutable credit-card.*creditLimit/);
+    next.state.cards=[{...card,creditLimit:100}];
+    next.state.lendingPlans=[{...plan,total:30.001}];
+    expect(()=>validateChangedFinanceDraftCents(next,previous)).toThrow(/Sub-cent mutable lending-settlement.*total/);
+    next.state.lendingPlans=[plan];
+    next.state.settings={...previous.state.settings,monthlyBudget:120.001};
+    expect(()=>validateChangedFinanceDraftCents(next,previous)).toThrow(/Sub-cent mutable settings.*monthlyBudget/);
+    next.state.settings={...previous.state.settings,creditLimit:500.001};
+    expect(()=>validateChangedFinanceDraftCents(next,previous)).toThrow(/Sub-cent mutable settings.*creditLimit/);
+    next.state.settings={...previous.state.settings,monthlyBudget:120.01,creditLimit:500.01};
+    expect(()=>validateChangedFinanceDraftCents(next,previous)).not.toThrow();
+    const historical:FinanceData={...previous,state:{...previous.state,
+      cards:[{...card,creditLimit:100.001}],lendingPlans:[{...plan,total:30.001}],
+      settings:{...previous.state.settings,monthlyBudget:120.001},
+    }};
+    const noteOnly:FinanceData={...historical,state:{...historical.state,
+      cards:[{...historical.state.cards![0]!,nickname:'Renamed'}],
+      lendingPlans:[{...historical.state.lendingPlans![0]!,confirmedAt:'2026-10-02T00:00:00.000Z'}],
+      settings:{...historical.state.settings,defaultExpenseAccount:'cash'},
+    }};
+    expect(()=>validateChangedFinanceDraftCents(noteOnly,historical)).not.toThrow();
+    noteOnly.state.cards=[{...noteOnly.state.cards![0]!,creditLimit:100.002}];
+    expect(()=>validateChangedFinanceDraftCents(noteOnly,historical)).toThrow(/Sub-cent mutable credit-card/);
+  });
+
   it('rejects tampered transfer legs in mutable-state validation',()=>{
     const data=baseData();
     const event=createEvent({kind:'transfer',date:'2026-10-01',amount:30,note:'Transfer',fromAccountId:'bank',toAccountId:'savings'});
