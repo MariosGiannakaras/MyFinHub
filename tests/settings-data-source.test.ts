@@ -25,6 +25,10 @@ describe('Settings Data source contract',()=>{
     expect(qa).toContain('button?.click();button?.click()');
     expect(qa).toContain('same-turn backup clicks invoke one backup RPC');
     expect(qa).toContain('window.__qaBackupPostCount===1');
+    expect(qa).toContain("'--remote-debugging-port=0'");
+    expect(qa).toContain('DevToolsActivePort');
+    expect(qa).toContain('Settings Chromium CDP bootstrap failed');
+    expect(qa).not.toContain('const port=9254');
   });
 
   it('preserves the canonical backup and import safety semantics',()=>{
