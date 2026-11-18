@@ -303,15 +303,19 @@ export function FinancialProviderManagementSettings(){
       releaseEditor();
     }catch(error){
       if(error instanceof UnverifiedFinancialProviderWrite){
-        // A malformed HTTP-200 receipt is ambiguous, not a confirmed rollback.
+        // An ambiguous metadata/asset/binding response is not a confirmed rollback.
         // Re-read once without replaying any of the independently committed writes.
         setRequiresCatalogReview(true);
         if(editor.source==='new'&&metadataCommitted)
           setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
         const readback=await refreshFinancialProviders(true);
-        setEditorWarning(readback.error
-          ?'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη και η λίστα παρόχων δεν επιβεβαιώθηκε. Μην επαναλάβεις μεταφόρτωση πριν ελέγξεις τη διαρκή κατάσταση.'
-          :'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη. Η επανάληψη από το παράθυρο απενεργοποιήθηκε για την αποφυγή διπλής μεταφόρτωσης. Κλείσε, άνοιξε ξανά τον πάροχο και έλεγξε τις υπάρχουσες εικόνες πριν συνεχίσεις.');
+        setEditorWarning(error.operation==='metadata'
+          ?(readback.error
+            ?'Η αποθήκευση στοιχείων παρόχου έχει αβέβαιο αποτέλεσμα και η λίστα δεν επιβεβαιώθηκε. Μην επαναλάβεις την εγγραφή πριν ελέγξεις τη διαρκή κατάσταση.'
+            :'Η αποθήκευση στοιχείων παρόχου έχει αβέβαιο αποτέλεσμα. Έλεγξε τον πάροχο στη λίστα και άνοιξέ τον ξανά πριν συνεχίσεις· η τυφλή επανάληψη απενεργοποιήθηκε.')
+          :readback.error
+            ?'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη και η λίστα παρόχων δεν επιβεβαιώθηκε. Μην επαναλάβεις μεταφόρτωση πριν ελέγξεις τη διαρκή κατάσταση.'
+            :'Η απόκριση αποθήκευσης εικόνας ή ανάθεσης είναι αβέβαιη. Η επανάληψη από το παράθυρο απενεργοποιήθηκε για την αποφυγή διπλής μεταφόρτωσης. Κλείσε, άνοιξε ξανά τον πάροχο και έλεγξε τις υπάρχουσες εικόνες πριν συνεχίσεις.');
       }else if(metadataCommitted){
         // The provider metadata may already be durable. A later asset/binding
         // rejection is partial success, never a blanket "nothing was saved".

@@ -388,4 +388,110 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(operations).toHaveLength(1);
   });
 
+  it.each(['POST','PATCH'] as const)(
+    'treats a disconnected %s metadata write as uncertain rather than safe to replay',async method=>{
+      const requests:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
+        throw new TypeError('Response lost after request transmission');
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const activityPath:string='../src/lib/databaseSaveActivity.js';
+      const {saveFinancialProvider,updateFinancialProvider,UnverifiedFinancialProviderWrite}=await import(clientPath);
+      const {getDatabaseSaveSnapshot}=await import(activityPath);
+      const before=getDatabaseSaveSnapshot().completion;
+      const write=method==='POST'?saveFinancialProvider:updateFinancialProvider;
+      try{
+        await write({id:'qa-uncertain-bank',displayName:'Uncertain',shortName:'Uncertain',providerKind:'bank',countryCode:'GR',sortOrder:200},false);
+        throw new Error('Expected uncertain metadata outcome');
+      }catch(error){
+        expect(error).toBeInstanceOf(UnverifiedFinancialProviderWrite);
+        expect((error as InstanceType<typeof UnverifiedFinancialProviderWrite>).operation).toBe('metadata');
+      }
+      expect(requests).toHaveLength(1);
+      expect(requests[0]).toContain(method+' /api/account-metadata?resource=financial-providers');
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+    }
+  );
+
+  it.each(['POST','PATCH'] as const)(
+    'blocks blind repeat of ambiguous %s metadata outcomes after HTTP 408/429/5xx',async method=>{
+      for(const status of [408,429,503]){
+        vi.resetModules();
+        const requests:string[]=[];
+        vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+          requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
+          return new Response(JSON.stringify({error:'Uncertain commit'}),{status,headers:{'content-type':'application/json'}});
+        }));
+        const clientPath:string='../src/lib/financialProviderClient.js';
+        const activityPath:string='../src/lib/databaseSaveActivity.js';
+        const {saveFinancialProvider,updateFinancialProvider,UnverifiedFinancialProviderWrite}=await import(clientPath);
+        const {getDatabaseSaveSnapshot}=await import(activityPath);
+        const before=getDatabaseSaveSnapshot().completion;
+        const write=method==='POST'?saveFinancialProvider:updateFinancialProvider;
+        try{
+          await write({id:'qa-uncertain-bank',displayName:'Uncertain',shortName:'Uncertain',providerKind:'bank',countryCode:'GR',sortOrder:200},false);
+          throw new Error('Expected uncertain metadata outcome');
+        }catch(error){
+          expect(error).toBeInstanceOf(UnverifiedFinancialProviderWrite);
+          expect((error as InstanceType<typeof UnverifiedFinancialProviderWrite>).operation).toBe('metadata');
+        }
+        expect(requests).toHaveLength(1);
+        expect(requests[0]).toContain(method+' /api/account-metadata?resource=financial-providers');
+        expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+      }
+    }
+  );
+
+  it.each([408,429,503])('never resends an uncertain provider slot binding after HTTP %i',async status=>{
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
+      return new Response(JSON.stringify({error:'Uncertain binding commit'}),{status,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const activityPath:string='../src/lib/databaseSaveActivity.js';
+    const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    const {getDatabaseSaveSnapshot}=await import(activityPath);
+    const before=getDatabaseSaveSnapshot().completion;
+    try{
+      await setFinancialProviderAssetBinding({providerId:'qa-uncertain-bank',role:'logo',variant:'universal',assetKey:null,refreshCatalog:false});
+      throw new Error('Expected uncertain binding outcome');
+    }catch(error){
+      expect(error).toBeInstanceOf(UnverifiedFinancialProviderWrite);
+      expect((error as InstanceType<typeof UnverifiedFinancialProviderWrite>).operation).toBe('binding');
+    }
+    expect(requests).toEqual(['PUT /api/account-metadata?resource=financial-provider-asset-binding']);
+    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+  });
+
+  it('does not turn a definitive metadata 403 into an unverified commit',async()=>{
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
+      return new Response(JSON.stringify({error:'FORBIDDEN'}),{status:403,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {saveFinancialProvider,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    await expect(saveFinancialProvider({
+      id:'qa-denied-bank',displayName:'Denied',shortName:'Denied',providerKind:'bank',countryCode:'GR',sortOrder:201,
+    },false)).rejects.not.toBeInstanceOf(UnverifiedFinancialProviderWrite);
+    expect(requests).toEqual(['POST /api/account-metadata?resource=financial-providers']);
+  });
+
+  it('treats a lost provider binding response as unverified rather than a definite rejected write',async()=>{
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push((init?.method||'GET').toUpperCase()+' '+String(input));
+      throw new TypeError('Connection dropped after binding request');
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {setFinancialProviderAssetBinding,UnverifiedFinancialProviderWrite}=await import(clientPath);
+    await expect(setFinancialProviderAssetBinding({
+      providerId:'qa-uncertain-bank',role:'logo',variant:'universal',assetKey:null,refreshCatalog:false,
+    })).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'binding'});
+    expect(UnverifiedFinancialProviderWrite.name).toBe('UnverifiedFinancialProviderWrite');
+    expect(requests).toEqual(['PUT /api/account-metadata?resource=financial-provider-asset-binding']);
+  });
+
 });

@@ -104,10 +104,12 @@ export async function refreshFinancialProviders(force=false){
 
 
 export class UnverifiedFinancialProviderWrite extends Error{
-  constructor(operation:'asset'|'binding'){
-    super(operation==='asset'
-      ?'Η απόκριση μεταφόρτωσης εικόνας δεν επιβεβαιώθηκε· το αρχείο μπορεί ήδη να έχει καταχωριστεί.'
-      :'Η απόκριση ανάθεσης εικόνας δεν επιβεβαιώθηκε· η ανάθεση μπορεί ήδη να έχει αποθηκευτεί.');
+  constructor(public readonly operation:'metadata'|'asset'|'binding'){
+    super(operation==='metadata'
+      ?'Η αποθήκευση του παρόχου δεν επιβεβαιώθηκε· τα στοιχεία μπορεί ήδη να έχουν καταχωριστεί.'
+      :operation==='asset'
+        ?'Η απόκριση μεταφόρτωσης εικόνας δεν επιβεβαιώθηκε· το αρχείο μπορεί ήδη να έχει καταχωριστεί.'
+        :'Η απόκριση ανάθεσης εικόνας δεν επιβεβαιώθηκε· η ανάθεση μπορεί ήδη να έχει αποθηκευτεί.');
     this.name='UnverifiedFinancialProviderWrite';
   }
 }
@@ -176,14 +178,25 @@ export function providerCatalogMatchesWrite(
 
 async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
   return trackDatabaseWrite(async()=>{
-  const response=await apiRequest('/api/account-metadata?resource=financial-providers',{
-    method,
-    credentials:'same-origin',
-    headers:{accept:'application/json','content-type':'application/json'},
-    body:JSON.stringify(input),
-  });
+  let response:Response;
+  try{
+    response=await apiRequest('/api/account-metadata?resource=financial-providers',{
+      method,
+      credentials:'same-origin',
+      headers:{accept:'application/json','content-type':'application/json'},
+      body:JSON.stringify(input),
+    });
+  }catch{
+    // A dropped POST/PATCH response is not proof of rollback. Never replay
+    // metadata blindly before reconciling the actual provider catalog.
+    throw new UnverifiedFinancialProviderWrite('metadata');
+  }
   const payload=await json(response);
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
+  if(!response.ok){
+    if(response.status===408||response.status===429||response.status>=500)
+      throw new UnverifiedFinancialProviderWrite('metadata');
+    throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
+  }
   // Metadata and its optional asset writes can commit independently. An HTTP
   // 200 with an absent/mismatched provider receipt is NOT proof that the
   // requested metadata was saved. Never let the editor show an all-green save.
@@ -258,14 +271,24 @@ export async function setFinancialProviderAssetBinding(input:{
   refreshCatalog?:boolean;
 }){
   return trackDatabaseWrite(async()=>{
-  const response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
-    method:'PUT',
-    credentials:'same-origin',
-    headers:{accept:'application/json','content-type':'application/json'},
-    body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
-  });
+  let response:Response;
+  try{
+    response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
+      method:'PUT',
+      credentials:'same-origin',
+      headers:{accept:'application/json','content-type':'application/json'},
+      body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
+    });
+  }catch{
+    // The binding RPC can commit despite a lost transport acknowledgement.
+    throw new UnverifiedFinancialProviderWrite('binding');
+  }
   const payload=await json(response);
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
+  if(!response.ok){
+    if(response.status===408||response.status===429||response.status>=500)
+      throw new UnverifiedFinancialProviderWrite('binding');
+    throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
+  }
   if(payload?.ok!==true)throw new UnverifiedFinancialProviderWrite('binding');
   if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
   });
