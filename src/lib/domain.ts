@@ -12,7 +12,7 @@ import type {
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
 import { legacyLendingSnapshot } from './lending.js';
-import { isSafeMoneyValue } from './money.js';
+import { isPositiveCentExactMoneyValue, isSafeMoneyValue, moneyToCents } from './money.js';
 import { isSavingsAccount } from './accountSemantics.js';
 
 const CREDIT_ACCOUNT: Account = {
@@ -159,6 +159,11 @@ export function createEvent(args: {
   if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
   const amount = Number(args.amount);
   if (!isSafeMoneyValue(amount) || (args.kind !== 'reconciliation' && amount <= 0) || amount < 0) throw new Error('Το ποσό είναι εκτός επιτρεπτού εύρους.');
+  // The event factory creates NEW economic events. Never let another caller
+  // bypass an editor and book a rounded sub-cent cash/credit/receivable leg.
+  // Reconciliation is separately derived from two verified balances below.
+  if(args.kind!=='reconciliation'&&!isPositiveCentExactMoneyValue(amount))
+    throw new Error('Το ποσό πρέπει να είναι θετικό και ακριβές σε λεπτά του ευρώ.');
   if (args.kind === 'reconciliation') {
     const actual = Number(args.actualBalance);
     const current = Number(args.currentBalance);
@@ -222,8 +227,13 @@ export function createEvent(args: {
       break;
     }
     case 'split': {
-      const total = (args.parts ?? []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      if (Math.abs(total - amount) > 0.009) throw new Error(`Τα επιμέρους ποσά (${total.toFixed(2)}€) δεν ισούνται με το σύνολο (${amount.toFixed(2)}€).`);
+      const parts=args.parts??[];
+      if(parts.length<2||parts.some(part=>!isPositiveCentExactMoneyValue(Number(part.amount))))
+        throw new Error('Ο διαχωρισμός χρειάζεται τουλάχιστον δύο θετικά μέρη ακριβή σε λεπτά του ευρώ.');
+      const total = parts.reduce((sum, part) => sum + Number(part.amount), 0);
+      const totalCents=parts.reduce((sum, part) => sum + moneyToCents(Number(part.amount)),0);
+      if(!Number.isSafeInteger(totalCents)||totalCents!==moneyToCents(amount))
+        throw new Error(`Τα επιμέρους ποσά (${total.toFixed(2)}€) δεν ισούνται με το σύνολο (${amount.toFixed(2)}€).`);
       legs.push({ accountId: requireAccount(args.accountId), amount: -amount });
       break;
     }
