@@ -14,7 +14,7 @@ describe('#649 whole-implementation CI workflow cost and safety cadence',()=>{
     expect(focused).toContain("(contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->')");
     expect(focused).toContain("FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') &&\n          'settings-tabs' ||");
     expect(focused).toContain('node "scripts/$suite-qa.mjs"');
-    expect(focused).toContain('Upload focused screenshots and browser logs');
+    expect(focused).toContain('Upload focused screenshots and all suite logs');
   });
 
   it('preserves a mandatory develop/main validate + reusable CodeQL source and release gates',()=>{
