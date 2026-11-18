@@ -173,6 +173,9 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
     let ghostNode:HTMLElement|null=null;
     let deleteMode=false;
     const timers=new Set<number>();
+    // A single visible status belongs to the whole stack; serialize every
+    // sensitive field copy before vault retrieval and clipboard writes.
+    let copyInFlight=false;
     const later=(fn:()=>void,ms:number)=>{const id=window.setTimeout(()=>{timers.delete(id);fn()},ms);timers.add(id);return id;};
     const announce=(message:string,tone:'success'|'error'='success')=>{
       statusNode.setAttribute('role',tone==='error'?'alert':'status');
@@ -229,12 +232,20 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
     }
     async function toggleReveal(id:string,cardEl:HTMLElement|null){const card=currentCard(id);if(!card||!cardEl)return;if(revealedRef.current.has(id)){revealedRef.current.delete(id);updateSecretDom(card,cardEl,false);return}const secret=await loadSecrets(card);if(!secret||(!secret.pan&&!secret.expiry&&!secret.cvv))return;revealedRef.current.add(id);updateSecretDom(card,cardEl,true)}
     async function copyField(id:string,field:keyof Secrets){
+      if(copyInFlight)return;
       const card=currentCard(id);if(!card)return;
-      const secret=secretsRef.current.get(id)??await loadSecrets(card);
-      const value=secret?.[field]??'';
-      if(!value){announce('Δεν υπάρχει αποθηκευμένη τιμή για αντιγραφή','error');return}
-      try{await copyTextWithFallback(value);announce('Αντιγράφηκε')}
-      catch{announce('Δεν ήταν δυνατή η αντιγραφή','error')}
+      copyInFlight=true;announce('');
+      try{
+        const secret=secretsRef.current.get(id)??await loadSecrets(card);
+        if(!secret)return; // Keep the vault failure, not a false missing-value result.
+        const value=secret[field]??'';
+        if(!value){announce('Δεν υπάρχει αποθηκευμένη τιμή για αντιγραφή','error');return}
+        await copyTextWithFallback(value);
+        // A pending copy must not overwrite status after switching/archiving cards.
+        if(currentCard(id)&&orderRef.current[0]===id)announce('Αντιγράφηκε');
+      }catch{
+        if(currentCard(id)&&orderRef.current[0]===id)announce('Δεν ήταν δυνατή η αντιγραφή','error');
+      }finally{copyInFlight=false}
     }
     function bindTopCard(){const top=stage.querySelector<HTMLElement>('.stack-card.top');if(!top)return;top.querySelector<HTMLButtonElement>('.reveal-btn')?.addEventListener('click',event=>{event.stopPropagation();const button=event.currentTarget as HTMLButtonElement;void toggleReveal(button.dataset.id??'',top.querySelector<HTMLElement>('.payment-card'))});top.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const target=event.currentTarget as HTMLButtonElement;void copyField(target.dataset.cardId??'',target.dataset.field as keyof Secrets)}));top.querySelector<HTMLButtonElement>('.edit-profile-btn')?.addEventListener('click',event=>{event.stopPropagation();const card=currentCard((event.currentTarget as HTMLButtonElement).dataset.id??'');if(card)editCardRef.current?.(card.source)});top.querySelector<HTMLButtonElement>('.edit-details-btn')?.addEventListener('click',event=>{event.stopPropagation();const card=currentCard((event.currentTarget as HTMLButtonElement).dataset.id??'');if(card)editDetailsRef.current?.(card.source)});top.querySelector<HTMLButtonElement>('.delete-btn')?.addEventListener('click',event=>{event.stopPropagation();const button=event.currentTarget as HTMLButtonElement;armDelete(button.dataset.id??'',top.querySelector<HTMLElement>('.payment-card'))});}
     function attachTilt(){stage.querySelectorAll<HTMLElement>('[data-tilt]').forEach(card=>{

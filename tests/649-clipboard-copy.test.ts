@@ -25,6 +25,26 @@ function emulateLegacyCopy(result:'success'|'false'|'throw'){
 }
 
 describe('#649 sensitive clipboard copy and truthful feedback',()=>{
+  it('serializes payment-card PAN/expiry/CVV copy before vault/clipboard awaits and ignores stale stack card result',()=>{
+    expect(paymentCard).toContain('const copyInFlight=useRef(false)');
+    expect(paymentCard).toContain('const [copyBusy,setCopyBusy]=useState(false)');
+    const direct=paymentCard.slice(paymentCard.indexOf('const copy=async(field:keyof Secrets,label:string)=>'),paymentCard.indexOf('const setArchiveProgress='));
+    expect(direct).toContain('if(busy||copyInFlight.current||archivingRef.current)return');
+    expect(direct.indexOf('copyInFlight.current=true')).toBeLessThan(direct.indexOf('await loadSecrets()'));
+    expect(direct).toContain("setCopyBusy(true);setMessage('')");
+    expect(direct).toContain('finally{copyInFlight.current=false;setCopyBusy(false)}');
+    expect(direct).toContain("setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')");
+    expect(paymentCard.match(/className="copy-mini" type="button" disabled=\{busy\|\|copyBusy\}/g)).toHaveLength(3);
+    const canonical=stack.slice(stack.indexOf('async function copyField('),stack.indexOf('function bindTopCard()'));
+    expect(stack).toContain('let copyInFlight=false;');
+    expect(canonical).toContain('if(copyInFlight)return;');
+    expect(canonical.indexOf('copyInFlight=true')).toBeLessThan(canonical.indexOf('await loadSecrets(card)'));
+    expect(canonical).toContain("copyInFlight=true;announce('')");
+    expect(canonical).toContain('if(currentCard(id)&&orderRef.current[0]===id)');
+    expect(canonical).toContain('finally{copyInFlight=false}');
+  });
+
+
   it('serializes IBAN copy attempts before React repaint, clears stale status and old success timer',()=>{
     expect(iban).toContain('const copyInFlight=useRef(false)');
     expect(iban).toContain('const successResetTimer=useRef<number|null>(null)');

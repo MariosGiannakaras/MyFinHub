@@ -73,6 +73,7 @@ export function InteractivePaymentCard({
 }){
   const [revealed,setRevealed]=useState<Secrets>({});
   const [busy,setBusy]=useState(false);
+  const [copyBusy,setCopyBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
   const [deleteOpen,setDeleteOpen]=useState(false);
@@ -80,6 +81,7 @@ export function InteractivePaymentCard({
   const [deleteOffset,setDeleteOffset]=useState(0);
   const cardRef=useRef<HTMLElement>(null);
   const archivingRef=useRef(false);
+  const copyInFlight=useRef(false);
   const deleteProgressRef=useRef(0);
   const archivePointerIdRef=useRef<number|null>(null);
   const archiveDragCleanupRef=useRef<(()=>void)|null>(null);
@@ -106,8 +108,23 @@ export function InteractivePaymentCard({
 
   const toggleReveal=async()=>{if(visible){setRevealed({});return}await loadSecrets()};
   const copy=async(field:keyof Secrets,label:string)=>{
-    const current=revealed[field]||(await loadSecrets())?.[field];if(!current)return;
-    try{await copyTextWithFallback(current);setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}catch{setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    if(busy||copyInFlight.current||archivingRef.current)return;
+    // The DOM can dispatch two clicks before React repaints disabled buttons.
+    // Lock before either the vault read or the clipboard promise is awaited.
+    copyInFlight.current=true;setCopyBusy(true);setMessage('');
+    try{
+      const available=revealed[field]?revealed:await loadSecrets();
+      if(!available)return; // Preserve an actual vault error from loadSecrets.
+      const current=available[field];
+      if(!current){
+        setMessageTone('error');setMessage('Δεν υπάρχει αποθηκευμένη τιμή για αντιγραφή.');
+        return;
+      }
+      await copyTextWithFallback(current);
+      if(!archivingRef.current){setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}
+    }catch{
+      if(!archivingRef.current){setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    }finally{copyInFlight.current=false;setCopyBusy(false)}
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
   const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
@@ -242,10 +259,10 @@ export function InteractivePaymentCard({
           </div>
         </header>
         <div className="card-body">
-          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
+          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
           <div className="card-fields">
-            <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
-            <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
+            <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
+            <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
