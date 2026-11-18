@@ -342,7 +342,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
               <MoneyInput aria-label={`Ποσό πηγής ${index+1}`} value={row.amountText} onValueChange={value=>{setFundingRows(rows=>rows.map(item=>item.id===row.id?{...item,amountText:value}:item));mark()}}/>
               <button type="button" aria-label={`Αφαίρεση πηγής ${index+1}`} disabled={fundingRows.length<=2} onClick={()=>{setFundingRows(rows=>rows.filter(item=>item.id!==row.id));mark()}}><X size={16}/></button>
             </div>)}
-            <Button type="button" variant="ghost" disabled={fundingRows.length>=12} onClick={()=>{const id=nextDraftRowId('funding',fundingRows);setFundingRows(rows=>[...rows,{id,sourceKey:'',amountText:''}]);mark()}}>+ Προσθήκη πηγής</Button>
+            <Button type="button" variant="ghost" disabled={fundingRows.length>=12} onClick={()=>{if(fundingRows.length>=12)return;const id=nextDraftRowId('funding',fundingRows);setFundingRows(rows=>rows.length>=12?rows:[...rows,{id,sourceKey:'',amountText:''}]);mark()}}>+ Προσθήκη πηγής</Button>
             <p className="logic-note compact">Το συνολικό ποσό καταγράφεται μία φορά ως αγορά. Από την πιστωτική υπολογίζεται μόνο το ποσό της δικής της πηγής, όχι ολόκληρη η αγορά.</p></>:null}
           </div>:null}
           {lendingLike?<label className="quick-field" data-filled={filled(person)}><span>Πρόσωπο</span><AppTextInput value={person} onChange={e=>{setPerson(e.target.value);mark()}} placeholder="π.χ. Χρήστος"/></label>:null}

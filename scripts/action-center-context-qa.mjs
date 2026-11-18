@@ -199,6 +199,20 @@ try{
   await sleep(160);
   await screenshot('quick-entry-multi-funding-stable-rows-mobile-375');
   await viewport(1440,1000);
+
+  console.log('Quick Entry funding source limit survives two same-turn Add clicks at 11 rows');
+  for(let target=5;target<=11;target++){
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();return true}"),'sequential funding source Add remains available below twelve');
+    await waitFor("function(target){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===target}",'funding row count grows to capped penultimate size',[target]);
+  }
+  const limitDouble=await c.call("async function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();button.click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(limitDouble,'two same-turn Add clicks from 11 rows attempted');
+  await waitFor("function(){const rows=document.querySelectorAll('.generic-quick-modal .multi-funding-row'),button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));return rows.length===12&&Boolean(button?.disabled)}",'funding source editor stops at exactly twelve and disabled button');
+  await viewport(375,812);
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));button?.scrollIntoView({block:'center'});return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===12&&Boolean(button?.disabled)&&document.documentElement.scrollWidth<=innerWidth+1}"),'cap remains exactly twelve before any finance receipt and 375px page has no overflow');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-max12-mobile-375');
+  await viewport(1440,1000);
   const splitSelected=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .generic-kind-grid button')].find(node=>(node.textContent||'').includes('Σύνθετη αγορά'));button?.click();return Boolean(button)}");
   assert(splitSelected,'generic Quick Entry selects split purchase for independent cent-precision validation');
   await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=Ποσό]').length>=2}",'split part amount controls ready');

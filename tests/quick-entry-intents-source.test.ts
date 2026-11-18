@@ -69,6 +69,16 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('two rapid row additions never post any finance event');
   });
 
+  it('enforces the 12-source bound inside the batched funding update, not only via disabled repaint',()=>{
+    expect(quickAdd).toContain('disabled={fundingRows.length>=12}');
+    expect(quickAdd).toContain('if(fundingRows.length>=12)return;const id=nextDraftRowId');
+    expect(quickAdd).toContain('setFundingRows(rows=>rows.length>=12?rows:[...rows,{id,sourceKey:');
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('funding source limit survives two same-turn Add clicks at 11 rows');
+    expect(qa).toContain('quick-entry-multi-funding-max12-mobile-375');
+    expect(qa).toContain('cap remains exactly twelve before any finance receipt');
+  });
+
   it('does not erase lending due-date, saving source or original provenance during ordinary edits',()=>{
     expect(quickAdd).toContain("import { preserveEntryEditProvenance } from '../lib/eventEditProvenance'");
     expect(quickAdd).toContain('preserveEntryEditProvenance(event,initial)');
