@@ -32,7 +32,9 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
         });
       }));
       const clientPath:string='../src/lib/financialProviderClient.js';
-      const {refreshFinancialProviders}=await import(clientPath);
+      const {refreshFinancialProviders}=await import(clientPath) as {
+        refreshFinancialProviders:(force?:boolean)=>Promise<{error:string|null;providers:Array<{id:string}>}>;
+      };
       const invalid=await refreshFinancialProviders(true);
       expect(invalid.error).toBeTruthy();
       expect(invalid.providers.some(row=>row.id===record.id)).toBe(false);
