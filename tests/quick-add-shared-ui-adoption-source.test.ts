@@ -20,7 +20,7 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd).toContain('<IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}>');
     expect(quickAdd).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
     expect(quickAdd).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
-    expect(quickAdd).toContain('<Button type="button" variant="ghost" onClick={()=>{setParts(');
+    expect(quickAdd).toContain('<Button type="button" variant="ghost" onClick={()=>{const id=nextDraftRowId(\'part\',parts);setParts(');
     expect(quickAdd).not.toContain('className="icon-button"');
     expect(quickAdd).not.toContain('className="secondary"');
     expect(quickAdd).not.toContain('className="save-button"');
