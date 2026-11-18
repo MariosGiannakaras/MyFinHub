@@ -8,6 +8,14 @@ const backup=read('.github/workflows/desktop-backup-focused-qa.yml');
 const codeql=read('.github/workflows/codeql.yml');
 
 describe('#649 whole-implementation CI workflow cost and safety cadence',()=>{
+  it('selects exactly two existing card clipboard suites for one Draft focused QA opt-in',()=>{
+    const focused=read('.github/workflows/fb-focused-rendered-qa.yml');
+    expect(focused).toContain("contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->')");
+    expect(focused).toContain("'cards-remediation credit-stack-remediation'");
+    expect(focused).toContain("github.event.pull_request.head.repo.full_name == github.repository");
+  });
+
+
   it('runs only the settings-tabs Chromium suite when the Settings Data focused marker is enabled',()=>{
     const focused=read('.github/workflows/fb-focused-rendered-qa.yml');
     expect(focused).toContain("github.event.pull_request.head.repo.full_name == github.repository");

@@ -18,7 +18,8 @@ jobs:
     if: >-
       github.event.pull_request.draft == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') ||
+      (contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
@@ -42,7 +43,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->') &&
+          'cards-remediation credit-stack-remediation' ||
+          contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') &&
           'settings-tabs' ||
           contains(github.event.pull_request.body, '<!-- run-649-transactions-lifecycle-qa -->') &&
           'legacy-transaction-management' ||

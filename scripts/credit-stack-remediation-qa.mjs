@@ -148,5 +148,27 @@ try{
   const reducedBefore=await state();await pressArrow('ArrowDown');await sleep(520);const reducedAfter=await state();
   assert(reducedAfter.topId!==reducedBefore.topId,'reduced-motion mode preserves functional card selection');
 
+
+  console.log('Sensitive credit-stack clipboard single-flight: one status for same-turn double click');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  const stackFixture=await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard'),legacy=document.execCommand;const probe=globalThis.__qaCreditSensitiveCopy={requests:0,copies:0,mode:'deny',release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.requests++;return Promise.resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{probe.copies++;if(probe.mode==='deny')return Promise.reject(new Error('synthetic clipboard denial'));return new Promise(resolve=>{probe.release=resolve})}}});document.execCommand=()=>false;globalThis.__qaCreditSensitiveCopyRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;document.execCommand=legacy;delete globalThis.__qaCreditSensitiveCopy;delete globalThis.__qaCreditSensitiveCopyRestore};return true}");
+  assert(stackFixture,'credit stack runs isolated Card Vault and clipboard fixture');
+  const creditButton=".stack-card.top .copy-btn[data-field='pan']";
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();return Boolean(b)}"),'real top physical card copy selected');
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=alert]')?.textContent?.includes('Δεν ήταν δυνατή η αντιγραφή')}",'denied credit stack copy remains explicit alert');
+  assert(await c.call("function(){return globalThis.__qaCreditSensitiveCopy?.copies===1&&globalThis.__qaCreditSensitiveCopy?.requests===1}"),'first credit copy used one Card Vault read and one clipboard attempt');
+  await shot('credit-stack-sensitive-copy-denied-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopy.mode='pending';return true}"),'arm held credit clipboard');
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();b?.click();return Boolean(b)}"),'two credit copy clicks in same event turn');
+  await waitFor("function(){return globalThis.__qaCreditSensitiveCopy?.copies===2}",'exactly one new clipboard attempt for double click');
+  assert(await c.call("function(){const n=document.querySelector('#myfinhub-card-stack .sr-status');return n?.textContent===''&&n?.getAttribute('role')==='status'}"),'old credit denial cleared while pending, no false green');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopy.release?.();return true}"),'confirm pending credit clipboard outcome');
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=status]')?.textContent==='Αντιγράφηκε'}",'credit copy status only after acknowledged clipboard');
+  assert(await c.call("function(){return globalThis.__qaCreditSensitiveCopy?.copies===2&&globalThis.__qaCreditSensitiveCopy?.requests===1}"),'credit sensitive copy never repeats vault read or clipboard for duplicate click');
+  await viewport(375,812,true);
+  assert(await c.call("function(){const n=document.querySelector('#myfinhub-card-stack .sr-status'),r=n?.getBoundingClientRect();return Boolean(r&&r.left>=-1&&r.right<=innerWidth+1&&document.documentElement.scrollWidth<=innerWidth+1)}"),'mobile credit copy feedback stays inside viewport');
+  await shot('credit-stack-sensitive-copy-singleflight-mobile');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopyRestore?.();return true}"),'credit stack clipboard fixture restored');
+
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

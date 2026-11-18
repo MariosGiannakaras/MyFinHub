@@ -25,6 +25,21 @@ function emulateLegacyCopy(result:'success'|'false'|'throw'){
 }
 
 describe('#649 sensitive clipboard copy and truthful feedback',()=>{
+  it('stages actual debit and credit desktop/mobile sensitive copy denial and single-flight browser proof',()=>{
+    const debit=readFileSync(new URL('../scripts/cards-remediation-qa.mjs',import.meta.url),'utf8');
+    const credit=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    for(const suite of [debit,credit]){
+      expect(suite).toContain('clipboard single-flight');
+      expect(suite).toContain('button?.click();button?.click()' .replaceAll('button?.','b?.').replaceAll('button','b')||'');
+      expect(suite).toContain('document.execCommand=()=>false');
+    }
+    expect(debit).toContain('cards-sensitive-copy-singleflight-mobile');
+    expect(credit).toContain('credit-stack-sensitive-copy-singleflight-mobile');
+    expect(debit).toContain('globalThis.__qaCardSensitiveCopy?.copies===2');
+    expect(credit).toContain('globalThis.__qaCreditSensitiveCopy?.copies===2');
+  });
+
+
   it('serializes payment-card PAN/expiry/CVV copy before vault/clipboard awaits and ignores stale stack card result',()=>{
     expect(paymentCard).toContain('const copyInFlight=useRef(false)');
     expect(paymentCard).toContain('const [copyBusy,setCopyBusy]=useState(false)');

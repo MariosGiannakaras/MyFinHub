@@ -143,5 +143,28 @@ try{
   await viewport(375,812);await navigate('');await archiveCard(true);
   await c.send('Emulation.setEmulatedMedia',{features:[]});
 
+
+  console.log('Sensitive card clipboard single-flight: denied permission then one confirmed copy for two same-turn clicks');
+  await viewport(1440,1000);await navigate('');
+  const copyFixture=await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard'),legacy=document.execCommand;const probe=globalThis.__qaCardSensitiveCopy={requests:0,copies:0,mode:'deny',release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.requests++;return Promise.resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{probe.copies++;if(probe.mode==='deny')return Promise.reject(new Error('synthetic permission denial'));return new Promise(resolve=>{probe.release=resolve})}}});document.execCommand=()=>false;globalThis.__qaCardSensitiveCopyRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;document.execCommand=legacy;delete globalThis.__qaCardSensitiveCopy;delete globalThis.__qaCardSensitiveCopyRestore};return true}");
+  assert(copyFixture,'synthetic Card Vault GET and clipboard denial are isolated to QA');
+  const copyButton="'.prototype-payment-card button.copy-mini[aria-label=\"Αντιγραφή αριθμού\"]'";
+  assert(await c.call("function(){const button=document.querySelector('.prototype-payment-card button.copy-mini[aria-label=\"Αντιγραφή αριθμού\"]');button?.click();return Boolean(button)}"),'synthetic card number copy selected');
+  await waitFor("function(){return document.querySelector('.r-card-status[role=alert]')?.textContent?.includes('Δεν ήταν δυνατή η αντιγραφή.')}",'denied clipboard leaves explicit error, never false success');
+  assert(await c.call("function(){return globalThis.__qaCardSensitiveCopy?.copies===1&&globalThis.__qaCardSensitiveCopy?.requests===1}"),'first attempt reads synthetic vault once and denies clipboard once');
+  await shot('cards-sensitive-copy-denied-desktop');
+  assert(await c.call("function(){globalThis.__qaCardSensitiveCopy.mode='pending';return true}"),'arm held native clipboard for direct card');
+  assert(await c.call("function(){const button=document.querySelector('.prototype-payment-card button.copy-mini[aria-label=\"Αντιγραφή αριθμού\"]');button?.click();button?.click();return Boolean(button)}"),'two same-turn copy clicks dispatched before React repaint');
+  await waitFor("function(){return globalThis.__qaCardSensitiveCopy?.copies===2&&document.querySelectorAll('.prototype-payment-card button.copy-mini:disabled').length===3}",'exactly one additional pending clipboard call and all sensitive controls locked');
+  assert(await c.call("function(){return !document.querySelector('.r-card-status[role=alert]')&&!document.querySelector('.r-card-status[data-feedback-tone=success]')}"),'stale denial cleared before next copy acknowledgement');
+  assert(await c.call("function(){globalThis.__qaCardSensitiveCopy.release?.();return true}"),'acknowledge exactly one pending card clipboard result');
+  await waitFor("function(){return document.querySelector('.r-card-status[role=status]')?.textContent?.includes('αντιγράφηκε')&&[...document.querySelectorAll('.prototype-payment-card button.copy-mini')].every(button=>!button.disabled)}",'card copy status confirmed after clipboard resolution');
+  assert(await c.call("function(){return globalThis.__qaCardSensitiveCopy?.copies===2&&globalThis.__qaCardSensitiveCopy?.requests===1}"),'two user actions, not three; no extra vault request on retry');
+  await viewport(375,812);
+  const mobileCopy=await c.call("function(){const n=document.querySelector('.r-card-status'),r=n?.getBoundingClientRect();return Boolean(r&&r.left>=-1&&r.right<=innerWidth+1&&r.height>0&&document.documentElement.scrollWidth<=innerWidth+1)}");
+  assert(mobileCopy,'375px confirmed copy status remains visible without overflow');
+  await shot('cards-sensitive-copy-singleflight-mobile');
+  assert(await c.call("function(){globalThis.__qaCardSensitiveCopyRestore?.();return true}"),'release isolated payment-card clipboard fixture');
+
   c.close();console.log(`Cards remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}
