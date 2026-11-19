@@ -232,14 +232,17 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
   if(!Array.isArray(providerPayload)||!Array.isArray(assetPayload)||!Array.isArray(bindingPayload))throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
   const assetRows=assetPayload.map(mapFinancialProviderAssetRow);
   const bindingRows=bindingPayload.map(mapFinancialProviderAssetBindingRow);
-  const assetsByKey=new Map(assetRows.map(asset=>[asset.asset_key,asset] as const));
   const baseUrl=config(accessToken).url;
   return providerPayload.map(value=>{
     const provider=mapFinancialProviderRow(value);
-    const logo=provider.logoAssetKey?assetsByKey.get(provider.logoAssetKey):undefined;
-    const wordmark=provider.wordmarkAssetKey?assetsByKey.get(provider.wordmarkAssetKey):undefined;
-    const providerAssets=assetRows
-      .filter(asset=>asset.provider_id===provider.id)
+    const ownedAssets=assetRows.filter(asset=>asset.provider_id===provider.id);
+    const ownByKey=new Map(ownedAssets.map(asset=>[asset.asset_key,asset] as const));
+    const logo=provider.logoAssetKey?ownByKey.get(provider.logoAssetKey):undefined;
+    const wordmark=provider.wordmarkAssetKey?ownByKey.get(provider.wordmarkAssetKey):undefined;
+    // Never resolve a primary image from another provider's active asset.
+    if(provider.logoAssetKey&&!logo||provider.wordmarkAssetKey&&!wordmark)
+      throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider asset ownership is invalid.',false);
+    const providerAssets=ownedAssets
       .map(asset=>({
         assetKey:asset.asset_key,
         role:asset.asset_role as FinancialProviderAssetRow['role'],
@@ -255,6 +258,8 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
       variant:binding.variant as FinancialProviderAssetBindingRow['variant'],
       assetKey:binding.asset_key,
     }));
+    if(bindings.some(binding=>!ownByKey.has(binding.assetKey)))
+      throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider binding ownership is invalid.',false);
     return {
       ...provider,
       logoUrl:logo?publicStorageUrl(baseUrl,logo):null,

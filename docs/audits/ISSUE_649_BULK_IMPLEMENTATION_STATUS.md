@@ -1,3 +1,11 @@
+## 2026-11-19 — I19.04 server-side provider asset ownership and truthful readback
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; umbrella I19.04 remains PARTIAL).** The previous `0c3ee3c` CI #44544515400 had **validate SUCCESS**; CodeQL/Unified still pending at the last inspection. This additional server change requires a new exact-head gate.
+
+**Direct API integrity gap:** `readFinancialProviders` used a global cross-provider active asset map for primary logo/wordmark keys and returned bindings without validating target asset ownership. A corrupted provider A could therefore return a public image belonging to provider B, and a non-browser consumer could trust the malformed HTTP 200. Primary image and binding lookups are now **provider-scoped**, raising the existing stable `FINANCIAL_PROVIDER_INVALID_RESPONSE` without allowing a foreign logo or unregistered binding to be accepted. Actual mocked three-table GET regression covers correct own asset, foreign primary and foreign binding, with no writes. Complements strict client catalog validation from previous source change; no new database credentials, RLS grants, hosted SQL, mutations, Android code or release. Keep Draft #654 → develop, pending exact source/CodeQL/Unified and final Ready QA.
+
+---
+
 ## 2026-11-19 — I19.04 provider read-back test NodeNext type repair
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Exact [CI #44544265372](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44544265372) at `a529e42` **FAILED before test execution** in `npm run hygiene`: two implicit-any callbacks in the *new test* due intentionally dynamic import of a browser module in NodeNext test mode. Corrected only the test's dynamic imported `refreshFinancialProviders` signature; same assertions and strict provider catalog runtime guards untouched. New commit requires exact-head validate/CodeQL/Unified confirmation. Existing prior [CI #44542722267](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44542722267) PASS for receipt image bounds still valid on its exact earlier head. Draft PR #654 remains unmerged; no hosted DB, main, Android or production modifications.
