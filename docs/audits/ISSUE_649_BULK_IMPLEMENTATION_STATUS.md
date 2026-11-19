@@ -1,3 +1,11 @@
+## 2026-11-19 — #649 repair original recurring-brand positive fixture after new image provenance guard
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). On exact `b162600`, [CI #44612896952](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44612896952) **FAILED** solely in `tests/recurring-service-brand-client.test.ts`: **2,105/2,106 Vitest tests passed**, CodeQL PASS, `validate` FAIL and Unified FAIL. Build/budget and later validate stages were not reached, so no current-head bundle/security PASS claim. The old supposed positive fixture used `services/logo.svg` while its declared 24-hex immutable key was `service-asset-1234567890abcdef12345678`; the strict canonical key↔URL parser correctly rejected this unrelated file. The original test now uses the actual `services/<asset-key>.svg` URL for positive and wrong-type negative fixtures and has a separate explicit wrong-file URL rejection. This aligns the test with the existing server/Storage product contract; no validator weakened, no finance or API runtime modified, no new browser QA necessary for this test-only correction.
+
+**Validation/next:** New exact-head CI/CodeQL/Unified is pending and must be inspected once; don't infer green from previously passing suites. Keep one Draft PR #654 → `develop`, no merge, Android, hosted PostgreSQL/Storage, financial-data write, owner-dependent I18.02 restore or main/release. I19.04/I22.02 remain partial under original 23/132 plan.
+
+---
+
 ## 2026-11-19 — #649 I19.04 recurring asset URL-to-key provenance fail-closed regression
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; original I19.04/I22.02 remain PARTIAL). The previous exact source [CI #44610648823](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44610648823) and focused recurring-brand Chromium [#44611053931](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44611053931) were **SUCCESS** on `92dae2f`, including unchanged 528 KiB JS/560 KiB CSS hard caps and the 7 screenshot states. They certify that prior head, not this newly pushed candidate.
