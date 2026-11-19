@@ -277,6 +277,53 @@ describe('native bearer finance API boundary', () => {
     ])expect(operation).not.toHaveBeenCalled();
   });
 
+  it('denies cross-site or originless cookie mutations on every metadata and Storage route (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>upstream(200,{id:'owner-id'})));
+    for(const route of metadataRoutes.filter(route=>route.method!=='GET')){
+      for(const extraHeaders of [
+        {},
+        {origin:'https://other.example',host:'myfinhub.example','x-forwarded-proto':'https'},
+      ]){
+        const res=responseRecorder();
+        await metadataHandler({
+          ...route,
+          headers:{...route.headers,cookie:`rheomiq_access=${encodeURIComponent(token)}`,...extraHeaders},
+        },res);
+        expect(res.statusCode).toBe(403);
+        expect(JSON.parse(res.body)).toMatchObject({
+          code:Object.hasOwn(extraHeaders,'origin')?'ORIGIN_MISMATCH':'ORIGIN_REQUIRED',
+        });
+      }
+    }
+    for(const operation of Object.values(metadata))expect(operation).not.toHaveBeenCalled();
+  });
+
+  it('never falls back to an ambient owner cookie after malformed or rejected native bearer credentials (#649 I22.02)',async()=>{
+    const token=tokenWithAal('aal2');
+    const cookie=`rheomiq_access=${encodeURIComponent(token)}`;
+    const fetchMock=vi.fn().mockImplementation(async()=>upstream(401,{message:'invalid native access'}));
+    vi.stubGlobal('fetch',fetchMock);
+    for(const route of [metadataRoutes[0],metadataRoutes[7],metadataRoutes[8]]){
+      for(const authorization of ['Bearer','Bearer revoked-native-token']){
+        const res=responseRecorder();
+        await metadataHandler({
+          ...route,
+          headers:{...route.headers,cookie,authorization},
+        },res);
+        expect(res.statusCode).toBe(401);
+        expect(JSON.parse(res.body)).toMatchObject({code:'AUTH_REQUIRED'});
+        expect(res.headers.has('set-cookie')).toBe(false);
+      }
+    }
+    // Only well-formed bearers reach upstream auth; the cookie is never
+    // consulted as a fallback after either explicit native failure.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
+    expect(storage.isOwner).not.toHaveBeenCalled();
+    for(const operation of Object.values(metadata))expect(operation).not.toHaveBeenCalled();
+  });
+
   it('preserves the existing same-origin requirement for cookie mutations', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));

@@ -683,4 +683,14 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
     method:'POST',
     body:JSON.stringify({p_asset_key:assetKey}),
   },accessToken);
+  // The purge RPC RETURNS void: HTTP 200/null is not a deletion receipt.
+  // Check both active and inactive owner-visible rows before returning ok:true
+  // to browser and native clients. A failed or ambiguous read must not trigger
+  // another Storage DELETE or silent success.
+  const remaining=await request(
+    `rheomiq_recurring_service_assets?select=asset_key,active&asset_key=eq.${encodeURIComponent(assetKey)}`,
+    {method:'GET'},accessToken);
+  if(!Array.isArray(remaining)||remaining.length!==0)
+    throw new ApiError(503,'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+      'Η οριστική αφαίρεση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
 }

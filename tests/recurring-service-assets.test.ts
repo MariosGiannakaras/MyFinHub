@@ -284,6 +284,7 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===2)return new Response('{}',{status:503});
       if(calls.length===4)return new Response('{}',{status:404});
       if(calls.length===5)return new Response('null',{status:200});
+      if(calls.length===6)return new Response('[]',{status:200});
       throw new Error('No speculative extra delete or purge');
     }));
     await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
@@ -291,8 +292,9 @@ describe('recurring service asset foundation',()=>{
     });
     expect(calls.map(x=>x.method)).toEqual(['POST','DELETE']);
     await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
-    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST']);
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST','GET']);
     expect(calls[1].url).toBe(calls[3].url);
+    expect(calls[5].url).toContain('asset_key=eq.'+key);
     expect(calls[4].url).toContain('rpc/rheomiq_purge_recurring_service_asset');
   });
 
@@ -308,6 +310,7 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===2)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
       if(calls.length===3)return new Response('{}',{status:200});
       if(calls.length===4)return new Response('null',{status:200});
+      if(calls.length===5)return new Response('[]',{status:200});
       throw new Error('Unexpected duplicate release/delete after retry');
     }));
     await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
@@ -315,7 +318,7 @@ describe('recurring service asset foundation',()=>{
     });
     expect(calls.map(x=>x.method)).toEqual(['POST']);
     await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
-    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST']);
+    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST','GET']);
     expect(calls[2].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[3].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
   });
@@ -330,14 +333,45 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===1)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('null',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===4)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected recurring service asset delete request');
     });
     vi.stubGlobal('fetch',fetchMock);
 
     await deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token');
-    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST']);
+    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
     expect(calls[0].url).toContain('/rest/v1/rpc/rheomiq_release_recurring_service_asset');
     expect(calls[1].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[2].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
+    expect(calls[3].url).toContain('/rest/v1/rheomiq_recurring_service_assets?select=asset_key,active&asset_key=eq.service-asset-1234567890abcdef12345678');
+  });
+
+  it.each([
+    ['retained inactive registration',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:false}]],
+    ['retained active registration',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:true}]],
+    ['malformed read-back',200,{assets:[]}],
+    ['duplicate read-back',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:false},{asset_key:'service-asset-1234567890abcdef12345678',active:false}]],
+    ['unavailable read-back',503,{message:'database unavailable'}],
+  ] as const)('does not acknowledge recurring asset purge after %s',async(_label,status,body)=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');
+      calls.push({url,method});
+      if(calls.length===1)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(calls.length===2)return new Response('{}',{status:200});
+      if(calls.length===3)return new Response('null',{status:200});
+      if(calls.length===4)return new Response(JSON.stringify(body),{status});
+      throw new Error('An uncertain purge cannot cause a repeat Storage DELETE or success');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,
+      code:status===503?'ACCOUNT_METADATA_UNAVAILABLE':'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+    });
+    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
+    expect(calls[3].url).toContain('asset_key=eq.'+key);
   });
 });
