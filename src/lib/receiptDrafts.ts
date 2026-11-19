@@ -158,13 +158,6 @@ export async function listReceiptDrafts(): Promise<ReceiptDraft[]> {
   });
 }
 
-async function getReceiptDraft(id: string): Promise<ReceiptDraft | null> {
-  return withStore('readonly', async (store) => {
-    const row = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
-    return row ?? null;
-  });
-}
-
 async function requestPersistentReceiptStorage() {
   try {
     const storage = localStorageManager();
@@ -176,14 +169,6 @@ async function requestPersistentReceiptStorage() {
 }
 
 export async function createReceiptDraft(image: NormalizedReceiptImage): Promise<ReceiptDraft> {
-  const existing = await listReceiptDrafts();
-  const usedBytes = existing.reduce((sum, draft) => sum + Number(draft.bytes || draft.image.size || 0), 0);
-  if (existing.length >= RECEIPT_DRAFT_LIMIT) {
-    throw new Error(`Έχεις ήδη ${RECEIPT_DRAFT_LIMIT} αποδείξεις σε αναμονή. Επεξεργάσου ή διέγραψε κάποια πριν προσθέσεις άλλη.`);
-  }
-  if (usedBytes + image.bytes > RECEIPT_STORAGE_BUDGET_BYTES) {
-    throw new Error('Ο τοπικός χώρος για αποδείξεις σε αναμονή έφτασε το όριό του. Επεξεργάσου ή διέγραψε παλιότερες αποδείξεις.');
-  }
   const now = new Date().toISOString();
   const draft: ReceiptDraft = {
     id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `receipt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -192,36 +177,54 @@ export async function createReceiptDraft(image: NormalizedReceiptImage): Promise
     status: 'pending',
     ...image,
   };
-  await withStore('readwrite', (store) => { store.put(draft); });
+  // IndexedDB serializes readwrite transactions across tabs. The quota check
+  // and insertion must be atomic or concurrent captures can exceed both caps.
+  await withStore('readwrite', async (store) => {
+    const existing = await requestResult(store.getAll() as LocalRequest<ReceiptDraft[]>);
+    const usedBytes = existing.reduce((sum, row) => sum + Number(row.bytes || row.image.size || 0), 0);
+    if (existing.length >= RECEIPT_DRAFT_LIMIT) {
+      throw new Error(`Έχεις ήδη ${RECEIPT_DRAFT_LIMIT} αποδείξεις σε αναμονή. Επεξεργάσου ή διέγραψε κάποια πριν προσθέσεις άλλη.`);
+    }
+    if (usedBytes + image.bytes > RECEIPT_STORAGE_BUDGET_BYTES) {
+      throw new Error('Ο τοπικός χώρος για αποδείξεις σε αναμονή έφτασε το όριό του. Επεξεργάσου ή διέγραψε παλιότερες αποδείξεις.');
+    }
+    store.put(draft);
+  });
   void requestPersistentReceiptStorage();
   return draft;
 }
 
 export async function saveReceiptProposal(id: string, proposal: ReceiptProposal): Promise<ReceiptDraft> {
-  const draft = await getReceiptDraft(id);
-  if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
-  const next: ReceiptDraft = {
-    ...draft,
-    status: 'ready',
-    proposal,
-    errorCode: undefined,
-    updatedAt: new Date().toISOString(),
-  };
-  await withStore('readwrite', (store) => { store.put(next); });
-  return next;
+  // Read + update in one transaction: a concurrent delete must never
+  // resurrect a removed local receipt with a stale proposal.
+  return withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
+    const next: ReceiptDraft = {
+      ...draft,
+      status: 'ready',
+      proposal,
+      errorCode: undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    store.put(next);
+    return next;
+  });
 }
 
 export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft['errorCode'] = 'ocr-failed') {
-  const draft = await getReceiptDraft(id);
-  if (!draft) return null;
-  const next: ReceiptDraft = {
-    ...draft,
-    status: 'error',
-    errorCode,
-    updatedAt: new Date().toISOString(),
-  };
-  await withStore('readwrite', (store) => { store.put(next); });
-  return next;
+  return withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) return null;
+    const next: ReceiptDraft = {
+      ...draft,
+      status: 'error',
+      errorCode,
+      updatedAt: new Date().toISOString(),
+    };
+    store.put(next);
+    return next;
+  });
 }
 
 export async function deleteReceiptDraft(id: string) {

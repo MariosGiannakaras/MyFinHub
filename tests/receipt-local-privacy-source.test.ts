@@ -29,6 +29,24 @@ describe('local-only receipt privacy boundary',()=>{
     expect(drafts).not.toMatch(/supabase|FinanceData|fetch\(|XMLHttpRequest|https?:\/\//i);
   });
 
+  it('keeps local receipt quota checks and stale-update denial in the same IndexedDB write transaction',()=>{
+    const create=drafts.slice(drafts.indexOf('export async function createReceiptDraft'),drafts.indexOf('export async function saveReceiptProposal'));
+    const proposal=drafts.slice(drafts.indexOf('export async function saveReceiptProposal'),drafts.indexOf('export async function markReceiptDraftError'));
+    const markError=drafts.slice(drafts.indexOf('export async function markReceiptDraftError'),drafts.indexOf('export async function deleteReceiptDraft'));
+    expect(create).toContain("await withStore('readwrite', async (store) => {");
+    expect(create).toContain('await requestResult(store.getAll()');
+    expect(create).toContain('existing.length >= RECEIPT_DRAFT_LIMIT');
+    expect(create).toContain('usedBytes + image.bytes > RECEIPT_STORAGE_BUDGET_BYTES');
+    expect(create.indexOf('store.put(draft)')).toBeGreaterThan(create.indexOf('usedBytes + image.bytes'));
+    expect(create).not.toContain('await listReceiptDrafts()');
+    for(const update of [proposal,markError]){
+      expect(update).toContain("return withStore('readwrite', async (store) => {");
+      expect(update).toContain('await requestResult(store.get(id)');
+      expect(update.indexOf('store.put(next)')).toBeGreaterThan(update.indexOf('store.get(id)'));
+      expect(update).not.toContain('await getReceiptDraft(id)');
+    }
+  });
+
   it('uses only same-origin self-hosted OCR paths and no receipt API request',()=>{
     expect(ocr).toContain("workerPath: '/ocr/worker.min.js'");
     expect(ocr).toContain("corePath: '/ocr/core'");
