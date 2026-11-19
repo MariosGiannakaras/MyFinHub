@@ -514,8 +514,7 @@
       ],
       "guards": [
         "tests/recurring-service-assets.test.ts",
-        "scripts/real-stack-e2e.ts",
-        "scripts/real-stack-receivable-rpc.ts"
+        "tests/production-migration-ledger-source.test.ts"
       ]
     }
   ]

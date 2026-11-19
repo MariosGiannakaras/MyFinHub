@@ -1,3 +1,13 @@
+## 2026-11-20 — #649 fix FP-026 registry guard classification after CI #44632955729
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04/I22.02 PARTIAL). The candidate `4694270` [CI #44632955729](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44632955729) **FAILURE**. Exact failure: `validate` aborted at `npm run defects:preflight -- --base HEAD^1` because new pattern FP-026 lists the local integration scripts `scripts/real-stack-e2e.ts` and `scripts/real-stack-receivable-rpc.ts` under `guards`, where the canonical registry validator requires paths matching `tests/*.test.ts`. The log said `pattern 25 invalid test guard` twice; CodeQL independently **SUCCESS** and Unified failed as a consequence of validate. No tests/build/DB proof were reached on this head.
+
+**Narrow correction:** Keep the two integration scripts under `paths` as executable real-stack evidence; set FP-026 `guards` to the existing `tests/recurring-service-assets.test.ts` and `tests/production-migration-ledger-source.test.ts`, which both verify the new migration/QA declarations. Do not weaken the registry predicate or bypass the check. The PostgreSQL CHECK, direct RPC QA, app/API code and all invariants remain unchanged.
+
+**Next:** The ordinary CI on this exact replacement head must pass before triggering the costly isolated local-Supabase real-stack QA once. No Ready, merge, hosted migration, production or Android action. Independent full PostgreSQL+Storage restore I18.02 remains owner-approval gated.
+
+---
+
 ## 2026-11-20 — #649 I22.02 direct PostgreSQL RPC and Storage provenance guard
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04/I22.02 remain PARTIAL until direct database acceptance). Exact previous head `11d33ba` [CI #44625401363](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44625401363) **SUCCESS** (validate, reusable CodeQL and Unified).
