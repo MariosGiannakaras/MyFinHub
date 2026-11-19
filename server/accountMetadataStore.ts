@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, copyBoundedBinaryValue } from './http.js';
 import { fetchUpstream } from './upstream.js';
+import { isValidIban } from '../src/lib/iban.js';
 
 export const MAX_PROVIDER_ASSET_BYTES=2*1024*1024;
 export const MAX_RECURRING_SERVICE_ASSET_BYTES=MAX_PROVIDER_ASSET_BYTES;
@@ -123,10 +124,13 @@ async function request(path:string,init:RequestInit,accessToken:string){
 
 function mapRow(value:unknown):AccountMetadataRow{
   const row=value as Partial<StoredRow>;
-  if(!row||typeof row.account_id!=='string'||(row.iban!==null&&typeof row.iban!=='string')||!Number.isInteger(row.revision)||Number(row.revision)<1||typeof row.updated_at!=='string'){
+  if(!row||typeof row.account_id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(row.account_id)||
+    (row.iban!==null&&(typeof row.iban!=='string'||!isValidIban(row.iban)))||
+    typeof row.revision!=='number'||!Number.isSafeInteger(row.revision)||row.revision<1||
+    typeof row.updated_at!=='string'||!row.updated_at){
     throw new ApiError(500,'ACCOUNT_METADATA_INVALID_ROW','Stored account metadata is invalid.',false);
   }
-  return {accountId:row.account_id,iban:row.iban??null,revision:Number(row.revision),updatedAt:row.updated_at};
+  return {accountId:row.account_id,iban:row.iban,revision:row.revision,updatedAt:row.updated_at};
 }
 
 function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
@@ -167,11 +171,17 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   const filePath=typeof row?.storage_path==='string'&&row.storage_path.startsWith(directory)
     ?row.storage_path.slice(directory.length):'';
   const extension=typeof row?.mime_type==='string'?PROVIDER_ASSET_EXTENSION[row.mime_type]:undefined;
+  // Uploaded keys have an immutable server-issued filename. Curated legacy
+  // artworks may use independent safe file names and remain compatible.
+  const prefix=typeof row?.provider_id==='string'?row.provider_id+'-asset-':'';
+  const isUploaded=typeof row?.asset_key==='string'&&row.asset_key.startsWith(prefix)&&
+    /^[a-f0-9]{12}$/.test(row.asset_key.slice(prefix.length));
   if(!row||typeof row.asset_key!=='string'||!/^[a-z][a-z0-9-]{0,95}$/.test(row.asset_key)||
     typeof row.provider_id!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.provider_id)||
     typeof role!=='string'||!roles.includes(role as any)||
     typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||typeof row.file_name!=='string'||!row.file_name||
     typeof row.mime_type!=='string'||!extension||!filePath.endsWith(`.${extension}`)||
+    (isUploaded&&filePath!==`${row.asset_key}.${extension}`)||
     row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
     (row.size_bytes!==null&&(typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||row.size_bytes<0))||
     !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||
@@ -240,7 +250,10 @@ function publicStorageUrl(baseUrl:string,asset:StoredPublicAssetRow){
 export async function readAccountMetadata(accessToken:string):Promise<AccountMetadataRow[]>{
   const payload=await request('rheomiq_account_metadata?select=account_id,iban,revision,updated_at&order=account_id.asc',{method:'GET'},accessToken);
   if(!Array.isArray(payload))throw new ApiError(500,'ACCOUNT_METADATA_INVALID_RESPONSE','Account metadata response is invalid.',false);
-  return payload.map(mapRow);
+  const rows=payload.map(mapRow);
+  if(new Set(rows.map(row=>row.accountId)).size!==rows.length)
+    throw new ApiError(500,'ACCOUNT_METADATA_INVALID_RESPONSE','Duplicate account metadata rows.',false);
+  return rows;
 }
 
 export async function readFinancialProviders(accessToken:string):Promise<FinancialProviderRow[]>{
@@ -325,9 +338,15 @@ export async function writeAccountMetadata(accountId:string,iban:string|null,exp
     method:'POST',
     body:JSON.stringify({p_account_id:accountId,p_iban:iban,p_expected_revision:expectedRevision}),
   },accessToken);
-  const row=Array.isArray(payload)?payload[0]:null;
-  if(!row)throw new ApiError(500,'ACCOUNT_METADATA_INVALID_RESPONSE','Account metadata response is invalid.',false);
-  return mapRow(row);
+  if(!Array.isArray(payload)||payload.length!==1)
+    throw new ApiError(503,'ACCOUNT_METADATA_WRITE_UNVERIFIED','Account metadata write acknowledgement is unverified.',false);
+  const row=mapRow(payload[0]);
+  // HTTP 200 is not a verified write receipt if the RPC returned the wrong
+  // account, a mismatched IBAN or anything but this next revision.
+  if(row.accountId!==accountId||row.iban!==iban||
+    !Number.isSafeInteger(expectedRevision+1)||row.revision!==expectedRevision+1)
+    throw new ApiError(503,'ACCOUNT_METADATA_WRITE_UNVERIFIED','Account metadata write acknowledgement is unverified.',false);
+  return row;
 }
 
 type FinancialProviderWrite={

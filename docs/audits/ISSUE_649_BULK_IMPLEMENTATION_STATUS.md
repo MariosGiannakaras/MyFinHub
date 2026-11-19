@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 exact optimistic IBAN receipts and provider uploaded asset keys
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 PARTIAL). [Previous exact CI #44579262633](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44579262633) at `4750ab8` **SUCCESS** for validate, CodeQL and Unified required gate.
+
+**One coordinated read/write boundary:** (1) A provider's generated uploaded asset key could still advertise the public Storage URL for a *different* uploaded file under the **same provider**. Backend GET now requires generated `{providerId}-asset-{12hex}` keys to resolve exactly to their immutable `{assetKey}.{mimeExtension}` filename; an explicit positive GET keeps older curated provider keys and independent safe filenames available without migration/rewriting. (2) Account metadata GET rejected only ordinary noninteger revisions but could publish unsafe (>JS safe integer) revisions, malformed IBANs/IDs or duplicate rows as a plausible authoritative catalog. It now enforces existing client ID/IBAN/revision contracts, and rejects duplicates. (3) `rheomiq_upsert_account_metadata` HTTP-200 readback previously returned the first arbitrary row without checking the requested account/IBAN or exact next revision. It now requires exactly one matching result, returning `ACCOUNT_METADATA_WRITE_UNVERIFIED` on mismatches rather than claiming committed success. Added two actual HTTP mock GET/RPC matrices for account data plus generated-key negative and curated-positive provider GET. No automatic write replay, new client screens, hosted database/Storage, RLS/auth relaxation, finance history, migration, production/main/Android/merge.
+
+**Validation:** New source candidate must pass exact-head automated validate/CodeQL/Unified; prior green run does not prove it. Draft #654 → develop; final coherent Ready browser/Windows/WebKit/Lighthouse/real-stack/recovery gates pending. I18.02 external independent PG+Storage restore is approval-gated; dependency #660 is separately owned. Next: inspect new-head CI once and repair actual errors without weakening checks; prioritize remaining original #649 unblocked work.
+
+---
+
 ## 2026-11-19 — I19.04 strict metadata write and primary image-intent API boundary
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: I19.04 remains PARTIAL; no double-counting). Prior consolidated [CI #44577587340](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44577587340) **SUCCESS** (validate, CodeQL, Unified) on source head `9df28bb`, confirming the coherent server readback fixes without recurring syntactic defects.

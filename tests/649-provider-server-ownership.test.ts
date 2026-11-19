@@ -63,7 +63,7 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
     }
   );
   it.each([
-    'cross-provider-storage-path','traversal-storage-path',
+    'cross-provider-storage-path','traversal-storage-path','same-provider-wrong-key',
     'duplicate-provider-id','duplicate-asset-key','duplicate-binding-slot',
   ] as const)('rejects %s instead of returning an ambiguous provider catalog',async scenario=>{
     process.env.SUPABASE_URL='https://example.supabase.co';
@@ -78,7 +78,8 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
       file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
       storage_path:scenario==='cross-provider-storage-path'?'providers/owner-b/other-logo.png'
         :scenario==='traversal-storage-path'?'providers/owner-a/../owner-b/other-logo.png'
-          :`providers/owner-a/${key}.png`,
+          :scenario==='same-provider-wrong-key'?'providers/owner-a/owner-a-asset-abcdef123456.png'
+            :`providers/owner-a/${key}.png`,
       size_bytes:12,updated_at:'2026-11-19T12:00:00Z',active:true,
     };
     const binding={provider_id:'owner-a',asset_role:'logo',variant:'universal',asset_key:key};
@@ -96,7 +97,7 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
       return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
     }));
     await expect(readFinancialProviders('owner-jwt')).rejects.toMatchObject({
-      status:500,code:scenario==='cross-provider-storage-path'||scenario==='traversal-storage-path'
+      status:500,code:scenario==='cross-provider-storage-path'||scenario==='traversal-storage-path'||scenario==='same-provider-wrong-key'
         ?'FINANCIAL_PROVIDER_ASSET_INVALID_ROW':'FINANCIAL_PROVIDER_INVALID_RESPONSE',
     });
     expect(observed).toHaveLength(3);
@@ -201,6 +202,34 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
     });
     expect(observed).toHaveLength(3);
     expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
+  });
+
+  it('still serves curated legacy provider artwork with independent safe filenames',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
+    const provider={
+      id:'owner-a',display_name:'Owner A',short_name:'A',provider_kind:'bank',
+      country_code:'GR',logo_asset_key:'curated-logo',wordmark_asset_key:null,sort_order:10,
+    };
+    const asset={
+      asset_key:'curated-logo',provider_id:'owner-a',asset_role:'logo',variant:'universal',
+      file_name:'logo.svg',mime_type:'image/svg+xml',storage_bucket:'financial-provider-assets',
+      storage_path:'providers/owner-a/curated-mark.svg',
+      size_bytes:null,updated_at:'2026-11-19T12:00:00Z',active:true,
+    };
+    const methods:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);methods.push(String(init?.method??'GET'));
+      const rows=url.includes('/rheomiq_financial_provider_assets?')?[asset]:
+        url.includes('/rheomiq_financial_provider_asset_bindings?')?[]:
+          url.includes('/rheomiq_financial_providers?')?[provider]:null;
+      if(!rows)throw new Error('Unexpected GET');
+      return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const rows=await readFinancialProviders('owner-jwt');
+    expect(rows[0]?.logoUrl).toContain('/providers/owner-a/curated-mark.svg');
+    expect(rows[0]?.assets?.[0]?.sizeBytes).toBeNull();
+    expect(methods).toEqual(['GET','GET','GET']);
   });
 
 });
