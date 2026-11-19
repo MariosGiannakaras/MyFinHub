@@ -1,3 +1,13 @@
+## 2026-11-19 — #649 main JS hard-budget regression: preserve exact uncertainty text, emit it once
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Exact `1600f93` [CI #44608767542](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44608767542) **330/330 Vitest files, 2,100/2,100 tests PASS**, TypeScript/build PASS, but the main JS raw bundle remains **slightly above 528.0 KiB hard budget** (display rounds both size and limit to 528.0); `validate` FAILED, not PASS. No budget change authorized or made. The shared browser auth listener already avoided parallel duplicate registrations.
+
+**Source-only size correction:** Two identical 185-byte UTF-8 Greek upload uncertainty messages in `recurringServiceAssetClient.ts` have been factored into **one** shared `UNVERIFIED_UPLOAD` constant. The exact user-visible text, both failure branches, no-blind-retry semantics, owner/AAL2 and optimistic readback remain unchanged. This materially reduces duplicated generated string bytes in the eager app instead of raising the limit. Requires exact-head `validate`/CodeQL/Unified to confirm the actual production JS bytes.
+
+**One-shot browser acceptance:** The previously identified test fixture defect (20-hex synthetic logo key vs validated 24-hex contract) was already fixed on `1600f93` with a new regression check; its browser scenario still requires a new opt-in run and direct evidence, but the PR body marker is OFF during this source batch. Keep PR #654 Draft; no hosted data, Android, main/release or merge.
+
+---
+
 ## 2026-11-19 — #649 fix evidenced recurring-brand QA fixture and reduce eager auth-scope byte cost
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: I19.04/I22.02 remain PARTIAL). Exact earlier `fb73a17` [CI #44607859642](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44607859642) had **2,099/2,099 tests PASS but validate FAILED** against the unchanged **528.0 KiB main-JS hard cap**, and [focused Chromium #44607859594](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44607859594) failed during logo replacement. Redacted browser facts confirm exact file name/type/233-byte body and one PUT, no DELETE, original logo retained and visible error displayed. The browser fixture itself used `service-asset-` plus **20** hex `b` characters where the shared immutable asset contract requires exactly **24**; downstream QA assertions already expected 24 and parser rightly rejected it. Correct the one fake key to 24, add a persistent source test checking *every* synthetic browser asset key, retain strict product validator and full replacement assertions (including finance save, cleanup and fallback). No product path/validation bypass.

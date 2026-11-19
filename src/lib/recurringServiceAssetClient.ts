@@ -16,6 +16,8 @@ export interface RecurringServiceAsset{
 type RecurringServiceAssetSnapshot={loaded:boolean;loading:boolean;assets:RecurringServiceAsset[];error:string|null};
 
 const MIME_TYPES=new Set<RecurringServiceAsset['mimeType']>(['image/png','image/jpeg','image/webp','image/svg+xml']);
+// One operator-visible uncertainty contract for both upload receipt failures.
+const UNVERIFIED_UPLOAD='Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.';
 let snapshot:RecurringServiceAssetSnapshot={loaded:false,loading:false,assets:[],error:null};
 let pending:Promise<RecurringServiceAssetSnapshot>|null=null;
 const listeners=new Set<()=>void>();
@@ -93,7 +95,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   if(!asset||asset.recurringId!==input.recurringId||
     asset.fileName!==input.file.name||asset.mimeType!==input.file.type||
     asset.sizeBytes!==input.file.size)
-    throw new Error('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+    throw new Error(UNVERIFIED_UPLOAD);
   // Storage, registration and the finance revision are separate writes.
   // Confirm one fresh registered catalog GET before returning a key that the
   // caller will attach to the canonical finance state. Never replay the PUT.
@@ -103,7 +105,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   if(epoch!==authEpoch()||confirmed.error||!registered||registered.recurringId!==asset.recurringId||
     registered.fileName!==asset.fileName||registered.mimeType!==asset.mimeType||
     registered.sizeBytes!==asset.sizeBytes||registered.url!==asset.url)
-    throw new Error('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+    throw new Error(UNVERIFIED_UPLOAD);
   return registered;
   });
 }
