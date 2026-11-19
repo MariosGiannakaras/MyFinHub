@@ -155,4 +155,52 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
     expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
   });
 
+  it.each([
+    'invalid-provider-id','blank-display','long-display','blank-short',
+    'long-short','lowercase-country','bad-country-length',
+    'invalid-asset-key','invalid-asset-provider-id',
+    'unsupported-asset-mime','mismatched-asset-extension',
+  ] as const)('rejects %s from real catalog GET rather than publishing untrusted branding',async scenario=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
+    const key='owner-a-asset-123456abcdef';
+    const provider:Record<string,unknown>={
+      id:'owner-a',display_name:'Owner A',short_name:'A',provider_kind:'bank',
+      country_code:'GR',logo_asset_key:key,wordmark_asset_key:null,sort_order:10,
+    };
+    const asset:Record<string,unknown>={
+      asset_key:key,provider_id:'owner-a',asset_role:'logo',variant:'universal',
+      file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+      storage_path:`providers/owner-a/${key}.png`,size_bytes:12,
+      updated_at:'2026-11-19T12:00:00Z',active:true,
+    };
+    if(scenario==='invalid-provider-id')provider.id='../owner-a';
+    if(scenario==='blank-display')provider.display_name='   ';
+    if(scenario==='long-display')provider.display_name='A'.repeat(121);
+    if(scenario==='blank-short')provider.short_name=' ';
+    if(scenario==='long-short')provider.short_name='A'.repeat(81);
+    if(scenario==='lowercase-country')provider.country_code='gr';
+    if(scenario==='bad-country-length')provider.country_code='GRC';
+    if(scenario==='invalid-asset-key')asset.asset_key='../bad';
+    if(scenario==='invalid-asset-provider-id')asset.provider_id='invalid/owner';
+    if(scenario==='unsupported-asset-mime')asset.mime_type='text/html';
+    if(scenario==='mismatched-asset-extension')asset.mime_type='image/jpeg';
+    const observed:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);
+      observed.push((init?.method??'GET')+' '+url);
+      const rows=url.includes('/rheomiq_financial_provider_assets?')?[asset]:
+        url.includes('/rheomiq_financial_provider_asset_bindings?')?[]:
+          url.includes('/rheomiq_financial_providers?')?[provider]:null;
+      if(!rows)throw new Error('Unexpected provider GET');
+      return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const invalidAsset=scenario.startsWith('invalid-asset')||scenario==='unsupported-asset-mime'||scenario==='mismatched-asset-extension';
+    await expect(readFinancialProviders('owner-jwt')).rejects.toMatchObject({
+      status:500,code:invalidAsset?'FINANCIAL_PROVIDER_ASSET_INVALID_ROW':'FINANCIAL_PROVIDER_INVALID_ROW',
+    });
+    expect(observed).toHaveLength(3);
+    expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
+  });
+
 });

@@ -15,6 +15,7 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
   it.each([
     'valid','foreign-storage-key','text-bytes','fractional-bytes',
     'negative-bytes','zero-bytes','unsafe-bytes','duplicate-registration',
+    'unsupported-mime','extension-mismatch',
   ] as const)('treats %s consistently with confirmed Storage and DB registration',async scenario=>{
     process.env.SUPABASE_URL='https://example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
@@ -31,6 +32,8 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
     if(scenario==='negative-bytes')asset.size_bytes=-2;
     if(scenario==='zero-bytes')asset.size_bytes=0;
     if(scenario==='unsafe-bytes')asset.size_bytes=Number.MAX_SAFE_INTEGER+1;
+    if(scenario==='unsupported-mime')asset.mime_type='text/html';
+    if(scenario==='extension-mismatch')asset.mime_type='image/jpeg';
     const rows=scenario==='duplicate-registration'?[asset,{...asset}]:[asset];
     const observed:string[]=[];
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{

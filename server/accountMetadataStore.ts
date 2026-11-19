@@ -133,8 +133,11 @@ function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
   const row=value as Partial<StoredFinancialProviderRow>;
   const kinds=['bank','fintech','wallet','payment'] as const;
   const validAssetKey=(value:unknown)=>value===null||value===undefined||typeof value==='string'&&/^[a-z][a-z0-9-]{0,95}$/.test(value);
-  if(!row||typeof row.id!=='string'||typeof row.display_name!=='string'||typeof row.short_name!=='string'||!kinds.includes(row.provider_kind as any)||
-    (row.country_code!==null&&row.country_code!==undefined&&typeof row.country_code!=='string')||!validAssetKey(row.logo_asset_key)||!validAssetKey(row.wordmark_asset_key)||
+  if(!row||typeof row.id!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.id)||
+    typeof row.display_name!=='string'||!row.display_name.trim()||row.display_name.length>120||
+    typeof row.short_name!=='string'||!row.short_name.trim()||row.short_name.length>80||!kinds.includes(row.provider_kind as any)||
+    (row.country_code!==null&&row.country_code!==undefined&&
+      (typeof row.country_code!=='string'||!/^[A-Z]{2}$/.test(row.country_code)))||!validAssetKey(row.logo_asset_key)||!validAssetKey(row.wordmark_asset_key)||
     typeof row.sort_order!=='number'||!Number.isSafeInteger(row.sort_order)||row.sort_order<0||row.sort_order>100000){
     throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_ROW','Stored financial provider is invalid.',false);
   }
@@ -163,9 +166,13 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   const directory=typeof row?.provider_id==='string'?`providers/${row.provider_id}/`:'';
   const filePath=typeof row?.storage_path==='string'&&row.storage_path.startsWith(directory)
     ?row.storage_path.slice(directory.length):'';
-  if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||typeof role!=='string'||!roles.includes(role as any)||
+  const extension=typeof row?.mime_type==='string'?PROVIDER_ASSET_EXTENSION[row.mime_type]:undefined;
+  if(!row||typeof row.asset_key!=='string'||!/^[a-z][a-z0-9-]{0,95}$/.test(row.asset_key)||
+    typeof row.provider_id!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.provider_id)||
+    typeof role!=='string'||!roles.includes(role as any)||
     typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||typeof row.file_name!=='string'||!row.file_name||
-    typeof row.mime_type!=='string'||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
+    typeof row.mime_type!=='string'||!extension||!filePath.endsWith(`.${extension}`)||
+    row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
     (row.size_bytes!==null&&(typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||row.size_bytes<0))||
     !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||
     !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filePath)||row.active!==true){
@@ -197,15 +204,17 @@ function mapFinancialProviderAssetBindingRow(value:unknown):StoredFinancialProvi
 
 function mapRecurringServiceAssetRow(value:unknown):StoredRecurringServiceAssetRow{
   const row=value as Partial<StoredRecurringServiceAssetRow>;
+  const extension=typeof row?.mime_type==='string'?PROVIDER_ASSET_EXTENSION[row.mime_type]:undefined;
   if(!row||typeof row.asset_key!=='string'||!/^[a-z][a-z0-9-]{0,95}$/.test(row.asset_key)||
     typeof row.recurring_id!=='string'||!row.recurring_id||row.recurring_id.length>200||
-    typeof row.file_name!=='string'||!row.file_name||typeof row.mime_type!=='string'||
+    typeof row.file_name!=='string'||!row.file_name||typeof row.mime_type!=='string'||!extension||
     row.storage_bucket!=='recurring-service-assets'||typeof row.storage_path!=='string'||
     // The public path must name this same registration: another service's
     // valid Storage filename is not evidence for this asset key.
     !/^service-asset-[a-f0-9]{24}$/.test(row.asset_key)||
     !/^services\/service-asset-[a-f0-9]{24}\.(?:png|jpg|webp|svg)$/.test(row.storage_path)||
     !row.storage_path.startsWith(`services/${row.asset_key}.`)||
+    !row.storage_path.endsWith(`.${extension}`)||
     typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||row.size_bytes<=0||
     typeof row.updated_at!=='string'||row.active!==true){
     throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_ROW','Stored recurring service asset metadata is invalid.',false);
@@ -300,7 +309,7 @@ export async function readRecurringServiceAssets(accessToken:string):Promise<Rec
   if(new Set(assetRows.map(asset=>asset.asset_key)).size!==assetRows.length)
     throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service asset catalog registration is ambiguous.',false);
   const baseUrl=config(accessToken).url;
-  return assetRows.map(asset=>{
+  return assetRows.map(asset=>({
       assetKey:asset.asset_key,
       recurringId:asset.recurring_id,
       url:publicStorageUrl(baseUrl,asset),
@@ -308,8 +317,7 @@ export async function readRecurringServiceAssets(accessToken:string):Promise<Rec
       mimeType:asset.mime_type,
       sizeBytes:asset.size_bytes,
       updatedAt:asset.updated_at,
-    };
-  });
+    }));
 }
 
 export async function writeAccountMetadata(accountId:string,iban:string|null,expectedRevision:number,accessToken:string):Promise<AccountMetadataRow>{

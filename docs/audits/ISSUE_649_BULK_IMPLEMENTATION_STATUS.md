@@ -1,3 +1,13 @@
+## 2026-11-19 — #649 bulk provider/recurring catalog integrity and syntax gate repair
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; all changes are bounded I19.04 PARTIAL). **Confirmed prior failure:** exact head `e43fba4` [CI #44573093489](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44573093489) **FAILED** in `validate` TypeScript hygiene with `server/accountMetadataStore.ts:305–313` syntax errors; CodeQL **SUCCESS**, Unified **FAIL** because validate did not pass. The prior commit accidentally changed an object-producing `.map(() => ({...}))` to an invalid block-bodied callback; do not mark that head accepted.
+
+**Consolidated source candidate:** Repair the actual recurring-service GET callback syntax (not a test suppression); retain its exact Storage key/positive safe-byte/duplicate checks; add server-side MIME-to-extension mapping so a `text/html` or mismatched `image/jpeg` on `.png` never produces a trusted public image URL. Same shared-source contract for financial-provider catalog: enforce valid provider ID, nonempty bounded names and canonical country code, valid asset/provider keys and MIME-to-public-Storage-file extension correspondence, consistent with existing client/write constraints. Eleven actual three-table provider GET negative fixtures and two recurring-service GET negatives strengthen existing valid/foreign/duplicate/amount regression matrices. No user-facing UI or SQL migration changed.
+
+**Validation:** New commit is a candidate pending exact-head CI, CodeQL and Unified results; do not call it PASS until observed. No full browser, Windows, Lighthouse, WebKit, real-stack or destructive recovery loops during this Draft source batch. No hosted PostgreSQL/Storage, finance history, Android or production modifications; no merge. #660 separately owned dependencies, I18.02 independent external restore approval-gated. Next: inspect *whole* new-head failure set once, correct real failures without weakening checks, then continue next unblocked original #649 work; retain unchanged counts.
+
+---
+
 ## 2026-11-19 — I19.04 recurring-service asset path/key and byte integrity candidate
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: original cross-store I19.04 remains PARTIAL, no duplicate count). [Exact preceding source CI #44565463546](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44565463546) **SUCCESS** on `640d7dc` (validate, CodeQL and Unified). This validates the previously introduced strict provider numeric readback.
