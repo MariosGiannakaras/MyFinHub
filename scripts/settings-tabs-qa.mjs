@@ -105,6 +105,20 @@ try{
           const revokeFailureVisible=await c.call("function(){const message=document.querySelector('.device-access-message[role=alert]');if(!message||(message.textContent||'').indexOf('Δεν ήταν δυνατή η αφαίρεση πρόσβασης')<0)return false;message.scrollIntoView({block:'center',inline:'nearest'});const r=message.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight}");
           assert(revokeFailureVisible,'Device revoke failure alert is visible in the evidence viewport');
           await screenshotCurrentViewport('settings-device-revoke-failure-desktop');
+          // A real acknowledged 200 removes the remote session, closes its
+          // confirmation and announces success only after the response.
+          const reopen=await c.call("function(){window.__myfinhubQaNextDevicePostOk=true;const row=[...document.querySelectorAll('.device-access-row')].find(node=>(node.textContent||'').includes('Android · Pixel'));const button=row?.querySelector('.device-access-revoke');button?.click();return Boolean(button)}");assert(reopen,'reopen synthetic device for verified revoke success');
+          await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'second revoke confirmation');
+          assert(await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Αφαίρεση πρόσβασης');button?.click();return Boolean(button)}"),'confirm synthetic successful revoke');
+          await waitFor("function(){const panel=document.querySelector('.device-access-settings');return Boolean(panel&&!document.querySelector('[role=alertdialog]')&&panel.querySelectorAll('.device-access-row').length===1&&!panel.textContent.includes('Android · Pixel')&&(panel.querySelector('.device-access-message[role=status]')?.textContent||'').includes('Η πρόσβαση της συσκευής αφαιρέθηκε.')&&(panel.querySelector('.device-access-count')?.textContent||'').includes('1 ενεργές'))}",'device revoke green receipt after one completed remote mutation');
+          assert(await c.call("function(){return globalThis.__myfinhubQaDevicePostCount?.()===2}"),'one failed and one successful revoke request, no duplicated POST');
+          await screenshotCurrentViewport('settings-device-revoke-success-desktop');
+          // A later GET failure must not lie about zero active sessions.
+          assert(await c.call("function(){window.__myfinhubQaNextDeviceGetError=true;const button=document.querySelector('[aria-label=\"Ανανέωση συσκευών\"]');button?.click();return Boolean(button)}"),'refresh device list using synthetic read error');
+          await waitFor("function(){const panel=document.querySelector('.device-access-settings');return Boolean(panel?.querySelector('.device-access-empty[role=alert]')&&(panel.querySelector('.device-access-empty b')?.textContent||'').includes('δεν επιβεβαιώθηκε')&&(panel.querySelector('.device-access-count')?.textContent||'').includes('άγνωστη κατάσταση')&&!panel.querySelector('.device-access-count')?.textContent.includes('0 ενεργές'))}",'device GET failure displays unknown, never zero confirmed active');
+          await screenshotCurrentViewport('settings-device-catalog-unknown-desktop');
+          assert(await c.call("function(){window.__myfinhubQaResetDeviceRows?.();const button=document.querySelector('[aria-label=\"Ανανέωση συσκευών\"]');button?.click();return Boolean(button)}"),'restore original synthetic devices without mutation');
+          await waitFor("function(){return document.querySelectorAll('.device-access-row').length===2}",'recovered device GET restores two verified synthetic sessions');
         }
       }
       if(tab.id==='accounts'){

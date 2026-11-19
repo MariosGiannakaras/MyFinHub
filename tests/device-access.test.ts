@@ -35,6 +35,15 @@ describe('connected device access',()=>{
     const fixture=read('qa.html');
     expect(fixture).toContain("window.__myfinhubQaDevicePostCount=()=>devicePostCalls;");
     expect(qa).toContain("device revoke double confirm triggers only one HTTP POST");
+    expect(qa).toContain("device revoke green receipt after one completed remote mutation");
+    expect(qa).toContain("device GET failure displays unknown, never zero confirmed active");
+    expect(fixture).toContain("window.__myfinhubQaNextDevicePostOk=false;");
+    expect(fixture).toContain("window.__myfinhubQaNextDeviceGetError=false;");
+    expect(ui).toContain("const[listVerified,setListVerified]=useState(false)");
+    expect(ui).toContain("setDevices([]);setListVerified(false)");
+    expect(ui).toContain("setDevices(result.devices);setListVerified(true)");
+    expect(ui).toContain("'άγνωστη κατάσταση'");
+    expect(ui).toContain("'Η λίστα συσκευών δεν επιβεβαιώθηκε'");
     expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
     expect(ui).toContain("aria-live={messageTone==='error'?'assertive':'polite'}");
     expect(ui).toContain('disabled={busy}');

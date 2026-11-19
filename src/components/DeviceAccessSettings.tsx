@@ -43,6 +43,7 @@ function loadError(error:unknown){
 export function DeviceAccessSettings(){
   const[devices,setDevices]=useState<ConnectedDevice[]>([]);
   const[loading,setLoading]=useState(true);
+  const[listVerified,setListVerified]=useState(false);
   const[busy,setBusy]=useState(false);
   const[message,setMessage]=useState('');
   const[messageTone,setMessageTone]=useState<'status'|'error'>('status');
@@ -62,10 +63,10 @@ export function DeviceAccessSettings(){
     setLoading(true);setMessageTone('status');setMessage('');
     try{
       const result=await getConnectedDevices();
-      if(generation===readGeneration.current&&!mutationInFlight.current)setDevices(result.devices);
+      if(generation===readGeneration.current&&!mutationInFlight.current){setDevices(result.devices);setListVerified(true)}
     }catch(error){
       if(generation===readGeneration.current&&!mutationInFlight.current){
-        setDevices([]);setMessageTone('error');setMessage(loadError(error));
+        setDevices([]);setListVerified(false);setMessageTone('error');setMessage(loadError(error));
       }
     }finally{
       if(generation===readGeneration.current&&!mutationInFlight.current)setLoading(false);
@@ -86,8 +87,8 @@ export function DeviceAccessSettings(){
       const result=pending.kind==='others'
         ?await revokeOtherConnectedDevices()
         :await revokeConnectedDevice(pending.device.sessionId);
-      setDevices(result.devices);
-      setMessageTone('status');setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
+      setDevices(result.devices);setListVerified(true);
+      setMessageTone('status');setMessage(pending.kind='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
       setConfirmationError('');setPending(null);
     }catch(error){setMessageTone('error');
       const failureMessage=error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'
@@ -107,7 +108,7 @@ export function DeviceAccessSettings(){
     setBusy(true);setMessage('');
     try{
       const result=await renameConnectedDevice(renaming,nameDraft);
-      setDevices(result.devices);setRenaming(null);setNameDraft('');
+      setDevices(result.devices);setListVerified(true);setRenaming(null);setNameDraft('');
       setMessageTone('status');setMessage('Το όνομα συσκευής ενημερώθηκε.');
     }catch(error){
       setMessageTone('error');
@@ -118,7 +119,7 @@ export function DeviceAccessSettings(){
   return <section className="panel surface-raised device-access-settings" aria-labelledby="device-access-title">
     <div className="panel-head">
       <div><span id="device-access-title">Συνδεδεμένες συσκευές</span><small>Δες πού είναι ενεργή η πρόσβαση στο MyFinHub και αφαίρεσέ την από συσκευή που δεν αναγνωρίζεις.</small></div>
-      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':devices.length} ενεργές</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
+      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':listVerified?devices.length:'—'} {loading||listVerified?'ενεργές':'άγνωστη κατάσταση'}</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
     </div>
 
     {loading?<div className="device-access-skeleton" aria-live="polite"><i/><i/></div>:devices.length?<div className="device-access-list" role="list">
@@ -150,7 +151,7 @@ export function DeviceAccessSettings(){
           {renaming!==device.sessionId?<Button type="button" variant="secondary" disabled={busy} onClick={()=>{setRenaming(device.sessionId);setNameDraft(device.nickname||'')}}>Μετονομασία</Button>:null}
         </div>
       </div>)}
-    </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
+    </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>{!listVerified&&messageTone==='error'?'Η λίστα συσκευών δεν επιβεβαιώθηκε':'Δεν εμφανίζονται ενεργές συσκευές'}</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
 
     {devices.length&&message?<div className="device-access-message" role={messageTone==='error'?'alert':'status'} aria-live={messageTone==='error'?'assertive':'polite'}>{message}</div>:null}
     <div className="device-access-footer">
