@@ -1,3 +1,15 @@
+## 2026-11-20 — #649 I22.02 direct PostgreSQL RPC and Storage provenance guard
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04/I22.02 remain PARTIAL until direct database acceptance). Exact previous head `11d33ba` [CI #44625401363](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44625401363) **SUCCESS** (validate, reusable CodeQL and Unified).
+
+**Confirmed source finding:** `rheomiq_register_recurring_service_asset` required owner+AAL2, a valid-looking Storage path and an existing object, but did not bind `p_storage_path` to the same registered `p_asset_key` or MIME extension. Server/browser callers already checked this, but direct invoker RPC or owner RLS-authorized table updates could bypass those application-only checks. New **forward-only, release-pending** `20261120000500_guard_recurring_service_asset_path_provenance.sql` adds one validated CHECK requiring `services/<asset_key>.<mime-extension>` for all rows, including direct SQL/REST invoker writes. Its validation fails closed if legacy rows violate the contract; no silent rewrite, table deletion, widening RLS, grants, SECURITY DEFINER, finance event change or hosted application. New defect-pattern **FP-026** and migration-ledger/source guard added.
+
+**Local real-stack proof staged, not yet executed:** Existing genuine GoTrue owner AAL1 and TOTP-verified nonowner AAL2 sessions now attempt each direct register/release/purge RPC (must all deny with 42501). Following one owner+AAL2 API upload of a disposable SVG, direct PostgREST registration using a *different* key pointing to that actual object and direct table MIME mutation must fail with PostgreSQL 23514; service-role metadata readback must show no rogue row and unchanged MIME/path. Existing finance, Storage, history and screenshot proofs remain intact. Source-only regression checks the migration and scenarios. High-risk migration needs the isolated local-Supabase+real browser run, in addition to ordinary source CI, before any Ready/merge. Its expensive Draft opt-in remains OFF until exact-head source gate passes.
+
+**Boundary:** This is a candidate code/schema/QA commit, not a production-applied migration or completed database proof. No production PG/Storage, Android, main, finance-history rewrite or merge. Keep Draft #654 → develop. I18.02 independent hosted restore remains approval-gated. Next: inspect new exact-head CI once, trigger and inspect focused local real-stack/isolated restore for this migration, fix a confirmed failure only, then reconcile I19.04/I22.02 scope before final Ready.
+
+---
+
 ## 2026-11-20 — #649 I19.04 verified purge absence and I22.02 metadata authorization negatives
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 and I22.02 remain PARTIAL pending full acceptance). Prior candidate `9617352` [CI #44615671771](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44615671771) **SUCCESS** for validate, CodeQL and Unified, confirming the earlier recurring logo path/key/MIME checks and test-fixture correction.

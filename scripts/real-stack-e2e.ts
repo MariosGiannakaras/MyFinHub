@@ -865,6 +865,44 @@ async function main(){
       return key;
     };
     const serviceAssetKey=await uploadService('original.svg');
+    console.log('[real-stack] stage recurring-service-direct-rpc-path-provenance');
+    // Test actual local AAL2 PostgREST, bypassing the trusted API parser,
+    // so the database alone must reject cross-key and wrong-MIME metadata.
+    const directToken=primary.snapshot().get('rheomiq_access');
+    assert(typeof directToken==='string'&&directToken.length>40,
+      'Local owner AAL2 JWT was unavailable for direct RPC provenance proof.');
+    const originalPath='services/'+serviceAssetKey+'.svg';
+    const directRequest=async(method:'POST'|'PATCH',path:string,body:unknown)=>{
+      const response=await fetch(local.apiUrl+'/rest/v1/'+path,{
+        method,
+        headers:{apikey:local.publishable,authorization:'Bearer '+directToken,
+          accept:'application/json','content-type':'application/json',
+          prefer:'return=representation'},
+        body:JSON.stringify(body),
+      });
+      return {status:response.status,body:await response.json().catch(()=>null)};
+    };
+    const forgedKey='service-asset-ffffffffffffffffffffffff';
+    const crossKey=await directRequest('POST','rpc/rheomiq_register_recurring_service_asset',{
+      p_recurring_id:serviceId,p_asset_key:forgedKey,p_file_name:'cross-key.svg',
+      p_mime_type:'image/svg+xml',p_storage_path:originalPath,p_size_bytes:serviceSvg.byteLength,
+    });
+    assert(crossKey.status===400&&crossKey.body?.code==='23514',
+      'Direct owner RPC misregistered a different Storage object under a forged key.');
+    const wrongMime=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {mime_type:'image/png'});
+    assert(wrongMime.status===400&&wrongMime.body?.code==='23514',
+      'Direct owner table update accepted a MIME/Storage extension mismatch.');
+    const directRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?select=asset_key,mime_type,storage_path&asset_key=in.('+
+      encodeURIComponent(serviceAssetKey)+','+encodeURIComponent(forgedKey)+')',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;
+    assert(Array.isArray(directRows)&&directRows.length===1&&
+      directRows[0]?.asset_key===serviceAssetKey&&
+      directRows[0]?.mime_type==='image/svg+xml'&&
+      directRows[0]?.storage_path===originalPath,
+      'Rejected direct RPC or MIME update modified persistent logo metadata.');
     const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
     const original=await primary.request('/api/data');

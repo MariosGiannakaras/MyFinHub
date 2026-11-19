@@ -11,6 +11,9 @@ const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
 const storageReadMigration=readFileSync('supabase/migrations/20261009190000_allow_recurring_service_asset_storage_owner_read.sql','utf8');
+const pathGuardMigration=readFileSync('supabase/migrations/20261120000500_guard_recurring_service_asset_path_provenance.sql','utf8');
+const directRpcProof=readFileSync('scripts/real-stack-receivable-rpc.ts','utf8');
+const realStackProof=readFileSync('scripts/real-stack-e2e.ts','utf8');
 const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
 const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
@@ -57,6 +60,18 @@ describe('recurring service asset foundation',()=>{
     expect(migration).toContain('service-asset-[a-f0-9]{24}');
     expect(migration).not.toContain('rheomiq_financial_providers');
     expect(migration).not.toContain('financial-provider-assets');
+  });
+
+  it('requires exact key and MIME storage provenance in PostgreSQL and direct-RPC local QA (#649 I22.02)',()=>{
+    expect(pathGuardMigration).toContain('rheomiq_recurring_asset_exact_storage_path');
+    expect(pathGuardMigration).toContain("storage_path = 'services/' || asset_key");
+    for(const mime of ['image/png','image/jpeg','image/webp','image/svg+xml'])
+      expect(pathGuardMigration).toContain("when '"+mime+"'");
+    expect(pathGuardMigration).toContain('validate constraint rheomiq_recurring_asset_exact_storage_path');
+    expect(pathGuardMigration).not.toMatch(/security definer|drop table|delete from|truncate table/i);
+    for(const name of ['rheomiq_register_recurring_service_asset','rheomiq_release_recurring_service_asset','rheomiq_purge_recurring_service_asset'])
+      expect(directRpcProof).toContain(name);
+    expect(realStackProof).toContain('[real-stack] stage recurring-service-direct-rpc-path-provenance');
   });
 
   it('syncs the relational recurring reference from payload without replacing the ledger/history RPC',()=>{

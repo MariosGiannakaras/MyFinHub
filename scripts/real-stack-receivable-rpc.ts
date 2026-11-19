@@ -145,6 +145,24 @@ export async function runDirectReceivableRpcProof(options:Options){
       'Local nonowner AAL2 with active device crossed the direct '+method+' owner RPC boundary.');
   }
 
+  // Genuine local GoTrue JWTs, not forged claims. Invoker RPCs must
+  // reject AAL1 and nonowner AAL2 before any Storage or metadata write.
+  for(const entry of [
+    {method:'rheomiq_register_recurring_service_asset',params:{
+      p_recurring_id:'qa-direct-rpc',p_asset_key:'service-asset-ffffffffffffffffffffffff',
+      p_file_name:'qa.svg',p_mime_type:'image/svg+xml',
+      p_storage_path:'services/service-asset-ffffffffffffffffffffffff.svg',p_size_bytes:32,
+    }},
+    {method:'rheomiq_release_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
+    {method:'rheomiq_purge_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
+  ]){
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const denied=await rpc(entry.method,token,entry.params);
+      assert(denied.status===403&&denied.body?.code==='42501',
+        'Direct '+entry.method+' unexpectedly accepted '+label+'.');
+    }
+  }
+
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},
     {name:'future lending masks an intermediate deficit',state:proposed([

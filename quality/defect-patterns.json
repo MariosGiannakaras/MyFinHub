@@ -496,6 +496,27 @@
       "guards": [
         "tests/649-clipboard-copy.test.ts"
       ]
+    },
+    {
+      "id": "FP-026",
+      "title": "Direct recurring Storage registration must bind immutable key and MIME in PostgreSQL",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The invoker registration RPC checked public Storage path format and object existence without proving the path belonged to the supplied asset key and MIME; direct owner+AAL2 SQL writes could bypass API validation and misregister another logo.",
+      "prevention": "Use a row-level CHECK binding services/<asset-key>.<MIME-extension> across direct RPC and metadata writes, retain owner+AAL2 RLS, and prove direct PostgREST AAL1/nonowner denials and AAL2 key/MIME mutation rejection in isolated local Supabase.",
+      "paths": [
+        "supabase/migrations/20261120000500_guard_recurring_service_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/recurring-service-assets.test.ts",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ]
     }
   ]
 }
