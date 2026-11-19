@@ -21,6 +21,7 @@ jobs:
       (contains(github.event.pull_request.body, '<!-- run-649-credit-copy-stale-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-recurring-asset-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
@@ -44,7 +45,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-credit-copy-stale-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-recurring-asset-qa -->') &&
+          'recurring-service-brand' ||
+          contains(github.event.pull_request.body, '<!-- run-649-credit-copy-stale-qa -->') &&
           'credit-stack-remediation' ||
           contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->') &&
           'cards-remediation credit-stack-remediation' ||

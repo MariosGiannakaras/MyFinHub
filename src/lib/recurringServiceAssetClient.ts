@@ -1,6 +1,7 @@
 import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { publicAssetUrlAllowed } from './providerAssetUrl.js';
+import { watchAuthScope } from './authScopedCache.js';
 
 export interface RecurringServiceAsset{
   assetKey:string;
@@ -22,6 +23,10 @@ const listeners=new Set<()=>void>();
 function publish(next:RecurringServiceAssetSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getRecurringServiceAssetSnapshot(){return snapshot}
 export function subscribeRecurringServiceAssets(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
+const authEpoch=watchAuthScope(()=>{
+  pending=null;
+  publish({loaded:false,loading:false,assets:[],error:null});
+});
 
 export function parseRecurringServiceAsset(value:unknown):RecurringServiceAsset|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
@@ -44,11 +49,13 @@ async function json(response:Response){return response.json().catch(()=>null) as
 export async function refreshRecurringServiceAssets(force=false){
   if(snapshot.loaded&&!force)return snapshot;
   if(pending)return pending;
+  const epoch=authEpoch();
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata?resource=recurring-service-assets',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
+      if(epoch!==authEpoch())return snapshot;
       if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η φόρτωση των λογοτύπων υπηρεσιών.');
       if(!Array.isArray(payload?.assets))
         throw new Error('Η λίστα εικόνων υπηρεσιών δεν επιβεβαιώθηκε.');
@@ -60,14 +67,16 @@ export async function refreshRecurringServiceAssets(force=false){
         throw new Error('Η λίστα εικόνων υπηρεσιών έχει διπλές καταχωρίσεις.');
       return publish({loaded:true,loading:false,assets,error:null});
     }catch{
+      if(epoch!==authEpoch())return snapshot;
       return publish({loaded:true,loading:false,assets:[],error:'Δεν ήταν δυνατή η φόρτωση των λογοτύπων υπηρεσιών.'});
-    }finally{pending=null}
+    }finally{if(epoch===authEpoch())pending=null}
   })();
   return pending;
 }
 
 export async function uploadRecurringServiceAsset(input:{recurringId:string;file:File}){
   return trackDatabaseWrite(async()=>{
+  const epoch=authEpoch();
   const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:input.recurringId,fileName:input.file.name});
   const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
     method:'PUT',
@@ -76,7 +85,8 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
     body:input.file,
   });
   const payload=await json(response);
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση του λογοτύπου.');
+  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η καταχώριση εικόνας.');
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση του λοτύπου.');
   const asset=parseRecurringServiceAsset(payload?.asset);
   // A 200 receipt must describe exactly this binary and recurring item,
   // never a different key, file, MIME or byte count.
@@ -90,7 +100,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   if(pending)await pending;
   const confirmed=await refreshRecurringServiceAssets(true);
   const registered=confirmed.assets.find(row=>row.assetKey===asset.assetKey);
-  if(confirmed.error||!registered||registered.recurringId!==asset.recurringId||
+  if(epoch!==authEpoch()||confirmed.error||!registered||registered.recurringId!==asset.recurringId||
     registered.fileName!==asset.fileName||registered.mimeType!==asset.mimeType||
     registered.sizeBytes!==asset.sizeBytes||registered.url!==asset.url)
     throw new Error('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
@@ -101,6 +111,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
 export async function deleteRecurringServiceAsset(assetKey:string){
   if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey))throw new Error('Μη έγκυρη αναφορά λογοτύπου υπηρεσίας.');
   return trackDatabaseWrite(async()=>{
+  const epoch=authEpoch();
   const params=new URLSearchParams({resource:'recurring-service-assets',assetKey});
   const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
     method:'DELETE',
@@ -108,6 +119,7 @@ export async function deleteRecurringServiceAsset(assetKey:string){
     headers:{accept:'application/json'},
   });
   const payload=await json(response);
+  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η αποδέσμευση εικόνας.');
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
   if(payload?.ok!==true)
     throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε.');
@@ -116,7 +128,7 @@ export async function deleteRecurringServiceAsset(assetKey:string){
   // issuing another destructive DELETE after an ambiguous acknowledgement.
   if(pending)await pending;
   const confirmed=await refreshRecurringServiceAssets(true);
-  if(confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
+  if(epoch!==authEpoch()||confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
     throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε. Έλεγξε τα δεδομένα πριν από επανάληψη.');
   });
 }

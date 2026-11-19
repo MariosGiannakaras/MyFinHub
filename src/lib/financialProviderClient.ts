@@ -3,6 +3,7 @@ import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 import { providerAssetUrlAllowed } from './providerAssetUrl';
+import { watchAuthScope } from './authScopedCache.js';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
@@ -30,6 +31,10 @@ const kindLabels:Record<FinancialProviderKind,string>={
 function publish(next:FinancialProviderSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getFinancialProviderSnapshot(){return snapshot}
 export function subscribeFinancialProviders(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
+const authEpoch=watchAuthScope(()=>{
+  pending=null;
+  publish({loaded:false,loading:false,providers:FALLBACK,error:null});
+});
 
 function parseProvider(value:unknown,requireCollections=false):FinancialProvider|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
@@ -101,11 +106,13 @@ export async function refreshFinancialProviders(force=false){
   if(snapshot.loaded&&!force)return snapshot;
   if(pending)return pending;
   if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null});
+  const epoch=authEpoch();
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
+      if(epoch!==authEpoch())return snapshot;
       if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των τραπεζών.');
       const rows:unknown[]|null=Array.isArray(payload?.providers)?payload.providers:null;
       if(!rows?.length)throw new Error('Η λίστα τραπεζών είναι κενή.');
@@ -120,8 +127,9 @@ export async function refreshFinancialProviders(force=false){
       const providers=parsed as FinancialProvider[];
       return publish({loaded:true,loading:false,providers:providers.sort((a,b)=>a.sortOrder-b.sortOrder||a.displayName.localeCompare(b.displayName,'el')),error:null});
     }catch{
+      if(epoch!==authEpoch())return snapshot;
       return publish({loaded:true,loading:false,providers:FALLBACK,error:'Χρησιμοποιείται η ενσωματωμένη λίστα τραπεζών.'});
-    }finally{pending=null}
+    }finally{if(epoch===authEpoch())pending=null}
   })();
   return pending;
 }

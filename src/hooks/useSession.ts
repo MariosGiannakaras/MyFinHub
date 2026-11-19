@@ -19,7 +19,10 @@ export function useSession() {
   const transitionEpoch = useRef(0);
 
   const applySession = useCallback((session: SessionInfo) => {
-    if (!session.authenticated) clearAppUnlockToken();
+    if (!session.authenticated) {
+      clearAppUnlockToken();
+      window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+    }
     setEmail(session.email || null);
     setError('');
     if (session.authenticated) setState('authenticated');
@@ -40,6 +43,7 @@ export function useSession() {
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
       if (e instanceof ApiError && e.status === 401) {
+        window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
         setEmail(null);
         setState('anonymous');
       } else {
@@ -124,6 +128,7 @@ export function useSession() {
     try {
       await logoutApi();
       if (epoch !== transitionEpoch.current) return false;
+      window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
       setEmail(null);
       setState('anonymous');
       return true;

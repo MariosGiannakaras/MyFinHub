@@ -3,6 +3,7 @@ import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { assertValidIban, isValidIban } from './iban.js';
 import { notifyAuthExpired } from './authExpiry.js';
 import { userErrorMessage } from './userMessage.js';
+import { watchAuthScope } from './authScopedCache.js';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
@@ -21,6 +22,10 @@ const listeners=new Set<()=>void>();
 function publish(next:AccountMetadataSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getAccountMetadataSnapshot(){return snapshot}
 export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
+const authEpoch=watchAuthScope(()=>{
+  pending=null;
+  publish({loaded:false,loading:false,records:{},error:null});
+});
 
 function errorMessage(error:unknown){
   return userErrorMessage(error,'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.');
@@ -48,11 +53,13 @@ export async function refreshAccountMetadata(force=false){
   if(snapshot.loaded&&!force)return snapshot;
   if(pending)return pending;
   if(QA_MODE)return publish({loaded:true,loading:false,records:snapshot.loaded?snapshot.records:{...QA_RECORDS},error:null});
+  const epoch=authEpoch();
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
+      if(epoch!==authEpoch())return snapshot;
       if(!response.ok)throw requestError(response,payload,'Δεν ήταν δυνατή η φόρτωση των IBAN.');
       const records=payload?.records;
       if(!Array.isArray(records))throw new Error('Η λίστα IBAN είναι μη έγκυρη.');
@@ -63,8 +70,11 @@ export async function refreshAccountMetadata(force=false){
         byId[record.accountId]=record;
       }
       return publish({loaded:true,loading:false,records:byId,error:null});
-    }catch(error){return publish({...snapshot,loaded:true,loading:false,error:errorMessage(error)})}
-    finally{pending=null}
+    }catch(error){
+      if(epoch!==authEpoch())return snapshot;
+      return publish({...snapshot,loaded:true,loading:false,error:errorMessage(error)});
+    }
+    finally{if(epoch===authEpoch())pending=null}
   })();
   return pending;
 }
@@ -87,11 +97,14 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
       throw new Error('Η τρέχουσα έκδοση IBAN δεν έχει επιβεβαιωθεί. Φόρτωσε ξανά τα στοιχεία πριν από αποθήκευση.');
   }
   const current=snapshot.records[accountId];
+  const epoch=authEpoch();
   const response=await apiRequest('/api/account-metadata',{
     method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
     body:JSON.stringify({accountId,iban:normalized}),
   });
   const payload=await json(response);
+  if(epoch!==authEpoch())
+    throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η αποθήκευση IBAN.');
   if(!response.ok){
     if(response.status===409){await refreshAccountMetadata(true);throw new Error('Το IBAN άλλαξε από άλλη συσκευή. Φορτώθηκε η νεότερη τιμή· έλεγξέ την και δοκίμασε ξανά.');}
     throw requestError(response,payload,'Δεν ήταν δυνατή η αποθήκευση του IBAN.');
