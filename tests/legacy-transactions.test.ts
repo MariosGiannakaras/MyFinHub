@@ -151,6 +151,21 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(accountBalances(adjustment, '2026-08-31')['bank-a']).toBe(1015);
   });
 
+  it('rejects impossible calendar dates in owner edits without changing the imported seed', () => {
+    const data = fixture();
+    const original = structuredClone(data.seed.transactions[0]);
+    for (const date of ['2026-02-29', '2026-02-30', '2026-04-31', '2026-13-01', '2026-00-01', '0000-01-01']) {
+      expect(() => withLegacyOverride(data, { ...original, date })).toThrow('Διάλεξε έγκυρη ημερομηνία.');
+    }
+    for (const date of ['2026-02-28', '2028-02-29']) {
+      const edited = withLegacyOverride(data, { ...original, date });
+      expect(edited.state.overrides['legacy-1']?.date).toBe(date);
+      expect(edited.seed.transactions[0]).toEqual(original);
+    }
+    expect(data.seed.transactions[0]).toEqual(original);
+    expect(data.state.overrides).toEqual({});
+  });
+
   it('fails closed for unknown seed ids, invalid routes and non-positive normal amounts', () => {
     const data = fixture();
     expect(() => withLegacyOverride(data, { ...data.seed.transactions[0], id: 'missing' })).toThrow(/δεν υπάρχει/);

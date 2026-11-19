@@ -1,3 +1,9 @@
+## 2026-11-19 — I19.06 strict calendar validity in legacy owner edits (candidate)
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; I19.06 overall remains partial).** Confirmed old `normalizeLegacyOverride` date check used a YYYY-MM-DD regex with `new Date`, which normalizes nonexistent days such as February 30 instead of rejecting edits. Replaced the local parser with existing canonical `isValidDateOnly` from `src/lib/dateOnly.ts`. The established Greek error text, account/type/amount validation and non-destructive immutable imported seed remain unchanged. One direct regression validates invalid common February 29/30, April 31, month 00/13, year 0000, valid common February 28 and leap 2028-02-29, plus unchanged seed on rejection and acceptance. Scoped sibling review: no other date parser in `legacyTransactions.ts`; shared date-only owner already performs Gregorian leap-day validation. New code/test candidate **CI pending**; no new user-facing UI surface, so prior browser evidence need not repeat until final Ready QA. Preceding atomic receipt code [CI #44531369863](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44531369863) PASS. The new test-only receipt concurrency head `6cd0663` had CI running at last inspection; do not assert it passed without confirmation. Draft PR #654 → develop unmerged; no main/hosted data/Android.
+
+---
+
 ## 2026-11-19 — I19.03 actual local receipt concurrency regression lock
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; no item double-counted).** [CI #44531369863](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44531369863) on `7490f1c` **SUCCESS**: validate, CodeQL, Unified; source/PG tests and mandatory audit passed. Accepted: prior SQL RPC guard and local receipt atomic read/write source. The browser-specific final rendered/Windows/WebKit QA remains separately pending.
