@@ -86,7 +86,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   });
   const payload=await json(response);
   if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η καταχώριση εικόνας.');
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση του λοτύπου.');
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση του λογοτύπου.');
   const asset=parseRecurringServiceAsset(payload?.asset);
   // A 200 receipt must describe exactly this binary and recurring item,
   // never a different key, file, MIME or byte count.

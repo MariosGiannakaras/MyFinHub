@@ -45,7 +45,10 @@ describe('client auth-state expiry signals',()=>{
     expect(hook).toContain('const transitionEpoch = useRef(0)');
     expect(hook).toContain('if (epoch !== transitionEpoch.current) return false');
     expect(hook).toContain('++transitionEpoch.current;\n      clearAppUnlockToken();');
-    expect(hook).toContain('if (!session.authenticated) clearAppUnlockToken()');
+    // Both PIN capability invalidation and owner-scoped cache reset are
+    // mandatory when authenticated AAL2 provenance is lost.
+    expect(hook).toContain('if (!session.authenticated) {');
+    expect(hook).toContain("clearAppUnlockToken();\n      window.dispatchEvent(new Event('myfinhub:auth-scope-reset'))");
     expect(qa).toContain('__myfinhubQaHoldNextSession');
     expect(qa).toContain('__myfinhubQaReleaseSession');
     expect(runtime).toContain('stale AAL2 response reopened expired workspace');

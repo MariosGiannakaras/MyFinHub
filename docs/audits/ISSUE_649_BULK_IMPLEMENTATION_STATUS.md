@@ -1,3 +1,11 @@
+## 2026-11-19 — #649 auth boundary regression guard reconciled to intentional PIN+catalog reset
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: I22.02/I19.04 partial, no new counted item). The `fee290c` [CI #44603258071](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44603258071) **validate FAILED** after the entire code/test surface ran: **329/330 test files, 2,098/2,099 tests PASSED**; one legacy `tests/auth-expiry-state.test.ts` literal-string assertion expected `if (!session.authenticated) clearAppUnlockToken()`, whereas the new implementation deliberately adds an explicit block to clear the PIN *and* dispatch session-scope reset. This was a brittle source-shape expectation, not an observed auth bypass. The guard is strengthened to assert both operations and their ordering, without deleting security regression coverage; the new source-scope tests remain. A one-phrase Greek service-image error typo from the same candidate is corrected. CodeQL and Unified still need exact-head outcomes; do not call the failed prior head accepted or suppress the guard.
+
+**New coherent candidate:** targeted test/visible error-copy repair only, no extra feature changes. One fresh exact-head required CI/CodeQL/Unified; once green, opt in the already added single `run-649-recurring-asset-qa` Draft Chromium QA selector for real screenshot and partial-failure evidence, then switch it off. Final full Ready browser/Windows/WebKit/Lighthouse remains separately pending. No hosted finance/Storage, migrations, main, Android, production or merge.
+
+---
+
 ## 2026-11-19 — #649 I22.02/I19.04 auth-scope metadata cache invalidation + focused recurring rendered QA selector
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; original I22.02 session/RLS coverage and cross-store I19.04 remain partial). Prior exact [CI #44601984407](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44601984407) at `c3521d5` **SUCCESS** for validate, CodeQL and Unified; recurring GET/upload/delete strict readbacks source-accepted.
