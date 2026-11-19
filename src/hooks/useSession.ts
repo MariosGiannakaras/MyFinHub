@@ -11,6 +11,14 @@ function operationalMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+// The same authenticated boundary is used by metadata cache invalidation,
+ // so do not repeat event-name literals across the main application chunk.
+function resetAuthScope(){
+  clearAppUnlockToken();
+  window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+}
+function notifyAuthComplete(){window.dispatchEvent(new Event('myfinhub:auth-completed'))}
+
 export function useSession() {
   const [state, setState] = useState<SessionState>('loading');
   const [email, setEmail] = useState<string | null>(null);
@@ -19,10 +27,7 @@ export function useSession() {
   const transitionEpoch = useRef(0);
 
   const applySession = useCallback((session: SessionInfo) => {
-    if (!session.authenticated) {
-      clearAppUnlockToken();
-      window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
-    }
+    if (!session.authenticated) resetAuthScope();
     setEmail(session.email || null);
     setError('');
     if (session.authenticated) setState('authenticated');
@@ -43,7 +48,7 @@ export function useSession() {
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
       if (e instanceof ApiError && e.status === 401) {
-        window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+        resetAuthScope();
         setEmail(null);
         setState('anonymous');
       } else {
@@ -77,7 +82,7 @@ export function useSession() {
       const session = await loginApi(nextEmail, password);
       if (epoch !== transitionEpoch.current) return false;
       applySession(session);
-      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
+      if(session.authenticated)notifyAuthComplete();
       return true;
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
@@ -111,7 +116,7 @@ export function useSession() {
       const session = await verifyMfaApi(code, factorId);
       if (epoch !== transitionEpoch.current) return false;
       applySession(session);
-      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
+      if(session.authenticated)notifyAuthComplete();
       return session.authenticated;
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
@@ -128,7 +133,7 @@ export function useSession() {
     try {
       await logoutApi();
       if (epoch !== transitionEpoch.current) return false;
-      window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+      resetAuthScope();
       setEmail(null);
       setState('anonymous');
       return true;
