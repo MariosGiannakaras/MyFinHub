@@ -22,6 +22,8 @@ describe('connected device access',()=>{
     expect(action.indexOf('setDevices(result.devices)')).toBeGreaterThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
     expect(action.lastIndexOf("setMessageTone('status');setMessage(")).toBeGreaterThan(action.indexOf('setDevices(result.devices)'));
     expect(action).toContain("}catch(error){setMessageTone('error')");
+    expect(action).toContain("setMessage(pending.kind==='others'?");
+    expect(action).not.toContain("setMessage(pending.kind='others'?");
     expect(action).toContain("finally{mutationInFlight.current=false;setBusy(false)}");
     expect(action).toContain("if(!pending||busy||mutationInFlight.current)return;");
     expect(action).toContain("mutationInFlight.current=true;");

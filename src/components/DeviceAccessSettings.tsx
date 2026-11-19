@@ -88,7 +88,7 @@ export function DeviceAccessSettings(){
         ?await revokeOtherConnectedDevices()
         :await revokeConnectedDevice(pending.device.sessionId);
       setDevices(result.devices);setListVerified(true);
-      setMessageTone('status');setMessage(pending.kind='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
+      setMessageTone('status');setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
       setConfirmationError('');setPending(null);
     }catch(error){setMessageTone('error');
       const failureMessage=error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'
