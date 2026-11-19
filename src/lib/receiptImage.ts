@@ -1,6 +1,10 @@
 import type { NormalizedReceiptImage } from './receiptDrafts.js';
 
 const INPUT_MAX_BYTES = 12 * 1024 * 1024;
+// A small compressed image can still expand into hundreds of MiB of pixels.
+// Retain typical high-resolution phone photos while refusing pathological input.
+const INPUT_MAX_SIDE = 16_384;
+const INPUT_MAX_PIXELS = 64 * 1024 * 1024;
 const STORED_MAX_DIMENSION = 2400;
 const OCR_MAX_DIMENSION = 2000;
 const JPEG_QUALITY = 0.86;
@@ -9,6 +13,29 @@ const isJpegSignature = (bytes: Uint8Array) => bytes.length >= 3 && bytes[0] ===
 const isPngSignature = (bytes: Uint8Array) => bytes.length >= 8
   && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
   && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+
+const requireReceiptDimensions = (width: number, height: number) => {
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height)
+      || width < 1 || height < 1 || width > INPUT_MAX_SIDE || height > INPUT_MAX_SIDE
+      || width * height > INPUT_MAX_PIXELS)
+    throw new Error('Η εικόνα απόδειξης έχει υπερβολικά μεγάλες ή μη έγκυρες διαστάσεις.');
+};
+
+const pngDimensions = (header: Uint8Array) => {
+  // PNG requires the first chunk to be a 13-byte IHDR with big-endian dimensions.
+  if (header.length < 24 || header[8] !== 0 || header[9] !== 0
+      || header[10] !== 0 || header[11] !== 13
+      || header[12] !== 0x49 || header[13] !== 0x48
+      || header[14] !== 0x44 || header[15] !== 0x52)
+    throw new Error('Το PNG δεν έχει έγκυρη κεφαλίδα εικόνας.');
+  const read = (offset: number) => (
+    (header[offset]! * 0x1000000)
+    + (header[offset + 1]! << 16)
+    + (header[offset + 2]! << 8)
+    + header[offset + 3]!
+  );
+  requireReceiptDimensions(read(16), read(20));
+};
 
 const canvasBlob = (canvas: HTMLCanvasElement, type: string, quality?: number) => new Promise<Blob>((resolve, reject) => {
   canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Δεν δημιουργήθηκε επεξεργασμένη εικόνα απόδειξης.')), type, quality);
@@ -32,15 +59,17 @@ async function decodeReceiptImage(blob: Blob) {
 async function validateReceiptFile(file: File) {
   if (!['image/jpeg', 'image/png'].includes(file.type)) throw new Error('Υποστηρίζονται μόνο εικόνες JPG/JPEG και PNG.');
   if (!file.size || file.size > INPUT_MAX_BYTES) throw new Error('Η εικόνα απόδειξης πρέπει να είναι μικρότερη από 12 MB.');
-  const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const signature = new Uint8Array(await file.slice(0, 24).arrayBuffer());
   if (file.type === 'image/jpeg' && !isJpegSignature(signature)) throw new Error('Το αρχείο δηλώνεται ως JPG αλλά δεν έχει έγκυρη υπογραφή εικόνας.');
   if (file.type === 'image/png' && !isPngSignature(signature)) throw new Error('Το αρχείο δηλώνεται ως PNG αλλά δεν έχει έγκυρη υπογραφή εικόνας.');
+  if (file.type === 'image/png') pngDimensions(signature);
 }
 
 export async function normalizeReceiptFile(file: File): Promise<NormalizedReceiptImage> {
   await validateReceiptFile(file);
   const bitmap = await decodeReceiptImage(file);
   try {
+    requireReceiptDimensions(bitmap.width, bitmap.height);
     const size = scaledSize(bitmap.width, bitmap.height, STORED_MAX_DIMENSION);
     const canvas = document.createElement('canvas');
     canvas.width = size.width;
@@ -62,6 +91,7 @@ export async function normalizeReceiptFile(file: File): Promise<NormalizedReceip
 export async function preprocessReceiptForOcr(blob: Blob): Promise<Blob> {
   const bitmap = await decodeReceiptImage(blob);
   try {
+    requireReceiptDimensions(bitmap.width, bitmap.height);
     const size = scaledSize(bitmap.width, bitmap.height, OCR_MAX_DIMENSION);
     const canvas = document.createElement('canvas');
     canvas.width = size.width;
