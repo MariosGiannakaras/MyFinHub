@@ -190,7 +190,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     const {refreshFinancialProviders}=await import(clientPath);
     const snapshot=await refreshFinancialProviders(true);
     expect(snapshot).toMatchObject({loaded:true,loading:false,error:null});
-    expect(snapshot.providers.find(provider=>provider.id===record.id)).toMatchObject({
+    expect(snapshot.providers.find((provider:{id:string})=>provider.id===record.id)).toMatchObject({
       logoAssetKey:key,wordmarkAssetKey:key,
       bindings:[{role:'logo',assetKey:key},{role:'wordmark',assetKey:key}],
     });
