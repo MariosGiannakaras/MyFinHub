@@ -32,9 +32,9 @@ BEGIN
       p_title,v_rejected,p_should_reject;
   END IF;
 END;
-$;
+$$;
 GRANT EXECUTE ON FUNCTION qa.expect_draft_cents(text,jsonb,jsonb,jsonb,boolean) TO authenticated;
-DO $ BEGIN
+DO $$ BEGIN
   IF has_function_privilege('anon','private.rheomiq_guard_changed_event_cents(jsonb,jsonb)','EXECUTE')
     OR has_function_privilege('anon','private.rheomiq_mutable_event_money_fields(jsonb)','EXECUTE') THEN
     RAISE EXCEPTION 'Anonymous role gained direct mutable event guard privilege';

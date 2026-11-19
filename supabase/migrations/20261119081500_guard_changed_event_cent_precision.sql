@@ -38,7 +38,7 @@ $$;
 
 create or replace function private.rheomiq_guard_changed_event_cents(
   p_previous jsonb,p_next jsonb
-) returns void language plpgsql security invoker set search_path='' as $
+) returns void language plpgsql security invoker set search_path='' as $$
 declare v_item record;
 begin
   for v_item in
@@ -51,7 +51,7 @@ begin
     perform private.rheomiq_require_changed_money_cents(v_item.amount);
   end loop;
 end;
-$;
+$$;
 
 
 -- Direct authenticated RPC calls must also verify newly changed monetary
@@ -59,7 +59,7 @@ $;
 -- imported values when a metadata-only override is first introduced.
 create or replace function private.rheomiq_mutable_draft_money_fields(p_state jsonb,p_seed jsonb)
 returns table(field_key jsonb,amount jsonb)
-language sql stable security invoker set search_path='' as $
+language sql stable security invoker set search_path='' as $$
   with entries as (
     select 'recurring' scope,0 priority,item from jsonb_array_elements(coalesce(p_seed->'recurring','[]'::jsonb)) item
     union all select 'recurring',1,item from jsonb_array_elements(coalesce(p_state->'recurringCustom','[]'::jsonb)) item
@@ -106,11 +106,11 @@ language sql stable security invoker set search_path='' as $
   )
   select distinct on (field_key) field_key,amount from money
   order by field_key,priority desc;
-$;
+$$;
 
 -- Shared precision primitive: old event contract and new independent drafts.
 create or replace function private.rheomiq_require_changed_money_cents(p_amount jsonb)
-returns void language plpgsql security invoker set search_path='' as $
+returns void language plpgsql security invoker set search_path='' as $$
 declare v_numeric numeric;v_cents numeric;
 begin
   if p_amount is null or jsonb_typeof(p_amount)<>'number' then
@@ -128,11 +128,11 @@ begin
     raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
   end if;
 end;
-$;
+$$;
 
 create or replace function private.rheomiq_guard_changed_draft_cents(
   p_seed jsonb,p_previous jsonb,p_next jsonb
-) returns void language plpgsql security invoker set search_path='' as $
+) returns void language plpgsql security invoker set search_path='' as $$
 declare v_item record;
 begin
   for v_item in
@@ -145,7 +145,7 @@ begin
     perform private.rheomiq_require_changed_money_cents(v_item.amount);
   end loop;
 end;
-$;
+$$;
 
 revoke all on function private.rheomiq_mutable_event_money_fields(jsonb) from public,anon;
 revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;

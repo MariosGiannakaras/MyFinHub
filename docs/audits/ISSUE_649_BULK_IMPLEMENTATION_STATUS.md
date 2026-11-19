@@ -1,3 +1,9 @@
+## 2026-11-19 — Direct PostgreSQL helper dollar-quote regression repair
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Exact [CI #44528393140](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44528393140) on `2719649` failed exclusively in isolated changed-money PostgreSQL fixture: four new SQL helper definitions and the new QA `DO` block used malformed single dollar-quote delimiters. TypeScript/API/test suite/build/privacy/bundle, earlier two local PostgreSQL smoke suites and CodeQL PASS; root/API npm audits and Unified gate were not successful on failed head. Fixed dollar delimiter pairs with a narrow SQL test lock. **Corrected head pending CI.** No relaxed precision, owner+AAL2/RLS/revision semantics, app source changes, hosted SQL/production, Android, or merges.
+
+---
+
 ## 2026-11-19 — I22.02 transactional direct-RPC mutable finance cents candidate
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed** (unchanged; I22.02 broader security matrix PARTIAL). The preceding `5dd24d3` exact [CI #44422396927](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44422396927) completed successfully (validate, local PostgreSQL, CodeQL, Unified required gate). **This new candidate is not yet validated.**

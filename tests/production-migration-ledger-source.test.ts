@@ -77,6 +77,9 @@ describe('production migration ledger source contract',()=>{
   it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{
     const sql=readFileSync('supabase/migrations/20261119081500_guard_changed_event_cent_precision.sql','utf8');
     expect(sql).toContain('security invoker');
+    // Every helper delimiter must remain a PostgreSQL paired dollar quote.
+    expect(sql).not.toMatch(/ as \\$(?:\\r?\\n|$)/);
+    expect(sql).not.toMatch(/^\\$;$/m);
     expect(sql).not.toContain('security definer');
     expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
     expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
