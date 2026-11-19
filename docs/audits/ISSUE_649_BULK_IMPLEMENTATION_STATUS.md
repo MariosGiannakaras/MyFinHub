@@ -1,3 +1,9 @@
+## 2026-11-19 — I19.04 provider read-back test NodeNext type repair
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Exact [CI #44544265372](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44544265372) at `a529e42` **FAILED before test execution** in `npm run hygiene`: two implicit-any callbacks in the *new test* due intentionally dynamic import of a browser module in NodeNext test mode. Corrected only the test's dynamic imported `refreshFinancialProviders` signature; same assertions and strict provider catalog runtime guards untouched. New commit requires exact-head validate/CodeQL/Unified confirmation. Existing prior [CI #44542722267](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44542722267) PASS for receipt image bounds still valid on its exact earlier head. Draft PR #654 remains unmerged; no hosted DB, main, Android or production modifications.
+
+---
+
 ## 2026-11-19 — I19.04 malformed catalog cross-reference and numeric read-back hardening
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged: original I19.04 remains PARTIAL, no duplicate count).** Prior exact [CI #44542722267](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44542722267) on `048f965` **SUCCESS** for validate, CodeQL, Unified, strict JS/CSS bundle and local PostgreSQL. This new bounded source edit is **unvalidated on its own head**.
