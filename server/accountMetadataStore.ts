@@ -201,8 +201,12 @@ function mapRecurringServiceAssetRow(value:unknown):StoredRecurringServiceAssetR
     typeof row.recurring_id!=='string'||!row.recurring_id||row.recurring_id.length>200||
     typeof row.file_name!=='string'||!row.file_name||typeof row.mime_type!=='string'||
     row.storage_bucket!=='recurring-service-assets'||typeof row.storage_path!=='string'||
+    // The public path must name this same registration: another service's
+    // valid Storage filename is not evidence for this asset key.
+    !/^service-asset-[a-f0-9]{24}$/.test(row.asset_key)||
     !/^services\/service-asset-[a-f0-9]{24}\.(?:png|jpg|webp|svg)$/.test(row.storage_path)||
-    !Number.isFinite(Number(row.size_bytes))||Number(row.size_bytes)<=0||
+    !row.storage_path.startsWith(`services/${row.asset_key}.`)||
+    typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||row.size_bytes<=0||
     typeof row.updated_at!=='string'||row.active!==true){
     throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_ROW','Stored recurring service asset metadata is invalid.',false);
   }
@@ -213,7 +217,7 @@ function mapRecurringServiceAssetRow(value:unknown):StoredRecurringServiceAssetR
     mime_type:row.mime_type,
     storage_bucket:row.storage_bucket,
     storage_path:row.storage_path,
-    size_bytes:Number(row.size_bytes),
+    size_bytes:row.size_bytes,
     updated_at:row.updated_at,
     active:true,
   };
@@ -292,10 +296,11 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
 export async function readRecurringServiceAssets(accessToken:string):Promise<RecurringServiceAssetRow[]>{
   const payload=await request('rheomiq_recurring_service_assets?select=asset_key,recurring_id,file_name,mime_type,storage_bucket,storage_path,size_bytes,updated_at,active&active=eq.true&order=updated_at.desc,asset_key.asc',{method:'GET'},accessToken);
   if(!Array.isArray(payload))throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service asset response is invalid.',false);
+  const assetRows=payload.map(mapRecurringServiceAssetRow);
+  if(new Set(assetRows.map(asset=>asset.asset_key)).size!==assetRows.length)
+    throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service asset catalog registration is ambiguous.',false);
   const baseUrl=config(accessToken).url;
-  return payload.map(value=>{
-    const asset=mapRecurringServiceAssetRow(value);
-    return {
+  return assetRows.map(asset=>{
       assetKey:asset.asset_key,
       recurringId:asset.recurring_id,
       url:publicStorageUrl(baseUrl,asset),

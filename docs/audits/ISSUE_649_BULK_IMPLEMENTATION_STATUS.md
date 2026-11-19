@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 recurring-service asset path/key and byte integrity candidate
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: original cross-store I19.04 remains PARTIAL, no duplicate count). [Exact preceding source CI #44565463546](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44565463546) **SUCCESS** on `640d7dc` (validate, CodeQL and Unified). This validates the previously introduced strict provider numeric readback.
+
+**New same-root sibling security/consistency gap:** `mapRecurringServiceAssetRow` accepted a row for key A whose individually well-formed public Storage URL actually pointed to service asset key B, and coerced string/zero/fractional/unsafe byte lengths using `Number`. That could associate an unrelated public image with another recurring service or show a false-green registry readback. The server now requires exact 24-hex server-issued registration key corresponding to its `services/<asset_key>.<ext>` path, strictly positive safe integer number byte length, and no duplicate asset key registrations in the full GET response. Focused Vitest uses actual one-table GET and asserts seven malformed/duplicate negatives plus the valid positive without mutations. Other recurring-service upload/release cleanup, finance history, RLS, Storage security policies and user-facing UI are unchanged.
+
+**Validation:** new candidate requires exact-head automated source, CodeQL and Unified outcome; no claim of PASS yet. Focused source tests are the right narrow guard for a server readback-only edit; defer unchanged rendered/Windows/WebKit/Lighthouse to coherent Ready. I18.02 separately approval-gated external recovery, #660 dependencies separate; PR #654 Draft → develop, no merge/main/production/Android, no hosted DB/Storage changes. Next: confirm automated CI; fix only concrete failures, then prioritize other unblocked original #649 actions instead of reopening closed I19.05/I20.06.
+
+---
+
 ## 2026-11-19 — I19.04 strict provider readback numeric provenance (candidate)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 remains PARTIAL). The exact prior [CI #44563891742](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44563891742) on `6d2bf06` completed **SUCCESS** across validate, CodeQL and Unified required gate. The validated server and client guard now rejects cross-provider public Storage paths and ambiguous duplicate catalog entries; do not repeat its browser/Windows gates.
