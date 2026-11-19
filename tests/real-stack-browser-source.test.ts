@@ -127,6 +127,9 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Rule Match');
     expect(source).toContain("waitApiEventCategory('Real Browser Rule Match','Rule Applied')");
     expect(source).toContain('stage provider-storage-create-bind-reload');
+    expect(source).toContain("'verified provider catalog enables new provider'");
+    expect(source).toContain("button instanceof HTMLButtonElement&&!button.disabled");
+    expect(source).toContain("'new provider editor'");
     expect(source).toContain('Real Browser Provider');
     expect(source).toContain('real-browser-provider.svg');
     expect(source).toContain('provider-storage-persisted');

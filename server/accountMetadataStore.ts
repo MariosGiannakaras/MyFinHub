@@ -280,10 +280,9 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
     // Never resolve a primary image from another provider's active asset.
     if(provider.logoAssetKey&&!logo||provider.wordmarkAssetKey&&!wordmark)
       throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider asset ownership is invalid.',false);
-    // A key owned by this provider still cannot be rendered in a different
-    // semantic slot (for example, a card mark as a primary bank logo).
-    if(logo&&logo.asset_role!=='logo'||wordmark&&wordmark.asset_role!=='wordmark')
-      throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider asset role is invalid.',false);
+    // Artwork is reusable across presentation slots. The registered asset
+    // role describes its original upload, not permission for subsequent slots.
+    // Ownership is validated by this provider's active asset keys above.
     const providerAssets=ownedAssets
       .map(asset=>({
         assetKey:asset.asset_key,
@@ -300,11 +299,8 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
       variant:binding.variant as FinancialProviderAssetBindingRow['variant'],
       assetKey:binding.asset_key,
     }));
-    if(bindings.some(binding=>{
-      const asset=ownByKey.get(binding.assetKey);
-      return !asset||asset.asset_role!==binding.role;
-    }))
-      throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider binding ownership or role is invalid.',false);
+    if(bindings.some(binding=>!ownByKey.has(binding.assetKey)))
+      throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider binding ownership is invalid.',false);
     return {
       ...provider,
       logoUrl:logo?publicStorageUrl(baseUrl,logo):null,

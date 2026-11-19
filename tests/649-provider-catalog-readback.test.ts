@@ -110,7 +110,6 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
 
   it.each([
     'orphaned-binding','orphaned-primary-logo','orphaned-primary-wordmark',
-    'wrong-role-binding','wrong-role-primary-logo','wrong-role-primary-wordmark',
     'text-size-bytes','fractional-size-bytes','text-sort-order','null-sort-order',
   ] as const)('fails closed for %s in a complete HTTP-200 provider catalog without replaying writes',async failure=>{
     const asset={
@@ -132,13 +131,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
         ?{...record,logoAssetKey:absentKey}
         :failure==='orphaned-primary-wordmark'
           ?{...record,wordmarkAssetKey:absentKey}
-          :failure==='wrong-role-binding'
-            ?{...record,bindings:[{...record.bindings[0],role:'wordmark'}]}
-            :failure==='wrong-role-primary-logo'
-              ?{...record,logoAssetKey:asset.assetKey,assets:[{...asset,role:'wordmark'}],bindings:[]}
-              :failure==='wrong-role-primary-wordmark'
-                ?{...record,wordmarkAssetKey:asset.assetKey}
-                :failure==='text-size-bytes'
+          :failure==='text-size-bytes'
             ?{...record,assets:[{...asset,sizeBytes:'2'}]}
             :failure==='fractional-size-bytes'
               ?{...record,assets:[{...asset,sizeBytes:2.5}]}
@@ -168,6 +161,41 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(recovered.error).toBeNull();
     expect(recovered.providers.filter(row=>row.id===record.id)).toHaveLength(1);
     expect(methods).toEqual(['GET','GET']);
+  });
+
+  it('accepts one same-provider image reused as logo and wordmark without weakening orphan rejection',async()=>{
+    const key='qa-reuse-asset-aabbccddee11';
+    const asset={
+      assetKey:key,role:'logo',variant:'universal',url:'https://assets.example/logo.png',
+      fileName:'shared-logo.png',mimeType:'image/png',sizeBytes:42,
+    };
+    const record={
+      id:'qa-reuse-bank',displayName:'QA Reuse Bank',shortName:'QA Reuse',
+      providerKind:'bank',countryCode:'GR',sortOrder:119,
+      logoAssetKey:key,wordmarkAssetKey:key,
+      logoUrl:asset.url,wordmarkUrl:asset.url,
+      assets:[asset],bindings:[
+        {role:'logo',variant:'universal',assetKey:key},
+        {role:'wordmark',variant:'universal',assetKey:key},
+      ],
+    };
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push(String(init?.method??'GET')+' '+String(input));
+      return new Response(JSON.stringify({providers:[record]}),{
+        status:200,headers:{'content-type':'application/json'},
+      });
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {refreshFinancialProviders}=await import(clientPath);
+    const snapshot=await refreshFinancialProviders(true);
+    expect(snapshot).toMatchObject({loaded:true,loading:false,error:null});
+    expect(snapshot.providers.find(provider=>provider.id===record.id)).toMatchObject({
+      logoAssetKey:key,wordmarkAssetKey:key,
+      bindings:[{role:'logo',assetKey:key},{role:'wordmark',assetKey:key}],
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatch(/^GET /);
   });
 
   it.each(['malformed-extra-provider','duplicate-provider-id'] as const)(

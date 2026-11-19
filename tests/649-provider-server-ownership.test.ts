@@ -12,7 +12,7 @@ afterEach(()=>{
 });
 
 describe('#649 I19.04 server provider asset ownership readback',()=>{
-  it.each(['foreign-primary','foreign-binding','wrong-primary-role','wrong-binding-role','valid-own-asset'] as const)(
+  it.each(['foreign-primary','foreign-binding','wrong-primary-role','wrong-binding-role','valid-own-asset','valid-cross-role-reuse'] as const)(
     'handles %s through actual three-table GET without foreign image association',async scenario=>{
       process.env.SUPABASE_URL='https://example.supabase.co';
       process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
@@ -21,7 +21,7 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
       const provider={
         id:'owner-a',display_name:'Owner A',short_name:'A',provider_kind:'bank',
         country_code:'GR',logo_asset_key:scenario==='foreign-primary'?foreignKey:ownKey,
-        wordmark_asset_key:null,sort_order:10,
+        wordmark_asset_key:scenario==='valid-cross-role-reuse'?ownKey:null,sort_order:10,
       };
       const assets=[['owner-a',ownKey],['owner-b',foreignKey]].map(([providerId,key])=>({
         asset_key:key,provider_id:providerId,
@@ -36,7 +36,9 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
         asset_role:scenario==='wrong-binding-role'?'wordmark':'logo',
         variant:'universal',
         asset_key:scenario==='foreign-binding'?foreignKey:ownKey,
-      }];
+      },...(scenario==='valid-cross-role-reuse'?[{
+        provider_id:'owner-a',asset_role:'wordmark',variant:'universal',asset_key:ownKey,
+      }]:[])];
       const observed:string[]=[];
       vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
         const url=String(input);
@@ -47,12 +49,17 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
         if(!rows)throw new Error('Unexpected metadata request');
         return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
       }));
-      if(scenario==='valid-own-asset'){
+      if(scenario==='valid-own-asset'||scenario==='wrong-primary-role'||
+        scenario==='wrong-binding-role'||scenario==='valid-cross-role-reuse'){
         const result=await readFinancialProviders('owner-jwt');
         expect(result).toHaveLength(1);
         expect(result[0]?.logoUrl).toContain('/providers/owner-a/');
-        expect(result[0]?.bindings?.[0]?.assetKey).toBe(ownKey);
+        if(scenario!=='wrong-primary-role')expect(result[0]?.bindings?.[0]?.assetKey).toBe(ownKey);
         expect(result[0]?.assets?.map(row=>row.assetKey)).toEqual([ownKey]);
+        if(scenario==='valid-cross-role-reuse'){
+          expect(result[0]?.wordmarkUrl).toBe(result[0]?.logoUrl);
+          expect(result[0]?.bindings?.map(row=>row.role)).toEqual(['logo','wordmark']);
+        }
       }else{
         await expect(readFinancialProviders('owner-jwt')).rejects.toMatchObject({
           code:'FINANCIAL_PROVIDER_INVALID_RESPONSE',status:500,

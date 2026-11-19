@@ -552,6 +552,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     console.log('[real-browser] stage provider-storage-create-bind-reload');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for provider');
     await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return Boolean(document.querySelector('.provider-management'))}",'provider management');
+    // A mounted provider section can still be loading its owner-scoped catalog.
+    // A disabled create button silently ignores .click(); wait for a verified
+    // catalog instead of reporting a misleading missing-editor timeout.
+    await waitFor("function(){const button=[...document.querySelectorAll('.provider-management button')].find(node=>(node.textContent||'').includes('Νέος πάροχος'));return button instanceof HTMLButtonElement&&!button.disabled}",'verified provider catalog enables new provider');
     await clickText('.provider-management button','Νέος πάροχος');await waitFor("function(){return Boolean(document.querySelector('.provider-editor-modal'))}",'new provider editor');
     await setByLabel('Όνομα','Real Browser Provider');await setByLabel('Σύντομο όνομα','RB Provider');
     await waitFor("function(){const input=document.querySelector('.provider-id-field input');return input instanceof HTMLInputElement&&input.value==='real-browser-provider'}",'provider slug');
