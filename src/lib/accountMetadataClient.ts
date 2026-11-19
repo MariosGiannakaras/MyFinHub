@@ -54,9 +54,14 @@ export async function refreshAccountMetadata(force=false){
       const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw requestError(response,payload,'Δεν ήταν δυνατή η φόρτωση των IBAN.');
-      const records:Array<unknown>=Array.isArray(payload?.records)?payload.records:[];
+      const records=payload?.records;
+      if(!Array.isArray(records))throw new Error('Η λίστα IBAN είναι μη έγκυρη.');
       const byId:Record<string,AccountMetadataRecord>={};
-      for(const value of records){const record=parseRecord(value);if(record)byId[record.accountId]=record}
+      for(const value of records){
+        const record=parseRecord(value);
+        if(!record||byId[record.accountId])throw new Error('Η λίστα IBAN είναι μη έγκυρη.');
+        byId[record.accountId]=record;
+      }
       return publish({loaded:true,loading:false,records:byId,error:null});
     }catch(error){return publish({...snapshot,loaded:true,loading:false,error:errorMessage(error)})}
     finally{pending=null}
@@ -83,7 +88,9 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     throw requestError(response,payload,'Δεν ήταν δυνατή η αποθήκευση του IBAN.');
   }
   const record=parseRecord(payload?.record);
-  if(!record||record.accountId!==accountId)throw new Error('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');
+  if(!record||record.accountId!==accountId||record.iban!==normalized||
+    record.revision!==(current?.revision??0)+1)
+    throw new Error('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');
   publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
   return record;
   });

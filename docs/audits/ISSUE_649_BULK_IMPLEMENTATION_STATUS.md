@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 client-side IBAN catalog/receipt completeness
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 remains PARTIAL). Prior exact [CI #44582853784](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44582853784) on `013a8a8` **SUCCESS** for validate (326 suites/2042 tests, strict main JS 528.0 KiB / 528.0 limit, zero root/API npm advisories), CodeQL and Unified. Backend already refuses malformed/duplicate account readback and mismatched optimistic writes.
+
+**Same-boundary client gap:** Browser `refreshAccountMetadata` previously dropped individual malformed rows, accepted duplicates by overwriting them and silently mapped missing/nonarray collections to an empty 200 catalog with `error:null`. A later save could then use revision zero or present a falsely complete IBAN state even without authoritative evidence. The client now treats those as failed readback without overwriting prior snapshot, and permits a clean subsequent GET to recover. `saveAccountMetadata` now requires a returned HTTP-200 record to match the requested ID, canonical IBAN and exact `previousRevision+1` before publishing one successful save. A new dynamic-module Vitest suite probes invalid-then-recovered read-only GET (six scenarios) and four exact/mismatched PUT receipts with no duplicate write. This is a small client-side correctness change; existing page structure/controls and finance semantics unchanged.
+
+**Validation:** New candidate requires exact-head source/CodeQL/Unified and strict unchanged bundle budget. Affected error/IBAN feedback should be covered in the coherent changed-surface browser acceptance later; neither source tests nor prior screenshots alone prove this new negative UI state. No new synthetic production owner data or hosted DB/Storage operation. I18.02 external recovery remains approval-gated, #660 dependencies separate; PR #654 Draft into develop, no merge, main, release or Android modifications. Next: inspect mandatory CI and correct only actual failures (particularly strict main-JS budget), then continue unblocked original #649 action.
+
+---
+
 ## 2026-11-19 — I19.04 exact optimistic IBAN receipts and provider uploaded asset keys
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 PARTIAL). [Previous exact CI #44579262633](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44579262633) at `4750ab8` **SUCCESS** for validate, CodeQL and Unified required gate.
