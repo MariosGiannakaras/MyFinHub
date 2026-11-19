@@ -16,6 +16,17 @@ export interface RecurringServiceAsset{
 type RecurringServiceAssetSnapshot={loaded:boolean;loading:boolean;assets:RecurringServiceAsset[];error:string|null};
 
 const MIME_TYPES=new Set<RecurringServiceAsset['mimeType']>(['image/png','image/jpeg','image/webp','image/svg+xml']);
+const MIME_EXTENSION:Record<RecurringServiceAsset['mimeType'],string>={
+  'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/svg+xml':'svg',
+};
+// HTTP 200 metadata is not an image registration if its public Storage path
+// actually points to a different asset, bucket or binary type.
+function matchesRegisteredAssetUrl(url:string,key:string,mimeType:RecurringServiceAsset['mimeType']){
+  try{
+    return new URL(url).pathname===
+      `/storage/v1/object/public/recurring-service-assets/services/${key}.${MIME_EXTENSION[mimeType]}`;
+  }catch{return false}
+}
 // One operator-visible uncertainty contract for both upload receipt failures.
 const UNVERIFIED_UPLOAD='Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.';
 let snapshot:RecurringServiceAssetSnapshot={loaded:false,loading:false,assets:[],error:null};
@@ -42,6 +53,7 @@ export function parseRecurringServiceAsset(value:unknown):RecurringServiceAsset|
   const updatedAt=typeof row.updatedAt==='string'?row.updatedAt.trim():'';
   if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey)||!recurringId||recurringId.length>200||/[\u0000-\u001f\u007f]/.test(recurringId)||
     !publicAssetUrlAllowed(url)||!fileName||fileName.length>160||!MIME_TYPES.has(mimeType)||
+    !matchesRegisteredAssetUrl(url,assetKey,mimeType)||
     typeof sizeBytes!=='number'||!Number.isSafeInteger(sizeBytes)||sizeBytes<1||sizeBytes>2*1024*1024||!updatedAt)return null;
   return {assetKey,recurringId,url,fileName,mimeType,sizeBytes,updatedAt};
 }

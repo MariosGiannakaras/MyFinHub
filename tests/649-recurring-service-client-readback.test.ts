@@ -15,9 +15,23 @@ async function client(){
 }
 
 describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>{
+  it('requires the public Storage path to identify this key and MIME, including normalized JPEG',async()=>{
+    const service=await client();
+    expect(service.parseRecurringServiceAsset(row())).toMatchObject(row());
+    const jpeg={...row(),mimeType:'image/jpeg',url:row().url.replace(/\.png$/,'.jpg')};
+    expect(service.parseRecurringServiceAsset(jpeg)).toMatchObject(jpeg);
+    for(const url of [
+      row().url.replace(key,'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'),
+      row().url.replace('/recurring-service-assets/','/financial-provider-assets/'),
+      row().url.replace(/\.png$/,'.jpeg'),
+      row().url.replace('/services/','/services/nested/'),
+      row().url+'%2Fother.png',
+    ])expect(service.parseRecurringServiceAsset({...row(),url})).toBeNull();
+  });
+
   it.each([
     'missing-list','object-list','invalid-extra','duplicate','numeric-text',
-    'unsafe-bytes','negative-bytes',
+    'unsafe-bytes','negative-bytes','foreign-key-url','wrong-bucket-url','wrong-mime-extension',
   ] as const)('fails closed on incomplete HTTP 200 %s, then recovers using GET only',async scenario=>{
     const original=row();
     const bad:Record<string,unknown>={...original};
@@ -25,6 +39,9 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
     if(scenario==='numeric-text')bad.sizeBytes='32';
     if(scenario==='unsafe-bytes')bad.sizeBytes=Number.MAX_SAFE_INTEGER+1;
     if(scenario==='negative-bytes')bad.sizeBytes=-1;
+    if(scenario==='foreign-key-url')bad.url=String(original.url).replace(key,'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa');
+    if(scenario==='wrong-bucket-url')bad.url=String(original.url).replace('/recurring-service-assets/','/financial-provider-assets/');
+    if(scenario==='wrong-mime-extension')bad.url=String(original.url).replace(/\.png$/,'.jpg');
     const broken=scenario==='missing-list'?{}:
       scenario==='object-list'?{assets:bad}:
         scenario==='duplicate'?{assets:[original,{...original}]}:
@@ -50,6 +67,7 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
   it.each([
     'valid','foreign-recurring','wrong-name','wrong-type','wrong-bytes',
     'catalog-missing','catalog-wrong','catalog-unavailable',
+    'receipt-foreign-key-url','catalog-foreign-key-url',
   ] as const)('verifies uploaded binary + fresh registration for %s without extra PUT/DELETE',async scenario=>{
     const file={name:'brand.png',type:'image/png',size:32} as File;
     const receipt:Record<string,unknown>={...row()};
@@ -57,6 +75,7 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
     if(scenario==='wrong-name')receipt.fileName='other.png';
     if(scenario==='wrong-type')receipt.mimeType='image/jpeg';
     if(scenario==='wrong-bytes')receipt.sizeBytes=31;
+    if(scenario==='receipt-foreign-key-url')receipt.url=String(receipt.url).replace(key,'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa');
     const calls:string[]=[];
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const method=String(init?.method??'GET');calls.push(method+' '+String(input));
@@ -66,7 +85,8 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
       if(method!=='GET')throw new Error('No duplicate upload or cleanup');
       if(scenario==='catalog-unavailable')return new Response('{}',{status:503});
       const asset=scenario==='catalog-missing'?[]:
-        scenario==='catalog-wrong'?[{...row(),sizeBytes:31}]:[row()];
+        scenario==='catalog-wrong'?[{...row(),sizeBytes:31}]:
+          scenario==='catalog-foreign-key-url'?[{...row(),url:String(row().url).replace(key,'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa')}]:[row()];
       return new Response(JSON.stringify({assets:asset}),{
         status:200,headers:{'content-type':'application/json'},
       });
@@ -81,7 +101,7 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
         .rejects.toThrow('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
     }
     const methods=calls.map(c=>c.split(' ')[0]);
-    const receiptInvalid=['foreign-recurring','wrong-name','wrong-type','wrong-bytes'].includes(scenario);
+    const receiptInvalid=['foreign-recurring','wrong-name','wrong-type','wrong-bytes','receipt-foreign-key-url'].includes(scenario);
     expect(methods).toEqual(receiptInvalid?['PUT']:['PUT','GET']);
     expect(methods.filter(m=>m==='PUT')).toHaveLength(1);
     expect(methods).not.toContain('DELETE');
