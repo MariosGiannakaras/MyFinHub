@@ -20,7 +20,7 @@ GRANT EXECUTE ON FUNCTION qa.expect_event_cents(text,jsonb,jsonb,boolean) TO aut
 
 CREATE OR REPLACE FUNCTION qa.expect_draft_cents(
   p_title text,p_seed jsonb,p_old jsonb,p_new jsonb,p_should_reject boolean
-) RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $
+) RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path='' as $$
 DECLARE v_rejected boolean:=false;
 BEGIN
   BEGIN

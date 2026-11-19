@@ -1,3 +1,9 @@
+## 2026-11-19 — Complete dollar-pair repair before PostgreSQL gate
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed.** A bounded post-commit read detected one remaining upper-case `AS $` fixture function opener omitted by the first lowercase-only scan, and the first source test used an over-escaped regular expression. Corrected both before treating the PostgreSQL fixture as validated. Added exact negative delimiter checks for migration **and** QA fixture, source/SQL domain logic unchanged. Prior source CI failure #44528393140 was genuine; corrected head needs new disposable SQL and mandatory checks, no green assertion until observed. Draft #654 remains unmerged; no production SQL/data or Android change.
+
+---
+
 ## 2026-11-19 — Direct PostgreSQL helper dollar-quote regression repair
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Exact [CI #44528393140](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44528393140) on `2719649` failed exclusively in isolated changed-money PostgreSQL fixture: four new SQL helper definitions and the new QA `DO` block used malformed single dollar-quote delimiters. TypeScript/API/test suite/build/privacy/bundle, earlier two local PostgreSQL smoke suites and CodeQL PASS; root/API npm audits and Unified gate were not successful on failed head. Fixed dollar delimiter pairs with a narrow SQL test lock. **Corrected head pending CI.** No relaxed precision, owner+AAL2/RLS/revision semantics, app source changes, hosted SQL/production, Android, or merges.
