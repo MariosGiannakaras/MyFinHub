@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 strict provider readback numeric provenance (candidate)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04 remains PARTIAL). The exact prior [CI #44563891742](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44563891742) on `6d2bf06` completed **SUCCESS** across validate, CodeQL and Unified required gate. The validated server and client guard now rejects cross-provider public Storage paths and ambiguous duplicate catalog entries; do not repeat its browser/Windows gates.
+
+**New source scope:** In `server/accountMetadataStore.ts`, provider `sort_order` previously allowed out-of-range integral numbers and asset `size_bytes` used `Number(...)` coercion, allowing string numbers, negative values, fractional bytes and unsafe large integers into successful HTTP-200 server catalog readback despite stricter existing client rules. Readback now requires explicit safe nonnegative integer bytes (still permitting historical `null`) and numeric safe `sort_order` 0–100000 consistent with existing client/write boundary. Eight cases in the existing three-table GET regression cover failures and allowed legacy-null readback. No mutation or new external network request. Scope is I19.04 partial-read integrity; unrelated recurring service assets and legacy source schema are unchanged.
+
+**Validation:** Newly committed candidate requires exact-head source/CodeQL/Unified observation; CI PASS is not assumed in advance. Keep #654 Draft into `develop`. Final coherent Ready WebKit/Windows/Lighthouse/real-stack/rendered/security/recovery review remains outstanding; I18.02 production/independent PostgreSQL+Storage restore is approval-gated. #660 dependency PR separately owned. No hosted Supabase/Storage writes, migrations, finance history mutations, Android code, production or release changes. Next: inspect exact-head CI once; if green, continue next unblocked #649 acceptance boundary, otherwise repair specific failures without weakening guards.
+
+---
+
 ## 2026-11-19 — I19.04 provider Storage URL provenance and duplicate-catalog candidate
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged, I19.04 PARTIAL). Prior exact [CI #44561224326](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44561224326) **SUCCESS**, including validate, CodeQL, Unified, accepting previous cross-role image readback. No repeated rendered QA was needed for that prior unchanged source.

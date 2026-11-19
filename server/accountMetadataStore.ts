@@ -134,7 +134,8 @@ function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
   const kinds=['bank','fintech','wallet','payment'] as const;
   const validAssetKey=(value:unknown)=>value===null||value===undefined||typeof value==='string'&&/^[a-z][a-z0-9-]{0,95}$/.test(value);
   if(!row||typeof row.id!=='string'||typeof row.display_name!=='string'||typeof row.short_name!=='string'||!kinds.includes(row.provider_kind as any)||
-    (row.country_code!==null&&row.country_code!==undefined&&typeof row.country_code!=='string')||!validAssetKey(row.logo_asset_key)||!validAssetKey(row.wordmark_asset_key)||!Number.isInteger(row.sort_order)){
+    (row.country_code!==null&&row.country_code!==undefined&&typeof row.country_code!=='string')||!validAssetKey(row.logo_asset_key)||!validAssetKey(row.wordmark_asset_key)||
+    typeof row.sort_order!=='number'||!Number.isSafeInteger(row.sort_order)||row.sort_order<0||row.sort_order>100000){
     throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_ROW','Stored financial provider is invalid.',false);
   }
   return {
@@ -165,7 +166,7 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||typeof role!=='string'||!roles.includes(role as any)||
     typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||typeof row.file_name!=='string'||!row.file_name||
     typeof row.mime_type!=='string'||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
-    (row.size_bytes!==null&&!Number.isFinite(Number(row.size_bytes)))||
+    (row.size_bytes!==null&&(typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||row.size_bytes<0))||
     !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||
     !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filePath)||row.active!==true){
     throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_ROW','Stored provider asset metadata is invalid.',false);
@@ -179,7 +180,7 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
     mime_type:row.mime_type,
     storage_bucket:row.storage_bucket,
     storage_path:row.storage_path,
-    size_bytes:row.size_bytes===null?null:Number(row.size_bytes),
+    size_bytes:row.size_bytes,
     updated_at:row.updated_at,
     active:true,
   };

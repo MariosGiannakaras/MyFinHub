@@ -103,4 +103,56 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
     expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
   });
 
+  it.each([
+    'text-size-bytes','fractional-size-bytes','negative-size-bytes',
+    'unsafe-size-bytes','text-sort-order','negative-sort-order',
+    'too-large-sort-order','legacy-null-size-bytes',
+  ] as const)('requires explicit safe numeric provider fields for %s',async scenario=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
+    const key='owner-a-asset-123456abcdef';
+    const provider:Record<string,unknown>={
+      id:'owner-a',display_name:'Owner A',short_name:'A',provider_kind:'bank',
+      country_code:'GR',logo_asset_key:key,wordmark_asset_key:null,sort_order:10,
+    };
+    const asset:Record<string,unknown>={
+      asset_key:key,provider_id:'owner-a',asset_role:'logo',variant:'universal',
+      file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+      storage_path:`providers/owner-a/${key}.png`,size_bytes:12,
+      updated_at:'2026-11-19T12:00:00Z',active:true,
+    };
+    if(scenario==='text-size-bytes')asset.size_bytes='12';
+    if(scenario==='fractional-size-bytes')asset.size_bytes=12.5;
+    if(scenario==='negative-size-bytes')asset.size_bytes=-1;
+    if(scenario==='unsafe-size-bytes')asset.size_bytes=Number.MAX_SAFE_INTEGER+1;
+    if(scenario==='legacy-null-size-bytes')asset.size_bytes=null;
+    if(scenario==='text-sort-order')provider.sort_order='10';
+    if(scenario==='negative-sort-order')provider.sort_order=-1;
+    if(scenario==='too-large-sort-order')provider.sort_order=100001;
+    const binding={provider_id:'owner-a',asset_role:'logo',variant:'universal',asset_key:key};
+    const observed:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);
+      observed.push((init?.method??'GET')+' '+url);
+      const rows=url.includes('/rheomiq_financial_provider_assets?')?[asset]:
+        url.includes('/rheomiq_financial_provider_asset_bindings?')?[binding]:
+          url.includes('/rheomiq_financial_providers?')?[provider]:null;
+      if(!rows)throw new Error('Unexpected provider readback');
+      return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    if(scenario==='legacy-null-size-bytes'){
+      const verified=await readFinancialProviders('owner-jwt');
+      expect(verified).toHaveLength(1);
+      expect(verified[0]?.assets?.[0]?.sizeBytes).toBeNull();
+      expect(verified[0]?.logoUrl).toContain('/providers/owner-a/');
+    }else{
+      await expect(readFinancialProviders('owner-jwt')).rejects.toMatchObject({
+        status:500,
+        code:scenario.includes('sort-order')?'FINANCIAL_PROVIDER_INVALID_ROW':'FINANCIAL_PROVIDER_ASSET_INVALID_ROW',
+      });
+    }
+    expect(observed).toHaveLength(3);
+    expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
+  });
+
 });
