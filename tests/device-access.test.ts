@@ -29,7 +29,7 @@ describe('connected device access',()=>{
     expect(action).toContain("mutationInFlight.current=true;");
     expect(action.indexOf("mutationInFlight.current=true")).toBeLessThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
     expect(ui).toContain("const generation=++readGeneration.current;");
-    expect(ui).toContain("if(generation===readGeneration.current&&!mutationInFlight.current)setDevices(result.devices)");
+    expect(ui).toContain("if(generation===readGeneration.current&&!mutationInFlight.current){setDevices(result.devices);setListVerified(true)}");
     expect(ui).toContain("readGeneration.current+=1;");
     expect(ui).toContain("if(!renaming||busy||mutationInFlight.current)return;");
     expect(ui).toContain("finally{mutationInFlight.current=false;setBusy(false)}");
