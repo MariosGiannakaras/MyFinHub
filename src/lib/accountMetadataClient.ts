@@ -1,8 +1,8 @@
 import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
-import { assertValidIban, isValidIban } from './iban';
-import { notifyAuthExpired } from './authExpiry';
-import { userErrorMessage } from './userMessage';
+import { assertValidIban, isValidIban } from './iban.js';
+import { notifyAuthExpired } from './authExpiry.js';
+import { userErrorMessage } from './userMessage.js';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
