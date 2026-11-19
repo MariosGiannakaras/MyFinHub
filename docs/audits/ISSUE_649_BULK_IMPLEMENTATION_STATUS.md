@@ -1,3 +1,9 @@
+## 2026-11-19 — SQL smoke DO-block closing delimiter repaired
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged).** Exact [CI #44529936634](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44529936634) on `d0806c8` built all private helper functions and ran earlier real PostgreSQL checks, but failed **only** because the appended QA `DO $$` block ended as `END $;`, leaving the SQL dollar string unterminated. Existing API/TS/Vitest/source build/bundle/CodeQL PASS; strict full acceptance not proven. Repair the one test-only closing delimiter and add a deterministic static parity/source assertion covering all SQL helper delimiters. No finance schema or guard semantic rollback, no hosted DB DDL/DML, production/main or Android change; new CI must verify actual disposable PostgreSQL cases before acceptance.
+
+---
+
 ## 2026-11-19 — Complete dollar-pair repair before PostgreSQL gate
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed.** A bounded post-commit read detected one remaining upper-case `AS $` fixture function opener omitted by the first lowercase-only scan, and the first source test used an over-escaped regular expression. Corrected both before treating the PostgreSQL fixture as validated. Added exact negative delimiter checks for migration **and** QA fixture, source/SQL domain logic unchanged. Prior source CI failure #44528393140 was genuine; corrected head needs new disposable SQL and mandatory checks, no green assertion until observed. Draft #654 remains unmerged; no production SQL/data or Android change.

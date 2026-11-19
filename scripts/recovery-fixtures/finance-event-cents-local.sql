@@ -155,5 +155,5 @@ BEGIN
   PERFORM qa.expect_draft_cents('old reviewed split amount changed',
     '{}','{"reviewDecisions":{"tx":{"parts":[{"id":"p","amount":4.001}]}}}',
     '{"reviewDecisions":{"tx":{"parts":[{"id":"p","amount":4.002}]}}}',true);
-END $;
+END $$;
 RESET ROLE;

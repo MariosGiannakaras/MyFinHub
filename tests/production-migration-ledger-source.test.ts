@@ -83,6 +83,9 @@ describe('production migration ledger source contract',()=>{
     const isolatedSql=readFileSync('scripts/recovery-fixtures/finance-event-cents-local.sql','utf8');
     expect(isolatedSql.split('\n').filter(line=>/ as [$]$/i.test(line))).toEqual([]);
     expect(isolatedSql).not.toContain('DO $ BEGIN');
+    expect(isolatedSql).not.toContain('END $;');
+    expect((isolatedSql.match(/[$][$]/g)??[]).length%2).toBe(0);
+    expect((sql.match(/[$][$]/g)??[]).length%2).toBe(0);
     expect(sql).not.toContain('security definer');
     expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
     expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
