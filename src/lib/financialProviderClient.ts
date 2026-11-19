@@ -83,10 +83,10 @@ function parseProvider(value:unknown,requireCollections=false):FinancialProvider
   if(new Set(bindings.map(binding=>binding.role+':'+binding.variant)).size!==bindings.length)return null;
   // A 200 catalog is not a trustworthy read-back when an assigned binary
   // cannot be found among this provider's registered active assets.
-  const available=new Set(assets.map(asset=>asset.assetKey));
-  if(bindings.some(binding=>!available.has(binding.assetKey)))return null;
-  if(logoAssetKey!==null&&!available.has(logoAssetKey))return null;
-  if(wordmarkAssetKey!==null&&!available.has(wordmarkAssetKey))return null;
+  const roleByKey=new Map(assets.map(asset=>[asset.assetKey,asset.role] as const));
+  if(bindings.some(binding=>roleByKey.get(binding.assetKey)!==binding.role))return null;
+  if(logoAssetKey!==null&&roleByKey.get(logoAssetKey)!=='logo')return null;
+  if(wordmarkAssetKey!==null&&roleByKey.get(wordmarkAssetKey)!=='wordmark')return null;
   const sortOrder=row.sortOrder;
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;

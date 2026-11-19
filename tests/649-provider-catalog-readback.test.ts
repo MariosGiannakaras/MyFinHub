@@ -110,6 +110,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
 
   it.each([
     'orphaned-binding','orphaned-primary-logo','orphaned-primary-wordmark',
+    'wrong-role-binding','wrong-role-primary-logo','wrong-role-primary-wordmark',
     'text-size-bytes','fractional-size-bytes','text-sort-order','null-sort-order',
   ] as const)('fails closed for %s in a complete HTTP-200 provider catalog without replaying writes',async failure=>{
     const asset={
@@ -131,7 +132,13 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
         ?{...record,logoAssetKey:absentKey}
         :failure==='orphaned-primary-wordmark'
           ?{...record,wordmarkAssetKey:absentKey}
-          :failure==='text-size-bytes'
+          :failure==='wrong-role-binding'
+            ?{...record,bindings:[{...record.bindings[0],role:'wordmark'}]}
+            :failure==='wrong-role-primary-logo'
+              ?{...record,logoAssetKey:asset.assetKey,assets:[{...asset,role:'wordmark'}],bindings:[]}
+              :failure==='wrong-role-primary-wordmark'
+                ?{...record,wordmarkAssetKey:asset.assetKey}
+                :failure==='text-size-bytes'
             ?{...record,assets:[{...asset,sizeBytes:'2'}]}
             :failure==='fractional-size-bytes'
               ?{...record,assets:[{...asset,sizeBytes:2.5}]}
