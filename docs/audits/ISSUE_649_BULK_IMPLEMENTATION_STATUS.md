@@ -1,3 +1,11 @@
+## 2026-11-19 — I22.02 transactional direct-RPC mutable finance cents candidate
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed** (unchanged; I22.02 broader security matrix PARTIAL). The preceding `5dd24d3` exact [CI #44422396927](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44422396927) completed successfully (validate, local PostgreSQL, CodeQL, Unified required gate). **This new candidate is not yet validated.**
+
+Extends the **unapplied** 2026-11-19 forward migration's owner UID+AAL2/revision/history-locked RPC validation from event cents to changed recurring/loan/scheduled/budget/savings-goal/settlement/card/global-settings/legacy-transaction and reviewed-split money. Private SECURITY INVOKER helpers reuse the original cent predicate, read old seed for untouched imported anomalies, and reject newly submitted fractions before ledger, history and automatic backup changes. Direct disposable PostgreSQL negative/positive/legacy and role-grant fixtures are expanded; source regression asserts original transactional order. No hosted DDL/DML, recovery restore, destructive history, main release, or Android edit. PR #654 remains Draft→develop; full coherent Ready security/rendered/WebKit/Windows/Lighthouse/real-stack acceptance and separate #660 dependency reconciliation pending. Inspect automatic exact new-head source/CodeQL/Unified; correct errors without weakening requirements, then proceed to independent unblocked #649 items.
+
+---
+
 ## 2026-11-19 — I22.02 direct RPC fractional-cent transactional guard (proposed SQL migration, unvalidated candidate)
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; full I22.02 API/storage/security matrix still PARTIAL).** Last pre-migration `38c1c75` [CI #44420998061](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44420998061) `validate` SUCCESS: 321/321 files, 1,965/1,965 tests, hard main JS <=528.0 KiB, local PostgreSQL chronology, root/API npm audit zero vulnerabilities; CodeQL/Unified pending at check time. Its changed-only API preflight covers events plus new/edited legacy/reviewed splits, lending settlement, cards, scheduled, recurring, loans, goals, budgets, financial settings. API preflight is **not** a direct PostgreSQL RPC guarantee.

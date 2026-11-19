@@ -38,11 +38,8 @@ $$;
 
 create or replace function private.rheomiq_guard_changed_event_cents(
   p_previous jsonb,p_next jsonb
-) returns void language plpgsql security invoker set search_path='' as $$
-declare
-  v_item record;
-  v_numeric numeric;
-  v_cents numeric;
+) returns void language plpgsql security invoker set search_path='' as $
+declare v_item record;
 begin
   for v_item in
     select n.field_key,n.amount
@@ -51,28 +48,115 @@ begin
       on old.field_key=n.field_key
     where old.amount is distinct from n.amount
   loop
-    if v_item.amount is null or jsonb_typeof(v_item.amount)<>'number' then
-      raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
-    end if;
-    begin
-      v_numeric:=(v_item.amount::text)::numeric;
-      v_cents:=round(v_numeric*100);
-    exception when numeric_value_out_of_range or invalid_text_representation then
-      raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
-    end;
-    if v_numeric::text in ('NaN','Infinity','-Infinity')
-       or abs(v_cents)>9007199254740991
-       or abs(v_numeric*100-v_cents)>0.000001 then
-      raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
-    end if;
+    perform private.rheomiq_require_changed_money_cents(v_item.amount);
   end loop;
 end;
-$$;
+$;
+
+
+-- Direct authenticated RPC calls must also verify newly changed monetary
+-- configuration, not just ledger events. Seed precedence protects immutable
+-- imported values when a metadata-only override is first introduced.
+create or replace function private.rheomiq_mutable_draft_money_fields(p_state jsonb,p_seed jsonb)
+returns table(field_key jsonb,amount jsonb)
+language sql stable security invoker set search_path='' as $
+  with entries as (
+    select 'recurring' scope,0 priority,item from jsonb_array_elements(coalesce(p_seed->'recurring','[]'::jsonb)) item
+    union all select 'recurring',1,item from jsonb_array_elements(coalesce(p_state->'recurringCustom','[]'::jsonb)) item
+    union all select 'recurring',2,value from jsonb_each(coalesce(p_state->'recurringOverrides','{}'::jsonb))
+    union all select 'loan',0,item from jsonb_array_elements(coalesce(p_seed->'loans','[]'::jsonb)) item
+    union all select 'loan',1,item from jsonb_array_elements(coalesce(p_state->'customLoans','[]'::jsonb)) item
+    union all select 'loan',2,value from jsonb_each(coalesce(p_state->'loanOverrides','{}'::jsonb))
+    union all select 'scheduled',2,item from jsonb_array_elements(coalesce(p_state->'scheduled','[]'::jsonb)) item
+    union all select 'budget',2,item from jsonb_array_elements(coalesce(p_state->'budgets','[]'::jsonb)) item
+    union all select 'saving-goal',2,item from jsonb_array_elements(coalesce(p_state->'savingsGoals','[]'::jsonb)) item
+    union all select 'lending-settlement',2,item from jsonb_array_elements(coalesce(p_state->'lendingPlans','[]'::jsonb)) item
+    union all select 'credit-card',2,item from jsonb_array_elements(coalesce(p_state->'cards','[]'::jsonb)) item
+    union all select 'settings',2,coalesce(p_state->'settings','{}'::jsonb)
+    union all select 'legacy-transaction',0,item from jsonb_array_elements(coalesce(p_seed->'transactions','[]'::jsonb)) item
+    union all select 'legacy-transaction',1,item from jsonb_array_elements(coalesce(p_state->'customTransactions','[]'::jsonb)) item
+    union all select 'legacy-transaction',2,value from jsonb_each(coalesce(p_state->'overrides','{}'::jsonb))
+  ), money as (
+    select jsonb_build_array(e.scope,
+      case when e.scope='settings' then 'finance-settings' else e.item->>'id' end,
+      f.name) field_key,f.amount,e.priority
+    from entries e
+    cross join lateral (values
+      ('amount',e.item->'amount'),('estimateMin',e.item->'estimateMin'),
+      ('estimateMax',e.item->'estimateMax'),('total',e.item->'total'),
+      ('installment',e.item->'installment'),('legacyPaidAmount',e.item->'legacyPaidAmount'),
+      ('forgivenAmount',e.item->'forgivenAmount'),('targetAmount',e.item->'targetAmount'),
+      ('creditLimit',e.item->'creditLimit'),('monthlyBudget',e.item->'monthlyBudget')
+    ) f(name,amount)
+    where e.item ? f.name and (
+      (e.scope='recurring' and f.name in ('amount','estimateMin','estimateMax'))
+      or (e.scope='loan' and f.name in ('total','installment','legacyPaidAmount','forgivenAmount'))
+      or (e.scope in ('scheduled','budget','legacy-transaction') and f.name='amount')
+      or (e.scope='saving-goal' and f.name='targetAmount')
+      or (e.scope='lending-settlement' and f.name='total')
+      or (e.scope='credit-card' and f.name='creditLimit')
+      or (e.scope='settings' and f.name in ('monthlyBudget','creditLimit'))
+    )
+    union all
+    select jsonb_build_array('review-split',review.key,part.value->>'id','amount'),
+      part.value->'amount',2
+    from jsonb_each(coalesce(p_state->'reviewDecisions','{}'::jsonb)) review(key,value)
+    cross join lateral jsonb_array_elements(coalesce(review.value->'parts','[]'::jsonb)) part(value)
+    where part.value ? 'amount'
+  )
+  select distinct on (field_key) field_key,amount from money
+  order by field_key,priority desc;
+$;
+
+-- Shared precision primitive: old event contract and new independent drafts.
+create or replace function private.rheomiq_require_changed_money_cents(p_amount jsonb)
+returns void language plpgsql security invoker set search_path='' as $
+declare v_numeric numeric;v_cents numeric;
+begin
+  if p_amount is null or jsonb_typeof(p_amount)<>'number' then
+    raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
+  end if;
+  begin
+    v_numeric:=(p_amount::text)::numeric;
+    v_cents:=round(v_numeric*100);
+  exception when numeric_value_out_of_range or invalid_text_representation then
+    raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
+  end;
+  if v_numeric::text in ('NaN','Infinity','-Infinity')
+     or abs(v_cents)>9007199254740991
+     or abs(v_numeric*100-v_cents)>0.000001 then
+    raise exception using errcode='22023',message='INVALID_EVENT_CENT_PRECISION';
+  end if;
+end;
+$;
+
+create or replace function private.rheomiq_guard_changed_draft_cents(
+  p_seed jsonb,p_previous jsonb,p_next jsonb
+) returns void language plpgsql security invoker set search_path='' as $
+declare v_item record;
+begin
+  for v_item in
+    select n.field_key,n.amount
+    from private.rheomiq_mutable_draft_money_fields(p_next,null) n
+    left join private.rheomiq_mutable_draft_money_fields(p_previous,p_seed) old
+      on old.field_key=n.field_key
+    where old.amount is distinct from n.amount
+  loop
+    perform private.rheomiq_require_changed_money_cents(v_item.amount);
+  end loop;
+end;
+$;
 
 revoke all on function private.rheomiq_mutable_event_money_fields(jsonb) from public,anon;
 revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;
 grant execute on function private.rheomiq_mutable_event_money_fields(jsonb) to authenticated,service_role;
 grant execute on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) to authenticated,service_role;
+revoke all on function private.rheomiq_mutable_draft_money_fields(jsonb,jsonb) from public,anon;
+revoke all on function private.rheomiq_require_changed_money_cents(jsonb) from public,anon;
+revoke all on function private.rheomiq_guard_changed_draft_cents(jsonb,jsonb,jsonb) from public,anon;
+grant execute on function private.rheomiq_mutable_draft_money_fields(jsonb,jsonb) to authenticated,service_role;
+grant execute on function private.rheomiq_require_changed_money_cents(jsonb) to authenticated,service_role;
+grant execute on function private.rheomiq_guard_changed_draft_cents(jsonb,jsonb,jsonb) to authenticated,service_role;
 -- END I22.02 ISOLATED LOCAL POSTGRES HELPERS
 
 create or replace function public.rheomiq_save_mutable_state_history(
@@ -135,6 +219,9 @@ begin
   -- Same owner/AAL2, revision and history-generation lock: forbid only newly
   -- submitted unrepresentable event money, never rewrite imported history.
   perform private.rheomiq_guard_changed_event_cents(v_current_full_state,p_state);
+  perform private.rheomiq_guard_changed_draft_cents(
+    v_current.data->'seed',v_current_full_state,p_state
+  );
 
   select expires_at<=now() into v_current_expired
   from public.rheomiq_history_points

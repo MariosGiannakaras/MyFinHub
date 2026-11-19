@@ -81,6 +81,10 @@ describe('production migration ledger source contract',()=>{
     expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
     expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
     expect(sql).toContain('perform private.rheomiq_guard_changed_event_cents(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_draft_cents(');
+    expect(sql).toContain("v_current.data->'seed',v_current_full_state,p_state");
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_draft_cents(jsonb,jsonb,jsonb) from public,anon;');
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_draft_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
     expect(sql.indexOf('perform private.rheomiq_guard_changed_event_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
     expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;');
   });
