@@ -58,10 +58,10 @@ function parseProvider(value:unknown,requireCollections=false):FinancialProvider
     const url=typeof asset.url==='string'?asset.url.trim():'';
     const fileName=typeof asset.fileName==='string'?asset.fileName.trim():undefined;
     const mimeType=typeof asset.mimeType==='string'?asset.mimeType.trim():undefined;
-    const sizeBytes=asset.sizeBytes===null||asset.sizeBytes===undefined?null:Number(asset.sizeBytes);
+    const sizeBytes=asset.sizeBytes===null||asset.sizeBytes===undefined?null:asset.sizeBytes;
     const updatedAt=typeof asset.updatedAt==='string'?asset.updatedAt:undefined;
     if(!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey)||!roles.includes(role)||!/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!providerAssetUrlAllowed(url))return null;
-    if(sizeBytes!==null&&(!Number.isFinite(sizeBytes)||sizeBytes<0))return null;
+    if(sizeBytes!==null&&(!Number.isSafeInteger(sizeBytes)||typeof sizeBytes!=='number'||sizeBytes<0))return null;
     assets.push({assetKey,role,variant,url,fileName,mimeType,sizeBytes,updatedAt});
   }
   // An asset key identifies one registration, not multiple variants.
@@ -81,10 +81,16 @@ function parseProvider(value:unknown,requireCollections=false):FinancialProvider
   }
   // One assignment per (provider, role, variant); do not choose an arbitrary match.
   if(new Set(bindings.map(binding=>binding.role+':'+binding.variant)).size!==bindings.length)return null;
-  const sortOrder=Number(row.sortOrder);
+  // A 200 catalog is not a trustworthy read-back when an assigned binary
+  // cannot be found among this provider's registered active assets.
+  const available=new Set(assets.map(asset=>asset.assetKey));
+  if(bindings.some(binding=>!available.has(binding.assetKey)))return null;
+  if(logoAssetKey!==null&&!available.has(logoAssetKey))return null;
+  if(wordmarkAssetKey!==null&&!available.has(wordmarkAssetKey))return null;
+  const sortOrder=row.sortOrder;
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
-  if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
+  if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||typeof sortOrder!=='number'||!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000)return null;
   if(logoUrl!==null&&!providerAssetUrlAllowed(logoUrl)||wordmarkUrl!==null&&!providerAssetUrlAllowed(wordmarkUrl))return null;
   return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,assets,bindings,sortOrder};
 }

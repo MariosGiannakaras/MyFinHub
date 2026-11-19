@@ -108,6 +108,57 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     }
   );
 
+  it.each([
+    'orphaned-binding','orphaned-primary-logo','orphaned-primary-wordmark',
+    'text-size-bytes','fractional-size-bytes','text-sort-order','null-sort-order',
+  ] as const)('fails closed for %s in a complete HTTP-200 provider catalog without replaying writes',async failure=>{
+    const asset={
+      assetKey:'qa-integrity-asset-aabbccddee11',role:'logo' as const,
+      variant:'universal',url:'https://assets.example/logo.png',
+      fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+    };
+    const record={
+      id:'qa-integrity-bank',displayName:'QA Integrity Bank',shortName:'QA Integrity',
+      providerKind:'bank',countryCode:'GR',sortOrder:119,
+      logoAssetKey:null as string|null,wordmarkAssetKey:null as string|null,
+      logoUrl:null,wordmarkUrl:null,
+      assets:[asset],bindings:[{role:'logo' as const,variant:'universal' as const,assetKey:asset.assetKey}],
+    };
+    const absentKey='qa-integrity-asset-001122334455';
+    const corrupted:Record<string,unknown>=failure==='orphaned-binding'
+      ?{...record,bindings:[{...record.bindings[0],assetKey:absentKey}]}
+      :failure==='orphaned-primary-logo'
+        ?{...record,logoAssetKey:absentKey}
+        :failure==='orphaned-primary-wordmark'
+          ?{...record,wordmarkAssetKey:absentKey}
+          :failure==='text-size-bytes'
+            ?{...record,assets:[{...asset,sizeBytes:'2'}]}
+            :failure==='fractional-size-bytes'
+              ?{...record,assets:[{...asset,sizeBytes:2.5}]}
+              :failure==='text-sort-order'
+                ?{...record,sortOrder:'119'}
+                :{...record,sortOrder:null};
+    let reads=0;
+    const methods:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async (_input:RequestInfo|URL,init?:RequestInit)=>{
+      const method=(init?.method??'GET').toUpperCase();
+      methods.push(method);
+      expect(method).toBe('GET');
+      return new Response(JSON.stringify({providers:[reads++===0?corrupted:record]}),{
+        status:200,headers:{'content-type':'application/json'},
+      });
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {refreshFinancialProviders}=await import(clientPath);
+    const rejected=await refreshFinancialProviders(true);
+    expect(rejected.error).toBeTruthy();
+    expect(rejected.providers.some(row=>row.id===record.id)).toBe(false);
+    const recovered=await refreshFinancialProviders(true);
+    expect(recovered.error).toBeNull();
+    expect(recovered.providers.filter(row=>row.id===record.id)).toHaveLength(1);
+    expect(methods).toEqual(['GET','GET']);
+  });
+
   it.each(['malformed-extra-provider','duplicate-provider-id'] as const)(
     'rejects a 200 catalog with %s instead of silently publishing an incomplete provider list',async failure=>{
       const record={
