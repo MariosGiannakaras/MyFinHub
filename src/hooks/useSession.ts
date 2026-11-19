@@ -48,9 +48,7 @@ export function useSession() {
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
       if (e instanceof ApiError && e.status === 401) {
-        resetAuthScope();
-        setEmail(null);
-        setState('anonymous');
+        applySession({ authenticated:false, email:null });
       } else {
         setError(operationalMessage(e, 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας. Δοκίμασε ξανά.'));
         setState('error');
@@ -133,16 +131,14 @@ export function useSession() {
     try {
       await logoutApi();
       if (epoch !== transitionEpoch.current) return false;
-      resetAuthScope();
-      setEmail(null);
-      setState('anonymous');
+      applySession({ authenticated:false, email:null });
       return true;
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
       setError(operationalMessage(e, 'Η αποσύνδεση δεν ολοκληρώθηκε. Η τρέχουσα συνεδρία παραμένει ενεργή. Δοκίμασε ξανά.'));
       return false;
     }
-  }, []);
+  }, [applySession]);
 
   return { state, email, error, login, enrollMfa, verifyMfa, logout, refresh };
 }

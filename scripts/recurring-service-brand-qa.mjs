@@ -42,8 +42,20 @@ try{
         if(method==='PUT'){
           globalThis.__recurringAssetWrites+=1;
           const file=init?.body;
-          replacement={...replacement,recurringId:new URL(url,location.origin).searchParams.get('recurringId')||replacement.recurringId,
-            fileName:file?.name||replacement.fileName,mimeType:file?.type||replacement.mimeType,sizeBytes:file?.size??replacement.sizeBytes};
+          const params=new URL(url,location.origin).searchParams;
+          // Mirror the server contract: file name is a request query field,
+          // media type is a header, and size comes from the binary File body.
+          replacement={...replacement,
+            recurringId:params.get('recurringId')||replacement.recurringId,
+            fileName:params.get('fileName')||replacement.fileName,
+            mimeType:new Headers(init?.headers).get('content-type')||replacement.mimeType,
+            sizeBytes:file?.size??replacement.sizeBytes};
+          globalThis.__recurringAssetMockLast={
+            fileName:replacement.fileName,headerType:replacement.mimeType,
+            binarySize:typeof file?.size==='number'?file.size:null,
+            bodyName:typeof file?.name==='string'?file.name:null,
+            recurringId:replacement.recurringId,
+          };
           registered=[replacement,...registered.filter(asset=>asset.assetKey!==replacement.assetKey)];
           return new Response(JSON.stringify({asset:replacement}),{status:200,headers:{'content-type':'application/json'}});
         }
@@ -64,7 +76,7 @@ try{
     if(label==='replaced recurring logo'){
       // A failed UI assertion is not evidence of failure cause. Preserve a
       // synthetic-only error-state screenshot and narrow redacted debug facts.
-      const facts=await c.call("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('QA Streaming'));return {editorOpen:Boolean(document.querySelector('.recurring-editor-dialog')),error:(document.querySelector('#recurring-editor-error')?.textContent||'').slice(0,250),assetKey:row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')||'',writes:globalThis.__recurringAssetWrites||0,deletes:globalThis.__recurringAssetDeletes||0}}");
+      const facts=await c.call("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('QA Streaming'));return {editorOpen:Boolean(document.querySelector('.recurring-editor-dialog')),error:(document.querySelector('#recurring-editor-error')?.textContent||'').slice(0,250),assetKey:row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')||'',writes:globalThis.__recurringAssetWrites||0,deletes:globalThis.__recurringAssetDeletes||0,request:globalThis.__recurringAssetMockLast||null}}");
       await shot('recurring-service-brand-replace-failed');
       throw new Error('Timed out waiting for '+label+': '+JSON.stringify(facts));
     }
