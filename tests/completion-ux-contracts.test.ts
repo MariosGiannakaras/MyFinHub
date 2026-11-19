@@ -125,7 +125,8 @@ describe('completion UX contracts',()=>{
     const cardVault=read('src/lib/cardVaultClient.ts');
     const metadata=read('src/lib/accountMetadataClient.ts');
     expect(helper).toContain("code==='AUTH_REQUIRED'||code==='DEVICE_ACCESS_REVOKED'");
-    expect(helper).toContain("window.dispatchEvent(new Event('rheomiq:auth-expired'))");
+    expect(helper).toContain("'rheomiq:auth-expired'");
+    expect(helper).toContain("if(event)window.dispatchEvent(new Event(event))");
     expect(api).toContain('notifyAuthExpired(response.status, details.code)');
     expect(cardVault).toContain('notifyAuthExpired(response.status,code)');
     expect(metadata).toContain('notifyAuthExpired(response.status,code)');

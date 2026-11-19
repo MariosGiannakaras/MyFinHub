@@ -1,3 +1,11 @@
+## 2026-11-19 — #649 completion-UX auth event guard aligned to single dispatch
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; I19.04/I22.02 PARTIAL). Exact `1efe170` [CI #44610236295](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44610236295) **validate FAILED** at one old literal-string source guard in `tests/completion-ux-contracts.test.ts`: it expected the previous direct `window.dispatchEvent(new Event('rheomiq:auth-expired'))` source form, whereas the new **single conditional event dispatch** retains precisely the same runtime revoked-session and MFA-required behavior. Other **2,099/2,100** tests passed; the build/bundle check **was not reached** on this exact head, so no claim of 528 KiB compliance yet.
+
+**Narrow repair:** The guard now checks the revoked-session event literal and the guarded centralized `if(event)window.dispatchEvent(new Event(event))` branch, while `tests/auth-expiry-state.test.ts` retains actual runtime positive hard-expiry, 403 MFA signal and 401 unrelated-code negative tests. Source tests are updated to new semantics, not skipped. The 528.0 KiB hard budget remains unchanged and must pass on new head. The corrected recurring logo key and one-shot Draft browser run remain pending acceptance. Preserve all finance/owner/AAL2/RLS, no production, Android, main or merge.
+
+---
+
 ## 2026-11-19 — #649 exact eager JS target: consolidate duplicate auth-expiry DOM dispatch and session state selection
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Exact `b684a03` [CI #44609355802](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44609355802) **330/330 test files, 2,100/2,100 tests PASS**, but `validate` **FAILED** only the unchanged main JS raw 528.0 KiB budget. Vite reports **540.68 kB** for the raw `index` file versus 528.0 KiB = **540.672 kB** (rounded estimate only; at least a few excess bytes). Lazy recurring-client string dedup was insufficient to change this eager index footprint; no limit increase.
