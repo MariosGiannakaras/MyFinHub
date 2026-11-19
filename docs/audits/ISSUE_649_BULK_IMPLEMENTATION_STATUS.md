@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 strict metadata write and primary image-intent API boundary
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged: I19.04 remains PARTIAL; no double-counting). Prior consolidated [CI #44577587340](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44577587340) **SUCCESS** (validate, CodeQL, Unified) on source head `9df28bb`, confirming the coherent server readback fixes without recurring syntactic defects.
+
+**New confirmed direct write boundary:** `server/accountMetadataHandler.ts::parseFinancialProviderWrite` coerced unknown JSON `sortOrder` with `Number()`, accepting `null`, empty text or boolean as a valid 0 (or text "900" as 900) and forwarding an unintended metadata mutation to the database. It now accepts only explicit JSON numbers, exact safe integer 0–100000. `parseProviderAssetUpload` separately treated an invalid or ambiguous supplied `primary` query (e.g. "true", "2", arrays) as `false`, silently downgrading the image assignment; now only omitted or explicit "0"/"1" is accepted, retaining legacy omitted=false and forbidding primary card-mark. A single matrix in the existing provider-brand-management tests covers invalid/valid JSON types, primary variants and forbidden primary role. The existing owner UID+AAL2/origin guards, Storage/SQL and client write contract are unchanged. No extra database or network operations.
+
+**Gate:** This batch requires a new exact-head Draft source/CodeQL/Unified CI check; previous green CI cannot be reused for the new head. No browser UI changes, no unnecessary full rendered/Windows/WebKit/Lighthouse draft runs; full coherent Ready matrix still pending. I18.02 independent external PostgreSQL+Storage recovery approval-gated; #660 dependency PR separately owned. No hosted finance/Storage writes, migration, Android, main, release or merge. Next: inspect exact-head CI once, correct genuine failures without weakening security/limits, then continue the next unblocked original #649 item.
+
+---
+
 ## 2026-11-19 — #649 bulk provider/recurring catalog integrity and syntax gate repair
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; all changes are bounded I19.04 PARTIAL). **Confirmed prior failure:** exact head `e43fba4` [CI #44573093489](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44573093489) **FAILED** in `validate` TypeScript hygiene with `server/accountMetadataStore.ts:305–313` syntax errors; CodeQL **SUCCESS**, Unified **FAIL** because validate did not pass. The prior commit accidentally changed an object-producing `.map(() => ({...}))` to an invalid block-bodied callback; do not mark that head accepted.

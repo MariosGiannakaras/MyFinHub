@@ -178,6 +178,40 @@ describe('provider branding management',()=>{
     expect(()=>parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'blue',assetKey:'demo-shared'})).toThrow(ApiError);
   });
 
+
+  it('rejects coercible provider order and malformed primary upload intent before mutating metadata (#649 I19.04)',()=>{
+    for(const invalid of ['900','',null,undefined,false,true,[],{},1.5,-1,100001,Number.MAX_SAFE_INTEGER]){
+      expect(()=>parseFinancialProviderWrite({
+        id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',
+        providerKind:'bank',countryCode:'GR',sortOrder:invalid,
+      })).toThrowError(ApiError);
+    }
+    for(const valid of [0,900,100000]){
+      expect(parseFinancialProviderWrite({
+        id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',
+        providerKind:'bank',countryCode:'GR',sortOrder:valid,
+      }).sortOrder).toBe(valid);
+    }
+    const query={providerId:'demo-bank',role:'logo',variant:'light',fileName:'logo.png'};
+    const headers={'content-type':'image/png'};
+    expect(parseProviderAssetUpload({query,headers}).makePrimary).toBe(false);
+    for(const primary of ['0','1']){
+      expect(parseProviderAssetUpload({query:{...query,primary},headers}).makePrimary)
+        .toBe(primary==='1');
+    }
+    for(const primary of ['true','false','yes','2','',null,true,1,['0','1']]){
+      expect(()=>parseProviderAssetUpload({query:{...query,primary},headers})).toThrowError(ApiError);
+    }
+    // A forbidden primary card mark remains rejected instead of coercing its
+    // primary flag away; an explicit variant card mark is still valid.
+    expect(()=>parseProviderAssetUpload({
+      query:{...query,role:'card-mark',primary:'1'},headers,
+    })).toThrowError(ApiError);
+    expect(parseProviderAssetUpload({
+      query:{...query,role:'card-mark',primary:'0'},headers,
+    }).makePrimary).toBe(false);
+  });
+
   it('checks image signatures and rejects active SVG content',()=>{
     expect(()=>validateProviderAssetContent('image/png',Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]))).not.toThrow();
     expect(()=>validateProviderAssetContent('image/jpeg',Buffer.from([0xff,0xd8,0xff,0x00]))).not.toThrow();
