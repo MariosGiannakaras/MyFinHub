@@ -1,5 +1,4 @@
 import type { FinanceData, LegacyTransaction } from '../types.js';
-import { isValidDateOnly } from './dateOnly.js';
 
 function deletedIds(value: FinanceData['state']['deleted']) {
   if (Array.isArray(value)) return new Set(value);
@@ -21,6 +20,15 @@ export function effectiveLegacyTransaction(data: FinanceData, id: string): Legac
   return data.state.overrides?.[id] ?? seed;
 }
 
+function validIsoDate(value: string) {
+  // Compare canonical UTC serialization, not merely Date parsing (which
+  // silently rolls 2026-02-30 into March). Keep this small, synchronous
+  // legacy-editor boundary out of the hard-budget eager shared date chunk.
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    && value.slice(0, 4) !== '0000'
+    && new Date(`${value}T00:00:00.000Z`).toJSON()?.slice(0, 10) === value;
+}
+
 function requireKnownAccount(data: FinanceData, id: string | undefined, label: string) {
   if (!id || !data.seed.accounts.some((account) => account.id === id)) throw new Error(`${label} δεν είναι πλέον διαθέσιμος.`);
   return id;
@@ -29,7 +37,7 @@ function requireKnownAccount(data: FinanceData, id: string | undefined, label: s
 export function normalizeLegacyOverride(data: FinanceData, input: LegacyTransaction): LegacyTransaction {
   const original = seedLegacyTransaction(data, input.id);
   if (!original) throw new Error('Η ιστορική κίνηση δεν υπάρχει πλέον στο αρχικό εισαγόμενο αρχείο.');
-  if (!isValidDateOnly(input.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
+  if (!validIsoDate(input.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || (input.type === 'adjustment' ? amount === 0 : amount <= 0)) {
     throw new Error(input.type === 'adjustment' ? 'Η διόρθωση δεν μπορεί να έχει μηδενικό ποσό.' : 'Συμπλήρωσε ποσό μεγαλύτερο από μηδέν.');

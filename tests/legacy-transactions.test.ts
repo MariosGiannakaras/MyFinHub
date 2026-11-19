@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { accountBalances, createEvent, effectiveLegacyTransactions, monthlyFlow } from '../src/lib/domain.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
 import { effectiveLegacyTransaction, restoreLegacyOriginal, withLegacyOverride, withLegacyTombstone } from '../src/lib/legacyTransactions.js';
 import type { FinanceData, LegacyTransaction } from '../src/types.js';
 
@@ -149,6 +150,21 @@ describe('legacy transaction overrides and tombstones', () => {
     const adjustment = withLegacyOverride(data, { ...data.seed.transactions[0], type: 'adjustment', accountId: 'bank-a', amount: -25 });
     expect(adjustment.state.overrides['legacy-1'].amount).toBe(-25);
     expect(accountBalances(adjustment, '2026-08-31')['bank-a']).toBe(1015);
+  });
+
+  it('keeps the compact legacy edit date check equivalent to the canonical calendar validator', () => {
+    const data = fixture();
+    const original = data.seed.transactions[0];
+    for (const year of [1900, 2000, 2026, 2028]) {
+      for (const month of [0, 1, 2, 4, 6, 12, 13]) {
+        for (const day of [0, 1, 28, 29, 30, 31, 32]) {
+          const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const attempt = () => withLegacyOverride(data, { ...original, date });
+          if (isValidDateOnly(date)) expect(attempt().state.overrides['legacy-1']?.date).toBe(date);
+          else expect(attempt).toThrow('Διάλεξε έγκυρη ημερομηνία.');
+        }
+      }
+    }
   });
 
   it('rejects impossible calendar dates in owner edits without changing the imported seed', () => {
