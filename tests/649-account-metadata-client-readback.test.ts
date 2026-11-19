@@ -50,8 +50,9 @@ describe('#649 I19.04 IBAN client catalog and revision acknowledgement',()=>{
       if(scenario==='skipped-revision')reply.revision=2;
       const requests:Array<{method:string;body:string}>=[];
       vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
-        requests.push({method:String(init?.method??'GET'),body:String(init?.body??'')});
-        return new Response(JSON.stringify({record:reply}),{
+        const method=String(init?.method??'GET');
+        requests.push({method,body:String(init?.body??'')});
+        return new Response(JSON.stringify(method==='GET'?{records:[]}:{record:reply}),{
           status:200,headers:{'content-type':'application/json'},
         });
       }));
@@ -65,9 +66,61 @@ describe('#649 I19.04 IBAN client catalog and revision acknowledgement',()=>{
           .rejects.toThrow('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');
         expect(client.getAccountMetadataSnapshot().records['account-one']).toBeUndefined();
       }
-      expect(requests).toHaveLength(1);
-      expect(requests[0]?.method).toBe('PUT');
-      expect(JSON.parse(requests[0]?.body??'{}')).toEqual({accountId:'account-one',iban});
+      expect(requests.map(x=>x.method)).toEqual(['GET','PUT']);
+      expect(JSON.parse(requests[1]?.body??'{}')).toEqual({accountId:'account-one',iban});
     }
   );
+  it.each(['failed-GET','invalid-GET','prior-stale-GET'] as const)(
+    'never POSTs an IBAN using invented revision zero after %s',async scenario=>{
+      const methods:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method??'GET');methods.push(method);
+        if(method!=='GET')throw new Error('No IBAN write without verified readback');
+        const payload=scenario==='invalid-GET'?{}:{records:[]};
+        return new Response(JSON.stringify(payload),{
+          status:scenario==='failed-GET'?503:200,headers:{'content-type':'application/json'},
+        });
+      }));
+      const client=await importClient();
+      if(scenario==='prior-stale-GET'){
+        // Create a retained error with a prior successful read. A later
+        // write still must not trust the old revision when refresh fails.
+        let count=0;
+        vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+          const method=String(init?.method??'GET');methods.push(method);
+          if(method!=='GET')throw new Error('No unsafe mutation on stale catalog');
+          return new Response(JSON.stringify(++count===1?{records:[record()]}:{}),{
+            status:200,headers:{'content-type':'application/json'},
+          });
+        }));
+        await client.refreshAccountMetadata(true);
+        const bad=await client.refreshAccountMetadata(true);
+        expect(bad.error).toBeTruthy();
+        expect(bad.records['account-one']).toMatchObject(record());
+      }
+      await expect(client.saveAccountMetadata('account-one',iban))
+        .rejects.toThrow('Η τρέχουσα έκδοση IBAN δεν έχει επιβεβαιωθεί.');
+      expect(methods.every(method=>method==='GET')).toBe(true);
+      expect(methods).toHaveLength(scenario==='prior-stale-GET'?3:1);
+    }
+  );
+
+  it('uses the exact verified account revision after a cold catalog GET',async()=>{
+    const methods:string[]=[],headers:Record<string,string>[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+      const method=String(init?.method??'GET');methods.push(method);
+      headers.push(Object.fromEntries(new Headers(init?.headers).entries()));
+      return new Response(JSON.stringify(method==='GET'?
+        {records:[{...record(),revision:4}]}:
+        {record:{...record(),revision:5}}),{
+        status:200,headers:{'content-type':'application/json'},
+      });
+    }));
+    const client=await importClient();
+    const result=await client.saveAccountMetadata('account-one',iban);
+    expect(result.revision).toBe(5);
+    expect(headers[1]?.['if-match']).toBe('4');
+    expect(methods).toEqual(['GET','PUT']);
+  });
+
 });

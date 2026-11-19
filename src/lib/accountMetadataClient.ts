@@ -71,13 +71,22 @@ export async function refreshAccountMetadata(force=false){
 
 export async function saveAccountMetadata(accountId:string,iban:string|null){
   const normalized=assertValidIban(iban);
-  const current=snapshot.records[accountId];
   if(QA_MODE){
+    const current=snapshot.records[accountId];
     const record:AccountMetadataRecord={accountId,iban:normalized,revision:(current?.revision??0)+1,updatedAt:QA_UPDATED_AT};
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
     return record;
   }
   return trackDatabaseWrite(async()=>{
+  // A failed/incomplete GET is not evidence that an account has no metadata
+  // and can be written at revision zero. Reconcile by read-only GET first;
+  // never create an uncertain duplicate versioned write on blind retry.
+  if(!snapshot.loaded||snapshot.loading||snapshot.error){
+    const recovered=await refreshAccountMetadata(true);
+    if(!recovered.loaded||recovered.error)
+      throw new Error('Η τρέχουσα έκδοση IBAN δεν έχει επιβεβαιωθεί. Φόρτωσε ξανά τα στοιχεία πριν από αποθήκευση.');
+  }
+  const current=snapshot.records[accountId];
   const response=await apiRequest('/api/account-metadata',{
     method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
     body:JSON.stringify({accountId,iban:normalized}),

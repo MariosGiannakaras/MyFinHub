@@ -370,9 +370,17 @@ async function writeProviderRpc(rpc:string,input:FinancialProviderWrite,accessTo
       p_sort_order:input.sortOrder,
     }),
   },accessToken);
-  const row=Array.isArray(payload)?payload[0]:null;
-  if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
-  return mapFinancialProviderRow(row);
+  // A returned HTTP 200 can conceal a committed mutation with a malformed
+  // acknowledgement. Never accept the first of multiple rows as proof of
+  // exactly this create/update request.
+  if(!Array.isArray(payload)||payload.length!==1)
+    throw new ApiError(503,'FINANCIAL_PROVIDER_WRITE_UNVERIFIED','Financial provider write acknowledgement is unverified.',false);
+  const row=mapFinancialProviderRow(payload[0]);
+  if(row.id!==input.id||row.displayName!==input.displayName||
+    row.shortName!==input.shortName||row.providerKind!==input.providerKind||
+    row.countryCode!==input.countryCode||row.sortOrder!==input.sortOrder)
+    throw new ApiError(503,'FINANCIAL_PROVIDER_WRITE_UNVERIFIED','Financial provider write acknowledgement is unverified.',false);
+  return row;
 }
 
 export function writeFinancialProvider(input:FinancialProviderWrite,accessToken:string){
@@ -527,6 +535,20 @@ export async function setFinancialProviderAssetBinding(input:{
       p_asset_key:input.assetKey,
     }),
   },accessToken);
+  // This RPC RETURNS void. A 200/null payload proves transport completion,
+  // not the exact requested slot. Confirm the single committed binding (or
+  // its removal) before the API sends ok:true to its native/browser clients.
+  const records=await request(
+    `rheomiq_financial_provider_asset_bindings?select=provider_id,asset_role,variant,asset_key&provider_id=eq.${encodeURIComponent(input.providerId)}&asset_role=eq.${encodeURIComponent(input.role)}&variant=eq.${encodeURIComponent(input.variant)}`,
+    {method:'GET'},accessToken);
+  if(!Array.isArray(records)||records.length!==(input.assetKey===null?0:1))
+    throw new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED','Provider image binding acknowledgement is unverified.',false);
+  if(input.assetKey!==null){
+    const row=records[0] as Partial<StoredFinancialProviderAssetBindingRow>|null;
+    if(!row||row.provider_id!==input.providerId||row.asset_role!==input.role||
+      row.variant!==input.variant||row.asset_key!==input.assetKey)
+      throw new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED','Provider image binding acknowledgement is unverified.',false);
+  }
 }
 
 export async function uploadRecurringServiceAsset(input:{
