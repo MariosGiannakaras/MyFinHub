@@ -31,11 +31,11 @@ export function parseRecurringServiceAsset(value:unknown):RecurringServiceAsset|
   const url=typeof row.url==='string'?row.url.trim():'';
   const fileName=typeof row.fileName==='string'?row.fileName.trim():'';
   const mimeType=typeof row.mimeType==='string'?row.mimeType.trim() as RecurringServiceAsset['mimeType']:'' as RecurringServiceAsset['mimeType'];
-  const sizeBytes=Number(row.sizeBytes);
+  const sizeBytes=row.sizeBytes;
   const updatedAt=typeof row.updatedAt==='string'?row.updatedAt.trim():'';
   if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey)||!recurringId||recurringId.length>200||/[\u0000-\u001f\u007f]/.test(recurringId)||
     !publicAssetUrlAllowed(url)||!fileName||fileName.length>160||!MIME_TYPES.has(mimeType)||
-    !Number.isSafeInteger(sizeBytes)||sizeBytes<1||sizeBytes>2*1024*1024||!updatedAt)return null;
+    typeof sizeBytes!=='number'||!Number.isSafeInteger(sizeBytes)||sizeBytes<1||sizeBytes>2*1024*1024||!updatedAt)return null;
   return {assetKey,recurringId,url,fileName,mimeType,sizeBytes,updatedAt};
 }
 
@@ -50,7 +50,14 @@ export async function refreshRecurringServiceAssets(force=false){
       const response=await apiRequest('/api/account-metadata?resource=recurring-service-assets',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η φόρτωση των λογοτύπων υπηρεσιών.');
-      const assets=(Array.isArray(payload?.assets)?payload.assets:[]).map(parseRecurringServiceAsset).filter(Boolean) as RecurringServiceAsset[];
+      if(!Array.isArray(payload?.assets))
+        throw new Error('Η λίστα εικόνων υπηρεσιών δεν επιβεβαιώθηκε.');
+      const parsed=payload.assets.map(parseRecurringServiceAsset) as Array<RecurringServiceAsset|null>;
+      if(parsed.some(asset=>asset===null))
+        throw new Error('Η λίστα εικόνων υπηρεσιών δεν επιβεβαιώθηκε.');
+      const assets=parsed as RecurringServiceAsset[];
+      if(new Set(assets.map(asset=>asset.assetKey)).size!==assets.length)
+        throw new Error('Η λίστα εικόνων υπηρεσιών έχει διπλές καταχωρίσεις.');
       return publish({loaded:true,loading:false,assets,error:null});
     }catch{
       return publish({loaded:true,loading:false,assets:[],error:'Δεν ήταν δυνατή η φόρτωση των λογοτύπων υπηρεσιών.'});
@@ -71,10 +78,23 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση του λογοτύπου.');
   const asset=parseRecurringServiceAsset(payload?.asset);
-  if(!asset)throw new Error('Η αποθηκευμένη εικόνα υπηρεσίας δεν ήταν έγκυρη.');
-  const assets=[asset,...snapshot.assets.filter(item=>item.assetKey!==asset.assetKey)];
-  publish({loaded:true,loading:false,assets,error:null});
-  return asset;
+  // A 200 receipt must describe exactly this binary and recurring item,
+  // never a different key, file, MIME or byte count.
+  if(!asset||asset.recurringId!==input.recurringId||
+    asset.fileName!==input.file.name||asset.mimeType!==input.file.type||
+    asset.sizeBytes!==input.file.size)
+    throw new Error('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+  // Storage, registration and the finance revision are separate writes.
+  // Confirm one fresh registered catalog GET before returning a key that the
+  // caller will attach to the canonical finance state. Never replay the PUT.
+  if(pending)await pending;
+  const confirmed=await refreshRecurringServiceAssets(true);
+  const registered=confirmed.assets.find(row=>row.assetKey===asset.assetKey);
+  if(confirmed.error||!registered||registered.recurringId!==asset.recurringId||
+    registered.fileName!==asset.fileName||registered.mimeType!==asset.mimeType||
+    registered.sizeBytes!==asset.sizeBytes||registered.url!==asset.url)
+    throw new Error('Η καταχώριση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε την κατάσταση πριν από νέα μεταφόρτωση.');
+  return registered;
   });
 }
 
@@ -89,7 +109,15 @@ export async function deleteRecurringServiceAsset(assetKey:string){
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
-  publish({...snapshot,assets:snapshot.assets.filter(item=>item.assetKey!==assetKey),error:null});
+  if(payload?.ok!==true)
+    throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε.');
+  // A release/Storage purge can complete while the final response is stale.
+  // Confirm the asset is absent via a fresh owner-scoped catalog GET, without
+  // issuing another destructive DELETE after an ambiguous acknowledgement.
+  if(pending)await pending;
+  const confirmed=await refreshRecurringServiceAssets(true);
+  if(confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
+    throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε. Έλεγξε τα δεδομένα πριν από επανάληψη.');
   });
 }
 

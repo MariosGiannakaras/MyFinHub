@@ -20,6 +20,15 @@ describe('recurring service brand client and shared renderer',()=>{
       updatedAt:'2026-10-08T00:00:00.000Z',
     })?.recurringId).toBe('rec-netflix');
     expect(parseRecurringServiceAsset({
+      assetKey:'service-asset-1234567890abcdef12345678',
+      recurringId:'rec-netflix',
+      url:'https://project.example/storage/v1/object/public/recurring-service-assets/services/logo.svg',
+      fileName:'netflix.svg',
+      mimeType:'image/svg+xml',
+      sizeBytes:'512',
+      updatedAt:'2026-10-08T00:00:00.000Z',
+    })).toBeNull();
+    expect(parseRecurringServiceAsset({
       assetKey:'provider-logo',
       recurringId:'rec-netflix',
       url:'https://project.example/logo.svg',

@@ -29,17 +29,30 @@ try{
   const installMock=function(assetUrl){
     const realFetch=globalThis.fetch.bind(globalThis);
     const initial={assetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa',recurringId:'qa-service-branded',url:assetUrl,fileName:'streaming.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:00:00.000Z'};
-    const replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
+    let replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
     const paused={assetKey:'service-asset-cccccccccccccccccccccccc',recurringId:'qa-service-paused',url:assetUrl,fileName:'paused.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:06:00.000Z'};
+    let registered=[initial,paused];
     globalThis.__recurringAssetWrites=0;
     globalThis.__recurringAssetDeletes=0;
     globalThis.fetch=async function(input,init){
       const url=typeof input==='string'?input:input instanceof Request?input.url:String(input);
       const method=String((init&&init.method)||(input instanceof Request?input.method:'GET')||'GET').toUpperCase();
       if(url.includes('/api/account-metadata')&&url.includes('resource=recurring-service-assets')){
-        if(method==='GET')return new Response(JSON.stringify({assets:[initial,paused]}),{status:200,headers:{'content-type':'application/json'}});
-        if(method==='PUT'){globalThis.__recurringAssetWrites+=1;return new Response(JSON.stringify({asset:replacement}),{status:200,headers:{'content-type':'application/json'}})}
-        if(method==='DELETE'){globalThis.__recurringAssetDeletes+=1;return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}})}
+        if(method==='GET')return new Response(JSON.stringify({assets:registered}),{status:200,headers:{'content-type':'application/json'}});
+        if(method==='PUT'){
+          globalThis.__recurringAssetWrites+=1;
+          const file=init?.body;
+          replacement={...replacement,recurringId:new URL(url,location.origin).searchParams.get('recurringId')||replacement.recurringId,
+            fileName:file?.name||replacement.fileName,mimeType:file?.type||replacement.mimeType,sizeBytes:file?.size??replacement.sizeBytes};
+          registered=[replacement,...registered.filter(asset=>asset.assetKey!==replacement.assetKey)];
+          return new Response(JSON.stringify({asset:replacement}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        if(method==='DELETE'){
+          globalThis.__recurringAssetDeletes+=1;
+          const key=new URL(url,location.origin).searchParams.get('assetKey');
+          registered=registered.filter(asset=>asset.assetKey!==key);
+          return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
+        }
       }
       return realFetch(input,init);
     };
