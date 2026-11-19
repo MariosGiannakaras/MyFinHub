@@ -30,10 +30,8 @@ export function useSession() {
     if (!session.authenticated) resetAuthScope();
     setEmail(session.email || null);
     setError('');
-    if (session.authenticated) setState('authenticated');
-    else if (session.mfaEnrollmentRequired) setState('mfa-enroll');
-    else if (session.mfaRequired) setState('mfa');
-    else setState('anonymous');
+    setState(session.authenticated?'authenticated':
+      session.mfaEnrollmentRequired?'mfa-enroll':session.mfaRequired?'mfa':'anonymous');
   }, []);
 
   const refresh = useCallback(async () => {

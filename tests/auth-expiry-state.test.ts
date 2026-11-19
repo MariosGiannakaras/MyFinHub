@@ -26,6 +26,7 @@ describe('client auth-state expiry signals',()=>{
     const dispatchEvent=vi.fn();
     vi.stubGlobal('window',{dispatchEvent});
     notifyAuthExpired(403,'FORBIDDEN');
+    notifyAuthExpired(401,'INVALID_MFA_CODE');
     notifyAuthExpired(409,'REVISION_CONFLICT');
     expect(dispatchEvent).not.toHaveBeenCalled();
   });

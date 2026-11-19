@@ -1,3 +1,13 @@
+## 2026-11-19 — #649 exact eager JS target: consolidate duplicate auth-expiry DOM dispatch and session state selection
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Exact `b684a03` [CI #44609355802](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44609355802) **330/330 test files, 2,100/2,100 tests PASS**, but `validate` **FAILED** only the unchanged main JS raw 528.0 KiB budget. Vite reports **540.68 kB** for the raw `index` file versus 528.0 KiB = **540.672 kB** (rounded estimate only; at least a few excess bytes). Lazy recurring-client string dedup was insufficient to change this eager index footprint; no limit increase.
+
+**Focused eager-root reduction:** `src/lib/authExpiry.ts` emitted two separately constructed DOM events in two conditional blocks. It now determines only the two previously accepted owner-auth signals and dispatches *once*, preserving 401 hard-expiry and 403 MFA-required semantics; a regression asserts 401 INVALID_MFA_CODE sends no auth-expiry event. `src/hooks/useSession.ts` resolves the same authenticated/MFA-enroll/MFA/anonymous state with a single setState call rather than four repeated calls. This is a small duplicate-logic elimination in actual eager modules, not lazy-bound code-golf or performance-budget relaxation. Previously accepted source/CodeQL/Unified still require exact-head confirmation; existing test suite enforces the same auth and 528.0 KiB budget contracts.
+
+**Browser QA:** 24-hex synthetic key corrected and directly tested in earlier `1600f93`, but one-shot `recurring-service-brand` rendered QA still pending. Keep Draft opt-in marker OFF until a green source head; then run only one changed-surface QA and inspect its evidence. Final Ready Windows/WebKit/Lighthouse/real-stack separate. No Android, hosted data/Storage, main or merge.
+
+---
+
 ## 2026-11-19 — #649 main JS hard-budget regression: preserve exact uncertainty text, emit it once
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Exact `1600f93` [CI #44608767542](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44608767542) **330/330 Vitest files, 2,100/2,100 tests PASS**, TypeScript/build PASS, but the main JS raw bundle remains **slightly above 528.0 KiB hard budget** (display rounds both size and limit to 528.0); `validate` FAILED, not PASS. No budget change authorized or made. The shared browser auth listener already avoided parallel duplicate registrations.
