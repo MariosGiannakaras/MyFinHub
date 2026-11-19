@@ -1,3 +1,13 @@
+## 2026-11-19 — I18.05 connected device same-turn mutation latch and stale read suppression (source/browser candidate)
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged, I18.05 not yet accepted).** Exact previous [CI #44545256452](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44545256452) at `ef1e19f` **SUCCESS** (validate, CodeQL, Unified required gate, strict budget, local PostgreSQL). No other branch owners were changed.
+
+**Confirmed interaction race:** `DeviceAccessSettings` relied exclusively on asynchronous `setBusy(true)` to disable follow-up confirmations. A second confirm event in the same synchronous turn could trigger an independent duplicate revoke/rename call: the later 404 or failed response could overwrite the genuine outcome. The owner-controlled remote session may then look unrevoked even after a successful server change. Introduce a synchronous `useRef` mutation latch around revoke-one, revoke-others and nickname saves; keep all existing owner/AAL2/Origin and actual server authorization unchanged. Use a request generation counter so a GET read started before mutation cannot overwrite its post-mutation acknowledged device list or display old read errors. Invalidate any outstanding GET and clear its loading spinner when starting mutation; preserve accurate red errors and only show green after verified mutation + resulting list.
+
+**Targeted regression:** existing `tests/device-access.test.ts` protects latch, read-order and receipt rules. Existing `scripts/settings-tabs-qa.mjs` desktop synthetic device-revoke error journey now double-clicks the confirmation in the same JS task, and asserts exactly **one** POST through QA-only `qa.html` counter, while retaining original busy/error/visible screenshot evidence; no real device revoked or private user metadata. Run this one focused Settings browser suite and inspect screenshots only after source CI passes. No full release/Windows/WebKit/Android/production QA at Draft. New source head unvalidated; don't count I18.05 or claim the browser proof yet.
+
+---
+
 ## 2026-11-19 — I19.04 server-side provider asset ownership and truthful readback
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; umbrella I19.04 remains PARTIAL).** The previous `0c3ee3c` CI #44544515400 had **validate SUCCESS**; CodeQL/Unified still pending at the last inspection. This additional server change requires a new exact-head gate.

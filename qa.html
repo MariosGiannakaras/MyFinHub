@@ -47,6 +47,8 @@
         })});
         const nativeFetch=window.fetch.bind(window);
         const deviceNow=Date.now();
+        let devicePostCalls=0;
+        window.__myfinhubQaDevicePostCount=()=>devicePostCalls;
         let deviceRows=[
           {sessionId:'123e4567-e89b-42d3-a456-426614174001',current:true,platform:'windows',label:'Windows · MyFinHub PC',appVersion:'1.3.0',firstSeenAt:new Date(deviceNow-86400000*12).toISOString(),lastSeenAt:new Date(deviceNow-45000).toISOString()},
           {sessionId:'123e4567-e89b-42d3-a456-426614174002',current:false,platform:'android',label:'Android · Pixel',appVersion:'1.0.0',firstSeenAt:new Date(deviceNow-86400000*3).toISOString(),lastSeenAt:new Date(deviceNow-32*60000).toISOString()},
@@ -73,6 +75,7 @@
             return new Response(JSON.stringify({devices:deviceRows}),{status:200,headers:{'content-type':'application/json'}});
           }
           if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&String(init?.method||'GET').toUpperCase()==='POST'){
+            devicePostCalls+=1;
             await new Promise(resolve=>setTimeout(resolve,650));
             return new Response(JSON.stringify({error:{code:'QA_DEVICE_REVOKE_UNAVAILABLE',message:'Synthetic device revoke unavailable'}}),{status:503,headers:{'content-type':'application/json'}});
           }

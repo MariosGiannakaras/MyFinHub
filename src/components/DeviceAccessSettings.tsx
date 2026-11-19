@@ -1,5 +1,5 @@
 import { Globe2, Monitor, RefreshCw, ShieldCheck, ShieldMinus, Smartphone } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, getConnectedDevices, renameConnectedDevice, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Button } from './Button';
@@ -50,12 +50,26 @@ export function DeviceAccessSettings(){
   const[confirmationError,setConfirmationError]=useState('');
   const[renaming,setRenaming]=useState<string|null>(null);
   const[nameDraft,setNameDraft]=useState('');
+  // React's busy state is not synchronous: a second same-turn confirm could
+  // otherwise send a duplicate revocation (and overwrite the first receipt).
+  const mutationInFlight=useRef(false);
+  // A GET begun before a revocation must never restore its old device list.
+  const readGeneration=useRef(0);
 
   const load=useCallback(async()=>{
+    if(mutationInFlight.current)return;
+    const generation=++readGeneration.current;
     setLoading(true);setMessageTone('status');setMessage('');
-    try{const result=await getConnectedDevices();setDevices(result.devices)}
-    catch(error){setDevices([]);setMessageTone('error');setMessage(loadError(error))}
-    finally{setLoading(false)}
+    try{
+      const result=await getConnectedDevices();
+      if(generation===readGeneration.current&&!mutationInFlight.current)setDevices(result.devices);
+    }catch(error){
+      if(generation===readGeneration.current&&!mutationInFlight.current){
+        setDevices([]);setMessageTone('error');setMessage(loadError(error));
+      }
+    }finally{
+      if(generation===readGeneration.current&&!mutationInFlight.current)setLoading(false);
+    }
   },[]);
 
   useEffect(()=>{void load()},[load]);
@@ -63,7 +77,10 @@ export function DeviceAccessSettings(){
   const requestRevoke=(target:Exclude<PendingAction,null>)=>{setConfirmationError('');setPending(target)};
 
   const confirm=async()=>{
-    if(!pending||busy)return;
+    if(!pending||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;
+    readGeneration.current+=1;
+    setLoading(false);
     setBusy(true);setConfirmationError('');setMessageTone('status');setMessage('');
     try{
       const result=pending.kind==='others'
@@ -79,11 +96,14 @@ export function DeviceAccessSettings(){
       setMessage(failureMessage);
       setConfirmationError(failureMessage);
     }
-    finally{setBusy(false)}
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const saveName=async()=>{
-    if(!renaming||busy)return;
+    if(!renaming||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;
+    readGeneration.current+=1;
+    setLoading(false);
     setBusy(true);setMessage('');
     try{
       const result=await renameConnectedDevice(renaming,nameDraft);
@@ -92,7 +112,7 @@ export function DeviceAccessSettings(){
     }catch(error){
       setMessageTone('error');
       setMessage(error instanceof ApiError&&error.code==='INVALID_DEVICE_NICKNAME'?'Το όνομα πρέπει να περιέχει έως 60 χαρακτήρες.':'Δεν ήταν δυνατή η αλλαγή ονόματος συσκευής.');
-    }finally{setBusy(false)}
+    }finally{mutationInFlight.current=false;setBusy(false)}
   };
   const others=devices.filter(device=>!device.current);
   return <section className="panel surface-raised device-access-settings" aria-labelledby="device-access-title">
