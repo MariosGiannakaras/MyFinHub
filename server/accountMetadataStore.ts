@@ -157,11 +157,17 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   const row=value as Partial<StoredFinancialProviderAssetRow>;
   const roles=['logo','wordmark','card-mark'] as const;
   const role=row?.asset_role;
+  // Storage paths are public URLs: bind them to the declared provider, not
+  // just the asset key, and disallow path traversal/nested redirects.
+  const directory=typeof row?.provider_id==='string'?`providers/${row.provider_id}/`:'';
+  const filePath=typeof row?.storage_path==='string'&&row.storage_path.startsWith(directory)
+    ?row.storage_path.slice(directory.length):'';
   if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||typeof role!=='string'||!roles.includes(role as any)||
     typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||typeof row.file_name!=='string'||!row.file_name||
     typeof row.mime_type!=='string'||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
     (row.size_bytes!==null&&!Number.isFinite(Number(row.size_bytes)))||
-    !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||row.active!==true){
+    !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filePath)||row.active!==true){
     throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_ROW','Stored provider asset metadata is invalid.',false);
   }
   return {
@@ -230,11 +236,16 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
     request('rheomiq_financial_provider_asset_bindings?select=provider_id,asset_role,variant,asset_key&order=provider_id.asc,asset_role.asc,variant.asc',{method:'GET'},accessToken),
   ]);
   if(!Array.isArray(providerPayload)||!Array.isArray(assetPayload)||!Array.isArray(bindingPayload))throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
+  const providerRows=providerPayload.map(mapFinancialProviderRow);
   const assetRows=assetPayload.map(mapFinancialProviderAssetRow);
   const bindingRows=bindingPayload.map(mapFinancialProviderAssetBindingRow);
+  // This is post-write verification data. Never pick an arbitrary duplicate.
+  if(new Set(providerRows.map(row=>row.id)).size!==providerRows.length||
+    new Set(assetRows.map(row=>row.asset_key)).size!==assetRows.length||
+    new Set(bindingRows.map(row=>`${row.provider_id}:${row.asset_role}:${row.variant}`)).size!==bindingRows.length)
+    throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider catalog registration is ambiguous.',false);
   const baseUrl=config(accessToken).url;
-  return providerPayload.map(value=>{
-    const provider=mapFinancialProviderRow(value);
+  return providerRows.map(provider=>{
     const ownedAssets=assetRows.filter(asset=>asset.provider_id===provider.id);
     const ownByKey=new Map(ownedAssets.map(asset=>[asset.asset_key,asset] as const));
     const logo=provider.logoAssetKey?ownByKey.get(provider.logoAssetKey):undefined;

@@ -1,3 +1,13 @@
+## 2026-11-19 — I19.04 provider Storage URL provenance and duplicate-catalog candidate
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged, I19.04 PARTIAL). Prior exact [CI #44561224326](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44561224326) **SUCCESS**, including validate, CodeQL, Unified, accepting previous cross-role image readback. No repeated rendered QA was needed for that prior unchanged source.
+
+**New scoped implementation:** A provider-owned active asset row could still provide a public Storage `storage_path` referring to a different provider directory or containing `../` even when `provider_id` and role matched. Server now requires one direct safe file segment under `providers/{provider_id}/`, consistent with existing upload paths. The server also rejects duplicate provider IDs, globally duplicated asset keys and duplicate (provider,role,variant) binding slots rather than publishing ambiguous HTTP 200; client already rejected those duplicate catalog shapes. Five actual mocked three-table GET negative tests added in the existing provider server matrix. Existing valid path/role positive test retained.
+
+**Validation:** New candidate exact-head source CI/CodeQL/Unified must be inspected; do not call it PASS until observed. No full Ready WebKit/Windows/Lighthouse/rendered acceptance yet and do not rerun unaffected checks during Draft churn. No hosted SQL or Storage writes, secrets, finance history, Android, main, production or merge. I18.02 external restore remains approval-gated, #660 dependencies separately owned.
+
+---
+
 ## 2026-11-19 — I18.06 ACCEPTED by reinspection of unchanged Windows backup rendered evidence
 
 **Υλοποιήσεις 6/23 ολοκληρωμένες · Υπο-υλοποιήσεις 101/132 ολοκληρωμένες (+1: I18.06).** No new product implementation was needed: this reconciles a previously completed and validated original roadmap item rather than rerunning unchanged browser gates or counting it twice. I18 **remains PARTIAL (5/6)** because the separately approved, external/hosted PostgreSQL+Storage recovery proof of **I18.02** is still unverified/approval-gated; no restore, deletion or hosted migration performed.

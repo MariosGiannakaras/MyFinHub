@@ -62,4 +62,45 @@ describe('#649 I19.04 server provider asset ownership readback',()=>{
       expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
     }
   );
+  it.each([
+    'cross-provider-storage-path','traversal-storage-path',
+    'duplicate-provider-id','duplicate-asset-key','duplicate-binding-slot',
+  ] as const)('rejects %s instead of returning an ambiguous provider catalog',async scenario=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
+    const key='owner-a-asset-123456abcdef';
+    const provider={
+      id:'owner-a',display_name:'Owner A',short_name:'A',provider_kind:'bank',
+      country_code:'GR',logo_asset_key:key,wordmark_asset_key:null,sort_order:10,
+    };
+    const asset={
+      asset_key:key,provider_id:'owner-a',asset_role:'logo',variant:'universal',
+      file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+      storage_path:scenario==='cross-provider-storage-path'?'providers/owner-b/other-logo.png'
+        :scenario==='traversal-storage-path'?'providers/owner-a/../owner-b/other-logo.png'
+          :`providers/owner-a/${key}.png`,
+      size_bytes:12,updated_at:'2026-11-19T12:00:00Z',active:true,
+    };
+    const binding={provider_id:'owner-a',asset_role:'logo',variant:'universal',asset_key:key};
+    const providers=scenario==='duplicate-provider-id'?[provider,{...provider}]:[provider];
+    const assets=scenario==='duplicate-asset-key'?[asset,{...asset}]:[asset];
+    const bindings=scenario==='duplicate-binding-slot'?[binding,{...binding}]:[binding];
+    const observed:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);
+      observed.push((init?.method??'GET')+' '+url);
+      const rows=url.includes('/rheomiq_financial_provider_assets?')?assets:
+        url.includes('/rheomiq_financial_provider_asset_bindings?')?bindings:
+          url.includes('/rheomiq_financial_providers?')?providers:null;
+      if(!rows)throw new Error('Unexpected metadata request');
+      return new Response(JSON.stringify(rows),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    await expect(readFinancialProviders('owner-jwt')).rejects.toMatchObject({
+      status:500,code:scenario==='cross-provider-storage-path'||scenario==='traversal-storage-path'
+        ?'FINANCIAL_PROVIDER_ASSET_INVALID_ROW':'FINANCIAL_PROVIDER_INVALID_RESPONSE',
+    });
+    expect(observed).toHaveLength(3);
+    expect(observed.every(call=>call.startsWith('GET '))).toBe(true);
+  });
+
 });
