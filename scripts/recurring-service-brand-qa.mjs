@@ -29,7 +29,7 @@ try{
   const installMock=function(assetUrl){
     const realFetch=globalThis.fetch.bind(globalThis);
     const initial={assetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa',recurringId:'qa-service-branded',url:assetUrl,fileName:'streaming.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:00:00.000Z'};
-    let replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
+    let replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
     const paused={assetKey:'service-asset-cccccccccccccccccccccccc',recurringId:'qa-service-paused',url:assetUrl,fileName:'paused.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:06:00.000Z'};
     let registered=[initial,paused];
     globalThis.__recurringAssetWrites=0;
