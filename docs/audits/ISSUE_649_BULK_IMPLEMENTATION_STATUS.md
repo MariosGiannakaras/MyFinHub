@@ -1,3 +1,11 @@
+## 2026-11-19 — I19.03 actual local receipt concurrency regression lock
+
+**Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; no item double-counted).** [CI #44531369863](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44531369863) on `7490f1c` **SUCCESS**: validate, CodeQL, Unified; source/PG tests and mandatory audit passed. Accepted: prior SQL RPC guard and local receipt atomic read/write source. The browser-specific final rendered/Windows/WebKit QA remains separately pending.
+
+**New runtime-level lock (candidate):** `tests/receipt-draft-concurrency.test.ts` calls the **actual exported local receipt persistence functions**, with a deterministic asynchronous IndexedDB protocol mock that serializes overlapping readwrite transactions. Reproduces 29/30 count boundary, 58 MiB+1/60 MiB byte boundary, and simultaneous delete followed by OCR proposal/error updates; requires one successful upload, one rejected upload per saturated limit and no resurrected rows after deletion. This upgrades the existing cheap source-only check without changing application/runtime bundle or persisted schema. Not claimed equivalent to a real-browser multi-tab test; include the latter in already planned final coherent rendered acceptance if needed. **New head candidate pending source CI**; no hosted data, Android, production, main or integration changes.
+
+---
+
 ## 2026-11-19 — I19.03 same-transaction local receipt quota and stale-update race
 
 **Implementations 6/23 completed · Sub-implementations 99/132 completed (unchanged; I19.03 previously accepted, this is a source-supported adjacent defect class).** Earlier exact `22e9b87` CI #44530723102 **validate SUCCESS**, including actual disposable PostgreSQL changed-event+configuration-cent matrix, root/API npm audit, tests, TypeScript/build/strict privacy/bundle; CodeQL/Unified were still in progress at that inspection and must not be claimed accepted without result.
