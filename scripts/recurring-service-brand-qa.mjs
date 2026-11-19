@@ -59,7 +59,17 @@ try{
   };
   await c.send('Page.addScriptToEvaluateOnNewDocument',{source:'('+installMock.toString()+')('+JSON.stringify(assetUrl)+');'});
   const viewport=async(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
-  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
+  const waitFor=async(fn,label,args=[])=>{
+    for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}
+    if(label==='replaced recurring logo'){
+      // A failed UI assertion is not evidence of failure cause. Preserve a
+      // synthetic-only error-state screenshot and narrow redacted debug facts.
+      const facts=await c.call("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('QA Streaming'));return {editorOpen:Boolean(document.querySelector('.recurring-editor-dialog')),error:(document.querySelector('#recurring-editor-error')?.textContent||'').slice(0,250),assetKey:row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')||'',writes:globalThis.__recurringAssetWrites||0,deletes:globalThis.__recurringAssetDeletes||0}}");
+      await shot('recurring-service-brand-replace-failed');
+      throw new Error('Timed out waiting for '+label+': '+JSON.stringify(facts));
+    }
+    throw new Error('Timed out waiting for '+label);
+  };
   const navigate=async(width=1440,height=1100,failSave=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure','1');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(evidenceDir+'/'+name+'.png',Buffer.from(result.data,'base64'))};
   const clickAria=async label=>{const clicked=await c.call("function(label){const node=[...document.querySelectorAll('button,[role=button],summary')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]);assert(clicked,'missing control '+label)};
