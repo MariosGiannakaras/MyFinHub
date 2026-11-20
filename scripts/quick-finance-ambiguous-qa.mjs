@@ -41,6 +41,11 @@ try{
   await c.send('Page.enable');await c.send('Runtime.enable');
   const waitFor=async(fn,msg)=>{
     for(let i=0;i<150;i++){if(await c.call(fn))return;await sleep(100)}
+    if(msg==='generic uncertain receipt disabled'||msg==='contextual uncertain receipt disabled'){
+      const facts=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal,.contextual-quick-modal');return {dialogOpen:Boolean(dlg),amount:dlg?.querySelector('[data-autofocus=true]')?.value||'',error:(dlg?.querySelector('#quick-add-error,#context-quick-error')?.textContent||'').slice(0,220),saveDisabled:dlg?.querySelector('footer button:last-child,.editor-actions button:last-child')?.disabled,financeAttempts:Number(document.documentElement.dataset.qaQuickEventAttempts||0),financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0),context:(dlg?.querySelector('h2')?.textContent||'').slice(0,70)}}");
+      await shot('quick-finance-uncertain-diagnostic');
+      throw new Error('Timed out waiting for '+msg+': '+JSON.stringify(facts));
+    }
     throw new Error('Timed out waiting for '+msg);
   };
   const navigate=async(page,mode,width=1440,height=1000)=>{
