@@ -90,7 +90,7 @@ export function CardDetailsDialog({
       `[data-command-card-id="${CSS.escape(card.id)}"] button[aria-label^="Επεξεργασία κάρτας"]`,
     )?.focus());
   };
-  const clearError=()=>{if(error)setError('')};
+  const clearError=()=>{if(vaultReviewRef.current)return;if(error)setError('')};
   const submit=async()=>{
     if(busy||vaultReviewRef.current)return;
     setSaving(true);setError('');

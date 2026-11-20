@@ -69,6 +69,7 @@ describe('#649 card vault independent write receipt provenance',()=>{
     expect(view).toContain('if(busy||vaultReviewRef.current)return');
     expect(view).toContain('disabled={busy||vaultReviewRequired}');
     expect(view).toContain('saveError instanceof UnverifiedCardVaultWrite');
+    expect(view).toContain("if(vaultReviewRef.current)return;if(error)setError('')");
     expect(view).toContain('vaultReviewRequired?<FormError id={errorId}>{error}</FormError>');
     const qa=readFileSync('scripts/card-vault-runtime-qa.mjs','utf8');
     expect(qa).toContain('card-vault-unverified-mobile');
