@@ -37,6 +37,7 @@ import { preserveRecurringPaymentLink } from '../lib/recurring';
 import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
+import { FINANCE_RECEIPT_UNVERIFIED, financeWriteDefinitelyRejected } from '../lib/financeWriteOutcome';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
 const CounterpartyQuickSelector=lazy(async()=>({default:(await import('./CounterpartyQuickSelector')).CounterpartyQuickSelector}));
 
@@ -103,16 +104,19 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   // numeric finance state before the owner confirms a cent-exact value.
   const [splitAmountText,setSplitAmountText]=useState<Record<string,string>>({});
   const [error,setError]=useState('');
+  const [receiptUnverified,setReceiptUnverified]=useState(false);
+  const receiptUnverifiedRef=useRef(false);
+  const visibleError=receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error;
   // Announcing a failed finance save is not enough for keyboard users: the
   // rejected operation's visible error becomes the recoverable focus target.
   useEffect(()=>{
-    if(!open||!error)return;
+    if(!open||!visibleError)return;
     const alert=document.getElementById('quick-add-error');
     alert?.focus({preventScroll:true});
     // A tall multi-source form can place the alert below the scrollable body.
     // Keyboard focus alone must not leave the owner staring at an empty footer.
     alert?.scrollIntoView({block:'nearest'});
-  },[open,error]);
+  },[open,visibleError]);
   const [saving,setSaving]=useState(false);
   const submitInFlight=useRef(false);
   // Finance split parts and multi-source rows need different keys even when
@@ -222,12 +226,13 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
   };
   const submit=async()=>{
-    if(saving||submitInFlight.current)return;
+    if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;
     // Acquire before async validation/import and before React's busy repaint.
     submitInFlight.current=true;setSaving(true);
     // A corrected retry must not carry an error from the prior attempt into
     // the in-flight durable finance receipt.
     setError('');
+    let financeDispatched=false;
     try{
       if(linkedRecurringPayment&&(kind!=='expense'||multiFundingOpen))throw new Error('Η πληρωμή είναι συνδεδεμένη με πάγιο. Διατήρησε τον τύπο και τον έναν λογαριασμό της. Για νέα πληρωμή χρησιμοποίησε τα Πάγια.');
       const draftError=entryDraftError(kind,{amount,person,actualBalance,statementMovement,parts});
@@ -301,12 +306,20 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         if(feeValue===null||feeValue<0)throw new Error('Η προμήθεια πρέπει να είναι μη αρνητικό ποσό σε λεπτά του ευρώ.');
         const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:feeCategory});
+        financeDispatched=true;
         await onCreateLinkedTransfer(event,fee);
       }else{
+        financeDispatched=true;
         await onCreate(event);
       }
       reset();onClose();
-    }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+    }catch(e){
+      if(financeDispatched&&!financeWriteDefinitelyRejected(e)){
+        // A lost write response may follow a durable event and history point.
+        receiptUnverifiedRef.current=true;
+        setReceiptUnverified(true);
+      }else setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'));
+    }
     finally{submitInFlight.current=false;setSaving(false)}
   };
 
@@ -351,11 +364,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           <label className="quick-field wide" data-filled={filled(note)}><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>{setNote(e.target.value);mark()}} placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"/></label>
         </div>
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);const rawSplitAmount=splitAmountText[p.id];return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map(x=>x.id===p.id?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map(x=>x.id===p.id?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map(x=>x.id===p.id?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={rawSplitAmount??(p.amount||'')} aria-invalid={Boolean(rawSplitAmount&&parseMoneyInputAmount(rawSplitAmount)===null)} onChange={e=>{const text=e.target.value;const parsed=parseMoneyInputAmount(text);setSplitAmountText(current=>({...current,[p.id]:text}));setParts(ps=>ps.map(x=>x.id===p.id?{...x,amount:parsed??0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{if(parts.length<=2)return;setParts(ps=>ps.length<=2?ps:ps.filter(item=>item.id!==p.id));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{const id=nextDraftRowId('part',parts);setParts(ps=>[...ps,{id,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
-        {error?<FormError id="quick-add-error">{error}</FormError>:null}
+        {visibleError?<FormError id="quick-add-error">{visibleError}</FormError>:null}
       </div>
       {/* The receipt launch is portalled into this footer: lock it too while the
           finance revision receipt is pending, not only the main form fields. */}
-      <footer inert={saving}><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}><Check size={17}/> {saving?'Αποθήκευση…':initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
+      <footer inert={saving}><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving||receiptUnverified} onClick={()=>void submit()}><Check size={17}/> {saving?'Αποθήκευση…':initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
   </DialogShell>
   <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Αν κλείσεις τώρα την καταχώριση, αυτές οι αλλαγές θα χαθούν." confirmLabel="Απόρριψη" tone="destructive" motionMode={motionMode} onConfirm={confirmDiscard} onCancel={()=>setDiscardOpen(false)}/>
   </>;

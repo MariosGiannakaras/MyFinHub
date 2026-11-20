@@ -554,6 +554,22 @@
         "tests/recurring-service-assets.test.ts"
       ]
 
+    },
+    {
+      "id": "FP-029",
+      "title": "Block repeat Quick Entry submissions after uncertain finance acknowledgment",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Generic and contextual Quick Entry disabled duplicate submissions only while the first promise was pending. A lost finance response after commit left the button enabled to submit a new event ID.",
+      "prevention": "Classify only explicit precommit REVISION_CONFLICT as proven rejection. After an ambiguous post-dispatch response, retain the editor warning and disable Save until the owner closes and reviews persisted state; preserve retries after local validation errors.",
+      "paths": [
+        "src/lib/financeWriteOutcome.ts",
+        "src/components/QuickAdd.tsx",
+        "src/components/ContextualQuickAdd.tsx"
+      ],
+      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
+      "guards": ["tests/649-finance-write-receipt-no-replay.test.ts"]
+
     }
   ]
 }

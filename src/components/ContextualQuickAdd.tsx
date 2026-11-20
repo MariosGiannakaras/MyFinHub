@@ -30,6 +30,7 @@ import { parseMoneyInputAmount } from '../lib/moneyInput';
 import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
 import { userErrorMessage } from '../lib/userMessage';
+import { FINANCE_RECEIPT_UNVERIFIED, financeWriteDefinitelyRejected } from '../lib/financeWriteOutcome';
 
 export type QuickActionContext =
   | {token:string;mode:'generic';kind?:EventKind;prefill?:QuickPrefill|null}
@@ -105,7 +106,10 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [person,setPerson]=useState(context.mode==='lending'?(context.person??''):'');
   const [expectedReturnDate,setExpectedReturnDate]=useState(context.mode==='lending'&&context.action==='lend'?(context.expectedReturnDate??''):'');
   const [error,setError]=useState('');
-  useEffect(()=>{if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})},[error]);
+  const [receiptUnverified,setReceiptUnverified]=useState(false);
+  const receiptUnverifiedRef=useRef(false);
+  const visibleError=receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error;
+  useEffect(()=>{if(visibleError)document.getElementById('context-quick-error')?.focus({preventScroll:true})},[visibleError]);
   const [saving,setSaving]=useState(false);
   const submitInFlight=useRef(false);
   const [dirty,setDirty]=useState(false);
@@ -123,11 +127,12 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
   const submit=async()=>{
-    if(saving||submitInFlight.current)return;
+    if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;
     // All scheduled, credit, loan, lending, recurring and savings writes share one in-flight receipt.
     submitInFlight.current=true;setSaving(true);
     // New attempts must not retain feedback from an earlier rejected receipt.
     setError('');
+    let financeDispatched=false;
     try{
       const numeric=parseMoneyInputAmount(amount);
       if(context.mode==='loan'&&numeric===null)throw new Error('Το πραγματικό ποσό δόσης πρέπει να έχει έως δύο δεκαδικά ψηφία.');
@@ -183,6 +188,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         if(!scheduled)throw new Error('Η προγραμματισμένη κίνηση δεν είναι πλέον εκκρεμής ή διαθέσιμη.');
         if(!onCompleteScheduled)throw new Error('Η ολοκλήρωση προγραμματισμένης κίνησης δεν είναι διαθέσιμη από αυτή την οθόνη.');
         event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId});
+        financeDispatched=true;
         await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);
         onClose();return;
       }else if(context.mode==='recurring'){
@@ -204,12 +210,19 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ενιαία ασφαλής αποθήκευση πληρωμής και προμήθειας.');
         const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:paymentFeeCategory});
+        financeDispatched=true;
         await onCreateLinkedTransfer(event,fee);
       }else{
+        financeDispatched=true;
         await onCreate(event);
       }
       onClose();
-    }catch(reason){setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+    }catch(reason){
+      if(financeDispatched&&!financeWriteDefinitelyRejected(reason)){
+        receiptUnverifiedRef.current=true;
+        setReceiptUnverified(true);
+      }else setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'));
+    }
     finally{submitInFlight.current=false;setSaving(false)}
   };
 
@@ -241,7 +254,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
     className="contextual-quick-modal"
     busy={saving}
     ariaLabelledBy="context-quick-title"
-    ariaDescribedBy={error?'context-quick-error':'context-quick-description'}
+    ariaDescribedBy={visibleError?'context-quick-error':'context-quick-description'}
     motionMode="none"
     preferredFocus='[data-autofocus="true"]'
     focusActive={!discardOpen}
@@ -256,7 +269,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
     <p>Απαίτηση την {date}: <strong>{money.format(lendingOutstandingFor(data,person.trim(),date))}</strong>. Η διαγραφή μειώνει μόνο την απαίτηση και την καθαρή θέση. Δεν δημιουργεί είσπραξη, δαπάνη ή κίνηση λογαριασμού.</p>
     <label><input type="checkbox" checked={writeoffConfirmed&&confirmedWriteoffAmount===amount} onChange={event=>{setWriteoffConfirmed(event.target.checked);setConfirmedWriteoffAmount(amount);setDirty(true)}}/> Επιβεβαιώνω την οριστική, καταγεγραμμένη μείωση της απαίτησης.</label>
   </div>:null}
-  {context.mode==='lending'&&context.action==='lend'?<label><span>Αναμενόμενη επιστροφή <em>προαιρετικό</em></span><AppDateInput value={expectedReturnDate} min={date} onChange={event=>{setExpectedReturnDate(event.target.value);setDirty(true)}}/></label>:null}{context.mode!=='scheduled'?<label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={event=>{setNote(event.target.value);setDirty(true)}}/></label>:<div className="wide"><span>Προγραμματισμένη κίνηση</span><b>{scheduled?.note??'Μη διαθέσιμη'}</b></div>}</div>{paymentEffect?<div className="payment-effect-summary" role="note" aria-label="Οικονομικό αποτέλεσμα πληρωμής"><span>Αποτέλεσμα</span><p>{paymentEffect}</p></div>:null}{context.mode==='credit'&&context.action==='payment'&&!sameBankAccounts.length?<FormError id="context-quick-account-warning">Δεν υπάρχει διαθέσιμος λογαριασμός της ίδιας τράπεζας για την αποπληρωμή.</FormError>:null}{context.mode==='loan'&&loan&&isSelfLoan(loan)&&!savingsTargets.length?<FormError id="context-quick-loan-warning">Δεν υπάρχει αποταμιευτικός λογαριασμός για την επιστροφή της ΒΟΗΘΕΙΑΣ.</FormError>:null}{context.mode==='savings'&&!savingsTargets.length?<FormError id="context-quick-saving-warning">Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός.</FormError>:null}{error?<FormError id="context-quick-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':context.mode==='scheduled'?'Ολοκλήρωση':context.mode==='lending'&&context.action==='writeoff'?'Επιβεβαίωση διαγραφής':paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'}</Button></div></div></DialogShell>
+  {context.mode==='lending'&&context.action==='lend'?<label><span>Αναμενόμενη επιστροφή <em>προαιρετικό</em></span><AppDateInput value={expectedReturnDate} min={date} onChange={event=>{setExpectedReturnDate(event.target.value);setDirty(true)}}/></label>:null}{context.mode!=='scheduled'?<label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={event=>{setNote(event.target.value);setDirty(true)}}/></label>:<div className="wide"><span>Προγραμματισμένη κίνηση</span><b>{scheduled?.note??'Μη διαθέσιμη'}</b></div>}</div>{paymentEffect?<div className="payment-effect-summary" role="note" aria-label="Οικονομικό αποτέλεσμα πληρωμής"><span>Αποτέλεσμα</span><p>{paymentEffect}</p></div>:null}{context.mode==='credit'&&context.action==='payment'&&!sameBankAccounts.length?<FormError id="context-quick-account-warning">Δεν υπάρχει διαθέσιμος λογαριασμός της ίδιας τράπεζας για την αποπληρωμή.</FormError>:null}{context.mode==='loan'&&loan&&isSelfLoan(loan)&&!savingsTargets.length?<FormError id="context-quick-loan-warning">Δεν υπάρχει αποταμιευτικός λογαριασμός για την επιστροφή της ΒΟΗΘΕΙΑΣ.</FormError>:null}{context.mode==='savings'&&!savingsTargets.length?<FormError id="context-quick-saving-warning">Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός.</FormError>:null}{visibleError?<FormError id="context-quick-error">{visibleError}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving||receiptUnverified} onClick={()=>void submit()}>{saving?'Αποθήκευση…':context.mode==='scheduled'?'Ολοκλήρωση':context.mode==='lending'&&context.action==='writeoff'?'Επιβεβαίωση διαγραφής':paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'}</Button></div></div></DialogShell>
   <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Οι αλλαγές στη φόρμα δεν έχουν καταχωριστεί. Αν κλείσεις, θα χαθούν χωρίς νέα οικονομική κίνηση." confirmLabel="Απόρριψη" tone="destructive" onConfirm={()=>{setDiscardOpen(false);onClose()}} onCancel={()=>setDiscardOpen(false)}/>
   </>;
 }

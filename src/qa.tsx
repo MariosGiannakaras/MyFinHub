@@ -639,11 +639,14 @@ function QaWorkspace(){
     document.documentElement.dataset.qaQuickEventAttempts=String(Number(document.documentElement.dataset.qaQuickEventAttempts||0)+1);
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
+    if(params.get('quick-event-save-rejected')==='1')throw new ApiError('Η αναθεώρηση άλλαξε πριν από την αποθήκευση.',409,'REVISION_CONFLICT');
     if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
       (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
     });
     addEvent(event);
     document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1);
+    if(params.get('quick-event-save-ambiguous')==='1')
+      throw new ApiError('Η δοκιμαστική απάντηση χάθηκε μετά την οικονομική εγγραφή.',0,'NETWORK_TIMEOUT');
   };
   const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
     const params=new URLSearchParams(location.search);
