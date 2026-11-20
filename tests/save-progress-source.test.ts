@@ -90,8 +90,10 @@ describe('top-edge save feedback ownership',()=>{
   });
   it('tracks auxiliary independent saves without treating secret reveal or refresh as persistence',()=>{
     const vault=read('src/lib/cardVaultClient.ts');
-    expect(vault).toContain("trackDatabaseWrite(()=>request<{saved:true");
-    expect(vault).toContain("trackDatabaseWrite(()=>request<{deleted:true");
+    expect(vault).toContain("trackDatabaseWrite(()=>requireVaultWriteReceipt('save'");
+    expect(vault).toContain("()=>request<{saved:true");
+    expect(vault).toContain("trackDatabaseWrite(()=>requireVaultWriteReceipt('delete'");
+    expect(vault).toContain("()=>request<{deleted:true");
     expect(vault).toContain("payload=await request<typeof payload>('POST'");
     expect(read('src/lib/accountMetadataClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
     expect(read('src/lib/financialProviderClient.ts')).toContain('return trackDatabaseWrite(async()=>{');

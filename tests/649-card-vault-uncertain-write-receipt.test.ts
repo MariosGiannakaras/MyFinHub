@@ -69,5 +69,11 @@ describe('#649 card vault independent write receipt provenance',()=>{
     expect(view).toContain('if(busy||vaultReviewRef.current)return');
     expect(view).toContain('disabled={busy||vaultReviewRequired}');
     expect(view).toContain('saveError instanceof UnverifiedCardVaultWrite');
+    expect(view).toContain('vaultReviewRequired?<FormError id={errorId}>{error}</FormError>');
+    const qa=readFileSync('scripts/card-vault-runtime-qa.mjs','utf8');
+    expect(qa).toContain('card-vault-unverified-mobile');
+    expect(qa).toContain('card-vault-unverified-desktop');
+    expect(qa).toContain("state.nextPutReceipt==='missing'");
+    expect(qa).toContain('unknown.puts===1');
   });
 });

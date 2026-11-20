@@ -23,6 +23,7 @@ jobs:
        contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-recurring-asset-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-quick-receipt-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-card-vault-receipt-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
@@ -46,7 +47,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-quick-receipt-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-card-vault-receipt-qa -->') &&
+          'card-vault-runtime' ||
+          contains(github.event.pull_request.body, '<!-- run-649-quick-receipt-qa -->') &&
           'quick-finance-ambiguous' ||
           contains(github.event.pull_request.body, '<!-- run-649-recurring-asset-qa -->') &&
           'recurring-service-brand' ||

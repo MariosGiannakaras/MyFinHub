@@ -154,7 +154,7 @@ export function CardDetailsDialog({
       </article>
       {/* Errors and vault notices remain accessible without changing the card face. */}
       {notice?<span id={noticeId} className="sr-only" role="status">{notice}</span>:null}
-      {error?<span id={errorId} className="sr-only" role="alert">{error}</span>:null}
+      {error?(vaultReviewRequired?<FormError id={errorId}>{error}</FormError>:<span id={errorId} className="sr-only" role="alert">{error}</span>):null}
     </section>;
   }
 

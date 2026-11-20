@@ -28,7 +28,9 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(cards).toContain('await onUpsertCardDurably(card);setDetailsCard(null)');
     expect(credit).toContain('await onUpsertCardDurably(updated);if(wasNew)');
     expect(dlg).toContain('await onSaved(updated)');
-    expect(dlg).toContain('else if(vaultSaved)setError(');
+    expect(dlg).toContain('else if(vaultSaved){');
+    expect(dlg).toContain('vaultReviewRef.current=true;setVaultReviewRequired(true)');
+    expect(dlg).toContain('saveError instanceof UnverifiedCardVaultWrite');
     expect(dlg).toContain('else if(requireCvv&&!profileStaged)setError(');
     expect(dlg).toContain('else if(requireCvv)setError(');
     expect(cards).toContain('Τα ασφαλή στοιχεία δεν αφαιρέθηκαν.');
