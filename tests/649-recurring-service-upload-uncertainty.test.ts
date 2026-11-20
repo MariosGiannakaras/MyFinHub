@@ -24,6 +24,27 @@ describe('#649 I19.04 uncertain recurring logo upload receipts',()=>{
       expect(calls[0]).toContain('PUT ');
       expect(calls[0]).toContain('resource=recurring-service-assets');
     });
+  it('keeps late old-auth uncertainty out of a newly authenticated scope',async()=>{
+    const handlers=new Map<string,()=>void>();
+    vi.stubGlobal('window',{addEventListener:(name:string,fn:()=>void)=>{handlers.set(name,fn)}});
+    let finishFirst:(value:Response)=>void=()=>{throw new Error('First upload not started')};
+    let sent=0;
+    vi.stubGlobal('fetch',vi.fn(async()=>{
+      sent++;
+      if(sent===1)return new Promise<Response>(resolve=>{finishFirst=resolve});
+      return new Response(JSON.stringify({error:'Definite invalid file'}),{status:400});
+    }));
+    const {uploadRecurringServiceAsset}=await import(path) as Client;
+    const first=uploadRecurringServiceAsset(input());
+    expect(sent).toBe(1);
+    const change=handlers.get('myfinhub:auth-scope-reset');
+    expect(change).toBeTypeOf('function');
+    change!();
+    finishFirst(new Response(JSON.stringify({error:'Old response lost'}),{status:503}));
+    await expect(first).rejects.toMatchObject({name:'UnverifiedRecurringServiceAssetWrite'});
+    await expect(uploadRecurringServiceAsset(input())).rejects.not.toMatchObject({name:'UnverifiedRecurringServiceAssetWrite'});
+    expect(sent).toBe(2);
+  });
   it('does not block corrected retries after a definite HTTP 400',async()=>{
     const calls:string[]=[];
     vi.stubGlobal('fetch',vi.fn(async(url:RequestInfo|URL,init?:RequestInit)=>{
