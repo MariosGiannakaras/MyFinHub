@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-recurring-brand-qa';
@@ -14,7 +14,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitHttp(url){for(let i=0;i<80;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error('Timed out waiting for '+url)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
-  async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
+  async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id){this.onEvent?.(message);return}const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
   send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}
   async call(functionDeclaration,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime function call failed');return result.result.value}
   close(){this.ws?.close()}
@@ -25,12 +25,27 @@ try{
   const target=await fetch('http://127.0.0.1:'+port+'/json/new?'+encodeURIComponent(baseUrl),{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('DOM.enable');
   const origin=new URL(baseUrl).origin;
-  const assetUrl=origin+'/brand/icon-512.svg';
-  const installMock=function(assetUrl){
+  const storagePrefix=origin+'/storage/v1/object/public/recurring-service-assets/services/';
+  const svgBody=readFileSync(uploadFile).toString('base64');
+  c.onEvent=message=>{
+    if(message.method!=='Fetch.requestPaused')return;
+    const requestId=message.params.requestId;
+    const path=new URL(message.params.request.url).pathname;
+    // Only the QA's synthetic recurring Storage images are intercepted;
+    // auth, finance and catalog requests keep their normal scoped mocks.
+    if(/^\/storage\/v1\/object\/public\/recurring-service-assets\/services\/service-asset-[a-f0-9]{24}\.svg$/.test(path)){
+      void c.send('Fetch.fulfillRequest',{requestId,responseCode:200,
+        responseHeaders:[{name:'content-type',value:'image/svg+xml'}],
+        body:svgBody}).catch(error=>{throw error});
+    }else void c.send('Fetch.continueRequest',{requestId}).catch(error=>{throw error});
+  };
+  await c.send('Fetch.enable',{patterns:[{urlPattern:'*/storage/v1/object/public/recurring-service-assets/services/*',requestStage:'Request'}]});
+  const installMock=function(storagePrefix){
     const realFetch=globalThis.fetch.bind(globalThis);
-    const initial={assetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa',recurringId:'qa-service-branded',url:assetUrl,fileName:'streaming.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:00:00.000Z'};
-    let replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
-    const paused={assetKey:'service-asset-cccccccccccccccccccccccc',recurringId:'qa-service-paused',url:assetUrl,fileName:'paused.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:06:00.000Z'};
+    const assetUrl=key=>storagePrefix+key+'.svg';
+    const initial={assetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa',recurringId:'qa-service-branded',url:assetUrl('service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'),fileName:'streaming.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:00:00.000Z'};
+    let replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl('service-asset-bbbbbbbbbbbbbbbbbbbbbbbb'),fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
+    const paused={assetKey:'service-asset-cccccccccccccccccccccccc',recurringId:'qa-service-paused',url:assetUrl('service-asset-cccccccccccccccccccccccc'),fileName:'paused.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:06:00.000Z'};
     let registered=[initial,paused];
     globalThis.__recurringAssetWrites=0;
     globalThis.__recurringAssetDeletes=0;
@@ -69,7 +84,7 @@ try{
       return realFetch(input,init);
     };
   };
-  await c.send('Page.addScriptToEvaluateOnNewDocument',{source:'('+installMock.toString()+')('+JSON.stringify(assetUrl)+');'});
+  await c.send('Page.addScriptToEvaluateOnNewDocument',{source:'('+installMock.toString()+')('+JSON.stringify(storagePrefix)+');'});
   const viewport=async(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
   const waitFor=async(fn,label,args=[])=>{
     for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}

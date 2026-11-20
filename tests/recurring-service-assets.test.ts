@@ -50,6 +50,10 @@ describe('recurring service asset foundation',()=>{
     expect(app).toContain('financeState={finance}');
     expect(qaFixture).toContain("mode==='uncertain'");
     expect(recurringRendered).toContain('recurring-service-brand-finance-receipt-unverified');
+    expect(recurringRendered).toContain("const storagePrefix=origin+'/storage/v1/object/public/recurring-service-assets/services/'");
+    expect(recurringRendered).toContain('Fetch.fulfillRequest');
+    expect(recurringRendered).toContain('Fetch.enable');
+    expect(recurringRendered).not.toContain("const assetUrl=origin+'/brand/icon-512.svg'");
     expect(recurringRendered).toContain('current.writes===1&&current.deletes===0');
     expect(recurringPage).toContain('oldKeyStillShared');
     expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
