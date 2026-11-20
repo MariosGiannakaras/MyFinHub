@@ -123,4 +123,59 @@ describe('#649 I19.04 IBAN client catalog and revision acknowledgement',()=>{
     expect(methods).toEqual(['GET','PUT']);
   });
 
+  it.each(['network-loss','timeout','408','429','500','503','invalid-200'] as const)(
+    'does not replay an IBAN PUT after an unverified %s receipt',async scenario=>{
+      const methods:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method??'GET');
+        methods.push(method);
+        if(method==='GET')return new Response(JSON.stringify({records:[]}),{status:200});
+        if(scenario==='network-loss')throw new TypeError('Synthetic lost write response');
+        if(scenario==='timeout')throw new DOMException('Synthetic timeout','AbortError');
+        if(scenario==='invalid-200')return new Response(JSON.stringify({record:{...record(),revision:2}}),{status:200});
+        return new Response(JSON.stringify({code:'TEMPORARY_FAILURE'}),{status:Number(scenario)});
+      }));
+      const client=await importClient();
+      await expect(client.saveAccountMetadata('account-one',iban))
+        .rejects.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+      await expect(client.saveAccountMetadata('account-one',iban))
+        .rejects.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+      expect(methods).toEqual(['GET','PUT']);
+    }
+  );
+  it('retains a definite 400 IBAN rejection as a correctable write',async()=>{
+    const methods:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+      const method=String(init?.method??'GET');methods.push(method);
+      if(method==='GET')return new Response(JSON.stringify({records:[]}),{status:200});
+      return new Response(JSON.stringify({code:'INVALID_IBAN',error:'Invalid IBAN'}),{status:400});
+    }));
+    const client=await importClient();
+    await expect(client.saveAccountMetadata('account-one',iban))
+      .rejects.not.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+    await expect(client.saveAccountMetadata('account-one',iban))
+      .rejects.not.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+    expect(methods).toEqual(['GET','PUT','PUT']);
+  });
+  it('clears the uncertainty guard on a fresh authenticated scope',async()=>{
+    const handlers=new Map<string,()=>void>();
+    vi.stubGlobal('window',{addEventListener:(name:string,callback:()=>void)=>{handlers.set(name,callback)}});
+    let puts=0,gets=0;
+    vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+      if((init?.method??'GET')==='GET'){gets++;return new Response(JSON.stringify({records:[]}),{status:200})}
+      puts++;
+      return new Response(JSON.stringify({code:'INVALID_IBAN'}),{status:puts===1?503:400});
+    }));
+    const client=await importClient();
+    await expect(client.saveAccountMetadata('account-one',iban))
+      .rejects.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+    const reset=handlers.get('myfinhub:auth-scope-reset');
+    expect(reset).toBeTypeOf('function');
+    reset!();
+    await expect(client.saveAccountMetadata('account-one',iban))
+      .rejects.not.toMatchObject({name:'UnverifiedAccountMetadataWrite'});
+    expect(puts).toBe(2);
+    expect(gets).toBe(2);
+  });
+
 });
