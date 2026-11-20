@@ -120,7 +120,7 @@ describe('DialogShell source contract',()=>{
     expect(contextual).toContain('open={true}');
     expect(contextual).toContain('className="contextual-quick-modal"');
     expect(contextual).toContain('ariaLabelledBy="context-quick-title"');
-    expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
+    expect(contextual).toContain("ariaDescribedBy={visibleError?'context-quick-error':'context-quick-description'}");
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
     expect(contextual).toContain('onRequestClose={requestClose}');

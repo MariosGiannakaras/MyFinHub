@@ -19,7 +19,7 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
     expect(quickAdd).toContain('<IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}>');
     expect(quickAdd).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
-    expect(quickAdd).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
+    expect(quickAdd).toContain('<Button type="button" variant="primary" disabled={saving||receiptUnverified} onClick={()=>void submit()}>');
     expect(quickAdd).toContain('<Button type="button" variant="ghost" onClick={()=>{const id=nextDraftRowId(\'part\',parts);setParts(');
     expect(quickAdd).not.toContain('className="icon-button"');
     expect(quickAdd).not.toContain('className="secondary"');
@@ -54,7 +54,8 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd).toContain('await onCreate(event);');
     expect(quickAdd).toContain('reset();onClose();');
     expect(quickAdd.indexOf('await onCreate(event);')).toBeLessThan(quickAdd.indexOf('reset();onClose();'));
-    expect(quickAdd).toContain('if(saving||submitInFlight.current)return;');
+    expect(quickAdd).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;');
+    expect(quickAdd).toContain('financeDispatched&&!financeWriteDefinitelyRejected(e)');
     expect(quickAdd).toContain('submitInFlight.current=true;setSaving(true);');
     expect(quickAdd).toContain('finally{submitInFlight.current=false;setSaving(false)}');
   });

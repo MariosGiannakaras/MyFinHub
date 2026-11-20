@@ -17,7 +17,7 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
     expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={requestClose}>');
     expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
-    expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
+    expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving||receiptUnverified} onClick={()=>void submit()}>');
     expect(contextual).not.toContain('className="icon-button"');
     expect(contextual).not.toContain('className="secondary"');
     expect(contextual).not.toContain('className="save-button"');
@@ -38,7 +38,8 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.indexOf("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);")).toBeLessThan(contextual.indexOf("onClose();return;"));
     expect(contextual).toContain('await onCreate(event);');
     expect(contextual).toContain('setSaving(true);');
-    expect(contextual).toContain('if(saving||submitInFlight.current)return;');
+    expect(contextual).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;');
+    expect(contextual).toContain('financeDispatched&&!financeWriteDefinitelyRejected(reason)');
     expect(contextual).toContain('submitInFlight.current=true;setSaving(true);');
     expect(contextual).toContain('finally{submitInFlight.current=false;setSaving(false)}');
     expect(contextual.indexOf('await onCreate(event);')).toBeLessThan(contextual.indexOf('onClose();\n    }catch(reason)'));

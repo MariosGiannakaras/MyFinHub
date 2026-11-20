@@ -38,7 +38,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
       const lock=owner.indexOf('submitInFlight.current=true;setSaving(true);',start);
       const firstAwait=owner.indexOf('await ',start);
       expect(owner).toContain('const submitInFlight=useRef(false)');
-      expect(owner).toContain('if(saving||submitInFlight.current)return;');
+      expect(owner).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;');
       expect(lock).toBeGreaterThan(start);
       expect(lock).toBeLessThan(firstAwait);
       expect(owner).toContain('finally{submitInFlight.current=false;setSaving(false)}');
@@ -53,10 +53,12 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(generic).toContain("const alert=document.getElementById('quick-add-error')");
     expect(generic).toContain("alert?.focus({preventScroll:true})");
     expect(generic).toContain("alert?.scrollIntoView({block:'nearest'})");
-    expect(contextual).toContain("if(error)document.getElementById('context-quick-error')?.focus({preventScroll:true})");
+    expect(contextual).toContain("if(visibleError)document.getElementById('context-quick-error')?.focus({preventScroll:true})");
     expect(budgetQa).toContain('rejected Quick Entry focuses the visible error without losing draft');
-    expect(generic).toContain('<FormError id="quick-add-error">{error}</FormError>');
-    expect(contextual).toContain('<FormError id="context-quick-error">{error}</FormError>');
+    expect(generic).toContain('<FormError id="quick-add-error">{visibleError}</FormError>');
+    expect(generic).toContain('receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error');
+    expect(contextual).toContain('<FormError id="context-quick-error">{visibleError}</FormError>');
+    expect(contextual).toContain('receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error');
   });
 
   it('guards contextual cancel, header, escape and backdrop without altering confirmed saves',()=>{
@@ -69,7 +71,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(contextual).not.toContain('onClick={onClose}');
     expect(contextual.match(/setDirty\(true\)/g)?.length).toBeGreaterThanOrEqual(12);
     expect(contextual).toContain('onClose();return;');
-    expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(contextual).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\|\|receiptUnverifiedRef\.current\)return;[\s\S]*?setError\(''\);\s*let financeDispatched=false;\s*try\{/);
     expect(contextual).toContain("onValueChange={value=>{setAmount(value);setWriteoffConfirmed(false);setDirty(true);setError('')}}");
 
   });
@@ -88,7 +90,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(receiptQa).toContain('receipt-local-mobile-switch-unsaved-confirm');
   });
   it('keeps Quick Entry portalled receipt launch inert and retry errors honest until acknowledged finance receipt',()=>{
-    expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\)return;[\s\S]*?setError\(''\);\s*try\{/);
+    expect(generic).toMatch(/const submit=async\(\)=>\{\s*if\(saving\|\|submitInFlight\.current\|\|receiptUnverifiedRef\.current\)return;[\s\S]*?setError\(''\);\s*let financeDispatched=false;\s*try\{/);
     expect(generic).toContain('<footer inert={saving}>');
     expect(generic).toContain('await onCreate(event);');
     expect(generic).toContain('reset();onClose();');

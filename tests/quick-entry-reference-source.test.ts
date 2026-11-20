@@ -64,7 +64,8 @@ describe('Quick Entry owner-reference contract',()=>{
   it('blocks duplicate contextual submissions and preserves a single revisioned event receipt (#649 I19.02)',()=>{
     const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');
     const app=readFileSync('src/App.tsx','utf8');
-    expect(contextual).toContain('if(saving||submitInFlight.current)return;');
+    expect(contextual).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;');
+    expect(contextual).toContain('financeDispatched&&!financeWriteDefinitelyRejected(reason)');
     expect(contextual).toContain('submitInFlight.current=true;setSaving(true);');
     expect(contextual).toContain('finally{submitInFlight.current=false;setSaving(false)}');
     expect(contextual).toContain('await onCreate(event);');
