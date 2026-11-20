@@ -1214,15 +1214,32 @@ async function main(){
     const nulledProviderBucket=await directRequest('PATCH',
       'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
       {active:false,storage_bucket:null});
-    assert(nulledProviderBucket.status===400&&nulledProviderBucket.body?.code==='23514',
-      'Direct owner table UPDATE erased registered provider Storage provenance.');
+    // Owner PostgREST can deny/omit an UPDATE via grants/RLS before the row
+    // CHECK is exercised. It must not acknowledge a changed row; independently
+    // exercise the immutable CHECK with the disposable local service role.
+    assert(!(nulledProviderBucket.status>=200&&nulledProviderBucket.status<300&&
+      Array.isArray(nulledProviderBucket.body)&&nulledProviderBucket.body.length>0),
+      'Owner update acknowledged changed provider asset provenance.');
+    const serviceGuardPatch=await fetch(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(providerAssetKey),{
+      method:'PATCH',
+      headers:{apikey:local.serviceRole,authorization:'Bearer '+local.serviceRole,
+        accept:'application/json','content-type':'application/json',prefer:'return=representation'},
+      body:JSON.stringify({active:false,storage_bucket:null}),
+    });
+    const serviceGuardBody=await serviceGuardPatch.json().catch(()=>null) as {code?:string}|null;
+    assert(serviceGuardPatch.status===400&&serviceGuardBody?.code==='23514',
+      'Direct privileged local SQL CHECK did not reject NULL provider Storage provenance (HTTP '+
+      serviceGuardPatch.status+', code '+String(serviceGuardBody?.code||'missing')+').');
     const forgedProviderRows=await upstreamJson(local.apiUrl+
-      '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path&provider_id=eq.real-browser-provider',
-      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;
+      '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path,storage_bucket,active&provider_id=eq.real-browser-provider',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string;storage_bucket?:string;active?:boolean}>;
     assert(Array.isArray(forgedProviderRows)&&forgedProviderRows.length===1&&
       forgedProviderRows[0]?.asset_key===providerAssetKey&&
       forgedProviderRows[0]?.mime_type==='image/svg+xml'&&
-      forgedProviderRows[0]?.storage_path===providerPath,
+      forgedProviderRows[0]?.storage_path===providerPath&&
+      forgedProviderRows[0]?.storage_bucket==='financial-provider-assets'&&
+      forgedProviderRows[0]?.active===true,
       'Rejected direct provider asset mutations changed persistent metadata.');
     const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
     assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');

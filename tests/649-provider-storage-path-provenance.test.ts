@@ -33,7 +33,11 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(real).toContain('wrongProviderMime.status===400');
     expect(real).toContain('noncanonicalProviderKey.status===400');
     expect(real).toContain('modifiedProviderMime.status===400');
-    expect(real).toContain('nulledProviderBucket.status===400');
+    expect(real).toContain('Owner update acknowledged changed provider asset provenance.');
+    expect(real).toContain('serviceGuardPatch.status===400');
+    expect(real).toContain("serviceGuardBody?.code==='23514'");
+    expect(real).toContain("storage_bucket==='financial-provider-assets'");
+    expect(real).toContain("active===true");
     expect(real).toContain('forgedProviderRows.length===1');
   });
 });
