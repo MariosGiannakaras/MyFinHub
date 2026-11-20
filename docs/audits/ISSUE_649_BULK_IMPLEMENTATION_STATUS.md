@@ -1,3 +1,9 @@
+## 2026-11-20 — #649 exact CI failure: bundle raw cap repaired without raising budget (candidate)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). [CI #44698209690](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44698209690) on `fe66f2a`: Vitest **2,145/2,145 PASS**, TypeScript/Vite production build PASS, release privacy guard PASS; `validate` **FAILED** at existing main JS bundle hard size ceiling (reported **528.0 KiB raw / 159.9 KiB gzip**, reviewed hard cap **528.0 KiB raw / 165 KiB gzip**); CSS soft warning remains separately reported. Do **not** increase size caps or claim this CI full PASS. The latest regression moved the finance readiness computation from eagerly bundled `src/App.tsx` to lazy `src/pages/RecurringPage.tsx`, with App passing its existing finance status object; kept exact `saveState==='saved' && !savePending` semantic guard and updated two source tests accordingly. This reduces eager main JS rather than changing the budget. **New exact-head CI and focused rendered proof pending**. Existing independent local DB/Storage Real Stack [#44651942430](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44651942430) remains accepted on its original head; no full repeat is necessary. Draft #654, no production/hosted/Android/merge/release.
+
+---
+
 ## 2026-11-20 — #649 I19.04 recurring logo finance lost-receipt cleanup (new pending candidate)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Previous `0fe5bb3` [CI #44693163666](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44693163666) **SUCCESS** (validate, CodeQL, Unified). Earlier [Real Stack #44651942430](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44651942430) on `9c7b62c` **SUCCESS** incl. provider/RPC/Storage and independent local restore; no full repeat for this browser-only cleanup change.

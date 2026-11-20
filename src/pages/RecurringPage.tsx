@@ -40,7 +40,7 @@ function recurringLogoFileError(file:File){
   return null;
 }
 
-export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurringKey=0,financeReady=true,onUpsert,onUpsertDurably,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;commandRecurringId?:string|null;commandRecurringKey?:number;financeReady?:boolean;onUpsert:(item:RecurringItem)=>void;onUpsertDurably:(item:RecurringItem)=>Promise<void>;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
+export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurringKey=0,financeState,onUpsert,onUpsertDurably,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;commandRecurringId?:string|null;commandRecurringKey?:number;financeState?:{saveState:string;savePending:boolean};onUpsert:(item:RecurringItem)=>void;onUpsertDurably:(item:RecurringItem)=>Promise<void>;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
   const active=activeRecurringItems(data);
   const inactive=inactiveRecurringItems(data);
   const upcoming=recurringUpcoming(data,asOf);
@@ -105,7 +105,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const save=async()=>{
     if(!edit||editBusy||financeReviewRequired)return;
     // Check the finance queue BEFORE uploading independently stored binary data.
-    if(!financeReady){setEditError('Υπάρχει εκκρεμής ή μη επιβεβαιωμένη οικονομική αλλαγή. Ανανέωσε την αποθηκευμένη κατάσταση πριν ανεβάσεις εικόνα.');return}
+    if(financeState&&(financeState.saveState!=='saved'||financeState.savePending)){setEditError('Υπάρχει εκκρεμής ή μη επιβεβαιωμένη οικονομική αλλαγή. Ανανέωσε την αποθηκευμένη κατάσταση πριν ανεβάσεις εικόνα.');return}
     const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
     const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
     if(error){setEditError(error);return}

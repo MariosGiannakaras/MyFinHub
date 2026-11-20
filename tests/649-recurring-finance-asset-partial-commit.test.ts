@@ -22,11 +22,11 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     const page=readFileSync('src/pages/RecurringPage.tsx','utf8');
     const qa=readFileSync('scripts/recurring-service-brand-qa.mjs','utf8');
     const app=readFileSync('src/App.tsx','utf8');
-    expect(page.indexOf('if(!financeReady)')).toBeLessThan(page.indexOf('uploaded=await uploadRecurringServiceAsset'));
+    expect(page.indexOf("financeState.saveState!=='saved'||financeState.savePending")).toBeLessThan(page.indexOf('uploaded=await uploadRecurringServiceAsset'));
     expect(page).toContain('if(recurringFinanceWriteDefinitelyRejected(reason))');
     expect(page).toContain('setFinanceReviewRequired(true)');
     expect(page).toContain('disabled={editBusy||financeReviewRequired}');
-    expect(app).toContain("financeReady={finance.saveState==='saved'&&!finance.savePending}");
+    expect(app).toContain('financeState={finance}');
     expect(qa).toContain('recurring-service-brand-finance-receipt-unverified');
     expect(qa).toContain('current.writes===1&&current.deletes===0');
     expect(qa).toContain('uncertain.disabled&&uncertain.error.includes');
