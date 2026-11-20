@@ -153,6 +153,16 @@ export async function runDirectReceivableRpcProof(options:Options){
       p_file_name:'qa.svg',p_mime_type:'image/svg+xml',
       p_storage_path:'services/service-asset-ffffffffffffffffffffffff.svg',p_size_bytes:32,
     }},
+    {method:'rheomiq_register_financial_provider_asset',params:{
+      p_provider_id:'qa-direct-rpc',p_asset_key:'qa-direct-rpc-asset-ffffffffffff',
+      p_asset_role:'logo',p_variant:'universal',p_file_name:'qa.svg',
+      p_mime_type:'image/svg+xml',p_storage_path:'providers/qa-direct-rpc/qa-direct-rpc-asset-ffffffffffff.svg',
+      p_size_bytes:32,p_make_primary:false,
+    }},
+    {method:'rheomiq_set_financial_provider_asset_binding',params:{
+      p_provider_id:'qa-direct-rpc',p_asset_role:'logo',p_variant:'universal',
+      p_asset_key:'qa-direct-rpc-asset-ffffffffffff',
+    }},
     {method:'rheomiq_release_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
     {method:'rheomiq_purge_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
   ]){

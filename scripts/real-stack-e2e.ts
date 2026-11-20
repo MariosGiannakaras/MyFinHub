@@ -1180,6 +1180,38 @@ async function main(){
     assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
     const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];
     assert(Array.isArray(providerBindings)&&providerBindings.length===2&&providerBindings.every(row=>row?.variant==='universal'&&row?.asset_key===providerAssetKey)&&new Set(providerBindings.map(row=>row?.asset_role)).size===2,'Provider reusable logo/wordmark bindings were not persisted.');
+    console.log('[real-stack] stage provider-direct-rpc-path-provenance');
+    const providerPath=String(providerAssets[0].storage_path);
+    const registerProvider=async(assetKey:string,mimeType:string,storagePath:string)=>directRequest(
+      'POST','rpc/rheomiq_register_financial_provider_asset',{
+        p_provider_id:'real-browser-provider',p_asset_key:assetKey,
+        p_asset_role:'logo',p_variant:'universal',p_file_name:'forged-image.svg',
+        p_mime_type:mimeType,p_storage_path:storagePath,
+        p_size_bytes:Number(providerAssets[0].size_bytes),p_make_primary:false,
+      });
+    const forgedProviderKey='real-browser-provider-asset-ffffffffffff';
+    const differentKey=await registerProvider(forgedProviderKey,'image/svg+xml',providerPath);
+    assert(differentKey.status===400&&differentKey.body?.code==='22023',
+      'Direct owner RPC registered a different provider asset key against an existing Storage object.');
+    const wrongProviderMime=await registerProvider(forgedProviderKey,'image/png',providerPath);
+    assert(wrongProviderMime.status===400&&wrongProviderMime.body?.code==='22023',
+      'Direct owner RPC accepted the wrong provider Storage MIME extension.');
+    const noncanonicalProviderKey=await registerProvider('forged-provider-key','image/svg+xml',providerPath);
+    assert(noncanonicalProviderKey.status===400&&noncanonicalProviderKey.body?.code==='22023',
+      'Direct owner RPC accepted a noncanonical provider asset key.');
+    const modifiedProviderMime=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {mime_type:'image/png'});
+    assert(modifiedProviderMime.status===400&&modifiedProviderMime.body?.code==='23514',
+      'Direct owner table update accepted mismatched provider asset MIME.');
+    const forgedProviderRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path&provider_id=eq.real-browser-provider',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;
+    assert(Array.isArray(forgedProviderRows)&&forgedProviderRows.length===1&&
+      forgedProviderRows[0]?.asset_key===providerAssetKey&&
+      forgedProviderRows[0]?.mime_type==='image/svg+xml'&&
+      forgedProviderRows[0]?.storage_path===providerPath,
+      'Rejected direct provider asset mutations changed persistent metadata.');
     const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
     assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;

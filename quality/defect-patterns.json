@@ -516,6 +516,24 @@
         "tests/recurring-service-assets.test.ts",
         "tests/production-migration-ledger-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-027",
+      "title": "Direct provider Storage registration must bind owner directory, generated key and MIME",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The authenticated invoker RPC checked only whether a Storage object existed; direct callers could register another provider image under a new key or mismatched MIME, while API readback enforced stricter provenance.",
+      "prevention": "Validate canonical server-issued keys and exact provider/key/MIME Storage paths in the existing SECURITY INVOKER RPC and a forward-only CHECK for generated rows, keep curated legacy assets untouched, and prove direct owner/nonowner/AAL1 negatives on the isolated local stack.",
+      "paths": [
+        "supabase/migrations/20261120001000_guard_provider_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
+      "guards": [
+        "tests/649-provider-storage-path-provenance.test.ts",
+        "tests/production-migration-ledger-source.test.ts"
+      ]
     }
   ]
 }
