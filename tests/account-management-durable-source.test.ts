@@ -99,9 +99,9 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(component).toContain('accountMetadataWriteNeedsReview(id)');
     expect(component).toContain('error instanceof UnverifiedAccountMetadataWrite');
     expect(component).toContain("notify(accountMetadataReviewMessage,'warning')");
-    expect(rendered).toContain('account-metadata-unverified-mobile-390');
-    expect(rendered).toContain('account-metadata-unverified-desktop-1440');
-    expect(rendered).toContain('account-metadata-unverified-retry-blocked-mobile-390');
+    expect(rendered).toContain("[[390,844,'mobile-390'],[1440,1000,'desktop-1440']]");
+    expect(rendered).toContain("await screenshot('account-metadata-unverified-'+label)");
+    expect(rendered).toContain("await screenshot('account-metadata-unverified-retry-blocked-'+label)");
     expect(rendered).toContain('unknown.ibanWrites===1&&unknown.financeWrites===1');
     expect(rendered).toContain('retry.ibanWrites===1&&retry.financeWrites===1');
     const client=readFileSync('src/lib/accountMetadataClient.ts','utf8');

@@ -1,3 +1,11 @@
+## 2026-11-21 — #649 focused IBAN screenshot source guard matches actual loop-generated names
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Source CI [#44832904295](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44832904295) on `3cbe4a2` had **validate FAILED**: 2182/2183 tests passed; exactly one new static source assertion expected literal screenshot filename `account-metadata-unverified-mobile-390` although the QA script correctly constructs that file through `'account-metadata-unverified-'+label` and the exact viewport/label tuple loop. The corresponding source test now pins both **390×844** and **1440×1000** tuples and both emitted screenshot operations, retaining all one-write and no-retry behavioral assertions. Production client/UI/browser harness **unchanged**. The prior CodeQL and final Unified status of that failing head is not assumed PASS.
+
+**Next:** inspect CI on this corrected test-only head before enabling the existing one-shot `run-649-iban-receipt-qa` browser marker, then inspect the screenshots/log. No full Ready/Real Stack/Windows rerun, production, Android, destructive changes, release or branch merge.
+
+---
+
 ## 2026-11-21 — #649 I19.04 account-editor unverified IBAN UI protection (candidate; CI pending)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (full I19.04/I22.02 still partial). Previous exact [CI #44830516231](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44830516231) SUCCESS at `fb5c824`: validate, CodeQL, Unified; Windows/WebKit/Lighthouse intentionally skipped on Draft.
