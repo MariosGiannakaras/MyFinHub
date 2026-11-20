@@ -29,7 +29,7 @@ describe('#649 I19.04 fail closed after uncertain finance write acknowledgments'
   it('guards generic, linked-transfer, scheduled, and contextual writers only after dispatch',()=>{
     const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
     const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');
-    for(const [source,name] of [[quick,'generic'],[contextual,'contextual']] as const){
+    for(const source of [quick,contextual]){
       expect(source).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return');
       expect(source).toContain('let financeDispatched=false');
       expect(source).toContain('financeDispatched=true;');
