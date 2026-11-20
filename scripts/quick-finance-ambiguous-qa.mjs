@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const base=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const dir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-quick-finance-ambiguous';
@@ -8,10 +8,19 @@ const browser=process.env.MYFINHUB_QA_PRIMARY_BROWSER
   ||execFileSync('bash',['-lc','command -v chromium || command -v google-chrome || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!browser)throw new Error('Chromium required for quick finance ambiguous-receipt QA.');
 const port=9387;
-const child=spawn(browser,['--headless=new','--remote-debugging-port='+port,
-  '--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/myfinhub-quick-finance-ambiguous-qa-chrome',
+const profile='/tmp/myfinhub-quick-finance-ambiguous-qa-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+const launchBrowser=()=>spawn(browser,['--headless=new','--remote-debugging-port='+port,
+  '--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,
   '--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+let child=launchBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function stopBrowser(){
+  if(child.exitCode!==null)return;
+  child.kill('SIGTERM');
+  await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(1800)]);
+  if(child.exitCode===null)child.kill('SIGKILL');
+}
 async function waitHttp(url){
   for(let i=0;i<90;i++){try{const r=await fetch(url);if(r.ok)return}catch{}await sleep(120)}
   throw new Error('Chrome debugging unavailable at '+url);
@@ -35,7 +44,16 @@ class Cdp{
 }
 const assert=(ok,msg)=>{if(!ok)throw new Error('Quick finance unknown-receipt QA: '+msg)};
 try{
-  await waitHttp('http://127.0.0.1:'+port+'/json/version');
+  try{
+    await waitHttp('http://127.0.0.1:'+port+'/json/version');
+  }catch(firstStartError){
+    // A fresh profile + one CI Chromium bootstrap retry, never an app assertion retry.
+    console.warn('Quick finance QA Chromium bootstrap retry:',String(firstStartError));
+    await stopBrowser();
+    rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+    child=launchBrowser();
+    await waitHttp('http://127.0.0.1:'+port+'/json/version');
+  }
   const target=await fetch('http://127.0.0.1:'+port+'/json/new?about:blank',{method:'PUT'}).then(r=>r.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();
   await c.send('Page.enable');await c.send('Runtime.enable');
@@ -110,4 +128,4 @@ try{
   count=await counts();assert(count.attempts===1&&count.writes===0,'known precommit conflict wrote finance event');
   await shot('quick-finance-precommit-conflict');
   c.close();console.log('Quick finance ambiguous receipt QA passed. Evidence: '+dir);
-}finally{child.kill('SIGTERM')}
+}finally{await stopBrowser()}
