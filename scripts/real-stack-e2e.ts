@@ -6,6 +6,7 @@ import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
 import { runDirectReceivableRpcProof } from './real-stack-receivable-rpc.js';
+import { financeBackupVaultPrivacyRisk } from './real-stack-vault-privacy.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -461,8 +462,12 @@ async function main(){
     assert(Array.isArray(backupRows)&&backupRows.length===1,'Direct database read-back did not find the real backup row.');
     const backupData=backupRows[0]?.data;
     validateCompleteFinanceData(backupData);
-    const serializedBackup=JSON.stringify(backupData);
-    assert(!serializedBackup.includes(TEST_PAN)&&!serializedBackup.includes(TEST_EXPIRY)&&!serializedBackup.includes(TEST_CVV),'Backup unexpectedly contains card-vault plaintext.');
+    // A three-digit CVV can appear coincidentally in legitimate amounts,
+    // timestamps and opaque IDs. Reject real vault fields and long synthetic
+    // secrets, not an unrelated substring like "123" in finance JSON.
+    const vaultPrivacyRisk=financeBackupVaultPrivacyRisk(backupData,TEST_PAN,TEST_EXPIRY);
+    assert(vaultPrivacyRisk===null,
+      'Backup unexpectedly contains card-vault plaintext ('+vaultPrivacyRisk+').');
 
     console.log('[real-stack] stage post-backup-mutation');
     const postBackupHistory=await primary.request('/api/history');
