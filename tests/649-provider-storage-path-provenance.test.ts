@@ -10,6 +10,7 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(sql).toContain('rheomiq_provider_server_asset_exact_storage_path');
     expect(sql).toContain("asset_key ~ '^[a-z][a-z0-9-]{0,63}-asset-[a-f0-9]{12}$'");
     expect(sql).toContain("asset_key ~ ('^' || provider_id || '-asset-[a-f0-9]{12}$')");
+    expect(sql).toContain("coalesce(storage_bucket,'') = 'financial-provider-assets'");
     expect(sql).toContain("'providers/' || provider_id || '/' || asset_key");
     expect(sql).toContain('else true');
     expect(sql).toContain('not valid');
@@ -32,6 +33,7 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(real).toContain('wrongProviderMime.status===400');
     expect(real).toContain('noncanonicalProviderKey.status===400');
     expect(real).toContain('modifiedProviderMime.status===400');
+    expect(real).toContain('nulledProviderBucket.status===400');
     expect(real).toContain('forgedProviderRows.length===1');
   });
 });

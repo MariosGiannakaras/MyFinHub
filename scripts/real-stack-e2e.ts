@@ -1209,6 +1209,13 @@ async function main(){
       {mime_type:'image/png'});
     assert(modifiedProviderMime.status===400&&modifiedProviderMime.body?.code==='23514',
       'Direct owner table update accepted mismatched provider asset MIME.');
+    // A direct owner UPDATE must not disable an image and erase its Storage
+    // provenance to exploit the SQL three-valued CHECK (NULL is not FALSE).
+    const nulledProviderBucket=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {active:false,storage_bucket:null});
+    assert(nulledProviderBucket.status===400&&nulledProviderBucket.body?.code==='23514',
+      'Direct owner table UPDATE erased registered provider Storage provenance.');
     const forgedProviderRows=await upstreamJson(local.apiUrl+
       '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path&provider_id=eq.real-browser-provider',
       local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;

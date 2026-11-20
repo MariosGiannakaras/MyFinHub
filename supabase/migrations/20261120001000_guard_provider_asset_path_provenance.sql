@@ -14,7 +14,7 @@ begin
         case when asset_key ~ '^[a-z][a-z0-9-]{0,63}-asset-[a-f0-9]{12}$'
           then
             asset_key ~ ('^' || provider_id || '-asset-[a-f0-9]{12}$')
-            and storage_bucket = 'financial-provider-assets'
+            and coalesce(storage_bucket,'') = 'financial-provider-assets'
             and coalesce(storage_path,'') =
               'providers/' || provider_id || '/' || asset_key || '.' ||
               (case mime_type

@@ -6,6 +6,7 @@ const read=(path:string)=>readFileSync(path,'utf8');
 describe('zero-cost real-stack E2E source contract',()=>{
   const workflow=read('.github/workflows/real-stack-e2e.yml');
   const script=read('scripts/real-stack-e2e.ts');
+  const vaultPrivacyGuard=read('scripts/real-stack-vault-privacy.ts');
   const supabaseConfig=read('supabase/config.toml');
   const pkg=JSON.parse(read('package.json')) as {scripts?:Record<string,string>};
 
@@ -134,7 +135,13 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'REVISION_CONFLICT'");
     expect(script).toContain('/api/backup');
     expect(script).toContain('/api/card-secrets');
-    expect(script).toContain('!serializedBackup.includes(TEST_PAN)');
+    expect(script).toContain('financeBackupVaultPrivacyRisk(backupData,TEST_PAN,TEST_EXPIRY)');
+    expect(script).not.toContain('serializedBackup.includes(TEST_CVV)');
+    expect(vaultPrivacyGuard).toContain("if(pan&&encoded.includes(pan))return 'pan'");
+    expect(vaultPrivacyGuard).toContain("if(expiry&&encoded.includes(expiry))return 'expiry'");
+    for(const vaultField of ['pan','cvv','cardnumber','cardexpiry','cardsecret','cardsecrets','cardvault','vaultciphertext'])
+      expect(vaultPrivacyGuard).toContain("'"+vaultField+"'");
+
     expect(script).toContain('rheomiq_app_state');
     expect(script).toContain("finance_storage_mode==='relational_v1'");
     expect(script).not.toContain('ahsukppxwaiagampsuzb');
