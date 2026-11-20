@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { saveAccountMetadata } from '../lib/accountMetadataClient';
+import { accountMetadataReviewMessage, accountMetadataWriteNeedsReview, saveAccountMetadata, UnverifiedAccountMetadataWrite } from '../lib/accountMetadataClient';
 import {
   BANK_ACCOUNT_CATEGORIES,
   CASH_ACCOUNT_TYPES,
@@ -197,6 +197,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
     if(editor.mode==='bank'&&!editor.providerId){setEditorError('Επίλεξε τράπεζα ή πάροχο.');return}
     if(editor.mode==='bank'&&!editor.bankAccountCategory){setEditorError('Επίλεξε κατηγορία λογαριασμού.');return}
     if(editor.mode==='bank'&&editor.iban.trim()&&!isValidIban(editor.iban)){setEditorError('Έλεγξε το IBAN.');return}
+    if(editor.source!=='new'&&accountMetadataWriteNeedsReview(editor.id)){setEditorError(accountMetadataReviewMessage);return}
     mutationInFlight.current=true;setBusy(true);setEditorError('');
     try{
       const isCustom=editor.source==='new'||editor.source==='custom';
@@ -255,8 +256,10 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       try{
         if(editor.mode==='bank')await saveAccountMetadata(id,editor.iban.trim()?normalizeIban(editor.iban):'');
         else if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
-      }catch{
-        ibanWarning=' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
+      }catch(error){
+        ibanWarning=error instanceof UnverifiedAccountMetadataWrite
+          ?' '+accountMetadataReviewMessage
+          :' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
       }
       notify((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning,ibanWarning?'warning':'success');
       setEditor(null);
@@ -288,6 +291,9 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
         setPendingDelete(null);
         return;
       }
+      if(accountMetadataWriteNeedsReview(id)){
+        notify(accountMetadataReviewMessage,'warning');setPendingDelete(null);return;
+      }
       const remaining=(settings.customAccounts??[]).filter(item=>item.id!==id);
       const names={...settings.accountNames};delete names[id];
       const overrides={...(settings.accountOverrides??{})};delete overrides[id];
@@ -298,7 +304,9 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       let metadataWarning='';
       if(metadata.records[id]?.iban){
         try{await saveAccountMetadata(id,'')}
-        catch{metadataWarning=' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
+        catch(error){metadataWarning=error instanceof UnverifiedAccountMetadataWrite
+          ?' '+accountMetadataReviewMessage
+          :' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
       }
       notify('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning,metadataWarning?'warning':'success');
       setPendingDelete(null);

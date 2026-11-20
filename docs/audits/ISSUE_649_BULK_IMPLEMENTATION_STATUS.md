@@ -1,3 +1,15 @@
+## 2026-11-21 — #649 I19.04 account-editor unverified IBAN UI protection (candidate; CI pending)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (full I19.04/I22.02 still partial). Previous exact [CI #44830516231](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44830516231) SUCCESS at `fb5c824`: validate, CodeQL, Unified; Windows/WebKit/Lighthouse intentionally skipped on Draft.
+
+**Confirmed same-root UI mismatch:** After a potentially committed IBAN PUT lost its acknowledgement, Account Management still told the owner to repeat the metadata write; the client rejects such repeats and a re-opened editor could submit another unrelated finance settings revision first. The existing shared operation-feedback warning now says IBAN may have committed and requires reload/review. Same-account edit/delete flows explicitly guard before finance mutation; definite 400/409 errors retain the pre-existing corrective path. No new success toast or physical-card UI changes.
+
+**Focused browser evidence staged:** Only synthetic `/qa.html?qaIbanReceiptLost=1` commits QA metadata then drops the receipt. Existing `account-metadata` browser suite now asserts one synthetic IBAN plus one finance write, visible Greek `role=alert` warning, preserved masked updated IBAN, one-write no-replay on a repeated Save, 390×844 mobile-first and 1440×1000 desktop screenshots, no horizontal overflow. One new Draft PR opt-in `<!-- run-649-iban-receipt-qa -->` selects only the already-existing account-metadata suite; leave OFF until mandatory source CI succeeds, then enable once and inspect evidence.
+
+**Validation of candidate new head pending**; no extra Real Stack, hosted DB, SQL/RLS, Android, develop/main merge or production release. Keep #654 Draft, original counters and required final Ready gates unchanged. Next exact action: inspect new-head CI, run one focused changed-surface Chromium suite, inspect screenshot artifact, then disable marker and record acceptance or narrowly repair failures.
+
+---
+
 ## 2026-11-21 — #649 I19.04 IBAN lost-receipt replay guard (candidate pending exact-head CI)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; full I19.04/I22.02 remain partial). Previously accepted runtime source `01a4c3c`: CI #44795545191 SUCCESS, focused Card Vault Chromium #44795850824 SUCCESS. Do not repeat these unchanged proofs or earlier isolated Real Stack without relevant new evidence.

@@ -93,6 +93,23 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(rendered).toContain('account-metadata-durable-save-failure');
     expect(rendered).toContain('Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.');
   });
+  it('keeps uncertain postcommit IBAN results clear and blocks a second account finance mutation',()=>{
+    expect(component).toContain('accountMetadataWriteNeedsReview(editor.id)');
+    expect(component).toContain('setEditorError(accountMetadataReviewMessage);return');
+    expect(component).toContain('accountMetadataWriteNeedsReview(id)');
+    expect(component).toContain('error instanceof UnverifiedAccountMetadataWrite');
+    expect(component).toContain("notify(accountMetadataReviewMessage,'warning')");
+    expect(rendered).toContain('account-metadata-unverified-mobile-390');
+    expect(rendered).toContain('account-metadata-unverified-desktop-1440');
+    expect(rendered).toContain('account-metadata-unverified-retry-blocked-mobile-390');
+    expect(rendered).toContain('unknown.ibanWrites===1&&unknown.financeWrites===1');
+    expect(rendered).toContain('retry.ibanWrites===1&&retry.financeWrites===1');
+    const client=readFileSync('src/lib/accountMetadataClient.ts','utf8');
+    expect(client).toContain('const QA_LOST_IBAN_RECEIPT=QA_MODE&&');
+    expect(client).toContain('document.documentElement.dataset.qaIbanMetadataWrites=');
+    expect(client).toContain('if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();');
+    expect(client).toContain('return markUnverifiedAccountWrite(accountId,authEpoch());');
+  });
   it('retains the financial delete after its durable receipt even if ancillary IBAN cleanup fails',()=>{
     const deletion=component.slice(component.indexOf('const confirmDelete=async()=>'),component.indexOf('const defaultOptions='));
     expect(deletion.indexOf('await onChangeDurably(next)')).toBeLessThan(deletion.indexOf("await saveAccountMetadata(id,'')"));

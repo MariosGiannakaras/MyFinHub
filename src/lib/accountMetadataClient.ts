@@ -9,6 +9,7 @@ type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;up
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
+const QA_LOST_IBAN_RECEIPT=QA_MODE&&new URLSearchParams(location.search).has('qaIbanReceiptLost');
 const QA_UPDATED_AT='2026-08-17T12:00:00.000Z';
 const QA_RECORDS:Record<string,AccountMetadataRecord>={
   'piraeus-payroll':{accountId:'piraeus-payroll',iban:'GR1601101250000000012300695',revision:1,updatedAt:QA_UPDATED_AT},
@@ -31,6 +32,8 @@ export class UnverifiedAccountMetadataWrite extends Error{
 function publish(next:AccountMetadataSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getAccountMetadataSnapshot(){return snapshot}
 export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
+export function accountMetadataWriteNeedsReview(accountId:string){return unverifiedAccountWrites.has(accountId)}
+export const accountMetadataReviewMessage='Η ενημέρωση IBAN ίσως ολοκληρώθηκε. Επαναφόρτωσε και έλεγξε τα στοιχεία πριν από νέα αποθήκευση.';
 const authEpoch=watchAuthScope(()=>{
   pending=null;
   unverifiedAccountWrites.clear();
@@ -97,9 +100,14 @@ export async function refreshAccountMetadata(force=false){
 export async function saveAccountMetadata(accountId:string,iban:string|null){
   const normalized=assertValidIban(iban);
   if(QA_MODE){
+    if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();
     const current=snapshot.records[accountId];
     const record:AccountMetadataRecord={accountId,iban:normalized,revision:(current?.revision??0)+1,updatedAt:QA_UPDATED_AT};
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
+    if(QA_LOST_IBAN_RECEIPT){
+      document.documentElement.dataset.qaIbanMetadataWrites=String(Number(document.documentElement.dataset.qaIbanMetadataWrites||0)+1);
+      return markUnverifiedAccountWrite(accountId,authEpoch());
+    }
     return record;
   }
   return trackDatabaseWrite(async()=>{

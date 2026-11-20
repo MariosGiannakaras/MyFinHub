@@ -220,6 +220,33 @@ try{
   assert((await c.call("function(){return Number(document.documentElement.dataset.qaSettingsDurableWrites||0)}"))===narrowBeforeWrites,'Escape discard does not commit invalid account draft');
 
 
+
+  console.log('Account metadata QA: committed but unacknowledged IBAN requires review, mobile and desktop');
+  for(const [width,height,label] of [[390,844,'mobile-390'],[1440,1000,'desktop-1440']]){
+    await viewport(width,height);
+    const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('qaIbanReceiptLost','1');
+    await c.send('Page.navigate',{url:url.href});
+    await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'unverified IBAN Settings');
+    await clickText('.settings-tablist button','Λογαριασμοί');
+    await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'unverified account list');
+    await scrollTo('.account-management-settings');
+    await openPayrollEditor();
+    await editIban('GB82 WEST 1234 5698 7654 32');
+    await clickText('.account-management-modal.is-edit button','Αποθήκευση');
+    await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&Boolean(document.querySelector('.account-management-message[data-feedback-tone=warning]'))}",'unverified IBAN warning');
+    const unknown=await c.call("function(){const warning=document.querySelector('.account-management-message[data-feedback-tone=warning]'),row=[...document.querySelectorAll('.account-management-row')].find(item=>item.dataset.accountId==='piraeus-payroll');return {text:warning?.textContent||'',role:warning?.getAttribute('role'),ibanWrites:Number(document.documentElement.dataset.qaIbanMetadataWrites||0),financeWrites:Number(document.documentElement.dataset.qaSettingsDurableWrites||0),masked:row?.textContent||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+    assert(unknown.ibanWrites===1&&unknown.financeWrites===1&&unknown.role==='alert'&&unknown.text.includes('ίσως ολοκληρώθηκε')&&unknown.text.includes('Επαναφόρτωσε')&&!unknown.text.includes('επανάλαβε την ενημέρωση')&&unknown.masked.includes('5432')&&unknown.overflow<=1,'uncertain IBAN write is partial success with no retry: '+JSON.stringify(unknown));
+    await scrollTo('.account-management-message');
+    await screenshot('account-metadata-unverified-'+label);
+    await openPayrollEditor();
+    await clickText('.account-management-modal.is-edit button','Αποθήκευση');
+    await waitFor("function(){return (document.querySelector('.account-management-modal.is-edit [role=alert]')?.textContent||'').includes('Επαναφόρτωσε')}",'unverified IBAN repeat blocked in editor');
+    const retry=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-edit'),alert=modal?.querySelector('[role=alert]');alert?.scrollIntoView({block:'nearest'});return {error:alert?.textContent||'',ibanWrites:Number(document.documentElement.dataset.qaIbanMetadataWrites||0),financeWrites:Number(document.documentElement.dataset.qaSettingsDurableWrites||0),open:Boolean(modal),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+    assert(retry.ibanWrites===1&&retry.financeWrites===1&&retry.open&&retry.error.includes('Επαναφόρτωσε')&&retry.overflow<=1,'second Save blocked before finance revision: '+JSON.stringify(retry));
+    await screenshot('account-metadata-unverified-retry-blocked-'+label);
+    await closeEditor();
+  }
+
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
   c.close();console.log('Account metadata rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
