@@ -20,6 +20,12 @@ The CI-only `npm run qa:isolated-recovery` command explicitly checks `CI=true` a
 
 This proof does **not** restore Supabase global roles into a distinct physical cluster or reproduce production secrets, provider encryption material, project-level configuration, external auth/Storage infrastructure and point-in-time consistency across a live writing system. Even a successful local run therefore does **not** by itself close an owner production recovery/release gate.
 
+## Verified disposable recovery evidence — 2026-11-20
+
+[Real Stack E2E #44641337845](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44641337845) completed successfully for repository commit [`83f6b24`](https://github.com/MariosGiannakaras/MyFinHub/commit/83f6b241248ceeb26237eb2f5dfc1c95d054972f). Its log records independent scratch PostgreSQL restoration with selected table/history/auth/migration/RLS fingerprints preserved, a separate temporary Storage bucket with replayed object bytes checked by SHA-256, unchanged source state after fixture cleanup, and a passing forward-only migration recovery/idempotency test. The same run completed real authenticated Chromium workflows and produced 24 inspected screenshots in [artifact #14585889804](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44641337845/artifacts/14585889804). The direct database safety and Storage provenance negatives passed on that isolated local stack.
+
+**Scope limitation:** This evidence is explicitly confined to ephemeral local Supabase. It neither exercises a second hosted Supabase project or production secrets nor establishes point-in-time consistency during concurrent writes. Approval-gated hosted disaster recovery, secure key handling and production cutover stay as the operator protocol below.
+
 ## Production operator protocol (approval-gated, not executed by this repository)
 
 1. Obtain explicit owner approval for an offline **backup** and a separate approval for any production-changing **restore**. Identify the exact project, maintenance/change window, recovery-point and retention objectives, and enforce least-privilege access.
