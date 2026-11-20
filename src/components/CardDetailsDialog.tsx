@@ -9,7 +9,7 @@ import { Button } from './Button';
 import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
-import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
+import { CardVaultClientError, UnverifiedCardVaultWrite, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, normalizeCardDetailsInput, saveCardDetails, formatStoredCardNumberInput } from '../lib/cardDetails';
 import type { CardBank, PaymentCard } from '../types';
 import '../styles/card-details-dialog.css';
@@ -38,12 +38,17 @@ export function CardDetailsDialog({
   const [cvv,setCvv]=useState('');
   const [loading,setLoading]=useState(false);
   const [saving,setSaving]=useState(false);
+  // A lost vault PUT receipt may follow a committed encrypted row. Never
+  // submit the same mutation blindly from this editor again.
+  const [vaultReviewRequired,setVaultReviewRequired]=useState(false);
+  const vaultReviewRef=useRef(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
 
   useEffect(()=>{
     if(!open||!card)return;
     let cancelled=false;
+    vaultReviewRef.current=false;setVaultReviewRequired(false);
     setPan('');setExpiry('');setCvv('');setError('');setNotice('');setLoading(false);
     if(requireCvv){setNotice('Συμπλήρωσε τα ασφαλή στοιχεία της νέας κάρτας. Θα αποθηκευτούν μόνο στο κρυπτογραφημένο card vault.');return}
     if(!card.vaultRef){setNotice(card.last4?`Η κάρτα έχει μόνο τα παλιότερα τελευταία 4 ψηφία •••• ${card.last4}. Τα πλήρη στοιχεία δεν υπάρχουν ακόμη στο card vault· συμπλήρωσέ τα μία φορά για ασφαλή συγχρονισμό.`:'Δεν υπάρχουν ακόμη πλήρη στοιχεία στο card vault. Συμπλήρωσέ τα και αποθήκευσε.');return}
@@ -87,7 +92,7 @@ export function CardDetailsDialog({
   };
   const clearError=()=>{if(error)setError('')};
   const submit=async()=>{
-    if(busy)return;
+    if(busy||vaultReviewRef.current)return;
     setSaving(true);setError('');
     let vaultSaved=false;
     let profileStaged=false;
@@ -98,8 +103,14 @@ export function CardDetailsDialog({
       vaultSaved=true;
       await onSaved(updated);
     }catch(saveError){
-      if(saveError instanceof CardDetailsInputError)setError(saveError.message);
-      else if(vaultSaved)setError('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault, αλλά το προφίλ δεν επιβεβαιώθηκε. Επαναφόρτωσε και επανάλαβε τη σύνδεση της κάρτας.');
+      if(saveError instanceof UnverifiedCardVaultWrite){
+        vaultReviewRef.current=true;setVaultReviewRequired(true);
+        setError(cardVaultErrorMessage(saveError));
+      }else if(saveError instanceof CardDetailsInputError)setError(saveError.message);
+      else if(vaultSaved){
+        vaultReviewRef.current=true;setVaultReviewRequired(true);
+        setError('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault, αλλά το προφίλ δεν επιβεβαιώθηκε. Κλείσε τη φόρμα, επαναφόρτωσε και έλεγξε τη σύνδεση της κάρτας πριν επαναλάβεις την αποθήκευση.');
+      }
       else if(requireCvv&&!profileStaged)setError('Η δημιουργία του προφίλ δεν αποθηκεύτηκε. Δεν στάλθηκαν ασφαλή στοιχεία στο vault. Επαναφόρτωσε και δοκίμασε ξανά.');
       else if(requireCvv)setError('Το προφίλ της κάρτας αποθηκεύτηκε, αλλά η ασφαλής αποθήκευση δεν ολοκληρώθηκε. Τα στοιχεία μπορείς να τα συμπληρώσεις ξανά.');
       else setError(cardVaultErrorMessage(saveError));
@@ -120,7 +131,7 @@ export function CardDetailsDialog({
             <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
             <div className="card-toolbar">
               {onEditProfile?<button type="button" className="card-icon-btn card-icon-reveal" aria-label="Όνομα / σχέδιο" title="Όνομα / σχέδιο" disabled={busy} onClick={onEditProfile}><CreditCard aria-hidden="true"/></button>:<span className="card-icon-btn card-icon-reveal card-inline-action-slot" aria-hidden="true"><Eye/></span>}
-              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label="Αποθήκευση στοιχείων κάρτας" aria-describedby={error?errorId:undefined} title="Αποθήκευση στοιχείων κάρτας" data-save-error={error?'true':undefined} disabled={busy} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
+              <button type="button" className="card-icon-btn card-icon-management card-inline-save" aria-label="Αποθήκευση στοιχείων κάρτας" aria-describedby={error?errorId:undefined} title="Αποθήκευση στοιχείων κάρτας" data-save-error={error?'true':undefined} disabled={busy||vaultReviewRequired} onClick={()=>void submit()}><Save aria-hidden="true"/></button>
               <span className="card-icon-btn card-icon-management card-inline-action-slot" aria-hidden="true"><Archive/></span>
             </div>
           </header>
@@ -160,7 +171,7 @@ export function CardDetailsDialog({
     <footer>
       {inline&&onEditProfile?<Button variant="secondary" className="card-profile-action" disabled={busy} onClick={onEditProfile}>Όνομα / σχέδιο</Button>:null}
       <Button variant="secondary" disabled={busy} onClick={cancel}>Ακύρωση</Button>
-      <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
+      <Button variant="primary" disabled={busy||vaultReviewRequired} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
     </footer>
   </>;
   return <DialogShell open={open} className="app-card-details-dialog" role="dialog" ariaLabelledBy={titleId} ariaDescribedBy={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')} busy={busy} motionMode={motionMode} preferredFocus='[data-autofocus="true"]' onRequestClose={cancel}>{content}</DialogShell>;

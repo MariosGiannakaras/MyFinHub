@@ -529,7 +529,9 @@
         "scripts/real-stack-e2e.ts",
         "scripts/real-stack-receivable-rpc.ts"
       ],
-      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
       "guards": [
         "tests/649-provider-storage-path-provenance.test.ts",
         "tests/production-migration-ledger-source.test.ts"
@@ -548,12 +550,13 @@
         "src/lib/recurringFinanceAssetOutcome.ts",
         "scripts/recurring-service-brand-qa.mjs"
       ],
-      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
       "guards": [
         "tests/649-recurring-finance-asset-partial-commit.test.ts",
         "tests/recurring-service-assets.test.ts"
       ]
-
     },
     {
       "id": "FP-029",
@@ -567,9 +570,32 @@
         "src/components/QuickAdd.tsx",
         "src/components/ContextualQuickAdd.tsx"
       ],
-      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
-      "guards": ["tests/649-finance-write-receipt-no-replay.test.ts"]
-
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-finance-write-receipt-no-replay.test.ts"
+      ]
+    },
+    {
+      "id": "FP-030",
+      "title": "Reject false-positive vault write receipts and protect uncertain encrypted updates",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The card vault accepted any 2xx body as durable save/deletion evidence and told the owner that transport loss could not have changed encrypted card data. The editor allowed a second write after an unknown outcome.",
+      "prevention": "Require an exact saved/deleted response with expected last-four provenance, classify lost 0/408/429/5xx and malformed success receipts as unverified, lock repeated card-secret updates until secure reload and never claim rollback on a lost reply.",
+      "paths": [
+        "src/lib/cardVaultClient.ts",
+        "src/components/CardDetailsDialog.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-card-vault-uncertain-write-receipt.test.ts",
+        "tests/card-vault-client.test.ts",
+        "tests/client-network-boundary.test.ts"
+      ]
     }
   ]
 }

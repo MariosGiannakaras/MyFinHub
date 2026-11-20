@@ -36,6 +36,6 @@ describe('shared client network boundary',()=>{
     let error:unknown;
     try{await revealCardSecret('card-1')}catch(reason){error=reason}
     expect(error).toMatchObject({status:0,code:'NETWORK_ERROR'});
-    expect(cardVaultErrorMessage(error)).toBe('Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Τα αποθηκευμένα στοιχεία δεν άλλαξαν.');
+    expect(cardVaultErrorMessage(error)).toBe('Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Η κατάσταση των αποθηκευμένων στοιχείων δεν επιβεβαιώθηκε.');
   });
 });
