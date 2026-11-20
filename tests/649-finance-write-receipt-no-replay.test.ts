@@ -26,6 +26,13 @@ describe('#649 I19.04 fail closed after uncertain finance write acknowledgments'
     expect(FINANCE_RECEIPT_UNVERIFIED).toContain('Μην την καταχωρίσεις ξανά');
     expect(FINANCE_RECEIPT_UNVERIFIED).toContain('τελευταία αποθηκευμένη κατάσταση');
   });
+  it('targets the real generic finance Save, never the portalled receipt-launch button',()=>{
+    const browser=readFileSync('scripts/quick-finance-ambiguous-qa.mjs','utf8');
+    expect(browser).not.toContain(".generic-quick-modal footer button:last-child");
+    expect(browser).toContain(".find(button=>(button.textContent||'').includes('Καταχώριση'))");
+    expect(browser).toContain("count.attempts===1&&count.writes===1");
+    expect(browser).toContain("count.attempts===1&&count.writes===0");
+  });
   it('guards generic, linked-transfer, scheduled, and contextual writers only after dispatch',()=>{
     const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
     const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');

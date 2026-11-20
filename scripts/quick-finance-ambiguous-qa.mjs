@@ -60,7 +60,7 @@ try{
   const waitFor=async(fn,msg)=>{
     for(let i=0;i<150;i++){if(await c.call(fn))return;await sleep(100)}
     if(msg==='generic uncertain receipt disabled'||msg==='contextual uncertain receipt disabled'){
-      const facts=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal,.contextual-quick-modal');return {dialogOpen:Boolean(dlg),amount:dlg?.querySelector('[data-autofocus=true]')?.value||'',error:(dlg?.querySelector('#quick-add-error,#context-quick-error')?.textContent||'').slice(0,220),saveDisabled:dlg?.querySelector('footer button:last-child,.editor-actions button:last-child')?.disabled,financeAttempts:Number(document.documentElement.dataset.qaQuickEventAttempts||0),financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0),context:(dlg?.querySelector('h2')?.textContent||'').slice(0,70)}}");
+      const facts=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal,.contextual-quick-modal');return {dialogOpen:Boolean(dlg),amount:dlg?.querySelector('[data-autofocus=true]')?.value||'',error:(dlg?.querySelector('#quick-add-error,#context-quick-error')?.textContent||'').slice(0,220),saveDisabled:[...(dlg?.querySelectorAll('footer button,.editor-actions button')||[])].find(button=>/Καταχώριση|Εφαρμογή αλλαγών|Επιβεβαίωση πληρωμής|Ολοκλήρωση/.test(button.textContent||''))?.disabled,financeAttempts:Number(document.documentElement.dataset.qaQuickEventAttempts||0),financeWrites:Number(document.documentElement.dataset.qaFinanceWrites||0),context:(dlg?.querySelector('h2')?.textContent||'').slice(0,70)}}");
       await shot('quick-finance-uncertain-diagnostic');
       throw new Error('Timed out waiting for '+msg+': '+JSON.stringify(facts));
     }
@@ -87,12 +87,12 @@ try{
     await c.send('Input.insertText',{text:'17.45'});
     await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal [data-autofocus=true]')?.value)}",'generic amount edited');
   };
-  const submitGeneric=()=>c.call("function(){const btn=document.querySelector('.generic-quick-modal footer button:last-child');btn?.click();return Boolean(btn)}");
+  const submitGeneric=()=>c.call("function(){const btn=[...document.querySelectorAll('.generic-quick-modal footer button')].find(button=>(button.textContent||'').includes('Καταχώριση'));btn?.click();return Boolean(btn)}");
   console.log('Quick finance ambiguous QA: generic finance committed but response lost');
   await navigate('dashboard','ambiguous');
   await openGeneric();
   assert(await submitGeneric(),'generic Save missing');
-  await waitFor("function(){const dlg=document.querySelector('.generic-quick-modal');return Boolean(dlg?.querySelector('#quick-add-error')?.textContent?.includes('Μην την καταχωρίσεις ξανά')&&dlg.querySelector('footer button:last-child')?.disabled)}",'generic uncertain receipt disabled');
+  await waitFor("function(){const dlg=document.querySelector('.generic-quick-modal');return Boolean(dlg?.querySelector('#quick-add-error')?.textContent?.includes('Μην την καταχωρίσεις ξανά')&&[...dlg.querySelectorAll('footer button')].find(button=>(button.textContent||'').includes('Καταχώριση'))?.disabled)}",'generic uncertain receipt disabled');
   let count=await counts();assert(count.attempts===1&&count.writes===1,'generic commit count incorrect: '+JSON.stringify(count));
   await submitGeneric();await sleep(60);
   count=await counts();assert(count.attempts===1&&count.writes===1,'generic replay submitted duplicate event');
@@ -123,7 +123,7 @@ try{
   await navigate('dashboard','rejected');
   await openGeneric();assert(await submitGeneric(),'known conflict Save missing');
   await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal #quick-add-error'))}",'known precommit rejection');
-  const rejected=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal');return {disabled:dlg?.querySelector('footer button:last-child')?.disabled,error:dlg?.querySelector('#quick-add-error')?.textContent||''}}");
+  const rejected=await c.call("function(){const dlg=document.querySelector('.generic-quick-modal');return {disabled:[...(dlg?.querySelectorAll('footer button')||[])].find(button=>(button.textContent||'').includes('Καταχώριση'))?.disabled,error:dlg?.querySelector('#quick-add-error')?.textContent||''}}");
   assert(rejected.disabled===false&&!rejected.error.includes('Μην την καταχωρίσεις ξανά'),'precommit rejection incorrectly frozen');
   count=await counts();assert(count.attempts===1&&count.writes===0,'known precommit conflict wrote finance event');
   await shot('quick-finance-precommit-conflict');
