@@ -10,9 +10,17 @@ if(!browser)throw new Error('Chromium required for quick finance ambiguous-recei
 const port=9387;
 const profile='/tmp/myfinhub-quick-finance-ambiguous-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const launchBrowser=()=>spawn(browser,['--headless=new','--remote-debugging-port='+port,
-  '--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,
-  '--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+let browserStartLog='';
+const launchBrowser=()=>{
+  const proc=spawn(browser,['--headless=new','--remote-debugging-port='+port,
+    '--remote-debugging-address=127.0.0.1','--user-data-dir='+profile,
+    '--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{
+      stdio:['ignore','ignore','pipe'],
+  });
+  proc.stderr?.on('data',chunk=>{browserStartLog=(browserStartLog+String(chunk)).slice(-2400)});
+  proc.on('error',error=>{browserStartLog=('spawn '+String(error)+' '+browserStartLog).slice(-2400)});
+  return proc;
+};
 let child=launchBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function stopBrowser(){
@@ -22,8 +30,14 @@ async function stopBrowser(){
   if(child.exitCode===null)child.kill('SIGKILL');
 }
 async function waitHttp(url){
-  for(let i=0;i<90;i++){try{const r=await fetch(url);if(r.ok)return}catch{}await sleep(120)}
-  throw new Error('Chrome debugging unavailable at '+url);
+  for(let i=0;i<180;i++){
+    try{const r=await fetch(url);if(r.ok)return}catch{}
+    if(child.exitCode!==null)break;
+    await sleep(120);
+  }
+  throw new Error('Chrome debugging unavailable at '+url+
+    ' (process exit '+String(child.exitCode)+
+    '; stderr tail '+browserStartLog.replace(/\x1b\[[0-9;]*m/g,'').slice(-1200)+')');
 }
 class Cdp{
   constructor(ws){this.wsUrl=ws;this.id=0;this.pending=new Map()}
@@ -51,6 +65,7 @@ try{
     console.warn('Quick finance QA Chromium bootstrap retry:',String(firstStartError));
     await stopBrowser();
     rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+    browserStartLog='';
     child=launchBrowser();
     await waitHttp('http://127.0.0.1:'+port+'/json/version');
   }
