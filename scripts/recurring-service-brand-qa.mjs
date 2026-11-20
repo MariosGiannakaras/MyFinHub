@@ -82,7 +82,7 @@ try{
     }
     throw new Error('Timed out waiting for '+label);
   };
-  const navigate=async(width=1440,height=1100,failSave=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure','1');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
+  const navigate=async(width=1440,height=1100,failSave=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure',failSave===true?'1':failSave);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(evidenceDir+'/'+name+'.png',Buffer.from(result.data,'base64'))};
   const clickAria=async label=>{const clicked=await c.call("function(label){const node=[...document.querySelectorAll('button,[role=button],summary')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]);assert(clicked,'missing control '+label)};
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,'missing clickable '+text)};
@@ -137,6 +137,22 @@ try{
   current=await state();
   assert(current.writes===1&&current.deletes===1&&current.brandedKey==='service-asset-aaaaaaaaaaaaaaaaaaaaaaaa','failed finance write retains old logo reference and deletes only newly uploaded asset');
   await shot('recurring-service-brand-save-failure');
+
+  console.log('Recurring service-brand QA: committed finance with lost reply retains referenced image');
+  await navigate(1440,1100,'uncertain');
+  await clickAria('Επεξεργασία QA Streaming');await setLogoFile();
+  await clickText('.editor-actions button','Αποθήκευση');
+  await waitFor("function(){return Boolean(document.querySelector('.recurring-editor-dialog #recurring-editor-error'))}",'recurring uncertain finance feedback');
+  current=await state();
+  assert(current.writes===1&&current.deletes===0,
+    'An ambiguous finance receipt must not delete the uploaded asset or upload twice.');
+  const uncertain=await c.call("function(){const editor=document.querySelector('.recurring-editor-dialog');const save=[...(editor?.querySelectorAll('.editor-actions button')||[])].find(button=>button.textContent?.includes('Αποθήκευση'));return {disabled:save?.disabled===true,error:editor?.querySelector('#recurring-editor-error')?.textContent||''}}");
+  assert(uncertain.disabled&&uncertain.error.includes('Η εικόνα διατηρήθηκε'),
+    'Ambiguous finance receipt must visibly block repeat Save and explain retained Storage.');
+  await clickText('.editor-actions button','Αποθήκευση');
+  assert((await state()).writes===1,
+    'Blocked editor retried an unverified logo and generated another Storage key.');
+  await shot('recurring-service-brand-finance-receipt-unverified');
 
   console.log('Recurring service-brand QA: dark and mobile containment');
   await navigate();await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");

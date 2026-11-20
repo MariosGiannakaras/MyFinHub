@@ -534,6 +534,26 @@
         "tests/649-provider-storage-path-provenance.test.ts",
         "tests/production-migration-ledger-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-028",
+      "title": "Do not purge recurring logo Storage after an unverified finance commit",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "A finance write may commit before its transport/history receipt disappears. The recurring editor deleted a freshly uploaded logo whenever a finance Promise rejected, even if the committed finance reference used it.",
+      "prevention": "Purge only after explicit precommit REVISION_CONFLICT, preserve uncertain Storage references, block repeat upload until finance reload, and preflight pending/conflicted finance state before any Storage write.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/App.tsx",
+        "src/lib/recurringFinanceAssetOutcome.ts",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": ["https://github.com/MariosGiannakaras/MyFinHub/issues/649"],
+      "guards": [
+        "tests/649-recurring-finance-asset-partial-commit.test.ts",
+        "tests/recurring-service-assets.test.ts"
+      ]
+
     }
   ]
 }

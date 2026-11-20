@@ -43,6 +43,14 @@ describe('recurring service asset foundation',()=>{
     expect(app).toContain('finance.updateDurably(current=>withRecurring(current,item))');
     expect(recurringPage).toContain('await onUpsertDurably(normalized)');
     expect(recurringPage).toContain('if(uploaded&&!persisted)');
+    expect(recurringPage).toContain('recurringFinanceWriteDefinitelyRejected(reason)');
+    expect(recurringPage).toContain('setFinanceReviewRequired(true)');
+    expect(recurringPage).toContain('disabled={editBusy||financeReviewRequired}');
+    expect(recurringPage).toContain('if(!financeReady)');
+    expect(app).toContain("financeReady={finance.saveState==='saved'&&!finance.savePending}");
+    expect(qaFixture).toContain("mode==='uncertain'");
+    expect(recurringRendered).toContain('recurring-service-brand-finance-receipt-unverified');
+    expect(recurringRendered).toContain('current.writes===1&&current.deletes===0');
     expect(recurringPage).toContain('oldKeyStillShared');
     expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
     expect(recurringPage).not.toContain('onUpsert(normalized)');
