@@ -675,18 +675,41 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
   if(!removal.ok&&removal.status!==404){
     throw new ApiError(503,'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE','Η διαγραφή της εικόνας υπηρεσίας δεν ολοκληρώθηκε.');
   }
-  await request('rpc/rheomiq_purge_recurring_service_asset',{
-    method:'POST',
-    body:JSON.stringify({p_asset_key:assetKey}),
-  },accessToken);
+  // Storage deletion was acknowledged. The purge RPC may commit before a
+  // transport error, so reconcile its exact row rather than replaying DELETE.
+  let purgeReceiptAmbiguous=false;
+  try{
+    await request('rpc/rheomiq_purge_recurring_service_asset',{
+      method:'POST',
+      body:JSON.stringify({p_asset_key:assetKey}),
+    },accessToken);
+  }catch(error){
+    // A definite PostgreSQL rejection is not a committed deletion receipt.
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+    purgeReceiptAmbiguous=true;
+  }
+  const unverifiedPurge=()=>new ApiError(503,'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+    'Η οριστική αφαίρεση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
+  if(purgeReceiptAmbiguous){
+    // An empty RLS SELECT can also mean the owner device was revoked between
+    // purge and readback. Confirm the current authenticated owner+AAL2
+    // device before treating absence as proof of a committed purge.
+    let activeOwner=false;
+    try{
+      activeOwner=await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
+    }catch{ /* Permission and upstream failures cannot prove deletion. */ }
+    if(!activeOwner)throw unverifiedPurge();
+  }
   // The purge RPC RETURNS void: HTTP 200/null is not a deletion receipt.
-  // Check both active and inactive owner-visible rows before returning ok:true
-  // to browser and native clients. A failed or ambiguous read must not trigger
-  // another Storage DELETE or silent success.
-  const remaining=await request(
-    `rheomiq_recurring_service_assets?select=asset_key,active&asset_key=eq.${encodeURIComponent(assetKey)}`,
-    {method:'GET'},accessToken);
-  if(!Array.isArray(remaining)||remaining.length!==0)
-    throw new ApiError(503,'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
-      'Η οριστική αφαίρεση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
+  // Query the exact key including inactive rows. Never replay Storage DELETE.
+  let remaining:unknown;
+  try{
+    remaining=await request(
+      `rheomiq_recurring_service_assets?select=asset_key,active&asset_key=eq.${encodeURIComponent(assetKey)}`,
+      {method:'GET'},accessToken);
+  }catch(error){
+    if(purgeReceiptAmbiguous)throw unverifiedPurge();
+    throw error;
+  }
+  if(!Array.isArray(remaining)||remaining.length!==0)throw unverifiedPurge();
 }

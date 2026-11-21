@@ -401,4 +401,59 @@ describe('recurring service asset foundation',()=>{
     expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
     expect(calls[3].url).toContain('asset_key=eq.'+key);
   });
+
+  it.each([
+    'postcommit-503','postcommit-network-loss','retained-inactive',
+    'unavailable-readback','malformed-readback','revoked-session',
+    'owner-check-unavailable','definite-denial',
+  ] as const)('reconciles recurring Storage purge $scenario without replay or false-green',async scenario=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{method:string;url:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method??'GET');
+      calls.push({url,method});
+      if(url.includes('/rpc/rheomiq_release_recurring_service_asset'))
+        return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(url.includes('/storage/v1/object/recurring-service-assets/'))
+        return new Response('{}',{status:200});
+      if(url.includes('/rpc/rheomiq_purge_recurring_service_asset')){
+        if(scenario==='postcommit-network-loss')throw new TypeError('Synthetic lost postcommit acknowledgement');
+        if(scenario==='definite-denial')
+          return new Response(JSON.stringify({code:'42501',message:'FORBIDDEN'}),{status:403});
+        return new Response(JSON.stringify({message:'Purge receipt unavailable'}),{status:503});
+      }
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario==='owner-check-unavailable')return new Response('{}',{status:503});
+        return new Response(scenario==='revoked-session'?'false':'true',{status:200});
+      }
+      if(url.includes('/rheomiq_recurring_service_assets?')){
+        if(scenario==='unavailable-readback')return new Response('{}',{status:503});
+        const body=scenario==='retained-inactive'?[{asset_key:key,active:false}]:
+          scenario==='malformed-readback'?{}:[];
+        return new Response(JSON.stringify(body),{status:200});
+      }
+      throw new Error('Unexpected additional request: '+method+' '+url);
+    }));
+    const action=deleteRecurringServiceAsset(key,'access-token');
+    if(scenario==='postcommit-503'||scenario==='postcommit-network-loss')
+      await expect(action).resolves.toBeUndefined();
+    else await expect(action).rejects.toMatchObject({
+      status:scenario==='definite-denial'?403:503,
+      code:scenario==='definite-denial'?'FORBIDDEN':'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+    });
+    const methods=calls.map(call=>call.method);
+    const expected=scenario==='definite-denial'?['POST','DELETE','POST']:
+      scenario==='owner-check-unavailable'||scenario==='revoked-session'?
+        ['POST','DELETE','POST','POST']:['POST','DELETE','POST','POST','GET'];
+    expect(methods).toEqual(expected);
+    expect(calls.filter(call=>call.method==='DELETE')).toHaveLength(1);
+    expect(calls[1]?.url).toContain('/storage/v1/object/recurring-service-assets/'+path);
+    expect(calls[2]?.url).toContain('/rpc/rheomiq_purge_recurring_service_asset');
+    if(methods.length>=4&&scenario!=='definite-denial')
+      expect(calls[3]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
+    if(methods.includes('GET'))expect(calls.at(-1)?.url).toContain('asset_key=eq.'+key);
+  });
 });
