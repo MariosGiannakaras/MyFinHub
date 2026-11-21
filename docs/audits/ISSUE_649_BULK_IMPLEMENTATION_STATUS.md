@@ -1,3 +1,11 @@
+## 2026-11-21 — #649 I19.04 financial-provider binding postcommit receipt recovery (candidate)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Adds another bounded independent-store error case on the same active `fix/649-bulk-remediation` Draft #654 batch: `setFinancialProviderAssetBinding` now reconciles an **ambiguous** HTTP 5xx/transport exception following the no-return DB binding RPC without re-issuing that RPC. Readback must exactly match the requested provider/role/variant/asset key, including an absent record for clear. As with recurring purge, when the mutation reply is ambiguous an authenticated `rheomiq_is_owner_aal2()` direct PostgREST check must be **true** before an empty RLS row can prove cleared binding. Definite 4xx/409 rejections remain failures. The existing provider-binding receipt suite gains nine cases for committed lost 503/network assign+clear, missing/stale/malformed/unavailable readback, revoked/unavailable owner proof, and definite 403. No shared design/UI, SQL, bucket, RLS, Android, production or finance-state mutation.
+
+**Code gate pending** for this candidate; validation must be actual exact-head CI, not presumed from previous successful tests. Earlier accepted [revoked-device Real Stack #44901344130](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44901344130) was SUCCESS and its one-off trigger was removed. Full final Ready gates stay separate.
+
+---
+
 ## 2026-11-21 — #649 I19.04 recurring asset purge lost-acknowledgement recovery (candidate)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; wide I19.04/I22.02 still partial). The previous owner+AAL2 revoked-device proof on exact `0db1244` passed [CI #44901288065](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44901288065) **SUCCESS** (validate, CodeQL, Unified) and one-shot [isolated Real Stack #44901344130](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44901344130) **SUCCESS**. Reviewed job log confirms direct finance/history/IBAN revoked owner AAL2 negative-path assertions, one-row synthetic IBAN cleanup, real Chromium, isolated PostgreSQL+Storage restore and forward-only migration recovery. Removed the one-shot Real Stack PR-body marker after success. Do **not** repeat it without a new SQL/RLS boundary or explicit final gate.

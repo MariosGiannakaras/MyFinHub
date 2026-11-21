@@ -107,4 +107,62 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       p_provider_id:'owner-bank',p_asset_role:'logo',p_variant:'light',p_asset_key:clear?null:key,
     });
   });
+
+  it.each([
+    'lost-503-assignment','lost-network-clear','missing-assignment',
+    'stale-binding','malformed-readback','readback-unavailable',
+    'revoked-owner','owner-check-unavailable','definite-forbidden',
+  ] as const)('reconciles an uncertain provider binding $scenario without replaying its RPC',async scenario=>{
+    config();
+    const key='owner-bank-asset-aabbccddeeff';
+    const clear=scenario==='lost-network-clear'||scenario==='stale-binding';
+    const binding={provider_id:'owner-bank',asset_role:'logo',variant:'light',asset_key:key};
+    const calls:Array<{url:string;method:string;body:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(req:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(req),method=String(init?.method??'GET');
+      calls.push({url,method,body:String(init?.body??'')});
+      if(url.includes('/rpc/rheomiq_set_financial_provider_asset_binding')){
+        if(scenario==='lost-network-clear')throw new TypeError('Synthetic lost postcommit acknowledgement');
+        if(scenario==='definite-forbidden')
+          return new Response(JSON.stringify({code:'42501',message:'FORBIDDEN'}),{status:403});
+        return new Response(JSON.stringify({message:'Write receipt lost'}),{status:503});
+      }
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario==='owner-check-unavailable')return new Response('{}',{status:503});
+        return new Response(scenario==='revoked-owner'?'false':'true',{status:200});
+      }
+      if(url.includes('/rheomiq_financial_provider_asset_bindings?')){
+        if(scenario==='readback-unavailable')return new Response('{}',{status:503});
+        const rows=scenario==='missing-assignment'?[]:
+          scenario==='stale-binding'?[binding]:
+            scenario==='malformed-readback'?{}:
+              clear?[]:[binding];
+        return new Response(JSON.stringify(rows),{status:200});
+      }
+      throw new Error('Unexpected call '+method+' '+url);
+    }));
+    const action=setFinancialProviderAssetBinding({
+      providerId:'owner-bank',role:'logo',variant:'light',assetKey:clear?null:key,
+    },'owner-jwt');
+    if(scenario==='lost-503-assignment'||scenario==='lost-network-clear')
+      await expect(action).resolves.toBeUndefined();
+    else await expect(action).rejects.toMatchObject({
+      status:scenario==='definite-forbidden'?403:503,
+      code:scenario==='definite-forbidden'?'FORBIDDEN':'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
+    });
+    const expected=scenario==='definite-forbidden'?['POST']:
+      scenario==='revoked-owner'||scenario==='owner-check-unavailable'?['POST','POST']:
+        ['POST','POST','GET'];
+    expect(calls.map(x=>x.method)).toEqual(expected);
+    expect(calls.filter(x=>x.url.includes('/rpc/rheomiq_set_financial_provider_asset_binding'))).toHaveLength(1);
+    if(calls.length>1)expect(calls[1]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
+    if(calls.length>2){
+      expect(calls[2]?.url).toContain('provider_id=eq.owner-bank');
+      expect(calls[2]?.url).toContain('asset_role=eq.logo');
+      expect(calls[2]?.url).toContain('variant=eq.light');
+    }
+    expect(JSON.parse(calls[0]?.body??'{}')).toMatchObject({
+      p_provider_id:'owner-bank',p_asset_role:'logo',p_variant:'light',p_asset_key:clear?null:key,
+    });
+  });
 });

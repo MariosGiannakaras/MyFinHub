@@ -522,7 +522,10 @@ export async function setFinancialProviderAssetBinding(input:{
   variant:'universal'|'light'|'dark';
   assetKey:string|null;
 },accessToken:string){
-  await request('rpc/rheomiq_set_financial_provider_asset_binding',{
+  // The RPC can commit before its transport receipt disappears. Never replay.
+  let bindingReceiptAmbiguous=false;
+  try{
+    await request('rpc/rheomiq_set_financial_provider_asset_binding',{
     method:'POST',
     body:JSON.stringify({
       p_provider_id:input.providerId,
@@ -530,20 +533,41 @@ export async function setFinancialProviderAssetBinding(input:{
       p_variant:input.variant,
       p_asset_key:input.assetKey,
     }),
-  },accessToken);
+    },accessToken);
+  }catch(error){
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+    bindingReceiptAmbiguous=true;
+  }
+  const unverifiedBinding=()=>new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
+    'Provider image binding acknowledgement is unverified.',false);
+  if(bindingReceiptAmbiguous){
+    // A revoked AAL2 session can see zero rows under RLS. Verify identity
+    // and active device before accepting an absent slot as a cleared binding.
+    let activeOwner=false;
+    try{
+      activeOwner=await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
+    }catch{ /* No unverified authorization can prove a committed mutation. */ }
+    if(!activeOwner)throw unverifiedBinding();
+  }
   // This RPC RETURNS void. A 200/null payload proves transport completion,
   // not the exact requested slot. Confirm the single committed binding (or
   // its removal) before the API sends ok:true to its native/browser clients.
-  const records=await request(
+  let records:unknown;
+  try{
+    records=await request(
     `rheomiq_financial_provider_asset_bindings?select=provider_id,asset_role,variant,asset_key&provider_id=eq.${encodeURIComponent(input.providerId)}&asset_role=eq.${encodeURIComponent(input.role)}&variant=eq.${encodeURIComponent(input.variant)}`,
-    {method:'GET'},accessToken);
+      {method:'GET'},accessToken);
+  }catch(error){
+    if(bindingReceiptAmbiguous)throw unverifiedBinding();
+    throw error;
+  }
   if(!Array.isArray(records)||records.length!==(input.assetKey===null?0:1))
-    throw new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED','Provider image binding acknowledgement is unverified.',false);
+    throw unverifiedBinding();
   if(input.assetKey!==null){
     const row=records[0] as Partial<StoredFinancialProviderAssetBindingRow>|null;
     if(!row||row.provider_id!==input.providerId||row.asset_role!==input.role||
       row.variant!==input.variant||row.asset_key!==input.assetKey)
-      throw new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED','Provider image binding acknowledgement is unverified.',false);
+      throw unverifiedBinding();
   }
 }
 
