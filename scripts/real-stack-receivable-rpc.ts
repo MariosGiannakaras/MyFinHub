@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import {createEvent} from '../src/lib/domain.js';
 import type {FinanceData} from '../src/types.js';
 
@@ -194,6 +195,62 @@ export async function runDirectReceivableRpcProof(options:Options){
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
+  // #649 I22.02: genuine local GoTrue identities must also obey direct
+  // Supabase Storage INSERT/DELETE policies, not only PostgreSQL RPC/RLS.
+  // Use a valid SVG and positive owner AAL2 controls so malformed content
+  // cannot explain any denied write. All paths are random, local and scoped.
+  type StorageBucket='financial-provider-assets'|'recurring-service-assets';
+  type StorageFixture={bucket:StorageBucket;path:string};
+  const syntheticStoragePaths:StorageFixture[]=[];
+  const newStoragePath=(bucket:StorageBucket):StorageFixture=>{
+    const nonce=randomUUID().replace(/-/g,'');
+    const path=bucket==='financial-provider-assets'
+      ?'providers/qa-direct-rpc/qa-direct-rpc-asset-'+nonce.slice(0,12)+'.svg'
+      :'services/service-asset-'+nonce.slice(0,24)+'.svg';
+    const fixture={bucket,path};
+    syntheticStoragePaths.push(fixture);
+    return fixture;
+  };
+  const protectedStorage=[
+    newStoragePath('financial-provider-assets'),
+    newStoragePath('recurring-service-assets'),
+  ];
+  const svgBytes=Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path d="M0 0"/></svg>','utf8');
+  const storageRequest=async(method:'POST'|'DELETE',token:string,fixture:StorageFixture)=>{
+    const response=await fetch(apiUrl+'/storage/v1/object/'+fixture.bucket+'/'+fixture.path,{
+      method,headers:{
+        apikey:token===serviceRole?serviceRole:publishable,authorization:'Bearer '+token,
+        ...(method==='POST'?{'content-type':'image/svg+xml'}:{}),
+      },
+      ...(method==='POST'?{body:Uint8Array.from(svgBytes)}:{}),
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
+  const storageExists=async(fixture:StorageFixture)=>{
+    const delimiter=fixture.path.lastIndexOf('/');
+    const response=await postJson(apiUrl+'/storage/v1/object/list/'+fixture.bucket,{
+      apikey:serviceRole,authorization:'Bearer '+serviceRole,
+    },{prefix:fixture.path.slice(0,delimiter),limit:100,offset:0});
+    assert(response.status===200&&Array.isArray(response.body),
+      'Local privileged Storage readback failed.');
+    return response.body.some((row:{name?:unknown})=>row?.name===fixture.path.slice(delimiter+1));
+  };
+  const assertDeniedStorage=async(label:string,token:string)=>{
+    for(const fixture of protectedStorage){
+      const candidate=newStoragePath(fixture.bucket);
+      const deniedInsert=await storageRequest('POST',token,candidate);
+      assert(deniedInsert.status>=400&&deniedInsert.status<500,
+        'Direct '+fixture.bucket+' Storage INSERT unexpectedly accepted '+label+'.');
+      assert(!(await storageExists(candidate)),
+        'Denied '+label+' Storage INSERT persisted an unregistered object.');
+      const deniedDelete=await storageRequest('DELETE',token,fixture);
+      assert(deniedDelete.status>=400&&deniedDelete.status<500,
+        'Direct '+fixture.bucket+' Storage DELETE unexpectedly accepted '+label+'.');
+      assert(await storageExists(fixture),
+        'Denied '+label+' Storage DELETE removed a legitimate owner AAL2 object.');
+    }
+  };
   try{
     const ownerRows=await selectMetadata(aal2Token);
     assert(ownerRows.status===200&&Array.isArray(ownerRows.body)&&ownerRows.body.length===1&&
@@ -205,6 +262,13 @@ export async function runDirectReceivableRpcProof(options:Options){
         'Direct account metadata SELECT leaked owner IBAN to '+label+'.');
     }
 
+    for(const fixture of protectedStorage){
+      const inserted=await storageRequest('POST',aal2Token,fixture);
+      assert([200,201].includes(inserted.status)&&await storageExists(fixture),
+        'Valid owner AAL2 could not upload its positive '+fixture.bucket+' Storage fixture.');
+    }
+    await assertDeniedStorage('owner AAL1',aal1Token);
+    await assertDeniedStorage('nonowner AAL2',nonownerAal2);
 
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[
@@ -258,11 +322,22 @@ export async function runDirectReceivableRpcProof(options:Options){
   const revokedRead=await selectMetadata(aal2Token);
   assert(revokedRead.status===200&&Array.isArray(revokedRead.body)&&revokedRead.body.length===0,
     'Revoked owner AAL2 device retained direct account metadata visibility.');
+  await assertDeniedStorage('revoked owner AAL2',aal2Token);
   // The AAL1 and AAL2 tokens may share the same local GoTrue session_id.
   // The suite's outer owner-authorized cleanup should revoke only an active
   // synthetic session, never re-revoke a row already retired above.
   return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!];
   }finally{
+    // Delete only our own random loopback fixtures through the confined local
+    // service role, even if a negative assertion discovered a Storage bypass.
+    for(const fixture of syntheticStoragePaths){
+      if(!(await storageExists(fixture)))continue;
+      const response=await storageRequest('DELETE',serviceRole,fixture);
+      assert(response.status>=200&&response.status<300,
+        'Isolated direct Storage fixture cleanup failed.');
+      assert(!(await storageExists(fixture)),
+        'Isolated direct Storage cleanup left a synthetic object behind.');
+    }
     const cleanup=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?account_id=eq.'+encodeURIComponent(privateAccountId),{
       method:'DELETE',headers:{
         apikey:serviceRole,authorization:'Bearer '+serviceRole,

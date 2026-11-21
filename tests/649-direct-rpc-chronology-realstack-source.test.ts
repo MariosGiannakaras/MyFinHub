@@ -50,4 +50,27 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(real).toContain("devices.body?.count===2");
     expect(direct).not.toMatch(/console\.(?:log|error).*token|process\.env\.SUPABASE_SECRET/);
   });
+  it('pins direct Supabase Storage positive and negative AAL2 owner controls',()=>{
+    expect(direct).toContain("newStoragePath('financial-provider-assets')");
+    expect(direct).toContain("newStoragePath('recurring-service-assets')");
+    expect(direct).toContain("const svgBytes=Buffer.from(");
+    expect(direct).toContain("const inserted=await storageRequest('POST',aal2Token,fixture)");
+    expect(direct).toContain("[200,201].includes(inserted.status)&&await storageExists(fixture)");
+    expect(direct).toContain("await assertDeniedStorage('owner AAL1',aal1Token)");
+    expect(direct).toContain("await assertDeniedStorage('nonowner AAL2',nonownerAal2)");
+    expect(direct).toContain("await assertDeniedStorage('revoked owner AAL2',aal2Token)");
+    expect(direct).toContain("const deniedInsert=await storageRequest('POST',token,candidate)");
+    expect(direct).toContain("assert(!(await storageExists(candidate))");
+    expect(direct).toContain("const deniedDelete=await storageRequest('DELETE',token,fixture)");
+    expect(direct).toContain("assert(await storageExists(fixture)");
+    expect(direct).toContain("for(const fixture of syntheticStoragePaths)");
+    expect(direct).toContain("const response=await storageRequest('DELETE',serviceRole,fixture)");
+    expect(direct).toContain("assert(!(await storageExists(fixture))");
+    expect(direct).toContain("apikey:token===serviceRole?serviceRole:publishable");
+    expect(direct).toContain("apiUrl+'/storage/v1/object/list/'+fixture.bucket");
+    expect(direct.indexOf("await assertDeniedStorage('nonowner AAL2',nonownerAal2)"))
+      .toBeLessThan(direct.indexOf("const revokedDevice=await fetch"));
+    expect(direct.indexOf("await assertDeniedStorage('revoked owner AAL2',aal2Token)"))
+      .toBeGreaterThan(direct.indexOf("const revokedDevice=await fetch"));
+  });
 });
