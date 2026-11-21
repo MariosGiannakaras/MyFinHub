@@ -204,19 +204,9 @@ export async function runDirectReceivableRpcProof(options:Options){
       assert(denied.status===200&&Array.isArray(denied.body)&&denied.body.length===0,
         'Direct account metadata SELECT leaked owner IBAN to '+label+'.');
     }
-  }finally{
-    const cleanup=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?account_id=eq.'+encodeURIComponent(privateAccountId),{
-      method:'DELETE',headers:{
-        apikey:serviceRole,authorization:'Bearer '+serviceRole,
-        prefer:'return=representation',accept:'application/json',
-      },
-    });
-    const removed=await cleanup.json().catch(()=>null);
-    assert(cleanup.status===200&&Array.isArray(removed)&&removed.length===1&&
-      removed[0]?.account_id===privateAccountId,
-      'Isolated direct-RPC metadata fixture cleanup did not confirm exactly one removed row.');
-  }
 
+
+  // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},
     {name:'future lending masks an intermediate deficit',state:proposed([
@@ -272,4 +262,16 @@ export async function runDirectReceivableRpcProof(options:Options){
   // The suite's outer owner-authorized cleanup should revoke only an active
   // synthetic session, never re-revoke a row already retired above.
   return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!];
+  }finally{
+    const cleanup=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?account_id=eq.'+encodeURIComponent(privateAccountId),{
+      method:'DELETE',headers:{
+        apikey:serviceRole,authorization:'Bearer '+serviceRole,
+        prefer:'return=representation',accept:'application/json',
+      },
+    });
+    const removed=await cleanup.json().catch(()=>null);
+    assert(cleanup.status===200&&Array.isArray(removed)&&removed.length===1&&
+      removed[0]?.account_id===privateAccountId,
+      'Isolated direct-RPC metadata fixture cleanup did not confirm exactly one removed row.');
+  }
 }

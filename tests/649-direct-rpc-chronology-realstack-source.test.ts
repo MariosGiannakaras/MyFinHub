@@ -40,6 +40,9 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("for(const method of ['rheomiq_read_state','rheomiq_read_history'])");
     expect(direct).toContain("deniedWrite.status===403&&String(deniedWrite.body?.code)==='42501'");
     expect(direct).toContain("revokedRead.body.length===0");
+    expect(direct.indexOf("const revokedRead=await selectMetadata(aal2Token)")).toBeLessThan(
+      direct.indexOf("const cleanup=await fetch(")
+    );
     expect(direct).toContain("return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!]");
     expect(real).toContain("for(const sessionId of directRpcSessions)");
     expect(real).toContain("action:'revoke',sessionId");
