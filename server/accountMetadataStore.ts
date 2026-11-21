@@ -330,18 +330,46 @@ export async function readRecurringServiceAssets(accessToken:string):Promise<Rec
 }
 
 export async function writeAccountMetadata(accountId:string,iban:string|null,expectedRevision:number,accessToken:string):Promise<AccountMetadataRow>{
-  const payload=await request('rpc/rheomiq_upsert_account_metadata',{
-    method:'POST',
-    body:JSON.stringify({p_account_id:accountId,p_iban:iban,p_expected_revision:expectedRevision}),
-  },accessToken);
-  if(!Array.isArray(payload)||payload.length!==1)
-    throw new ApiError(503,'ACCOUNT_METADATA_WRITE_UNVERIFIED','Account metadata write acknowledgement is unverified.',false);
+  const unverified=()=>new ApiError(503,'ACCOUNT_METADATA_WRITE_UNVERIFIED',
+    'Account metadata write acknowledgement is unverified.',false);
+  let payload:unknown;
+  try{
+    payload=await request('rpc/rheomiq_upsert_account_metadata',{
+      method:'POST',
+      body:JSON.stringify({p_account_id:accountId,p_iban:iban,p_expected_revision:expectedRevision}),
+    },accessToken);
+  }catch(error){
+    // A revisioned invoker RPC can COMMIT before 5xx/timeout loses its
+    // response. Never replay the write: reconcile only that next revision.
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+    if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0||
+      !Number.isSafeInteger(expectedRevision+1))throw unverified();
+    try{
+      // An empty RLS read after device revocation is not proof of rollback.
+      const owner=await request('rpc/rheomiq_is_owner_aal2',
+        {method:'POST',body:'{}'},accessToken);
+      if(owner!==true)throw unverified();
+      const records=await request(
+        'rheomiq_account_metadata?select=account_id,iban,revision,updated_at&account_id=eq.'+encodeURIComponent(accountId),
+        {method:'GET'},accessToken);
+      if(!Array.isArray(records)||records.length!==1)throw unverified();
+      const row=mapRow(records[0]);
+      if(row.accountId!==accountId||row.iban!==iban||
+        row.revision!==expectedRevision+1)throw unverified();
+      return row;
+    }catch{
+      // No missing/foreign/stale/malformed/unavailable read can make the
+      // caller advance its finance revision or claim successful IBAN save.
+      throw unverified();
+    }
+  }
+  if(!Array.isArray(payload)||payload.length!==1)throw unverified();
   const row=mapRow(payload[0]);
   // HTTP 200 is not a verified write receipt if the RPC returned the wrong
   // account, a mismatched IBAN or anything but this next revision.
   if(row.accountId!==accountId||row.iban!==iban||
     !Number.isSafeInteger(expectedRevision+1)||row.revision!==expectedRevision+1)
-    throw new ApiError(503,'ACCOUNT_METADATA_WRITE_UNVERIFIED','Account metadata write acknowledgement is unverified.',false);
+    throw unverified();
   return row;
 }
 

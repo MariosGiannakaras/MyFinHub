@@ -80,4 +80,66 @@ describe('#649 I19.04 account metadata read/write response integrity',()=>{
       });
     }
   );
+
+  it.each([
+    'committed-503','committed-timeout','owner-revoked','owner-unavailable',
+    'missing-row','duplicate-rows','wrong-account','wrong-iban',
+    'stale-revision','advanced-revision','invalid-row','read-unavailable',
+    'definite-conflict','definite-invalid',
+  ] as const)('reconciles IBAN $scenario at exact revision without replay',async scenario=>{
+    configure();
+    const calls:Array<{url:string;method:string;body:string;authorization:string|null}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method??'GET');
+      calls.push({url,method,body:String(init?.body??''),
+        authorization:new Headers(init?.headers).get('authorization')});
+      if(url.includes('/rpc/rheomiq_upsert_account_metadata')){
+        if(scenario==='committed-timeout')throw new TypeError('Synthetic postcommit response loss');
+        if(scenario==='definite-conflict')
+          return new Response(JSON.stringify({code:'40001',message:'REVISION_CONFLICT'}),{status:409});
+        if(scenario==='definite-invalid')
+          return new Response(JSON.stringify({code:'22023',message:'INVALID_IBAN'}),{status:400});
+        return new Response('{}',{status:503});
+      }
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario==='owner-unavailable')return new Response('{}',{status:503});
+        return new Response(scenario==='owner-revoked'?'false':'true',{status:200});
+      }
+      if(url.includes('/rheomiq_account_metadata?')){
+        if(scenario==='read-unavailable')return new Response('{}',{status:503});
+        const record:Record<string,unknown>=validRow();
+        if(scenario==='wrong-account')record.account_id='account-two';
+        if(scenario==='wrong-iban')record.iban='GB82WEST12345698765432';
+        if(scenario==='stale-revision')record.revision=4;
+        if(scenario==='advanced-revision')record.revision=6;
+        if(scenario==='invalid-row')record.revision='5';
+        const rows=scenario==='missing-row'?[]:scenario==='duplicate-rows'?[record,{...record}]:[record];
+        return new Response(JSON.stringify(rows),{status:200});
+      }
+      throw new Error('Unexpected downstream endpoint: '+url);
+    }));
+    const promise=writeAccountMetadata('account-one',iban,4,'owner-token');
+    if(scenario==='committed-503'||scenario==='committed-timeout'){
+      await expect(promise).resolves.toMatchObject({accountId:'account-one',iban,revision:5});
+    }else{
+      await expect(promise).rejects.toMatchObject({
+        status:scenario==='definite-conflict'?409:scenario==='definite-invalid'?400:503,
+        code:scenario==='definite-conflict'?'REVISION_CONFLICT':
+          scenario==='definite-invalid'?'INVALID_IBAN':'ACCOUNT_METADATA_WRITE_UNVERIFIED',
+      });
+    }
+    const expected=scenario.startsWith('definite-')?['POST']:
+      scenario==='owner-revoked'||scenario==='owner-unavailable'?['POST','POST']:
+        ['POST','POST','GET'];
+    expect(calls.map(call=>call.method)).toEqual(expected);
+    expect(calls.filter(call=>call.url.includes('/rpc/rheomiq_upsert_account_metadata'))).toHaveLength(1);
+    expect(calls.every(call=>call.authorization==='Bearer owner-token')).toBe(true);
+    if(expected.includes('GET')){
+      expect(calls[2]?.url).toContain('account_id=eq.account-one');
+      expect(calls[2]?.url).toContain('select=account_id,iban,revision,updated_at');
+    }
+    expect(JSON.parse(calls[0]?.body??'{}')).toMatchObject({
+      p_account_id:'account-one',p_iban:iban,p_expected_revision:4,
+    });
+  });
 });
