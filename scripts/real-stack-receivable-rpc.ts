@@ -239,7 +239,37 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(JSON.stringify(after.body)===JSON.stringify(before.body)&&
     String(historyAfter.body?.generation)===generation,
     'Direct RPC rejected a finance mutation but changed revision, state or history.');
-  // Return only the synthetic local GoTrue session IDs. The existing
-  // owner-authorized device API will revoke them before device-lifecycle QA.
-  return [...new Set([aal1Claims.session_id!,aal2Claims.session_id!])];
+  // #649 I22.02: revoke the previously valid synthetic owner AAL2 device
+  // at the real local PostgREST boundary. This is NOT an Auth logout: its
+  // JWT still parses, so only the active-device predicate can deny access.
+  // The legitimate primary browser device is a separate registered session.
+  const revokedDevice=await fetch(apiUrl+'/rest/v1/myfinhub_device_sessions?'+
+    new URLSearchParams({session_id:'eq.'+aal2Claims.session_id!,user_id:'eq.'+userId,revoked_at:'is.null'}),{
+    method:'PATCH',headers:{
+      apikey:serviceRole,authorization:'Bearer '+serviceRole,
+      'content-type':'application/json',prefer:'return=representation',accept:'application/json',
+    },body:JSON.stringify({revoked_at:new Date().toISOString()}),
+  });
+  const revokedRows=await revokedDevice.json().catch(()=>null);
+  assert(revokedDevice.status===200&&Array.isArray(revokedRows)&&revokedRows.length===1&&
+    revokedRows[0]?.session_id===aal2Claims.session_id&&revokedRows[0]?.user_id===userId&&
+    !!revokedRows[0]?.revoked_at,
+    'Synthetic owner AAL2 device revocation was not committed exactly once.');
+  for(const method of ['rheomiq_read_state','rheomiq_read_history']){
+    const denied=await rpc(method,aal2Token,{});
+    assert(denied.status===403&&String(denied.body?.code)==='42501',
+      'Revoked owner AAL2 device retained direct '+method+' access.');
+  }
+  const deniedWrite=await rpc('rheomiq_upsert_account_metadata',aal2Token,{
+    p_account_id:'qa-direct-rpc-revoked-iban',p_iban:privateIban,p_expected_revision:0,
+  });
+  assert(deniedWrite.status===403&&String(deniedWrite.body?.code)==='42501',
+    'Revoked owner AAL2 device could still create IBAN metadata through direct RPC.');
+  const revokedRead=await selectMetadata(aal2Token);
+  assert(revokedRead.status===200&&Array.isArray(revokedRead.body)&&revokedRead.body.length===0,
+    'Revoked owner AAL2 device retained direct account metadata visibility.');
+  // The AAL1 and AAL2 tokens may share the same local GoTrue session_id.
+  // The suite's outer owner-authorized cleanup should revoke only an active
+  // synthetic session, never re-revoke a row already retired above.
+  return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!];
 }

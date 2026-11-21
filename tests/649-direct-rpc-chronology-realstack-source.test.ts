@@ -35,7 +35,12 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("denied.status===403&&String(denied.body?.code)==='42501'");
     expect(real).toContain("totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode)");
     expect(direct).toContain("JSON.stringify(after.body)===JSON.stringify(before.body)");
-    expect(direct).toContain("return [...new Set([aal1Claims.session_id!,aal2Claims.session_id!])]");
+    expect(direct).toContain("new URLSearchParams({session_id:'eq.'+aal2Claims.session_id!,user_id:'eq.'+userId,revoked_at:'is.null'})");
+    expect(direct).toContain("revokedRows.length===1");
+    expect(direct).toContain("for(const method of ['rheomiq_read_state','rheomiq_read_history'])");
+    expect(direct).toContain("deniedWrite.status===403&&String(deniedWrite.body?.code)==='42501'");
+    expect(direct).toContain("revokedRead.body.length===0");
+    expect(direct).toContain("return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!]");
     expect(real).toContain("for(const sessionId of directRpcSessions)");
     expect(real).toContain("action:'revoke',sessionId");
     expect(real).toContain("afterDirectDevices.body?.count===1");

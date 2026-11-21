@@ -1,3 +1,13 @@
+## 2026-11-21 — #649 I22.02 revoked AAL2 direct PostgREST denial (new candidate)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Last accepted exact code head [`855ec984`](https://github.com/MariosGiannakaras/MyFinHub/commit/855ec984db43d1631e91c3edfbcf978d57203ca3) [CI #44890741598](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44890741598) **SUCCESS** and one-shot [isolated Real Stack #44890869533](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44890869533) **SUCCESS**. The verified Real Stack performed genuine local GoTrue owner AAL1 and non-owner AAL2 direct PostgreSQL IBAN RPC denial, authorized owner AAL2 create+read, masked unauthorized SELECT, exact one-row synthetic IBAN cleanup, canonical finance/asset/recovery/browser and forward-only migration checks. Temporary PR opt-in marker removed after completion; no repeat needed for unchanged previous coverage.
+
+**New scoped security gap in verification (no production bug assumed):** The earlier direct proof did not revoke a *previously authorized* owner AAL2 JWT and then verify independent direct PostgREST RLS and invoker RPC failures. Existing local Real Stack script now revokes its **own synthetic** AAL2 device registry row using loopback-only service role and an exact session/user predicate, asserting one committed row. It then requires SQLSTATE `42501` for direct finance/history reads and IBAN write and **zero** visible IBAN rows through table RLS. Its return value includes only remaining active local test session IDs, handling GoTrue AAL1/AAL2 session-id reuse so outer API cleanup does not re-revoke an already retired row. The existing direct source test pins the new boundary. No production API change, new migration, real user account, hosted DB, credentials, Android, release or merge.
+
+**Candidate, not accepted:** exact-head CI and an isolated real database run for this new revocation proof are pending. Batch with other remaining P0 security work where possible, rather than rerunning the full Real Stack on every Draft edit. Keep #654 Draft and proceed from current branch plan. All final Ready/Windows/WebKit/performance/rendered gates remain pending.
+
+---
+
 ## 2026-11-21 — #649 I22.02 real PostgREST account metadata owner-AAL2/RLS proof (staged; not yet run)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Previous candidate `742ad98` added direct account-metadata handler owner/session/Origin negative tests; its `validate` job passed on [CI #44890449548](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44890449548), but full CodeQL/Unified status must be read independently.
