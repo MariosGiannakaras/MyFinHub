@@ -165,4 +165,81 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       p_provider_id:'owner-bank',p_asset_role:'logo',p_variant:'light',p_asset_key:clear?null:key,
     });
   });
+
+  it.each([
+    'create-503-committed','update-network-committed',
+    'owner-revoked','owner-unavailable','missing-row','duplicate-row',
+    'wrong-id','wrong-display','wrong-short','wrong-kind','wrong-country',
+    'wrong-order','malformed-row','readback-unavailable',
+    'definite-conflict','definite-invalid','definite-forbidden',
+  ] as const)('reconciles lost provider metadata acknowledgement for %s with no replay',async scenario=>{
+    config();
+    const intended=row();
+    const captured:Array<{url:string;method:string;body:string;authorization:string|null;apiKey:string|null}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(request),method=String(init?.method??'GET');
+      const headers=new Headers(init?.headers);
+      captured.push({url,method,body:String(init?.body??''),
+        authorization:headers.get('authorization'),apiKey:headers.get('apikey')});
+      if(url.includes('/rpc/rheomiq_create_financial_provider')||
+        url.includes('/rpc/rheomiq_update_financial_provider')){
+        if(scenario==='update-network-committed')throw new TypeError('Synthetic committed response lost');
+        if(scenario==='definite-conflict')
+          return new Response(JSON.stringify({code:'23505',message:'PROVIDER_ID_CONFLICT'}),{status:409});
+        if(scenario==='definite-invalid')
+          return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ID'}),{status:400});
+        if(scenario==='definite-forbidden')
+          return new Response(JSON.stringify({code:'42501',message:'MFA_REQUIRED'}),{status:403});
+        return new Response('{}',{status:503});
+      }
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario==='owner-unavailable')return new Response('{}',{status:503});
+        return new Response(scenario==='owner-revoked'?'false':'true',{status:200});
+      }
+      if(url.includes('/rheomiq_financial_providers?')){
+        if(scenario==='readback-unavailable')return new Response('{}',{status:503});
+        const record:Record<string,unknown>={...intended};
+        if(scenario==='wrong-id')record.id='other-provider';
+        if(scenario==='wrong-display')record.display_name='Other Bank';
+        if(scenario==='wrong-short')record.short_name='Other';
+        if(scenario==='wrong-kind')record.provider_kind='wallet';
+        if(scenario==='wrong-country')record.country_code='US';
+        if(scenario==='wrong-order')record.sort_order=43;
+        if(scenario==='malformed-row')record.sort_order='42';
+        const records=scenario==='missing-row'?[]:
+          scenario==='duplicate-row'?[record,{...record}]:[record];
+        return new Response(JSON.stringify(records),{status:200});
+      }
+      throw new Error('Unexpected provider reconciliation endpoint '+url);
+    }));
+    const call=scenario==='update-network-committed'
+      ?updateFinancialProvider:writeFinancialProvider;
+    const saved=call(input(),'owner-jwt');
+    if(scenario==='create-503-committed'||scenario==='update-network-committed')
+      await expect(saved).resolves.toMatchObject({
+        id:'owner-bank',displayName:'Owner Bank',shortName:'Owner',
+        providerKind:'bank',countryCode:'GR',sortOrder:42,
+      });
+    else await expect(saved).rejects.toMatchObject({
+      status:scenario==='definite-conflict'?409:scenario==='definite-invalid'?400:
+        scenario==='definite-forbidden'?403:503,
+      code:scenario==='definite-conflict'?'PROVIDER_ID_CONFLICT':
+        scenario==='definite-invalid'?'INVALID_PROVIDER_DATA':
+          scenario==='definite-forbidden'?'FORBIDDEN':'FINANCIAL_PROVIDER_WRITE_UNVERIFIED',
+    });
+    const expected=scenario.startsWith('definite-')?['POST']:
+      scenario==='owner-revoked'||scenario==='owner-unavailable'?['POST','POST']:
+        ['POST','POST','GET'];
+    expect(captured.map(x=>x.method)).toEqual(expected);
+    expect(captured.filter(x=>/rpc\/rheomiq_(create|update)_financial_provider/.test(x.url))).toHaveLength(1);
+    expect(captured.every(x=>x.authorization==='Bearer owner-jwt'&&x.apiKey==='test-public-key')).toBe(true);
+    expect(JSON.parse(captured[0]?.body??'{}')).toMatchObject({
+      p_id:'owner-bank',p_display_name:'Owner Bank',p_short_name:'Owner',
+      p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42,
+    });
+    if(expected.includes('GET')){
+      expect(captured[2]?.url).toContain('id=eq.owner-bank');
+      expect(captured[2]?.url).toContain('select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key');
+    }
+  });
 });

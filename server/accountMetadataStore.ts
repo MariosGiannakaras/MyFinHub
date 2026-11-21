@@ -383,27 +383,53 @@ type FinancialProviderWrite={
 };
 
 async function writeProviderRpc(rpc:string,input:FinancialProviderWrite,accessToken:string):Promise<FinancialProviderRow>{
-  const payload=await request(`rpc/${rpc}`,{
-    method:'POST',
-    body:JSON.stringify({
-      p_id:input.id,
-      p_display_name:input.displayName,
-      p_short_name:input.shortName,
-      p_provider_kind:input.providerKind,
-      p_country_code:input.countryCode,
-      p_sort_order:input.sortOrder,
-    }),
-  },accessToken);
-  // A returned HTTP 200 can conceal a committed mutation with a malformed
-  // acknowledgement. Never accept the first of multiple rows as proof of
-  // exactly this create/update request.
-  if(!Array.isArray(payload)||payload.length!==1)
-    throw new ApiError(503,'FINANCIAL_PROVIDER_WRITE_UNVERIFIED','Financial provider write acknowledgement is unverified.',false);
+  const unverified=()=>new ApiError(503,'FINANCIAL_PROVIDER_WRITE_UNVERIFIED',
+    'Financial provider write acknowledgement is unverified.',false);
+  const matches=(row:FinancialProviderRow)=>row.id===input.id&&
+    row.displayName===input.displayName&&row.shortName===input.shortName&&
+    row.providerKind===input.providerKind&&row.countryCode===input.countryCode&&
+    row.sortOrder===input.sortOrder;
+  let payload:unknown;
+  try{
+    payload=await request(`rpc/${rpc}`,{
+      method:'POST',
+      body:JSON.stringify({
+        p_id:input.id,
+        p_display_name:input.displayName,
+        p_short_name:input.shortName,
+        p_provider_kind:input.providerKind,
+        p_country_code:input.countryCode,
+        p_sort_order:input.sortOrder,
+      }),
+    },accessToken);
+  }catch(error){
+    // Create/update can COMMIT before a 5xx or lost acknowledgement. Do not
+    // resend either RPC; prove the exact intended durable metadata instead.
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+    try{
+      // Provider catalog SELECT has a broader historical read policy; it
+      // cannot prove owner authorization without this independent predicate.
+      const owner=await request('rpc/rheomiq_is_owner_aal2',
+        {method:'POST',body:'{}'},accessToken);
+      if(owner!==true)throw unverified();
+      const records=await request(
+        'rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key&id=eq.'+encodeURIComponent(input.id),
+        {method:'GET'},accessToken);
+      if(!Array.isArray(records)||records.length!==1)throw unverified();
+      const row=mapFinancialProviderRow(records[0]);
+      if(!matches(row))throw unverified();
+      return row;
+    }catch{
+      // Missing, stale, malformed, inaccessible or foreign postcommit reads
+      // are uncertain, not permission to repeat a new provider creation.
+      throw unverified();
+    }
+  }
+  // An HTTP 200 can conceal a committed mutation with a malformed receipt.
+  // Do not infer success from an absent, duplicated or mismatched RPC row.
+  if(!Array.isArray(payload)||payload.length!==1)throw unverified();
   const row=mapFinancialProviderRow(payload[0]);
-  if(row.id!==input.id||row.displayName!==input.displayName||
-    row.shortName!==input.shortName||row.providerKind!==input.providerKind||
-    row.countryCode!==input.countryCode||row.sortOrder!==input.sortOrder)
-    throw new ApiError(503,'FINANCIAL_PROVIDER_WRITE_UNVERIFIED','Financial provider write acknowledgement is unverified.',false);
+  if(!matches(row))throw unverified();
   return row;
 }
 
