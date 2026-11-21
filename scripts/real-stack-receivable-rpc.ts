@@ -165,12 +165,56 @@ export async function runDirectReceivableRpcProof(options:Options){
     }},
     {method:'rheomiq_release_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
     {method:'rheomiq_purge_recurring_service_asset',params:{p_asset_key:'service-asset-ffffffffffffffffffffffff'}},
+    {method:'rheomiq_upsert_account_metadata',params:{
+      p_account_id:'qa-direct-rpc-owner-iban',
+      p_iban:'GR1601101250000000012300695',p_expected_revision:0,
+    }},
   ]){
     for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
       const denied=await rpc(entry.method,token,entry.params);
       assert(denied.status===403&&denied.body?.code==='42501',
         'Direct '+entry.method+' unexpectedly accepted '+label+'.');
     }
+  }
+
+  // A genuine owner AAL2 session can insert a synthetic IBAN, while direct
+  // PostgREST (not the trusted HTTP API) must hide it from an AAL1 owner
+  // and another real TOTP-verified AAL2 user. Cleanup uses only the confined
+  // disposable loopback service role; no hosted/production data is touched.
+  const privateAccountId='qa-direct-rpc-owner-iban';
+  const privateIban='GR1601101250000000012300695';
+  const ownerWrite=await rpc('rheomiq_upsert_account_metadata',aal2Token,{
+    p_account_id:privateAccountId,p_iban:privateIban,p_expected_revision:0,
+  });
+  assert(ownerWrite.status===200&&Array.isArray(ownerWrite.body)&&ownerWrite.body.length===1,
+    'Local owner AAL2 failed to create its isolated versioned metadata fixture.');
+  const selectMetadata=async(token:string)=>{
+    const response=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?select=account_id,iban,revision&account_id=eq.'+encodeURIComponent(privateAccountId),{
+      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
+  try{
+    const ownerRows=await selectMetadata(aal2Token);
+    assert(ownerRows.status===200&&Array.isArray(ownerRows.body)&&ownerRows.body.length===1&&
+      ownerRows.body[0]?.account_id===privateAccountId&&ownerRows.body[0]?.iban===privateIban&&
+      ownerRows.body[0]?.revision===1,'Local owner AAL2 cannot read its exact versioned IBAN record.');
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const denied=await selectMetadata(token);
+      assert(denied.status===200&&Array.isArray(denied.body)&&denied.body.length===0,
+        'Direct account metadata SELECT leaked owner IBAN to '+label+'.');
+    }
+  }finally{
+    const cleanup=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?account_id=eq.'+encodeURIComponent(privateAccountId),{
+      method:'DELETE',headers:{
+        apikey:serviceRole,authorization:'Bearer '+serviceRole,
+        prefer:'return=representation',accept:'application/json',
+      },
+    });
+    const removed=await cleanup.json().catch(()=>null);
+    assert(cleanup.status===200&&Array.isArray(removed)&&removed.length===1&&
+      removed[0]?.account_id===privateAccountId,
+      'Isolated direct-RPC metadata fixture cleanup did not confirm exactly one removed row.');
   }
 
   const negativeCases=[

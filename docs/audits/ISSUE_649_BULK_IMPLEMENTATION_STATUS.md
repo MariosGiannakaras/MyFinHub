@@ -1,3 +1,13 @@
+## 2026-11-21 — #649 I22.02 real PostgREST account metadata owner-AAL2/RLS proof (staged; not yet run)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged). Previous candidate `742ad98` added direct account-metadata handler owner/session/Origin negative tests; its `validate` job passed on [CI #44890449548](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44890449548), but full CodeQL/Unified status must be read independently.
+
+**Additional independent database boundary staged on the existing disposable Real Stack:** The already-integrated direct GoTrue AAL1 owner and real TOTP AAL2 non-owner PostgREST loop now also probes `rheomiq_upsert_account_metadata` for **403 / SQLSTATE 42501** before any IBAN data mutation. A legitimate owner AAL2 then creates exactly one synthetic revisioned IBAN record through the invoker RPC; direct table SELECT must show exactly one row to that owner and **zero rows** to both AAL1 owner and separately registered non-owner AAL2. The fixture is removed by exact account ID using the existing local service-role boundary, with a one-row deletion receipt asserted in `finally`. Source guard preserves the direct tests and cleanup. No real IBAN, owner credential or hosted data is involved.
+
+**Run status:** This new real-stack extension is not yet runtime-accepted. Do not claim RLS PASS until the existing isolated local Supabase workflow executes this exact source head. Do not trigger extra expensive Real Stack/Chromium suites solely for every small Draft edit; schedule one coherent security-boundary proof or the final review gate. CI/CodeQL and source tests remain mandatory; all final Ready browser/Windows/DB/security gates remain outstanding as specified.
+
+---
+
 ## 2026-11-21 — #649 I22.02 account metadata and provider API authorization negative matrix (candidate)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; original wider I22.02 requires real PostgREST/RLS/Storage evidence and other endpoint parity). Current branch baseline `0e71b0b` [CI #44835140959](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44835140959) **SUCCESS**; previously accepted [IBAN browser run #44834693178](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44834693178) remains valid without repetition.

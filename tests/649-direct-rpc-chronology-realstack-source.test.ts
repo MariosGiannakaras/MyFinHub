@@ -22,6 +22,13 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("future lending masks an intermediate deficit");
     expect(direct).toContain("forged receivable delta");
     expect(direct).toContain("nonownerClaims.aal==='aal2'");
+    expect(direct).toContain("method:'rheomiq_upsert_account_metadata'");
+    expect(direct).toContain("p_expected_revision:0");
+    expect(direct).toContain("await selectMetadata(aal2Token)");
+    expect(direct).toContain("await selectMetadata(token)");
+    expect(direct).toContain("denied.body.length===0");
+    expect(direct).toContain("prefer:'return=representation'");
+    expect(direct).toContain("removed.length===1");
     expect(direct).toContain("nonownerUserId!==userId");
     expect(direct).toContain("await register(nonownerClaims.session_id!,nonownerUserId)");
     expect(direct).toContain("['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']");
