@@ -105,7 +105,7 @@ describe('shared primitive adoption',()=>{
   it('uses app-owned dirty-close confirmation and shared editable controls in Quick Entry',()=>{
     expectNoNativeDialog(quickAdd);
     expect(quickAdd).toContain('<ConfirmDialog open={discardOpen}');
-    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
     expect(quickAdd).toContain("from './AppTextInput'");
@@ -119,7 +119,7 @@ describe('shared primitive adoption',()=>{
     expect(contextualQuickAdd).toContain('value={amount}');
     expect(contextualQuickAdd).not.toContain('readOnly={Boolean(loanPaymentPlan)}');
     expect(contextualQuickAdd).toContain('invalid={amountError}');
-    expect(contextualQuickAdd).toContain('onValueChange={setAmount}');
+    expect(contextualQuickAdd).toContain("onValueChange={value=>{setAmount(value);setWriteoffConfirmed(false);setDirty(true);setError('')}}");
     expect(contextualQuickAdd).toContain('actualLoanPaymentLabel');
     expect(rendered).toContain('actual installment amount remains editable MoneyInput');
     expect(contextualQuickAdd).toContain("from './AppTextInput'");

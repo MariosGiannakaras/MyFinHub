@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
+import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
 import { reachableHistoryNavigation } from '../lib/historyView';
-import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, canStartFinanceMaintenance, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
@@ -119,7 +119,7 @@ export function useFinance() {
 
   useEffect(()=>{
     const guardUnload = (event: BeforeUnloadEvent) => {
-      if(!shouldWarnBeforeUnload(coordinator.hasWork(),lastSaveFailed.current))return;
+      if(!shouldWarnBeforeUnload(coordinator.hasWork()||exclusiveOperation.current,lastSaveFailed.current))return;
       event.preventDefault();
       event.returnValue='';
     };
@@ -238,8 +238,16 @@ export function useFinance() {
       throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
     }
     const next=recipe(current);
-    if(next!==current)await persist(next,financeChangeLabel(current,next),true)!;
-  },[persist]);
+    if(next===current){
+      // A no-op is safe only after earlier writes receive their exact server
+      // revision/history receipt; never release dependent external cleanup early.
+      if(!canAcknowledgeDurableNoop(saveStateRef.current,coordinator.hasWork())){
+        throw new Error('Η προηγούμενη αποθήκευση δεν έχει επιβεβαιωθεί. Περίμενε ή επαναφόρτωσε πριν συνεχίσεις.');
+      }
+      return;
+    }
+    await persist(next,financeChangeLabel(current,next),true)!;
+  },[coordinator,persist]);
 
   const move=useCallback(async(direction:'undo'|'redo')=>{
     const current=dataRef.current;
@@ -314,7 +322,12 @@ export function useFinance() {
   },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
-    if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
+    if (!canStartFinanceMaintenance('import',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      // A queued write may fail and be discarded; never replace its unverified
+      // optimistic state with a destructive import after whenIdle resolves.
+      throw new Error('Η εισαγωγή απαιτεί επιβεβαιωμένη οικονομική κατάσταση χωρίς εκκρεμείς ή αποτυχημένες αποθηκεύσεις. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.');
+    }
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
     mutationEpochRef.current+=1;
@@ -323,18 +336,34 @@ export function useFinance() {
     try {
       await coordinator.whenIdle();
       try {
-        const res = await importData(productData(incoming));
+        const res = await importData(productData(incoming), revisionRef.current);
         applyDataEnvelope(res);
-        const nextHistory=await loadHistory();
-        const consistent=historyMatchesRevision(nextHistory,res.revision);
-        applyHistory(consistent?nextHistory:{...nextHistory,available:false});
-        setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
-        if(consistent&&nextHistory.available)setSaveReceiptCount(count=>count+1);
+        // Import is already committed when the server acknowledges its revision.
+        // A failed history read must not invite a second destructive import.
+        const nextHistory=await loadHistory().catch(()=>null);
+        const consistent=nextHistory!==null&&historyMatchesRevision(nextHistory,res.revision);
+        const verified=Boolean(consistent&&nextHistory?.available);
+        const unavailableHistory:HistoryEnvelope=nextHistory
+          ? {...nextHistory,available:false}
+          : {available:false,generation:historyGenerationRef.current,financeRevision:res.revision,
+            currentPointId:null,canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,points:[]};
+        applyHistory(verified?nextHistory!:unavailableHistory);
+        if(verified){
+          setCurrentSaveState('saved');
+          setSaveReceiptCount(count=>count+1);
+        }else{
+          setSaveErrorMessage('Η εισαγωγή επιβεβαιώθηκε στη βάση, αλλά το ιστορικό δεν επαληθεύτηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
+          setCurrentSaveState('conflict');
+        }
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
+        return verified?{status:'complete' as const}:{status:'committed-history-unverified' as const};
       } catch (error) {
         lastSaveFailed.current = true;
         if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
-        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
+        else if(importOutcomeMayBeCommitted(error)){
+          setSaveErrorMessage('Η έκβαση της εισαγωγής δεν επιβεβαιώθηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση για να ελέγξεις αν πραγματοποιήθηκε.');
+          setCurrentSaveState('error');
+        }else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     } finally {
@@ -343,11 +372,20 @@ export function useFinance() {
   }, [applyDataEnvelope,applyHistory, coordinator,saveFailureMessage,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
+    // Unlike import, an ordinary backup may wait for existing FIFO writes,
+    // but only a confirmed saved/history state may authorize the snapshot.
     await coordinator.whenIdle();
-    if (lastSaveFailed.current) {
-      throw new Error('Το backup ακυρώθηκε επειδή υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί επιτυχώς.');
+    if(!canStartFinanceMaintenance('backup',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      throw new Error('Το backup ακυρώθηκε επειδή η οικονομική κατάσταση δεν έχει επαληθευτεί ή υπάρχει άλλη λειτουργία σε εξέλιξη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
     }
-    return createBackup();
+    // Keep import/cursor/finance mutations out of the snapshot operation.
+    exclusiveOperation.current=true;
+    try{
+      return await createBackup();
+    }finally{
+      exclusiveOperation.current=false;
+    }
   }, [coordinator]);
 
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();

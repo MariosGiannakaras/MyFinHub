@@ -12,6 +12,36 @@ export class CardVaultClientError extends Error{
   constructor(status:number,code:string,message:string){super(message);this.name='CardVaultClientError';this.status=status;this.code=code;}
 }
 
+/** A mutating vault operation can commit before its receipt is lost. No
+ * secret values or raw upstream errors may escape via this classification. */
+export class UnverifiedCardVaultWrite extends Error{
+  constructor(public readonly operation:'save'|'delete'){
+    super('Η απόκριση του ασφαλούς vault δεν επιβεβαιώθηκε.');
+    this.name='UnverifiedCardVaultWrite';
+  }
+}
+
+function vaultMutationMayHaveCommitted(reason:unknown):boolean{
+  return (reason instanceof ApiError || reason instanceof CardVaultClientError)&&
+    (reason.status===0||reason.status===408||reason.status===429||reason.status>=500);
+}
+
+async function requireVaultWriteReceipt<T>(
+  operation:'save'|'delete',
+  action:()=>Promise<T>,
+  confirmed:(receipt:T)=>boolean,
+):Promise<T>{
+  try{
+    const receipt=await action();
+    if(!confirmed(receipt))throw new UnverifiedCardVaultWrite(operation);
+    return receipt;
+  }catch(reason){
+    if(reason instanceof UnverifiedCardVaultWrite)throw reason;
+    if(vaultMutationMayHaveCommitted(reason))throw new UnverifiedCardVaultWrite(operation);
+    throw reason;
+  }
+}
+
 async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknown>):Promise<T>{
   const response=await apiRequest('/api/card-secrets',{
     method,
@@ -54,18 +84,29 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
 
 export async function saveCardSecret(cardId:string,secret:CardVaultSecret){
   // Runtime whitelist as well as TypeScript typing: arbitrary extra fields never reach the request.
-  return trackDatabaseWrite(()=>request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry,cvv:secret.cvv}));
+  return trackDatabaseWrite(()=>requireVaultWriteReceipt('save',
+    ()=>request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry,cvv:secret.cvv}),
+    receipt=>receipt?.saved===true&&
+      (receipt.last4===null||(typeof receipt.last4==='string'&&/^\d{4}$/.test(receipt.last4)))&&
+      (!secret.pan||receipt.last4===secret.pan.slice(-4)),
+  ));
 }
 
 /** Explicit secret destruction only. Archiving a card must never call this. */
 export async function deleteCardSecret(cardId:string,requireCommittedDeletion=false){
-  return trackDatabaseWrite(()=>request<{deleted:true}>('DELETE',requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId}));
+  return trackDatabaseWrite(()=>requireVaultWriteReceipt('delete',
+    ()=>request<{deleted:true}>('DELETE',requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId}),
+    receipt=>receipt?.deleted===true,
+  ));
 }
 
 export function cardVaultErrorMessage(error:unknown){
+  if(error instanceof UnverifiedCardVaultWrite)return error.operation==='save'
+    ?'Η αποθήκευση στο ασφαλές vault ίσως ολοκληρώθηκε, αλλά η απόκριση δεν επιβεβαιώθηκε. Κλείσε τη φόρμα, επαναφόρτωσε και έλεγξε τα αποθηκευμένα στοιχεία πριν κάνεις νέα αποθήκευση.'
+    :'Η διαγραφή από το ασφαλές vault ίσως ολοκληρώθηκε, αλλά δεν επιβεβαιώθηκε. Επαναφόρτωσε και έλεγξε τα αποθηκευμένα στοιχεία πριν κάνεις νέα διαγραφή.';
   if(error instanceof ApiError){
-    if(error.code==='NETWORK_TIMEOUT')return 'Η σύνδεση με το ασφαλές vault άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.';
-    if(error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return 'Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Τα αποθηκευμένα στοιχεία δεν άλλαξαν.';
+    if(error.code==='NETWORK_TIMEOUT')return 'Η σύνδεση με το ασφαλές vault άργησε πολύ. Η κατάσταση των στοιχείων δεν επιβεβαιώθηκε.';
+    if(error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return 'Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Η κατάσταση των αποθηκευμένων στοιχείων δεν επιβεβαιώθηκε.';
   }
   if(error instanceof CardVaultClientError){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, enrollMfa as enrollMfaApi, getSession, login as loginApi, logout as logoutApi, verifyMfa as verifyMfaApi, type MfaEnrollment, type SessionInfo } from '../lib/api';
+import { clearAppUnlockToken } from '../lib/appUnlockToken';
 
 type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enroll' | 'error';
 
@@ -10,30 +11,42 @@ function operationalMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+// The same authenticated boundary is used by metadata cache invalidation,
+ // so do not repeat event-name literals across the main application chunk.
+function resetAuthScope(){
+  clearAppUnlockToken();
+  window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+}
+function notifyAuthComplete(){window.dispatchEvent(new Event('myfinhub:auth-completed'))}
+
 export function useSession() {
   const [state, setState] = useState<SessionState>('loading');
   const [email, setEmail] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // Invalidate superseded AAL2 reads before they can reopen an expired workspace.
+  const transitionEpoch = useRef(0);
 
   const applySession = useCallback((session: SessionInfo) => {
+    if (!session.authenticated) resetAuthScope();
     setEmail(session.email || null);
     setError('');
-    if (session.authenticated) setState('authenticated');
-    else if (session.mfaEnrollmentRequired) setState('mfa-enroll');
-    else if (session.mfaRequired) setState('mfa');
-    else setState('anonymous');
+    setState(session.authenticated?'authenticated':
+      session.mfaEnrollmentRequired?'mfa-enroll':session.mfaRequired?'mfa':'anonymous');
   }, []);
 
   const refresh = useCallback(async () => {
+    const epoch = ++transitionEpoch.current;
     setState('loading');
     setError('');
     try {
-      applySession(await getSession());
+      const next = await getSession();
+      if (epoch !== transitionEpoch.current) return false;
+      applySession(next);
       return true;
     } catch (e) {
+      if (epoch !== transitionEpoch.current) return false;
       if (e instanceof ApiError && e.status === 401) {
-        setEmail(null);
-        setState('anonymous');
+        applySession({ authenticated:false, email:null });
       } else {
         setError(operationalMessage(e, 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας. Δοκίμασε ξανά.'));
         setState('error');
@@ -44,7 +57,11 @@ export function useSession() {
 
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
-    const expired = () => { setEmail(null); setError(''); setState('anonymous'); };
+    const expired = () => {
+      ++transitionEpoch.current;
+      clearAppUnlockToken();
+      setEmail(null); setError(''); setState('anonymous');
+    };
     const mfaRequired = () => { void refresh(); };
     window.addEventListener('rheomiq:auth-expired', expired);
     window.addEventListener('rheomiq:mfa-required', mfaRequired);
@@ -55,13 +72,16 @@ export function useSession() {
   }, [refresh]);
 
   const login = useCallback(async (nextEmail: string, password: string) => {
+    const epoch = ++transitionEpoch.current;
     setError('');
     try {
       const session = await loginApi(nextEmail, password);
+      if (epoch !== transitionEpoch.current) return false;
       applySession(session);
-      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
+      if(session.authenticated)notifyAuthComplete();
       return true;
     } catch (e) {
+      if (epoch !== transitionEpoch.current) return false;
       const message = e instanceof ApiError && e.status === 401
         ? 'Λάθος στοιχεία σύνδεσης.'
         : operationalMessage(e, 'Δεν ήταν δυνατή η ασφαλής σύνδεση. Δοκίμασε ξανά.');
@@ -73,23 +93,29 @@ export function useSession() {
   }, [applySession]);
 
   const enrollMfa = useCallback(async (): Promise<MfaEnrollment | null> => {
+    const epoch = transitionEpoch.current;
     setError('');
     try {
-      return await enrollMfaApi();
+      const result = await enrollMfaApi();
+      return epoch === transitionEpoch.current ? result : null;
     } catch (e) {
+      if (epoch !== transitionEpoch.current) return null;
       setError(operationalMessage(e, 'Δεν ήταν δυνατή η ρύθμιση του Authenticator. Δοκίμασε ξανά.'));
       return null;
     }
   }, []);
 
   const verifyMfa = useCallback(async (code: string, factorId?: string) => {
+    const epoch = ++transitionEpoch.current;
     setError('');
     try {
       const session = await verifyMfaApi(code, factorId);
+      if (epoch !== transitionEpoch.current) return false;
       applySession(session);
-      if(session.authenticated)window.dispatchEvent(new Event('myfinhub:auth-completed'));
+      if(session.authenticated)notifyAuthComplete();
       return session.authenticated;
     } catch (e) {
+      if (epoch !== transitionEpoch.current) return false;
       setError(e instanceof ApiError && e.code === 'INVALID_MFA_CODE'
         ? 'Ο κωδικός επαλήθευσης δεν είναι σωστός.'
         : operationalMessage(e, 'Δεν ήταν δυνατή η επαλήθευση. Δοκίμασε ξανά.'));
@@ -98,17 +124,19 @@ export function useSession() {
   }, [applySession]);
 
   const logout = useCallback(async () => {
+    const epoch = ++transitionEpoch.current;
     setError('');
     try {
       await logoutApi();
-      setEmail(null);
-      setState('anonymous');
+      if (epoch !== transitionEpoch.current) return false;
+      applySession({ authenticated:false, email:null });
       return true;
     } catch (e) {
+      if (epoch !== transitionEpoch.current) return false;
       setError(operationalMessage(e, 'Η αποσύνδεση δεν ολοκληρώθηκε. Η τρέχουσα συνεδρία παραμένει ενεργή. Δοκίμασε ξανά.'));
       return false;
     }
-  }, []);
+  }, [applySession]);
 
   return { state, email, error, login, enrollMfa, verifyMfa, logout, refresh };
 }

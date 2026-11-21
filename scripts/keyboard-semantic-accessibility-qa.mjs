@@ -97,7 +97,7 @@ try{
  const tabSweep=async label=>{
    const setup=await c.call(`function(){
      const visible=el=>{const closedDetails=el.closest?.('details:not([open])');if(closedDetails&&!(el.matches('summary')&&el.parentElement===closedDetails))return false;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
-     const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(visible);
+     const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(el=>visible(el)&&el.tabIndex>=0&&!el.matches(':disabled')&&!el.closest('[inert]'));
      const start=document.querySelector('.skip-link')&&visible(document.querySelector('.skip-link'))?document.querySelector('.skip-link'):nodes[0];
      start?.focus();
      return {count:nodes.length,started:Boolean(start)};
@@ -117,6 +117,21 @@ try{
        const focusVisible=hasFocusRing(s)||(Boolean(focusOwner&&focusOwner.contains(el))&&hasFocusRing(getComputedStyle(focusOwner)));
        return {tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,80),visible,focusVisible,positive:Number(el.getAttribute('tabindex')||0)>0};
      }`);
+     if(!state||state.tag==='BODY'||!state.visible||!state.focusVisible){
+       // Do not reinterpret a missing focus as PASS. Save the actual preceding
+       // tab path, live candidates and screenshot so the missing stop is traceable.
+       const detail=await c.call(`function(){
+         const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+         return [...document.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]')].filter(visible).map(el=>({
+           tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,55),
+           tabIndex:el.tabIndex,disabled:el.matches(':disabled'),inert:Boolean(el.closest('[inert]')),
+           ariaHidden:Boolean(el.closest('[aria-hidden=true]')),hiddenDetails:Boolean(el.closest('details:not([open])')),
+           focusable:el.matches(':focus'),outer:el.outerHTML.slice(0,160)
+         })).slice(0,90);
+       }`);
+       console.error('Keyboard Tab failure evidence',JSON.stringify({label,step:i+1,setup,previous:seen.slice(-9),state,liveCandidates:detail}));
+       await shot('keyboard-tab-failure-'+label.replaceAll('/','-')+'-step-'+(i+1));
+     }
      assert(state&&state.visible,`${label}: Tab left the visible focus order at step ${i+1}: ${JSON.stringify(state)}`);
      assert(!state.positive,`${label}: positive tabindex at step ${i+1}`);
      assert(state.focusVisible,`${label}: focused control has no visible focus indicator at step ${i+1}: ${JSON.stringify(state)}`);
@@ -160,6 +175,17 @@ try{
  const settingsTabs=['profile','accounts','categories','icons','rules','data'];
  for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
    await navigate('settings',pages.settings,width,height,mobile);
+   // The six inactive Settings tabs are deliberately removed from sequential
+   // Tab order. Arrow/Home/End navigation must still reach and focus each tab.
+   const roving=await c.call("function(){const tabs=[...document.querySelectorAll('[role=tab][aria-controls^=\"settings-panel-\"]')];return {count:tabs.length,selected:tabs.filter(t=>t.getAttribute('aria-selected')==='true').map(t=>t.id),sequential:tabs.filter(t=>t.tabIndex===0).map(t=>t.id),excluded:tabs.filter(t=>t.tabIndex===-1).length}}");
+   assert(roving.count===7&&roving.selected.length===1&&roving.sequential.length===1&&roving.selected[0]===roving.sequential[0]&&roving.excluded===6,mode+' Settings tablist has one sequential stop, six roving arrow-key stops: '+JSON.stringify(roving));
+   assert(await c.call("function(){const t=document.querySelector('[role=tab][aria-selected=true]');t?.focus();return Boolean(t)}"),mode+' Settings roving current tab focusable');
+   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+   await waitFor("function(){const t=document.querySelector('[role=tab][aria-selected=true]');return Boolean(t&&t.id==='settings-tab-profile'&&t.tabIndex===0&&document.activeElement===t)}",mode+' Settings ArrowRight focuses and activates next tab');
+   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+   await waitFor("function(){const t=document.querySelector('[role=tab][aria-selected=true]');return Boolean(t&&t.id==='settings-tab-general'&&t.tabIndex===0&&document.activeElement===t)}",mode+' Settings Home restores first tab and focus');
    for(const tab of settingsTabs){
      const clicked=await c.call("function(tab){const node=document.querySelector('[aria-controls=\"settings-panel-'+tab+'\"]');node?.click();return Boolean(node)}",[tab]);
      assert(clicked,`${mode}/settings/${tab}: tab exists`);

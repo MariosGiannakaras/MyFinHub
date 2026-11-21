@@ -25,10 +25,13 @@ export function parseFinancialProviderWrite(value:unknown){
   const shortName=typeof body.shortName==='string'?body.shortName.trim():'';
   const providerKind=typeof body.providerKind==='string'?body.providerKind.trim():'';
   const countryCode=body.countryCode===null||body.countryCode===undefined||body.countryCode===''?null:typeof body.countryCode==='string'?body.countryCode.trim().toUpperCase():'';
-  const sortOrder=Number(body.sortOrder);
+  // Browser and native clients must send a JSON number, not a coercible
+  // string, null or boolean. Silent Number(...) coercion can turn an invalid
+  // direct write into a committed sort_order=0 metadata mutation.
+  const sortOrder=body.sortOrder;
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80||
     !['bank','fintech','wallet','payment'].includes(providerKind)||countryCode!==null&&!/^[A-Z]{2}$/.test(countryCode)||
-    !Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000){
+    typeof sortOrder!=='number'||!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000){
     throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
   }
   return {id,displayName,shortName,providerKind:providerKind as 'bank'|'fintech'|'wallet'|'payment',countryCode,sortOrder};
@@ -38,13 +41,20 @@ export function parseProviderAssetUpload(req:any){
   const providerId=strictQueryValue(req,'providerId');
   const role=strictQueryValue(req,'role');
   const variant=strictQueryValue(req,'variant');
-  const makePrimary=strictQueryValue(req,'primary')==='1';
+  const primary=strictQueryValue(req,'primary');
+  const rawPrimary=req&&typeof req==='object'&&req.query&&typeof req.query==='object'
+    ?(req.query as Record<string,unknown>).primary:undefined;
+  // Omitted means false for the legacy caller. A supplied malformed value
+  // must not silently downgrade an intended primary image into a variant.
+  const validPrimary=rawPrimary===undefined||
+    typeof rawPrimary==='string'&&(primary==='0'||primary==='1');
+  const makePrimary=primary==='1';
   const fileName=strictQueryValue(req,'fileName');
   const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(providerId)||!['logo','wordmark','card-mark'].includes(role)||
     !/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!PROVIDER_ASSET_MIME_TYPES.has(mimeType)||
     !fileName||fileName.length>160||/[\u0000-\u001f\u007f]/.test(fileName)||
-    (role==='card-mark'&&makePrimary)){
+    !validPrimary||(role==='card-mark'&&makePrimary)){
     throw new ApiError(400,'INVALID_PROVIDER_ASSET','Μη έγκυρα στοιχεία εικόνας παρόχου.');
   }
   return {providerId,role:role as 'logo'|'wordmark'|'card-mark',variant,mimeType,fileName,makePrimary};

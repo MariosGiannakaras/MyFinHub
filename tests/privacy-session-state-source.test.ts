@@ -30,6 +30,19 @@ describe('shared session privacy contract',()=>{
     }
   });
 
+  it('masks Dashboard money across primary, secondary, activity, summary and category surfaces (#649 I04.02)',()=>{
+    expect(dashboard).toContain("data-balance-visibility={privacyVisible?'visible':'masked'}");
+    expect(dashboard).toContain('privacyMoney(balances[account.id]??0)');
+    expect(dashboard).toContain("privacyVisible?movementAmountLabel(item):'•••••• €'");
+    expect(dashboard).toContain('privacyMoney(flow.income)');
+    expect(dashboard).toContain('privacyMoney(flow.expense)');
+    expect(dashboard).toContain('privacyMoney(category.value)');
+    expect(dashboard).toContain('dashboard-private-chart-placeholder');
+    // Approved relative balance chart remains visible; numeric aria text
+    // is emitted only while explicitly revealed.
+    expect(dashboard).toContain('privacyVisible?`Τελικό υπόλοιπο');
+  });
+
   it('keeps the rendered QA harness on the same shared-state contract',()=>{
     expect(qa).toContain('const [privacyVisible,setPrivacyVisible]=useState(false)');
     expect(qa).toContain('privacyVisible={privacyVisible}');

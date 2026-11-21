@@ -43,6 +43,24 @@ describe('server-bounded direct history selection',()=>{
     expect(plans.has('current')).toBe(false);
     expect(reachableHistoryNavigation(rows,1,0).has('old1')).toBe(false);
   });
+  it('keeps reachable ancestors selectable but refuses a forked redo or detached branch (#649 I20.04)',()=>{
+    const points=[
+      {id:'unrelated',parentId:null},
+      {id:'future-a',parentId:'current'},
+      {id:'root',parentId:null},
+      {id:'future-b',parentId:'current'},
+      {id:'current',parentId:'root',current:true},
+    ];
+    const routes=reachableHistoryNavigation(points,5,5);
+    expect(routes.get('root')).toEqual({direction:'undo',pointIds:['root']});
+    expect(routes.has('future-a')).toBe(false);
+    expect(routes.has('future-b')).toBe(false);
+    expect(routes.has('unrelated')).toBe(false);
+    expect(classifyHistoryPoints(points).filter(point=>point.position==='redo')).toEqual([]);
+    expect(historyAvailabilityMessage({state:'conflict',pending:false,available:true,undoDepth:1,redoDepth:2})).toContain('Ανανέωσε');
+    expect(historyAvailabilityMessage({state:'error',pending:false,available:true,undoDepth:1,redoDepth:2})).toContain('δεν επιβεβαιώθηκε');
+  });
+
   it('fails closed for truncated, detached, ambiguous, duplicate or missing current history',()=>{
     const rows=[
       {id:'current',parentId:'missing',current:true},

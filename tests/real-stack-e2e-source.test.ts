@@ -6,14 +6,25 @@ const read=(path:string)=>readFileSync(path,'utf8');
 describe('zero-cost real-stack E2E source contract',()=>{
   const workflow=read('.github/workflows/real-stack-e2e.yml');
   const script=read('scripts/real-stack-e2e.ts');
+  const vaultPrivacyGuard=read('scripts/real-stack-vault-privacy.ts');
   const supabaseConfig=read('supabase/config.toml');
   const pkg=JSON.parse(read('package.json')) as {scripts?:Record<string,string>};
 
   it('uses only a pinned local Supabase CLI on the standard public GitHub runner',()=>{
     expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('ready_for_review');
+    expect(workflow).toContain("github.event.pull_request.draft == false");
+    expect(workflow).toContain('<!-- run-real-stack-e2e -->');
     expect(workflow).toContain('runs-on: ubuntu-latest');
     expect(workflow).toContain('supabase@2.119.0 start');
     expect(workflow).toContain('supabase@2.119.0 stop --no-backup');
+    expect(workflow).toContain('Restrict CI-only local services (no Studio or SMTP ports)');
+    expect(workflow).toContain("old='[studio]\\nenabled = true'");
+    expect(workflow).not.toContain("old='[studio]\\\\nenabled = true'");
+    expect(workflow).toContain("+'\\n[local_smtp]\\nenabled = false\\n'");
+    expect(workflow.indexOf('Restrict CI-only local services')).toBeLessThan(workflow.indexOf('Start isolated local Supabase'));
+    expect(supabaseConfig).toContain('[auth.mfa.totp]');
+    expect(supabaseConfig).toContain('verify_enabled = true');
     expect(workflow).not.toMatch(/secrets\./);
     expect(workflow).not.toContain('SUPABASE_ACCESS_TOKEN');
     expect(workflow).not.toContain('--linked');
@@ -73,11 +84,28 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'INVALID_PROVIDER_DATA'");
     expect(script).toContain("Failed provider asset registration left an orphan Storage object.");
     expect(script).toContain("[real-stack] stage actual-browser-ui");
+    expect(script).toContain("[real-stack] stage isolated-postgresql-storage-restore-before-browser");
+    expect(script.indexOf('stage isolated-postgresql-storage-restore-before-browser')).toBeLessThan(script.indexOf('stage actual-browser-ui'));
+    expect(script).toContain("process.env.MYFINHUB_ISOLATED_RECOVERY==='1'");
+    expect(script).toContain("execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs']");
+    expect(workflow).toContain("MYFINHUB_ISOLATED_RECOVERY: '1'");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
     expect(script).toContain("[real-stack] stage auth-valid-password");
     expect(script).toContain("[real-stack] stage mfa-enroll");
     expect(script).toContain("[real-stack] stage import");
+    expect(script).toContain('[real-stack] stage invalid-import-authoritative-validation');
+    expect(script).toContain("expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation')");
+    expect(script).toContain('Authoritatively rejected import mutated confirmed finance.');
+    expect(script).toContain("[real-stack] stage import-stale-revision-denial");
+    expect(script).toContain("expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision')");
+    expect(script).toContain("expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision')");
+    expect(script).toContain("Stale checked import replaced confirmed finance");
+    expect(script).toContain("Stale checked import moved the history cursor.");
+    expect(script).toContain("Stale checked import changed pre-import backup or audit history.");
+    expect(script).toContain("[real-stack] stage backup-restore revision-checked");
+    expect(script).toContain("Successful checked import did not atomically back up the prior confirmed revision.");
+    expect(workflow).toContain('supabase/migrations/20261105204000_guard_stale_import_revision.sql');
     expect(script).toContain("[real-stack] stage mutable-save");
     expect(script).toContain("kind:'lending_writeoff'");
     expect(script).toContain('Noncash writeoff did not round-trip through revisioned API and relational finance storage.');
@@ -107,7 +135,13 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'REVISION_CONFLICT'");
     expect(script).toContain('/api/backup');
     expect(script).toContain('/api/card-secrets');
-    expect(script).toContain('!serializedBackup.includes(TEST_PAN)');
+    expect(script).toContain('financeBackupVaultPrivacyRisk(backupData,TEST_PAN,TEST_EXPIRY)');
+    expect(script).not.toContain('serializedBackup.includes(TEST_CVV)');
+    expect(vaultPrivacyGuard).toContain("if(pan&&encoded.includes(pan))return 'pan'");
+    expect(vaultPrivacyGuard).toContain("if(expiry&&encoded.includes(expiry))return 'expiry'");
+    for(const vaultField of ['pan','cvv','cardnumber','cardexpiry','cardsecret','cardsecrets','cardvault','vaultciphertext'])
+      expect(vaultPrivacyGuard).toContain("'"+vaultField+"'");
+
     expect(script).toContain('rheomiq_app_state');
     expect(script).toContain("finance_storage_mode==='relational_v1'");
     expect(script).not.toContain('ahsukppxwaiagampsuzb');

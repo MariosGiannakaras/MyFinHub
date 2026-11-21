@@ -117,5 +117,15 @@ try{
   assert(current.quickBg!==current.errorBg&&current.lentBg!==current.errorBg,'dark routine lending direction remains non-destructive');
   await shot('lending-visible-dark-1440');
 
+  console.log('Lending remediation QA: 320px dark mobile history preserves readable long Greek names');
+  await viewport(320,720);
+  await sleep(150);
+  const stressedMobile=await c.call("function(){const row=document.querySelector('.mobile-lending-history-row'),name=row?.querySelector('.mobile-lending-history-head b'),account=row?.querySelector('.mobile-lending-history-meta>span:last-child'),note=row?.querySelector('p');if(!row||!name||!account||!note)return {missing:true};const stress='ΠολυαναλυτικήΕλληνικήΠεριγραφήΜεΠολύΜεγάλοΌνομαΧωρίςΚενά'.repeat(2);name.textContent=stress;account.textContent=stress;note.textContent=stress;row.scrollIntoView({block:'center',behavior:'instant'});const nodes=[name,account,note];const labels=nodes.map(node=>({fontSize:parseFloat(getComputedStyle(node).fontSize),wrap:getComputedStyle(node).overflowWrap,scroll:node.scrollWidth,client:node.clientWidth})),bounds=row.getBoundingClientRect(),bar=document.querySelector('.topbar')?.getBoundingClientRect();return {missing:false,labels,overflow:document.documentElement.scrollWidth-innerWidth,visible:bounds.top>=(bar?.bottom??0)+8&&bounds.bottom<=innerHeight-68,masked:name.classList.contains('private-text')}}");
+  assert(!stressedMobile.missing&&stressedMobile.labels.length===3,'Lending 320px history exposes name, account and note without deleting data');
+  assert(stressedMobile.labels.every(label=>label.fontSize>=12&&label.wrap==='anywhere'&&label.scroll<=label.client+2),'Lending long Greek history labels stay legible and wrap within their containers: '+JSON.stringify(stressedMobile));
+  assert(stressedMobile.overflow<=1&&stressedMobile.visible&&!stressedMobile.masked,'Lending mobile history remains visible between app bars without sideways overflow in explicitly revealed privacy state: '+JSON.stringify(stressedMobile));
+  await sleep(160);
+  await shot('lending-mobile-history-long-greek-320');
+
   c.close();console.log(`Lending remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

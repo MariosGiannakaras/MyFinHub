@@ -1,5 +1,5 @@
 import { Globe2, Monitor, RefreshCw, ShieldCheck, ShieldMinus, Smartphone } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, getConnectedDevices, renameConnectedDevice, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Button } from './Button';
@@ -24,7 +24,8 @@ function platformLabel(platform:ConnectedDevice['platform']){
 
 function activityLabel(value:string){
   const timestamp=Date.parse(value);
-  if(!Number.isFinite(timestamp))return 'Πρόσφατα';
+  // Missing or malformed registry timestamps must not imply recent verified activity.
+  if(!Number.isFinite(timestamp))return 'Μη διαθέσιμη';
   const minutes=Math.max(0,Math.round((Date.now()-timestamp)/60_000));
   if(minutes<1)return 'Μόλις τώρα';
   if(minutes<60)return `Πριν από ${minutes} ${minutes===1?'λεπτό':'λεπτά'}`;
@@ -42,53 +43,83 @@ function loadError(error:unknown){
 export function DeviceAccessSettings(){
   const[devices,setDevices]=useState<ConnectedDevice[]>([]);
   const[loading,setLoading]=useState(true);
+  const[listVerified,setListVerified]=useState(false);
   const[busy,setBusy]=useState(false);
   const[message,setMessage]=useState('');
   const[messageTone,setMessageTone]=useState<'status'|'error'>('status');
   const[pending,setPending]=useState<PendingAction>(null);
+  const[confirmationError,setConfirmationError]=useState('');
   const[renaming,setRenaming]=useState<string|null>(null);
   const[nameDraft,setNameDraft]=useState('');
+  // React's busy state is not synchronous: a second same-turn confirm could
+  // otherwise send a duplicate revocation (and overwrite the first receipt).
+  const mutationInFlight=useRef(false);
+  // A GET begun before a revocation must never restore its old device list.
+  const readGeneration=useRef(0);
 
   const load=useCallback(async()=>{
+    if(mutationInFlight.current)return;
+    const generation=++readGeneration.current;
     setLoading(true);setMessageTone('status');setMessage('');
-    try{const result=await getConnectedDevices();setDevices(result.devices)}
-    catch(error){setDevices([]);setMessageTone('error');setMessage(loadError(error))}
-    finally{setLoading(false)}
+    try{
+      const result=await getConnectedDevices();
+      if(generation===readGeneration.current&&!mutationInFlight.current){setDevices(result.devices);setListVerified(true)}
+    }catch(error){
+      if(generation===readGeneration.current&&!mutationInFlight.current){
+        setDevices([]);setListVerified(false);setMessageTone('error');setMessage(loadError(error));
+      }
+    }finally{
+      if(generation===readGeneration.current&&!mutationInFlight.current)setLoading(false);
+    }
   },[]);
 
   useEffect(()=>{void load()},[load]);
 
+  const requestRevoke=(target:Exclude<PendingAction,null>)=>{setConfirmationError('');setPending(target)};
+
   const confirm=async()=>{
-    if(!pending||busy)return;
-    setBusy(true);setMessageTone('status');setMessage('');
+    if(!pending||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;
+    readGeneration.current+=1;
+    setLoading(false);
+    setBusy(true);setConfirmationError('');setMessageTone('status');setMessage('');
     try{
       const result=pending.kind==='others'
         ?await revokeOtherConnectedDevices()
         :await revokeConnectedDevice(pending.device.sessionId);
-      setDevices(result.devices);
+      setDevices(result.devices);setListVerified(true);
       setMessageTone('status');setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
-      setPending(null);
-    }catch(error){setMessageTone('error');setMessage(error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'?'Η συσκευή δεν είναι πλέον ενεργή.':'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.')}
-    finally{setBusy(false)}
+      setConfirmationError('');setPending(null);
+    }catch(error){setMessageTone('error');
+      const failureMessage=error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'
+        ?'Η συσκευή δεν είναι πλέον ενεργή.'
+        :'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.';
+      setMessage(failureMessage);
+      setConfirmationError(failureMessage);
+    }
+    finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const saveName=async()=>{
-    if(!renaming||busy)return;
+    if(!renaming||busy||mutationInFlight.current)return;
+    mutationInFlight.current=true;
+    readGeneration.current+=1;
+    setLoading(false);
     setBusy(true);setMessage('');
     try{
       const result=await renameConnectedDevice(renaming,nameDraft);
-      setDevices(result.devices);setRenaming(null);setNameDraft('');
+      setDevices(result.devices);setListVerified(true);setRenaming(null);setNameDraft('');
       setMessageTone('status');setMessage('Το όνομα συσκευής ενημερώθηκε.');
     }catch(error){
       setMessageTone('error');
       setMessage(error instanceof ApiError&&error.code==='INVALID_DEVICE_NICKNAME'?'Το όνομα πρέπει να περιέχει έως 60 χαρακτήρες.':'Δεν ήταν δυνατή η αλλαγή ονόματος συσκευής.');
-    }finally{setBusy(false)}
+    }finally{mutationInFlight.current=false;setBusy(false)}
   };
   const others=devices.filter(device=>!device.current);
   return <section className="panel surface-raised device-access-settings" aria-labelledby="device-access-title">
     <div className="panel-head">
       <div><span id="device-access-title">Συνδεδεμένες συσκευές</span><small>Δες πού είναι ενεργή η πρόσβαση στο MyFinHub και αφαίρεσέ την από συσκευή που δεν αναγνωρίζεις.</small></div>
-      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':devices.length} ενεργές</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
+      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':listVerified?devices.length:'—'} {loading||listVerified?'ενεργές':'άγνωστη κατάσταση'}</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
     </div>
 
     {loading?<div className="device-access-skeleton" aria-live="polite"><i/><i/></div>:devices.length?<div className="device-access-list" role="list">
@@ -116,18 +147,18 @@ export function DeviceAccessSettings(){
           </form>:null}
         </div>
         <div className="device-access-row-actions">
-          {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
+          {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>requestRevoke({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
           {renaming!==device.sessionId?<Button type="button" variant="secondary" disabled={busy} onClick={()=>{setRenaming(device.sessionId);setNameDraft(device.nickname||'')}}>Μετονομασία</Button>:null}
         </div>
       </div>)}
-    </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
+    </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>{!listVerified&&messageTone==='error'?'Η λίστα συσκευών δεν επιβεβαιώθηκε':'Δεν εμφανίζονται ενεργές συσκευές'}</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
 
     {devices.length&&message?<div className="device-access-message" role={messageTone==='error'?'alert':'status'} aria-live={messageTone==='error'?'assertive':'polite'}>{message}</div>:null}
     <div className="device-access-footer">
       <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης. Μετά την αφαίρεση, η συνεδρία απορρίπτεται τόσο από το API όσο και από τα προστατευμένα δεδομένα.</span>
-      {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
+      {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>requestRevoke({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
     </div>
 
-    <ConfirmDialog open={Boolean(pending)} title={pending?.kind==='others'?'Αφαίρεση πρόσβασης από όλες τις άλλες συσκευές;':`Αφαίρεση πρόσβασης από ${pending?.kind==='single'?pending.device.label:'τη συσκευή'};`} description="Η συγκεκριμένη πρόσβαση στο MyFinHub θα ανακληθεί. Η συσκευή θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA για να ξαναμπεί." confirmLabel="Αφαίρεση πρόσβασης" tone="destructive" busy={busy} motionMode="full" onConfirm={()=>void confirm()} onCancel={()=>{if(!busy)setPending(null)}}/>
+    <ConfirmDialog open={Boolean(pending)} title={pending?.kind==='others'?'Αφαίρεση πρόσβασης από όλες τις άλλες συσκευές;':`Αφαίρεση πρόσβασης από ${pending?.kind==='single'?pending.device.label:'τη συσκευή'};`} description={pending?.kind==='others'?'Θα ανακληθεί η πρόσβαση σε όλες τις άλλες συσκευές. Καθεμία θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.':'Η πρόσβαση της συγκεκριμένης συσκευής θα ανακληθεί. Θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.'} error={confirmationError} confirmLabel="Αφαίρεση πρόσβασης" tone="destructive" busy={busy} motionMode="full" onConfirm={()=>void confirm()} onCancel={()=>{if(!busy){setConfirmationError('');setPending(null)}}}/>
   </section>;
 }

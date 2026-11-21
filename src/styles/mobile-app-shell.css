@@ -25,9 +25,12 @@
     box-shadow:var(--mobile-shadow-soft);
     backdrop-filter:blur(16px) saturate(1.15);
   }
-  .mobile-brand{gap:8px;min-width:0}
+  /* The brand's available GRID TRACK, not the media viewport, is the
+     meaningful width at browser 200% zoom. Keep search/history actions
+     independent and preserve the labelled, keyboard-accessible brand button. */
+  .mobile-brand{min-width:0;container-type:inline-size}
+  @container (max-width:165px){.mobile-brand .brand-mark-copy{display:none}}
   .mobile-brand img{width:30px;height:30px;border-radius:9px;box-shadow:0 4px 10px rgba(27,59,112,.12)}
-  .mobile-brand b{font-size:15px;letter-spacing:-.025em}
   .top-actions{gap:4px}
   .top-action-group{display:contents}
   .top-actions button{width:38px;height:38px;border-radius:11px;border:1px solid rgba(211,222,236,.9);background:rgba(249,252,255,.8);box-shadow:none}
@@ -173,7 +176,6 @@
 
   @media(max-width:350px){
     .mobile-brand .brand-home-button{padding-inline:3px}
-    .mobile-brand .brand-mark-copy{display:none}
     .mobile-nav button{font-size:6.5px}
     .app-shell{--mobile-gutter:9px}
     .page-heading:has(+.primary-balance-grid){grid-template-columns:1fr}

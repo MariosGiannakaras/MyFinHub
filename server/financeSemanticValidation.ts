@@ -1,5 +1,7 @@
 import type { FinanceData, FinanceEvent, SplitPart } from '../src/types.js';
 import { moneyToCents } from '../src/lib/money.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
+import { lendingOutstandingFor } from '../src/lib/lending.js';
 import { ApiError } from './http.js';
 
 const CREDIT_ACCOUNT_ID='credit-card';
@@ -264,6 +266,124 @@ function validateWriteoffOutstanding(data:FinanceData){
       if(!Number.isSafeInteger(running)||running<0)
         invalid(`Writeoff/repayment exceeds outstanding for ${event.id}.`);
     }
+  }
+}
+
+
+/**
+ * Mutation-only, full-seed guard for dated receivable reductions.
+ *
+ * The ordinary state-only validator cannot know the imported seed balance.
+ * Check the proposed daily balance at every old/new repayment, writeoff and
+ * dated legacy decrease; a later lending must not conceal an earlier deficit.
+ * Preserve pre-existing imported anomalies when an unrelated mutation does
+ * not worsen them. Currency comparison is cent-exact and no history is edited.
+ *
+ * This is an API-side preflight paired with the revision-locked persistence
+ * RPC, not a substitute for a DB-enforced guard against direct RPC callers.
+ */
+export function validateMutableReceivableChronology(next:FinanceData,previous:FinanceData){
+  const checkpoints=new Map<string,Set<string>>();
+  const record=(person:unknown,date:unknown)=>{
+    if(typeof person!=='string'||typeof date!=='string'||!isValidDateOnly(date))return;
+    const name=person.trim();
+    if(!name)return;
+    const dates=checkpoints.get(name)??new Set<string>();
+    dates.add(date);
+    checkpoints.set(name,dates);
+  };
+  for(const document of [previous,next]){
+    for(const event of document.state.events??[]){
+      if(event.kind==='repayment'||event.kind==='lending_writeoff')record(event.person,event.date);
+    }
+    for(const legacy of document.seed.lending??[]){
+      for(const entry of legacy.entries??[]){
+        if(Number(entry.repaid)>0||Number(entry.haircut)>0)record(legacy.person,entry.date);
+      }
+    }
+  }
+  for(const [person,dates] of checkpoints){
+    for(const date of dates){
+      const proposed=moneyToCents(lendingOutstandingFor(next,person,date));
+      const original=moneyToCents(lendingOutstandingFor(previous,person,date));
+      if(!Number.isSafeInteger(proposed)||!Number.isSafeInteger(original))
+        invalid('Invalid dated receivable balance.');
+      if(proposed<0&&proposed<Math.min(original,0))
+        invalid('Dated receivable repayment exceeds outstanding.');
+    }
+  }
+}
+
+/**
+ * Revisioned mutable-save preflight: check only newly written money fields.
+ * An unchanged imported historical value (even a sub-cent legacy anomaly)
+ * must not make unrelated owner edits fail. The existing state semantic check
+ * continues to validate event/leg relationships on the entire document.
+ */
+export function validateChangedFinanceEventCents(next:FinanceData,previous:FinanceData){
+  const prior=new Map((previous.state.events??[]).map(event=>[event.id,event]));
+  const moneyFields=(event:FinanceEvent)=>{
+    const fields=new Map<string,number>([['amount',event.amount]]);
+    for(const leg of event.legs)fields.set('leg:'+leg.accountId,leg.amount);
+    for(const part of event.parts??[])fields.set('part:'+part.id,part.amount);
+    for(const part of event.funding??[])fields.set('funding:'+part.kind+':'+part.sourceId,part.amount);
+    for(const name of ['savingAmount','receivableDelta','creditDelta'] as const){
+      if(event[name]!==undefined)fields.set(name,event[name]!);
+    }
+    return fields;
+  };
+  for(const event of next.state.events??[]){
+    const old=prior.get(event.id);
+    const oldFields=old&&old.kind===event.kind?moneyFields(old):null;
+    for(const [name,value] of moneyFields(event)){
+      if(oldFields?.has(name)&&Object.is(oldFields.get(name),value))continue;
+      const centsValue=moneyToCents(value);
+      if(!Number.isSafeInteger(centsValue)||Math.abs(value*100-centsValue)>1e-6)
+        invalid(`Sub-cent mutable event field ${event.id} ${name}.`);
+    }
+  }
+}
+
+/**
+ * Mutable configuration amounts are persisted separately from ledger events.
+ * Preserve unchanged imported/seed values; fail closed for owner edits and
+ * newly added loans, obligations, goals, planned movements and budgets.
+ */
+export function validateChangedFinanceDraftCents(next:FinanceData,previous:FinanceData){
+  const check=<T extends {id:string}>(scope:string,fields:(keyof T)[],current:readonly T[],original:readonly T[])=>{
+    const old=new Map(original.map(item=>[item.id,item]));
+    for(const item of current){
+      const before=old.get(item.id);
+      for(const field of fields){
+        const value=item[field];
+        if(value===undefined)continue;
+        if(before&&Object.is(before[field],value))continue;
+        if(typeof value!=='number')invalid(`Invalid mutable ${scope} ${item.id} ${String(field)}.`);
+        const centsValue=moneyToCents(value);
+        if(!Number.isSafeInteger(centsValue)||Math.abs(value*100-centsValue)>1e-6)
+          invalid(`Sub-cent mutable ${scope} ${item.id} ${String(field)}.`);
+      }
+    }
+  };
+  const nextState=next.state,oldState=previous.state;
+  check('recurring',['amount','estimateMin','estimateMax'],
+    [...(nextState.recurringCustom??[]),...Object.values(nextState.recurringOverrides??{})],
+    [...(previous.seed.recurring??[]),...(oldState.recurringCustom??[]),...Object.values(oldState.recurringOverrides??{})]);
+  check('loan',['total','installment','legacyPaidAmount','forgivenAmount'],
+    [...(nextState.customLoans??[]),...Object.values(nextState.loanOverrides??{})],
+    [...(previous.seed.loans??[]),...(oldState.customLoans??[]),...Object.values(oldState.loanOverrides??{})]);
+  check('scheduled',['amount'],nextState.scheduled??[],oldState.scheduled??[]);
+  check('budget',['amount'],nextState.budgets??[],oldState.budgets??[]);
+  check('saving-goal',['targetAmount'],nextState.savingsGoals??[],oldState.savingsGoals??[]);
+  check('lending-settlement',['total'],nextState.lendingPlans??[],oldState.lendingPlans??[]);
+  check('credit-card',['creditLimit'],nextState.cards??[],oldState.cards??[]);
+  check('settings',['monthlyBudget','creditLimit'],
+    [{id:'finance-settings',...nextState.settings}],[{id:'finance-settings',...oldState.settings}]);
+  check('legacy-transaction',['amount'],
+    [...(nextState.customTransactions??[]),...Object.values(nextState.overrides??{})],
+    [...(previous.seed.transactions??[]),...(oldState.customTransactions??[]),...Object.values(oldState.overrides??{})]);
+  for(const [transactionId,decision] of Object.entries(nextState.reviewDecisions??{})){
+    check('review-split '+transactionId,['amount'],decision.parts??[],oldState.reviewDecisions?.[transactionId]?.parts??[]);
   }
 }
 

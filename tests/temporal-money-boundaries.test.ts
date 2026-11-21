@@ -3,7 +3,7 @@ import { addCalendarDays, calendarMonthRange, isValidDateOnly, isValidMonthOnly 
 import { createEvent, monthRange } from '../src/lib/domain.js';
 import { addDays } from '../src/lib/forecast.js';
 import { entryDraftError, loanDraftError, recurringDraftError } from '../src/lib/inputSemantics.js';
-import { centsToMoney, isSafeMoneyValue, moneyToCents } from '../src/lib/money.js';
+import { centsToMoney, isPositiveCentExactMoneyValue, isSafeMoneyValue, moneyToCents } from '../src/lib/money.js';
 import { validRecurringAnchor } from '../src/lib/recurringCadence.js';
 import { monthEnd } from '../src/lib/reports.js';
 import { shiftReportingMonth } from '../src/lib/reportingPeriod.js';
@@ -52,11 +52,46 @@ describe('strict calendar boundaries',()=>{
 });
 
 describe('safe monetary boundaries',()=>{
+  it('rejects fractional-cent new economic events at the canonical factory without reinterpreting legacy amounts',()=>{
+    const day='2026-08-18';
+    for(const amount of [0.0001,0.001,0.005,1.005,2.999]){
+      expect(()=>createEvent({kind:'expense',date:day,amount,note:'Direct debit',accountId:'cash'})).toThrow(/λεπτά/);
+      expect(()=>createEvent({kind:'transfer',date:day,amount,note:'Direct transfer',fromAccountId:'bank',toAccountId:'cash'})).toThrow(/λεπτά/);
+      expect(()=>createEvent({kind:'card_purchase',date:day,amount,note:'Direct card'})).toThrow(/λεπτά/);
+    }
+    const valid=createEvent({kind:'expense',date:day,amount:0.3,note:'Valid',accountId:'cash'});
+    expect(valid.amount).toBe(0.3);
+    expect(valid.legs).toEqual([{accountId:'cash',amount:-0.3}]);
+    expect(()=>createEvent({kind:'split',date:day,amount:1.01,note:'Unbookable',accountId:'bank',parts:[
+      {id:'a',label:'A',category:'Άλλο',amount:1.005},{id:'b',label:'B',category:'Άλλο',amount:0.005},
+    ]})).toThrow(/λεπτά/);
+    expect(()=>createEvent({kind:'split',date:day,amount:2,note:'Mismatch',accountId:'bank',parts:[
+      {id:'a',label:'One',category:'Άλλο',amount:1},
+    ]})).toThrow(/δεν ισούνται/);
+    expect(()=>createEvent({kind:'split',date:day,amount:1,note:'Too few',accountId:'bank',parts:[
+      {id:'a',label:'One',category:'Άλλο',amount:1},
+    ]})).toThrow(/τουλάχιστον δύο/);
+    const validSplit=createEvent({kind:'split',date:day,amount:0.3,note:'Valid split',accountId:'bank',parts:[
+      {id:'a',label:'A',category:'Άλλο',amount:0.1},{id:'b',label:'B',category:'Άλλο',amount:0.2},
+    ]});
+    expect(validSplit.legs).toEqual([{accountId:'bank',amount:-0.3}]);
+  });
+
   it('keeps decimal money in integer cents without binary floating-point drift',()=>{
     expect(moneyToCents(0.1+0.2)).toBe(30);
     expect(centsToMoney(30)).toBe(0.3);
     expect(moneyToCents(12.345)).toBe(1235);
     expect(centsToMoney(1235)).toBe(12.35);
+  });
+
+  it('keeps legacy range/read semantics separate from new positive cent-exact write constraints',()=>{
+    expect(isSafeMoneyValue(1.005)).toBe(true); // Do not reinterpret persisted legacy numbers on read.
+    for(const amount of [0,0.0001,0.001,0.005,1.005,2.999,-0.01,Number.POSITIVE_INFINITY,Number.MAX_SAFE_INTEGER]){
+      expect(isPositiveCentExactMoneyValue(amount)).toBe(false);
+    }
+    for(const amount of [0.01,0.1,0.2,0.3,10.05,123456789.12]){
+      expect(isPositiveCentExactMoneyValue(amount)).toBe(true);
+    }
   });
 
   it('rejects non-finite and values that cannot be represented as safe integer cents',()=>{

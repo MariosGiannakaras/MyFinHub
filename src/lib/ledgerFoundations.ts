@@ -9,6 +9,12 @@ function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
 }
 
+/** Existing hidden-but-real legacy accounts remain valid for non-destructive edits. */
+export function singleAccountDraftError(data:FinanceData,id:string){
+  return transferEligibleAccounts(data).some(account=>account.id===id)
+    ?null:'Διάλεξε υπαρκτό λογαριασμό για την κίνηση.';
+}
+
 export function defaultTransferPair(data: FinanceData) {
   const accounts = transferEligibleAccounts(data);
   const preferredFrom = data.state.settings.defaultExpenseAccount;
@@ -45,7 +51,12 @@ export function savingContributionDraftError(data:FinanceData,draft:{fromAccount
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {
   const ids = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό μεταφοράς.';
-  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
+  const cents=moneyToCents(draft.amount);
+  if (!Number.isSafeInteger(cents)) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
+  // Domain callers must not bypass MoneyInput and silently round a posted
+  // transfer or savings contribution to zero/sub-cent-adjusted ledger legs.
+  if(cents<=0||Math.abs(draft.amount*100-cents)>1e-6)
+    return 'Το ποσό μεταφοράς πρέπει να είναι τουλάχιστον ένα λεπτό με έως δύο δεκαδικά.';
   if (!draft.fromAccountId || !ids.has(draft.fromAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προέλευσης.';
   if (!draft.toAccountId || !ids.has(draft.toAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προορισμού.';
   if (draft.fromAccountId === draft.toAccountId) return 'Ο λογαριασμός προέλευσης και προορισμού πρέπει να είναι διαφορετικοί.';
@@ -100,8 +111,15 @@ export function splitDraftError(data: FinanceData, draft: { accountId: string; p
   if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
   const invalidPartIndex=draft.parts.findIndex((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0);
   if (invalidPartIndex >= 0) return `Το ποσό στο μέρος ${invalidPartIndex + 1} πρέπει να είναι θετικό.`;
+  // Do not let direct/domain callers silently round a user-confirmed amount.
+  // Legacy read-only allocations can remain normalized; new writes cannot.
+  const imprecisePartIndex=draft.parts.findIndex((part)=>{
+    const amount=Number(part.amount),cents=moneyToCents(amount);
+    return !Number.isSafeInteger(cents)||Math.abs(amount*100-cents)>1e-6;
+  });
+  if(imprecisePartIndex>=0)return `Το ποσό στο μέρος ${imprecisePartIndex+1} πρέπει να έχει έως δύο δεκαδικά και ασφαλή λεπτά ευρώ.`;
   const allocation = splitAllocation(draft.parts);
-  if (!Number.isFinite(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isFinite(moneyToCents(part.amount)))) return 'Έλεγξε τα επιμέρους ποσά.';
+  if (!Number.isSafeInteger(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isSafeInteger(moneyToCents(part.amount)))) return 'Το συνολικό ποσό διαχωρισμού υπερβαίνει το ασφαλές όριο.';
   if (allocation.totalCents <= 0) return 'Το σύνολο των επιμέρους ποσών πρέπει να είναι θετικό.';
   return null;
 }

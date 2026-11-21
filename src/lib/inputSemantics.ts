@@ -1,7 +1,8 @@
 import type { EventKind, FinanceSettings, Loan, RecurringItem, SplitPart } from '../types.js';
 import { isValidDateOnly } from './dateOnly.js';
 import { defaultCategory } from './categories.js';
-import { isSafeMoneyValue } from './money.js';
+import { isPositiveCentExactMoneyValue } from './money.js';
+import { parseMoneyInputAmount } from './moneyInput.js';
 import { recurringVariableAmountError } from './recurringVariable.js';
 
 type RecurringCadenceDraft=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
@@ -19,23 +20,25 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
   };
 }
 
-export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; parts: SplitPart[] }) {
+export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; statementMovement?:string; parts: SplitPart[] }) {
   if (kind === 'split') {
     if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο επιμέρους μέρη.';
-    if (draft.parts.some((part) => !isSafeMoneyValue(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
+    if (draft.parts.some((part) => !isPositiveCentExactMoneyValue(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
     return null;
   }
-  const amount = Number(draft.amount);
-  if (kind !== 'reconciliation' && (!isSafeMoneyValue(amount) || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό εντός επιτρεπτού εύρους.';
+  const amount = parseMoneyInputAmount(draft.amount);
+  if (kind !== 'reconciliation' && (amount === null || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό εντός επιτρεπτού εύρους.';
   if ((kind === 'lending' || kind === 'repayment') && !draft.person.trim()) return 'Συμπλήρωσε το πρόσωπο για τα δανεικά.';
-  if (kind === 'reconciliation' && (!draft.actualBalance.trim() || !isSafeMoneyValue(Number(draft.actualBalance)))) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο εντός επιτρεπτού εύρους.';
+  if (kind === 'reconciliation' && parseMoneyInputAmount(draft.actualBalance,true)===null) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο εντός επιτρεπτού εύρους.';
+  if(kind==='reconciliation'&&draft.statementMovement?.trim()&&parseMoneyInputAmount(draft.statementMovement,true)===null)
+    return 'Η κίνηση λογαριασμού χρειάζεται έγκυρο ποσό με έως δύο δεκαδικά ψηφία.';
   return null;
 }
 
 export function loanDraftError(loan: Loan) {
   if (!loan.name.trim()) return 'Συμπλήρωσε όνομα.';
-  if (!isSafeMoneyValue(loan.total) || loan.total <= 0) return 'Το συνολικό ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
-  if (!isSafeMoneyValue(loan.installment) || loan.installment <= 0) return 'Η δόση πρέπει να είναι θετική και εντός επιτρεπτού εύρους.';
+  if (!isPositiveCentExactMoneyValue(loan.total) || loan.total <= 0) return 'Το συνολικό ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
+  if (!isPositiveCentExactMoneyValue(loan.installment) || loan.installment <= 0) return 'Η δόση πρέπει να είναι θετική και εντός επιτρεπτού εύρους.';
   if (!Number.isInteger(loan.installments) || loan.installments <= 0) return 'Ο αριθμός δόσεων πρέπει να είναι θετικός ακέραιος.';
   const paid = loan.paidCount ?? 0;
   if (!Number.isInteger(paid) || paid < 0 || paid > loan.installments) return 'Οι ήδη πληρωμένες δόσεις πρέπει να είναι ακέραιες από 0 έως το σύνολο των δόσεων.';
@@ -45,7 +48,7 @@ export function loanDraftError(loan: Loan) {
 export function recurringDraftError(item: RecurringItem) {
   const cadence=item as RecurringCadenceDraft;
   if (!item.name.trim()) return 'Συμπλήρωσε όνομα.';
-  if (!isSafeMoneyValue(item.amount) || item.amount <= 0) return 'Το ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
+  if (!isPositiveCentExactMoneyValue(item.amount) || item.amount <= 0) return 'Το ποσό πρέπει να είναι θετικό και εντός επιτρεπτού εύρους.';
   const amountError=recurringVariableAmountError(item);
   if(amountError)return amountError;
   if (item.day !== undefined && item.day !== null && (!Number.isInteger(item.day) || item.day < 1 || item.day > 31)) return 'Η ημέρα πρέπει να είναι ακέραιος από 1 έως 31.';

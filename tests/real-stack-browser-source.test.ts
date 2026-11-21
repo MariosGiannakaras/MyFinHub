@@ -16,6 +16,12 @@ describe('actual-browser real-stack source contract',()=>{
 
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
+    expect(source).toContain('/json/new?about:blank');
+    expect(source).toContain("const navigation=await c!.send('Page.navigate',{url:loginUrl})");
+    expect(source).toContain('await navigateLogin()');
+    expect(source).toContain("if(navigation.errorText)throw new Error('Real browser login navigation failed: '");
+    expect(source).toContain("location.protocol!=='about:'");
+    expect(source).toContain('bounded explicit-navigation retry');
     expect(source).toContain("document.querySelector('#login-title')");
     expect(source).toContain("document.querySelector('#mfa-title')");
     expect(source).not.toContain("clickText('.login-submit','Επαλήθευση')");
@@ -32,6 +38,14 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('child.exitCode!==null');
     expect(source).toContain('Chromium bootstrap attempt');
     expect(source).toContain('await stopBrowser(child)');
+  });
+  it('bounds CDP WebSocket handshake and every command, rejecting stalled sessions before CI timeout',()=>{
+    expect(source).toContain('WebSocket handshake timed out after 15s');
+    expect(source).toContain('Browser CDP command timed out after 25s: ');
+    expect(source).toContain('this.rejectAll(error)');
+    expect(source).toContain('clearTimeout(timer)');
+    expect(source).toContain('this.ws.readyState!==WebSocket.OPEN');
+    expect(source).toContain('this.pending.delete(id)');
   });
   it('covers modern and legacy durable mutation lifecycles across hard reload',()=>{
     expect(source).toContain('stage modern-create-reload');
@@ -51,6 +65,17 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
+    expect(source).toContain("const seedPeriod=");
+    expect(source).toContain("2026-10-01T00:00:00.000Z");
+    expect(source).toContain("selectPeriod(seedPeriod,'previous')");
+    expect(source).toContain("selectPeriod(previousPeriod,'next')");
+    // The first direct span is Tooltip, not the month label.
+    expect(source).toContain("querySelector('.period-control>span:not(.app-tooltip)')");
+    expect(source).not.toContain("querySelector('.period-control>span')");
+    const monthControl=readFileSync('src/components/PeriodControl.tsx','utf8');
+    expect(monthControl).toContain('<Tooltip label="Προηγούμενος μήνας">');
+    expect(monthControl).toContain('<span>{monthLabel(month)}</span>');
+    expect(source).toContain('reporting period navigation');
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');
     expect(source).toContain('waitCreditState(false)');
@@ -102,6 +127,9 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Rule Match');
     expect(source).toContain("waitApiEventCategory('Real Browser Rule Match','Rule Applied')");
     expect(source).toContain('stage provider-storage-create-bind-reload');
+    expect(source).toContain("'verified provider catalog enables new provider'");
+    expect(source).toContain("button instanceof HTMLButtonElement&&!button.disabled");
+    expect(source).toContain("'new provider editor'");
     expect(source).toContain('Real Browser Provider');
     expect(source).toContain('real-browser-provider.svg');
     expect(source).toContain('provider-storage-persisted');
@@ -119,9 +147,29 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Import boundary must disable unsafe history Undo.');
     expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
-    expect(source).toContain('400 /api/import');
+    expect(source).toContain('invalid import rejected in client preview before destructive confirmation');
+    // Shared OperationFeedback maps error/warning to role=alert; success alone uses status.
+    expect(readFileSync('src/components/OperationFeedback.tsx','utf8')).toContain("role={failure?'alert':'status'}");
+    expect(source).toContain(".operation-feedback[data-feedback-tone=error][role=alert]");
+    expect(source).toContain('data-management-invalid-import-preview-rejected');
+    expect(source).toContain('Malformed import rejection must be visibly painted within the screenshot viewport.');
+    expect(source).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
+    expect(source).not.toContain(".logic-note[role=status]')?.textContent||'').includes('Δεν έγινε εισαγωγή')");
+    expect(source).toContain("importResponsesAfter===importResponsesBefore");
+    expect(source).toContain('Malformed preview changed the canonical finance revision.');
+    expect(source).toContain('Malformed preview exposed an actionable import confirmation.');
+    expect(source).not.toContain('invalid import confirmation');
+    expect(source).not.toContain("expectedInvalidImport=true");
     expect(source).toContain('Imported QA Cash');
     expect(source).toContain('change-history-title');
+    expect(source).toContain("'history dialog visually settled after import'");
+    expect(source).toContain("backdrop.getAnimations({subtree:true})");
+    expect(source).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
+    expect(source).toContain("Number(getComputedStyle(backdrop).opacity)>=.995");
+    const settledAt=source.indexOf("'history dialog visually settled after import'");
+    const screenshotAt=source.indexOf("await shot('data-management-import-history-persisted')");
+    expect(settledAt).toBeGreaterThan(0);
+    expect(screenshotAt).toBeGreaterThan(settledAt);
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
     expect(source).toContain('actual browser auth + modern/legacy/quick-intents/credit/savings/loans/lending/recurring/planning/attention/budgets/rules/cards/taxonomy/icons/providers/accounts/data-management persistence across hard reload');

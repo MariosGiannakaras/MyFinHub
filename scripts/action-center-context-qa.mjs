@@ -11,7 +11,16 @@ const port=9241;
 const profile='/tmp/myfinhub-action-center-context-qa-chrome';
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+// Browser startup on cold shared runners is not an application assertion.
+ // Bound CDP readiness independently of UI, then keep all UI timeouts strict.
+async function waitHttp(url){
+  for(let i=0;i<240;i++){
+    if(child.exitCode!==null||child.signalCode!==null)throw new Error('Chromium exited before the debugging endpoint became ready');
+    try{const response=await fetch(url);if(response.ok)return}catch{}
+    await sleep(150);
+  }
+  throw new Error(`Timed out waiting for Chromium debugging endpoint: ${url}`);
+}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map();this.listeners=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(message.id){const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);return}for(const fn of this.listeners.get(message.method)||[])fn(message.params)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}on(method,fn){const list=this.listeners.get(method)||[];list.push(fn);this.listeners.set(method,list)}async call(functionDeclaration,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime function call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Action Center QA assertion failed: ${message}`)};
 
@@ -40,13 +49,31 @@ try{
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const noOverflow=async label=>{const value=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(value<=1,`${label} horizontal overflow ${value}px`)};
   const noUnnamed=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.contextual-quick-modal button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden')return false;return !(el.getAttribute('aria-label')||el.getAttribute('title')||(el.textContent||'').trim())}).map(el=>el.outerHTML.slice(0,150))}");assert(offenders.length===0,`${label} unnamed controls: ${offenders.join(' | ')}`)};
+  const assertActionLabelContained=async (label,maxLines=2)=>{
+    const failures=await c.call("function(maxLines){return [...document.querySelectorAll('.attention-approved-desktop .attention-approved-actions>.save-button')].filter(button=>button.getClientRects().length>0).flatMap(button=>{const box=button.getBoundingClientRect(),host=button.closest('.attention-approved-actions')?.getBoundingClientRect();const range=document.createRange();const rects=[...button.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).flatMap(node=>{range.selectNodeContents(node);return [...range.getClientRects()]});const lineCount=new Set(rects.filter(rect=>rect.width>.5).map(rect=>Math.round(rect.top))).size;const spills=rects.filter(rect=>rect.width>.5&&(rect.left<box.left-1||rect.right>box.right+1||rect.top<box.top-1||rect.bottom>box.bottom+1));if(lineCount>maxLines||spills.length||button.scrollWidth>button.clientWidth+1||host&&(box.left<host.left-1||box.right>host.right+1))return [{label:(button.textContent||'').trim(),lineCount,maxLines,box:{left:box.left,right:box.right,width:box.width},rects:spills.map(rect=>({left:rect.left,right:rect.right}))}];return []})}",[maxLines]);
+    assert(failures.length===0,`${label} long action labels must stay inside button boundaries and readable line count: ${JSON.stringify(failures)}`);
+  };
   const touchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.mobile-nav button,.topbar button,.contextual-quick-modal button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,45),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,`missing clickable ${text}`)};
   const clickAttention=async(id)=>{const clicked=await c.call("function(id){const row=document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`);const button=row?.querySelector('.attention-actions .save-button');button?.click();return Boolean(button)}",[id]);assert(clicked,`missing attention action ${id}`)};
   const assertDialogSemantics=async title=>{assert(await c.call("function(title){const modal=document.querySelector('.contextual-quick-modal');if(!modal)return false;const labelled=modal.getAttribute('aria-labelledby');return modal.getAttribute('role')==='dialog'&&modal.getAttribute('aria-modal')==='true'&&Boolean(labelled)&&((document.getElementById(labelled)?.textContent||'').includes(title))}",[title]),`${title} dialog semantics`)};
   const waitModal=async title=>{await waitFor("function(title){const modal=document.querySelector('.contextual-quick-modal');return Boolean(modal&&(modal.querySelector('h2')?.textContent||'').includes(title))}",`${title} contextual modal`,[title]);assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')===document.activeElement}"),`${title} autofocus`);await assertDialogSemantics(title)};
-  const closeModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.contextual-quick-modal button[aria-label*=\"Κλείσιμο\"]');button?.click();return Boolean(button)}");assert(closed,'context modal close control');await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'context modal close')};
-  const closeGenericModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");assert(closed,'generic account context closes');await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close')};
+  const closeModal=async()=>{
+    const closed=await c.call("function(){const button=document.querySelector('.contextual-quick-modal header button');button?.click();return Boolean(button)}");
+    assert(closed,'context modal close control');
+    await waitFor("function(){return !document.querySelector('.contextual-quick-modal')||Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'context close or discard prompt');
+    const confirmed=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Απόρριψη'));button?.click();return Boolean(button)}");
+    if(confirmed)await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'confirmed contextual discard');
+    await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'context modal close');
+  };
+  const closeGenericModal=async()=>{
+    const closed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");
+    assert(closed,'generic account context closes');
+    await waitFor("function(){return !document.querySelector('.generic-quick-modal')||Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'generic close or unsaved discard prompt');
+    const discarded=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Απόρριψη'));button?.click();return Boolean(button)}");
+    if(discarded)await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'generic discarded draft confirmation closed');
+    await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close');
+  };
   const pressEscape=async()=>{for(const type of ['keyDown','keyUp'])await c.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27})};
   const approvedAttentionState=()=>c.call("function(){const groups=[...document.querySelectorAll('.attention-approved-desktop>.attention-approved-group')].filter(group=>!group.classList.contains('legacy-confirmation-panel')).slice(0,4).map(group=>{const title=group.querySelector('h2')?.textContent||'',match=title.match(/\\((\\d+)\\)/),count=Number(match?.[1]||0),link=group.querySelector('.attention-approved-group-link'),head=group.querySelector('.attention-approved-table-head');return {count,hasLink:Boolean(link),expanded:link?.getAttribute('aria-expanded')??null,hasTableHead:Boolean(head),emptyClass:group.classList.contains('is-empty'),height:group.getBoundingClientRect().height}});const rows=[...document.querySelectorAll('.attention-approved-desktop .attention-approved-row')],row=rows[0],primary=row?.querySelector('.attention-approved-actions>.save-button'),secondary=row?.querySelector('.attention-approved-icon-action'),reason=row?.querySelector('.attention-approved-copy>p'),context=row?.querySelector('.attention-approved-context'),dateSmall=row?.querySelector('.attention-approved-date>small'),table=document.querySelector('.attention-approved-table-head'),tableRect=table?.getBoundingClientRect(),style=node=>node?getComputedStyle(node):null,total=groups.reduce((sum,g)=>sum+g.count,0),danger=groups[0]?.count||0,clear=document.querySelector('.attention-approved-all-clear');return {groups,total,danger,allClearText:clear?.textContent||'',tableWidth:tableRect?.width||0,primaryBg:style(primary)?.backgroundColor||'',primaryImage:style(primary)?.backgroundImage||'',primaryShadow:style(primary)?.boxShadow||'',primaryBorder:style(primary)?.borderTopColor||'',secondaryBg:style(secondary)?.backgroundColor||'',secondaryImage:style(secondary)?.backgroundImage||'',secondaryShadow:style(secondary)?.boxShadow||'',secondaryBorder:style(secondary)?.borderTopColor||'',reasonSize:parseFloat(style(reason)?.fontSize||'0'),contextSize:parseFloat(style(context)?.fontSize||'0'),dateSize:parseFloat(style(dateSmall)?.fontSize||'0')}}");
 
@@ -60,8 +87,9 @@ try{
   await clickText('.attention-page .privacy-toggle','Εμφάνιση ποσών');
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
   const approved=await approvedAttentionState();assert(approved.groups.length===4,'desktop keeps exactly the four approved priority groups');assert(approved.groups.every(group=>group.count>4?group.hasLink:!group.hasLink),'Προβολή όλων exists only when a group actually truncates rows');assert(approved.groups.every(group=>group.count===0?group.emptyClass&&!group.hasTableHead:true),'zero-count groups stay discoverable without a table header shell');assert(approved.allClearText.includes('Όλα υπό έλεγχο!')===(approved.total===0),'true all-clear language appears only with zero active actionable items');const primaryEmphasized=(approved.primaryImage&&approved.primaryImage!=='none')||approved.primaryShadow!=='none'||approved.primaryBg!==approved.secondaryBg||approved.primaryBorder!==approved.secondaryBorder;const secondaryQuiet=['rgba(0, 0, 0, 0)','transparent'].includes(approved.secondaryBg)&&(!approved.secondaryImage||approved.secondaryImage==='none')&&approved.secondaryShadow==='none';assert(primaryEmphasized&&secondaryQuiet,'row domain action remains primary while snooze/dismiss controls are visually quiet');assert(approved.reasonSize>=9&&approved.contextSize>=9&&approved.dateSize>=9,`desktop dense Attention text remains readable: ${JSON.stringify(approved)}`);
+  await assertActionLabelContained('attention desktop 1440');
   await noOverflow('attention desktop');await noUnnamed('attention desktop');await screenshot('action-center-desktop');
-  for(const [width,height,label] of [[1920,1080,'1920'],[2560,1440,'2560']]){await navigate('attention','',width,height);const wide=await approvedAttentionState();assert(wide.tableWidth<=1481,`${label}px Attention table measure is bounded: ${JSON.stringify(wide)}`);await noOverflow(`attention wide ${label}`);await screenshot(`action-center-wide-${label}`)}
+  for(const [width,height,label] of [[1100,900,'1100'],[1920,1080,'1920'],[2560,1440,'2560']]){await navigate('attention','',width,height);const wide=await approvedAttentionState();assert(wide.tableWidth<=1481,`${label}px Attention table measure is bounded: ${JSON.stringify(wide)}`);await assertActionLabelContained(`attention responsive desktop ${label}`,width===1100?3:2);await noOverflow(`attention wide ${label}`);await screenshot(`action-center-wide-${label}`)}
 
   console.log('Action Center QA: focused legacy split-review editor');
   await navigate('attention','split-review');
@@ -125,8 +153,13 @@ try{
   assert(await c.call("function(){return Boolean(document.querySelector('[data-attention-id=\"scheduled:qa-scheduled-transfer\"]'))}"),'scheduled attention item exists before completion');
   await clickAttention('scheduled:qa-scheduled-transfer');await waitModal('Ολοκλήρωση προγραμματισμένης');
   assert(await c.call("function(){return (document.querySelector('.contextual-quick-modal')?.textContent||'').includes('Μεταφορά στον στόχο')}") ,'scheduled context identifies exact item');
-  await clickText('.contextual-quick-modal .save-button','Ολοκλήρωση');
+  console.log('Contextual Quick Entry blocks same-tick duplicate scheduled payment');
+  const beforeScheduled=await c.call("function(){return Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)}");
+  const doubleScheduled=await c.call("function(){const button=[...document.querySelectorAll('.contextual-quick-modal .save-button')].find(node=>(node.textContent||'').includes('Ολοκλήρωση'));if(!button)return false;button.click();button.click();return true}");
+  assert(doubleScheduled,'contextual scheduled completion submitted twice in one browser turn');
   await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'scheduled completion close');
+  const afterScheduled=await c.call("function(){return Number(document.documentElement.dataset.qaScheduledCompletionAttempts||0)}");
+  assert(afterScheduled===beforeScheduled+1,'same-turn contextual Quick Entry starts exactly one scheduled finance write');
   await waitFor("function(){return !document.querySelector('[data-attention-id=\"scheduled:qa-scheduled-transfer\"]')}",'completed scheduled attention removal');
   assert(await c.call("function(){return Boolean(document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]'))}"),'undo remains available after atomic completion');
 
@@ -135,6 +168,110 @@ try{
   const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] [data-account-quick-entry=\"piraeus-payroll\"]');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μισθοδοσία'))}"),'payroll context preselects originating payroll account');
+  const baselineWrites=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const genericNonDecimal=await c.call("function(){const input=document.querySelector('.generic-quick-modal input[data-autofocus=true]');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'1e3');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(genericNonDecimal,'generic Quick Entry accepts synthetic text for validation');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'generic nondecimal notation rejected before finance POST');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'generic exponent notation never posts a finance event');
+  await screenshot('quick-entry-nondecimal-rejected-desktop');
+  const fundingDraft=await c.call("function(){const modal=document.querySelector('.generic-quick-modal'),amount=modal?.querySelector('input[data-autofocus=true]'),choice=modal?.querySelector('.multi-funding-choice input[type=checkbox]');if(!(amount instanceof HTMLInputElement)||!(choice instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(amount,'10.00');amount.dispatchEvent(new Event('input',{bubbles:true}));amount.dispatchEvent(new Event('change',{bubbles:true}));choice.click();return true}");
+  assert(fundingDraft,'open multi-source purchase with a valid parent amount');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control').length>=2}",'multi-source amount editors ready');
+
+  console.log('Quick Entry multi-source account choice must mean an actual funding source');
+  const multiAccountHidden=await c.call("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return !labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===2}");
+  assert(multiAccountHidden,'multi-source entry hides the unrelated single-account selector');
+  await viewport(375,812);
+  assert(await c.call("function(){const rows=document.querySelectorAll('.generic-quick-modal .multi-funding-row');const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];rows[0]?.scrollIntoView({block:'center'});return rows.length===2&&!labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px purchase form displays only actual funding sources, without horizontal overflow');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-real-sources-mobile-375');
+  await viewport(1440,1000);
+  const toggledSingle=await c.call("function(){const choice=document.querySelector('.generic-quick-modal .multi-funding-choice input[type=checkbox]');if(!choice?.checked)return false;choice.click();return true}");
+  assert(toggledSingle,'switch multi-source mode off without changing entered amount');
+  await waitFor("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')&&!document.querySelector('.generic-quick-modal .multi-funding-row')}",'ordinary expense account selector returns when multi-source mode closes');
+  assert(await c.call("function(){const label=[...document.querySelectorAll('.generic-quick-modal label.quick-field')].find(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός');return (label?.querySelector('input[role=combobox]')?.value||'').includes('Μισθοδοσία')}"),'single-source account selection preserved on mode toggle');
+  const toggledBack=await c.call("function(){const choice=document.querySelector('.generic-quick-modal .multi-funding-choice input[type=checkbox]');if(!choice||choice.checked)return false;choice.click();return true}");
+  assert(toggledBack,'switch back to multi-source edit without losing source rows');
+  await waitFor("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label.quick-field')];return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===2&&!labels.some(x=>x.querySelector(':scope > span')?.textContent?.trim()==='Λογαριασμός')}",'two funding rows retained; unrelated account remains hidden');
+  const malformedFunding=await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];if(fields.length<2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [field,value] of [[fields[0],'1e3'],[fields[1],'2.00']]){setter?.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}return true}");
+  assert(malformedFunding,'set a malformed exponent-source and a valid cent-source');
+  await waitFor("function(){const total=document.querySelector('.generic-quick-modal .multi-funding-editor .split-head span[aria-live=polite]');return Boolean(total&&(total.textContent||'').includes('Άθροισμα: —'))}",'invalid funding preview never advertises fabricated 1002 Euro subtotal');
+  await screenshot('quick-entry-multi-funding-invalid-subtotal-preview-desktop');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('Κάθε πηγή')}",'invalid multi-source leg rejected before finance POST');
+  await waitFor("function(){const modal=document.querySelector('.generic-quick-modal'),alert=modal?.querySelector('#quick-add-error'),body=modal?.querySelector('.entry-body');if(!alert||!body)return false;const rect=alert.getBoundingClientRect(),panel=body.getBoundingClientRect();return document.activeElement===alert&&rect.top>=panel.top-2&&rect.bottom<=panel.bottom+2}",'multi-source validation focus and alert are actually onscreen');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'invalid funding subtotal never posts a finance event');
+  await screenshot('quick-entry-multi-funding-invalid-subtotal-desktop');
+
+  console.log('Quick Entry multi-source same-turn row additions retain independent controlled fields');
+  const addedFundingRows=await c.call("async function(){const node=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!node)return false;const now=Date.now;Date.now=()=>1795011000000;try{node.click();node.click();await new Promise(resolve=>setTimeout(resolve,0))}finally{Date.now=now}return true}");
+  assert(addedFundingRows,'two same-turn funding-row Add clicks executed under identical Date.now');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===4}",'four finance-source rows after two rapid Add actions');
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(fields[2],'3.00');fields[2].dispatchEvent(new Event('input',{bubbles:true}));fields[2].dispatchEvent(new Event('change',{bubbles:true}));return fields.length===4}"),'edit only third funding source amount');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''}",'fourth source remains independent and empty after third edited');
+  await viewport(375,812);
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row input.money-input-control')];fields[2]?.scrollIntoView({block:'center'});return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px funding rows do not share input or widen viewport');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-stable-rows-mobile-375');
+  await viewport(1440,1000);
+
+  console.log('Quick Entry same-turn funding removals never reduce below two independent source rows');
+  assert(await c.call("function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row button[aria-label^=\"Αφαίρεση πηγής\"]')];if(buttons.length!==4)return false;buttons[3].click();return true}"),'remove fourth funding row while exactly three must remain');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===3}",'three funding source rows before double remove');
+  const removedFunding=await c.call("async function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row button[aria-label^=\"Αφαίρεση πηγής\"]')];if(buttons.length!==3)return false;buttons[0].click();buttons[1].click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(removedFunding,'two funding remove actions requested before next render');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.generic-quick-modal .multi-funding-row')],controls=rows.flatMap(row=>[...row.querySelectorAll('button[aria-label^=\"Αφαίρεση πηγής\"]')]);return rows.length===2&&controls.length===2&&controls.every(control=>control.disabled)}",'funding removal retains required two-source minimum');
+  for(const count of [3,4]){
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();return true}"),'restore funding source row before cap test');
+    await waitFor("function(count){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===count}",'funding rows restored for cap proof',[count]);
+  }
+
+  console.log('Quick Entry funding source limit survives two same-turn Add clicks at 11 rows');
+  for(let target=5;target<=11;target++){
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();return true}"),'sequential funding source Add remains available below twelve');
+    await waitFor("function(target){return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===target}",'funding row count grows to capped penultimate size',[target]);
+  }
+  const limitDouble=await c.call("async function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));if(!button||button.disabled)return false;button.click();button.click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(limitDouble,'two same-turn Add clicks from 11 rows attempted');
+  await waitFor("function(){const rows=document.querySelectorAll('.generic-quick-modal .multi-funding-row'),button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));return rows.length===12&&Boolean(button?.disabled)}",'funding source editor stops at exactly twelve and disabled button');
+  await viewport(375,812);
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .multi-funding-editor button')].find(b=>(b.textContent||'').includes('Προσθήκη πηγής'));button?.scrollIntoView({block:'center'});return document.querySelectorAll('.generic-quick-modal .multi-funding-row').length===12&&Boolean(button?.disabled)&&document.documentElement.scrollWidth<=innerWidth+1}"),'cap remains exactly twelve before any finance receipt and 375px page has no overflow');
+  await sleep(160);
+  await screenshot('quick-entry-multi-funding-max12-mobile-375');
+  await viewport(1440,1000);
+  const splitSelected=await c.call("function(){const button=[...document.querySelectorAll('.generic-quick-modal .generic-kind-grid button')].find(node=>(node.textContent||'').includes('Σύνθετη αγορά'));button?.click();return Boolean(button)}");
+  assert(splitSelected,'generic Quick Entry selects split purchase for independent cent-precision validation');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=Ποσό]').length>=2}",'split part amount controls ready');
+  const splitInvalid=await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input')].filter(node=>node.getAttribute('aria-label')?.startsWith('Ποσό μέρους'));if(fields.length<2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [node,value] of [[fields[0],'1e3'],[fields[1],'2.00']]){setter?.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}))}return true}");
+  assert(splitInvalid,'synthetic split amount editor receives malformed and valid independent parts');
+  await waitFor("function(){const field=[...document.querySelectorAll('.generic-quick-modal .split-box input')].find(node=>node.getAttribute('aria-label')==='Ποσό μέρους 1');return field?.value==='1e3'&&field.getAttribute('aria-invalid')==='true'}",'split malformed amount remains visible and explicitly invalid');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('επιμέρους')}",'split amount cannot silently coerce exponent notation');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'split malformed entry stays in draft without a posted event');
+  await screenshot('quick-entry-split-nondecimal-rejected-desktop');
+
+  console.log('Quick Entry split same-turn row additions retain independent raw amount fields');
+  const addedSplitParts=await c.call("async function(){const node=[...document.querySelectorAll('.generic-quick-modal .split-box button')].find(b=>(b.textContent||'').includes('Προσθήκη μέρους'));if(!node)return false;const now=Date.now;Date.now=()=>1795011000000;try{node.click();node.click();await new Promise(resolve=>setTimeout(resolve,0))}finally{Date.now=now}return true}");
+  assert(addedSplitParts,'two same-turn split-part Add clicks executed under identical Date.now');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-box .split-line').length===4}",'four split parts after two rapid Add actions');
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];if(fields.length!==4)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(fields[2],'3.00');fields[2].dispatchEvent(new Event('input',{bubbles:true}));fields[2].dispatchEvent(new Event('change',{bubbles:true}));return true}"),'edit only third split part amount');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''}",'fourth split part remains distinct; no shared raw amount ID');
+  await viewport(375,812);
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input[aria-label^=\"Ποσό μέρους\"]')];fields[2]?.scrollIntoView({block:'center'});return fields.length===4&&fields[2].value==='3.00'&&fields[3].value===''&&document.documentElement.scrollWidth<=innerWidth+1}"),'375px split editor retains independent fourth row and no page overflow');
+  await sleep(160);
+  await screenshot('quick-entry-split-stable-rows-mobile-375');
+  await viewport(1440,1000);
+
+  console.log('Quick Entry same-turn split removals never reduce below two independently keyed parts');
+  assert(await c.call("function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .split-box button[aria-label^=\"Αφαίρεση μέρους\"]')];if(buttons.length!==4)return false;buttons[3].click();return true}"),'remove fourth split part before double Remove');
+  await waitFor("function(){return document.querySelectorAll('.generic-quick-modal .split-line').length===3}",'three split parts before double Remove');
+  const removedSplit=await c.call("async function(){const buttons=[...document.querySelectorAll('.generic-quick-modal .split-box button[aria-label^=\"Αφαίρεση μέρους\"]')];if(buttons.length!==3)return false;buttons[0].click();buttons[1].click();await new Promise(resolve=>setTimeout(resolve,0));return true}");
+  assert(removedSplit,'two split-part remove actions requested before next render');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.generic-quick-modal .split-line')],controls=rows.flatMap(row=>[...row.querySelectorAll('button[aria-label^=\"Αφαίρεση μέρους\"]')]);return rows.length===2&&controls.length===2&&controls.every(control=>control.disabled)}",'split removal retains required two-part minimum');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[baselineWrites]),'no finance write for rapid source or split draft removals');
+
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[baselineWrites]),'two rapid row additions never post any finance event');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');
@@ -142,15 +279,115 @@ try{
   await closeGenericModal();
 
   await navigate('savings');await clickText('.savings-action','Μεταφορά στην άκρη');await waitModal('Μεταφορά στην αποταμίευση');
+  const contextualBeforeWrites=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const contextualNonDecimal=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[data-autofocus=true]');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'0x10');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(contextualNonDecimal,'contextual Quick Entry receives synthetic nondecimal amount');
+  await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'contextual hex notation rejected before canonical posting');
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.contextual-quick-modal'))}",[contextualBeforeWrites]),'contextual hex notation never posts a savings event');
+  await screenshot('contextual-entry-hex-rejected-desktop');
   const before=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");
   const openedSelect=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[role=combobox]');input?.click();return Boolean(input)}");assert(openedSelect,'savings source selector opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'savings owned select');
   const changed=await c.call("function(before){const options=[...document.querySelectorAll('.owned-select-popover [role=option]')];const option=options.find(node=>(node.textContent||'').trim()!==before&&!node.disabled);option?.click();return Boolean(option)}",[before]);assert(changed,'user can change contextual account selection');
   await waitFor("function(before){const value=document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||'';return Boolean(value&&value!==before)}",'savings selection update',[before]);
-  const after=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");await sleep(160);assert(await c.call("function(expected){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value===expected}",[after]),'user-changed selection is not overwritten after open');await closeModal();
+  const after=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");await sleep(160);assert(await c.call("function(expected){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value===expected}",[after]),'user-changed selection is not overwritten after open');
+  const requestedDiscard=await c.call("function(){const button=document.querySelector('.contextual-quick-modal header button');button?.click();return Boolean(button)}");
+  assert(requestedDiscard,'edited savings context close control');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'unsaved contextual edits confirmation');
+  const canceledDiscard=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Ακύρωση'));button?.click();return Boolean(button)}");
+  assert(canceledDiscard,'discard cancellation remains available');
+  await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'cancelled contextual discard');
+  assert(await c.call("function(expected){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value===expected}",[after]),'cancelling discard preserves actual edited savings account');
+  await closeModal();
 
   await navigate('lending');await clickText('.receivable-person-actions button','Επιστροφή');await waitModal('Επιστροφή δανεικών');
   assert(await c.call("function(){const values=[...document.querySelectorAll('.contextual-quick-modal input')].map(input=>input.value);return values.includes('Νίκος')&&values.includes('50')}"),'lending context carries exact person and outstanding amount');await closeModal();
+
+  console.log('Action Center QA: real Transactions edit provenance, rejection and exact synthetic receipt');
+  await navigate('transactions','entry-edit-provenance');
+  const provenanceBefore=await c.call("function(){return {lending:globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending'),saving:globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-saving')}}");
+  assert(provenanceBefore?.lending?.expectedReturnDate==='2026-08-25'&&provenanceBefore.lending.source==='migration'
+    &&provenanceBefore.saving?.savingSource==='pay_and_save'&&provenanceBefore.saving.source==='review',
+    'real Transactions QA events expose distinct confirmed lending and saving provenance');
+  const chooseEditRow=async id=>{
+    const rowSelected=await c.call("function(id){const row=[...document.querySelectorAll('.transactions-approved-table tr[data-transaction-id]')].find(item=>item.getAttribute('data-transaction-id')===id);row?.click();return Boolean(row)}",[id]);
+    assert(rowSelected,`Transactions actual desktop ledger row for ${id}`);
+    await waitFor("function(){return Boolean(document.querySelector('.transactions-detail-panel .transactions-detail-actions button.edit'))}",'Transactions details edit button ready');
+    const editClicked=await c.call("function(){const button=document.querySelector('.transactions-detail-panel .transactions-detail-actions button.edit');button?.click();return Boolean(button)}");
+    assert(editClicked,'Transactions detail invokes the real generic Quick Entry editor');
+    await waitFor("function(){return (document.querySelector('.generic-quick-modal h2')?.textContent||'').includes('Επεξεργασία κίνησης')}",'real saved event Quick Entry edit ready');
+  };
+  const chooseProvenanceDate=async date=>{
+    const opened=await c.call("function(){const input=document.querySelector('.generic-quick-modal .owned-date-shell input');input?.click();return Boolean(input)}");
+    assert(opened,'existing entry date picker opens');
+    await waitFor("function(){return Boolean(document.querySelector('.owned-date-popover[role=dialog]'))}",'entry edit calendar ready');
+    const chosen=await c.call("function(date){const cell=[...document.querySelectorAll('.owned-date-popover [data-date]')].find(node=>node.getAttribute('data-date')===date&&!node.disabled);cell?.click();return Boolean(cell)}",[date]);
+    assert(chosen,`date picker selects ${date}`);
+    await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'date chooser closes after a real calendar choice');
+  };
+  const setProvenanceNote=async value=>{
+    const typed=await c.call("function(value){const input=document.querySelector('.generic-quick-modal input[placeholder=\"Σύντομη περιγραφή μόνο αν χρειάζεται\"]');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[value]);
+    assert(typed,'real editor accepts a changed owner note without direct finance-state mutation');
+    await waitFor("function(value){return document.querySelector('.generic-quick-modal input[placeholder=\"Σύντομη περιγραφή μόνο αν χρειάζεται\"]')?.value===value}",'changed owner note stays in the React form',[value]);
+  };
+  await chooseEditRow('qa-provenance-lending');
+  const lendingWritesBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const lendingAttemptsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)}");
+  await chooseProvenanceDate('2026-08-27');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('μετά την ήδη καταγεγραμμένη αναμενόμενη επιστροφή')}",'due-date inconsistent lending edit visibly denied');
+  assert(await c.call("function(attempts,writes){const alert=document.querySelector('.generic-quick-modal #quick-add-error');return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts&&Number(document.documentElement.dataset.qaFinanceWrites||0)===writes&&document.activeElement===alert&&Boolean(document.querySelector('.generic-quick-modal'))}",[lendingAttemptsBefore,lendingWritesBefore]),
+    'rejected lending date must not even attempt a finance write; editor/accessible focus remain');
+  assert(await c.call("function(){const original=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending');return original?.date==='2026-08-16'&&original.expectedReturnDate==='2026-08-25'&&original.source==='migration'}"),
+    'the already persisted lending event is unchanged after rejected edit');
+  await screenshot('quick-entry-lending-return-conflict-desktop');
+  await viewport(820,900);await sleep(130);await noOverflow('lending edit conflict tablet');
+  await screenshot('quick-entry-lending-return-conflict-tablet');
+  await viewport(375,812);await sleep(130);await noOverflow('lending edit conflict mobile');
+  await screenshot('quick-entry-lending-return-conflict-mobile');
+  await viewport(1440,1000);await sleep(130);
+  await chooseProvenanceDate('2026-08-16');
+  const correctedLendingNote='QA lending note corrected with original return intact';
+  await setProvenanceNote(correctedLendingNote);
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'confirmed lending note edit closes the actual editor');
+  await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending');return event?.note==='QA lending note corrected with original return intact'&&event.source==='migration'&&event.expectedReturnDate==='2026-08-25'&&event.date==='2026-08-16'&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'confirmed same-ID lending edit preserves return date and original source',[lendingWritesBefore+1]);
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===expected}",[lendingAttemptsBefore+1]),
+    'one corrected real lending edit receives exactly one synthetic durable save');
+  await screenshot('quick-entry-lending-provenance-corrected-desktop');
+  await chooseEditRow('qa-provenance-saving');
+  const savingWritesBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const savingNote='QA saving note corrected without source rewrite';
+  await setProvenanceNote(savingNote);
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'confirmed savings note edit closes real editor');
+  await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-saving');return event?.note==='QA saving note corrected without source rewrite'&&event.source==='review'&&event.savingSource==='pay_and_save'&&event.kind==='saving_cash_offset'&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'confirmed saving edit preserves owner-confirmed saving origin and original audit source',[savingWritesBefore+1]);
+  await screenshot('quick-entry-saving-provenance-corrected-desktop');
+
+  console.log('Action Center QA: real Credit purchase same-statement and moved-cycle edit provenance');
+  await navigate('credit','entry-edit-provenance');
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-purchases] button[aria-label=\"Επεξεργασία QA credit provenance purchase\"]'))}",'owner credit purchase edit action visible');
+  const cardBefore=await c.call("function(){return globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card')}");
+  assert(cardBefore?.cardId==='qa-card'&&cardBefore.statementId==='qa-card:2026-08-12'&&cardBefore.source==='migration',
+    'the existing credit purchase links the exact owner card and first billing cycle');
+  const cardEditsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  await clickText('[data-credit-purchases] button[aria-label="Επεξεργασία QA credit provenance purchase"]','');
+  await waitFor("function(){return (document.querySelector('.generic-quick-modal h2')?.textContent||'').includes('Επεξεργασία κίνησης')}",'credit purchase edits through actual generic Quick Entry');
+  const creditNote='QA credit same-statement correction';
+  await setProvenanceNote(creditNote);
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'same-statement card edit confirms and closes');
+  await waitFor("function(expected,note){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card');return event?.note===note&&event.cardId==='qa-card'&&event.statementId==='qa-card:2026-08-12'&&event.source==='migration'&&event.creditDelta===-23.45&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'same-date credit edit preserves card, statement, origin and purchase debit',[cardEditsBefore+1,creditNote]);
+  await screenshot('quick-entry-credit-same-statement-corrected-desktop');
+  await waitFor("function(){return Boolean(document.querySelector('[data-credit-purchases] button[aria-label=\"Επεξεργασία QA credit same-statement correction\"]'))}",'updated credit purchase remains editable');
+  await clickText('[data-credit-purchases] button[aria-label="Επεξεργασία QA credit same-statement correction"]','');
+  await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal .owned-date-shell input'))}",'credit purchase date editor ready');
+  await chooseProvenanceDate('2026-08-14');
+  await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'changed-cycle card edit confirms and closes');
+  await waitFor("function(expected){const event=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-card');return event?.date==='2026-08-14'&&event.cardId==='qa-card'&&event.statementId==='qa-card:2026-09-12'&&event.source==='migration'&&event.creditDelta===-23.45&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",'date-moved credit purchase recalculates next billing cycle without erasing card identity or creating a second expense',[cardEditsBefore+2]);
+  await screenshot('quick-entry-credit-new-statement-corrected-desktop');
 
   console.log('Action Center QA: snooze, undo, empty state and responsive accessibility');
   await navigate('attention');

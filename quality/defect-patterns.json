@@ -454,6 +454,148 @@
       "guards": [
         "tests/account-metadata.test.ts"
       ]
+    },
+    {
+      "id": "FP-024",
+      "title": "Unsaved form and receipt review edits must not disappear on modal close or draft switch",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Contextual Quick Entry and the local OCR review had direct close, backdrop and draft-switch routes that discarded edited fields without the explicit confirmation already present in generic QuickAdd.",
+      "prevention": "Route all close/cancel/Escape/backdrop and receipt-selection/manual handoff paths through shared destructive-discard confirmation; keep focus with the active dialog, preserve local unsaved fields when cancelled and do not restart finance writes or overwrite a dirty receipt with capture.",
+      "paths": [
+        "src/components/ContextualQuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "scripts/action-center-context-qa.mjs",
+        "scripts/receipt-local-ocr-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-unsaved-entry-guard.test.ts"
+      ]
+    },
+    {
+      "id": "FP-025",
+      "title": "Clipboard fallback must confirm success and erase temporary copy fields",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Sensitive-card copy treated the legacy execCommand false return as success and did not guarantee cleanup of a transient clipboard textarea on exceptions. Related IBAN copy had the same exception cleanup risk.",
+      "prevention": "Use one explicitly user-triggered clipboard helper, check native or legacy copy acknowledgement, clear/remove temporary fields in finally, never claim success for rejected writes, and announce failure through accessible error semantics without exposing copied contents.",
+      "paths": [
+        "src/lib/copyTextWithFallback.ts",
+        "src/components/CanonicalCreditCardStack.tsx",
+        "src/components/InteractivePaymentCard.tsx",
+        "src/components/AccountIban.tsx",
+        "scripts/account-metadata-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-clipboard-copy.test.ts"
+      ]
+    },
+    {
+      "id": "FP-026",
+      "title": "Direct recurring Storage registration must bind immutable key and MIME in PostgreSQL",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The invoker registration RPC checked public Storage path format and object existence without proving the path belonged to the supplied asset key and MIME; direct owner+AAL2 SQL writes could bypass API validation and misregister another logo.",
+      "prevention": "Use a row-level CHECK binding services/<asset-key>.<MIME-extension> across direct RPC and metadata writes, retain owner+AAL2 RLS, and prove direct PostgREST AAL1/nonowner denials and AAL2 key/MIME mutation rejection in isolated local Supabase.",
+      "paths": [
+        "supabase/migrations/20261120000500_guard_recurring_service_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/recurring-service-assets.test.ts",
+        "tests/production-migration-ledger-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-027",
+      "title": "Direct provider Storage registration must bind owner directory, generated key and MIME",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The authenticated invoker RPC checked only whether a Storage object existed; direct callers could register another provider image under a new key or mismatched MIME, while API readback enforced stricter provenance.",
+      "prevention": "Validate canonical server-issued keys and exact provider/key/MIME Storage paths in the existing SECURITY INVOKER RPC and a forward-only CHECK for generated rows, keep curated legacy assets untouched, and prove direct owner/nonowner/AAL1 negatives on the isolated local stack.",
+      "paths": [
+        "supabase/migrations/20261120001000_guard_provider_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-storage-path-provenance.test.ts",
+        "tests/production-migration-ledger-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-028",
+      "title": "Do not purge recurring logo Storage after an unverified finance commit",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "A finance write may commit before its transport/history receipt disappears. The recurring editor deleted a freshly uploaded logo whenever a finance Promise rejected, even if the committed finance reference used it.",
+      "prevention": "Purge only after explicit precommit REVISION_CONFLICT, preserve uncertain Storage references, block repeat upload until finance reload, and preflight pending/conflicted finance state before any Storage write.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/App.tsx",
+        "src/lib/recurringFinanceAssetOutcome.ts",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-finance-asset-partial-commit.test.ts",
+        "tests/recurring-service-assets.test.ts"
+      ]
+    },
+    {
+      "id": "FP-029",
+      "title": "Block repeat Quick Entry submissions after uncertain finance acknowledgment",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Generic and contextual Quick Entry disabled duplicate submissions only while the first promise was pending. A lost finance response after commit left the button enabled to submit a new event ID.",
+      "prevention": "Classify only explicit precommit REVISION_CONFLICT as proven rejection. After an ambiguous post-dispatch response, retain the editor warning and disable Save until the owner closes and reviews persisted state; preserve retries after local validation errors.",
+      "paths": [
+        "src/lib/financeWriteOutcome.ts",
+        "src/components/QuickAdd.tsx",
+        "src/components/ContextualQuickAdd.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-finance-write-receipt-no-replay.test.ts"
+      ]
+    },
+    {
+      "id": "FP-030",
+      "title": "Reject false-positive vault write receipts and protect uncertain encrypted updates",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The card vault accepted any 2xx body as durable save/deletion evidence and told the owner that transport loss could not have changed encrypted card data. The editor allowed a second write after an unknown outcome.",
+      "prevention": "Require an exact saved/deleted response with expected last-four provenance, classify lost 0/408/429/5xx and malformed success receipts as unverified, lock repeated card-secret updates until secure reload and never claim rollback on a lost reply.",
+      "paths": [
+        "src/lib/cardVaultClient.ts",
+        "src/components/CardDetailsDialog.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-card-vault-uncertain-write-receipt.test.ts",
+        "tests/card-vault-client.test.ts",
+        "tests/client-network-boundary.test.ts"
+      ]
     }
   ]
 }

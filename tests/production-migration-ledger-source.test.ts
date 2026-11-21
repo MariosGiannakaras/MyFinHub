@@ -63,12 +63,41 @@ const releasePending=[
   "20261022213500_expand_budget_scope_to_subcategories.sql",
   "20261024150000_add_device_details_and_nicknames.sql",
   "20261024160000_shared_owner_app_lock.sql",
+  "20261105204000_guard_stale_import_revision.sql",
+  "20261112220000_guard_mutable_receivable_chronology.sql",
+  "20261119081500_guard_changed_event_cent_precision.sql",
+  "20261120000500_guard_recurring_service_asset_path_provenance.sql",
+  "20261120001000_guard_provider_asset_path_provenance.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
   it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
+  });
+
+  it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{
+    const sql=readFileSync('supabase/migrations/20261119081500_guard_changed_event_cent_precision.sql','utf8');
+    expect(sql).toContain('security invoker');
+    // Every helper delimiter must remain a PostgreSQL paired dollar quote.
+    expect(sql.split('\n').filter(line=>/ as [$]$/i.test(line))).toEqual([]);
+    expect(sql.split('\n').filter(line=>line.trim()==='$;')).toEqual([]);
+    const isolatedSql=readFileSync('scripts/recovery-fixtures/finance-event-cents-local.sql','utf8');
+    expect(isolatedSql.split('\n').filter(line=>/ as [$]$/i.test(line))).toEqual([]);
+    expect(isolatedSql).not.toContain('DO $ BEGIN');
+    expect(isolatedSql).not.toContain('END $;');
+    expect((isolatedSql.match(/[$][$]/g)??[]).length%2).toBe(0);
+    expect((sql.match(/[$][$]/g)??[]).length%2).toBe(0);
+    expect(sql).not.toContain('security definer');
+    expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
+    expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_event_cents(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_draft_cents(');
+    expect(sql).toContain("v_current.data->'seed',v_current_full_state,p_state");
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_draft_cents(jsonb,jsonb,jsonb) from public,anon;');
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_draft_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_event_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;');
   });
 
   it('tracks the relational cutover and provider management as production-applied history',()=>{
@@ -83,6 +112,12 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261022213500_expand_budget_scope_to_subcategories.sql');
     expect(releasePending).toContain('20261024150000_add_device_details_and_nicknames.sql');
     expect(releasePending).toContain('20261024160000_shared_owner_app_lock.sql');
+    expect(releasePending).toContain('20261105204000_guard_stale_import_revision.sql');
+    expect(releasePending).toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(releasePending).toContain('20261119081500_guard_changed_event_cent_precision.sql');
+    expect(productionApplied).not.toContain('20261119081500_guard_changed_event_cent_precision.sql');
+    expect(productionApplied).not.toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(productionApplied).not.toContain('20261105204000_guard_stale_import_revision.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

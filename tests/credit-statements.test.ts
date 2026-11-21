@@ -1,11 +1,57 @@
 import { describe, expect, it } from 'vitest';
 import { cardStatementConfiguration, creditStatementView, groupCardPurchasesByStatement, prepareCreditStatementEvent, recommendedPayableStatement, statementCloseDateForPurchase, statementDueDateForClose, statementOpenDateForClose } from '../src/lib/creditStatements.js';
 import { qaFinanceData } from '../src/qaFixture.js';
+import { createEvent } from '../src/lib/domain.js';
+import { preserveCreditEventEditLink } from '../src/lib/creditEventEdit.js';
 import type { FinanceEvent } from '../src/types.js';
 
 const purchase=(id:string,date:string,amount:number):FinanceEvent=>({id,date,kind:'card_purchase',amount,note:id,cardId:'card-1',legs:[{accountId:'credit-card',amount:-amount}],createdAt:`${date}T12:00:00.000Z`,updatedAt:`${date}T12:00:00.000Z`});
 
 describe('credit-card statement cycles',()=>{
+  it('preserves the exact credit-card purchase association for a same-date edit',()=>{
+    const data=qaFinanceData();
+    const previous={...purchase('edit-credit','2026-08-10',40),cardId:'qa-card',statementId:'qa-card:2026-08-12'};
+    const edited=createEvent({kind:'card_purchase',date:'2026-08-10',amount:30,note:'Price correction'});
+    const next=preserveCreditEventEditLink(edited,previous);
+    const prepared=prepareCreditStatementEvent(data,next);
+    expect(prepared.event).toMatchObject({kind:'card_purchase',cardId:'qa-card',statementId:'qa-card:2026-08-12',creditDelta:-30});
+    expect(prepared.event.legs).toEqual([{accountId:'credit-card',amount:-30}]);
+    expect(prepared.statements).toHaveLength(data.state.creditStatements?.length??0);
+  });
+
+  it('reassigns a moved credit-card purchase to its new cycle, never its old statement',()=>{
+    const data=qaFinanceData();
+    const previous={...purchase('edit-credit','2026-08-10',40),cardId:'qa-card',statementId:'qa-card:2026-08-12'};
+    const edited=createEvent({kind:'card_purchase',date:'2026-08-18',amount:30,note:'Changed purchase date'});
+    const next=preserveCreditEventEditLink(edited,previous);
+    expect(next.cardId).toBe('qa-card');
+    expect(next.statementId).toBeUndefined();
+    const prepared=prepareCreditStatementEvent(data,next);
+    expect(prepared.event.statementId).toBe('qa-card:2026-09-12');
+    expect(prepared.event.statementId).not.toBe(previous.statementId);
+  });
+
+  it('preserves a card repayment statement when editing its amount or source account',()=>{
+    const data=qaFinanceData();
+    const previous={...createEvent({kind:'card_payment',date:'2026-08-17',amount:30,note:'Previous payment',fromAccountId:'piraeus-payroll'}),cardId:'qa-card',statementId:'qa-card:2026-08-12'};
+    const edited=createEvent({kind:'card_payment',date:'2026-08-18',amount:20,note:'Updated payment',fromAccountId:'piraeus-payroll'});
+    const next=preserveCreditEventEditLink(edited,previous);
+    const prepared=prepareCreditStatementEvent(data,next);
+    expect(prepared.event).toMatchObject({kind:'card_payment',cardId:'qa-card',statementId:'qa-card:2026-08-12',creditDelta:20});
+    expect(prepared.event.legs).toEqual([{accountId:'piraeus-payroll',amount:-20},{accountId:'credit-card',amount:20}]);
+  });
+
+  it('never copies credit metadata into a different kind or invents a card for legacy payments',()=>{
+    const old={...purchase('edit-credit','2026-08-10',40),cardId:'qa-card',statementId:'qa-card:2026-08-12'};
+    const cash=createEvent({kind:'expense',date:'2026-08-10',amount:40,note:'Explicitly reclassified',accountId:'piraeus-payroll'});
+    expect(preserveCreditEventEditLink(cash,old).cardId).toBeUndefined();
+    expect(cash.statementId).toBeUndefined();
+    const legacy=createEvent({kind:'card_payment',date:'2026-08-10',amount:15,note:'Legacy',fromAccountId:'piraeus-payroll'});
+    const newPayment=createEvent({kind:'card_payment',date:'2026-08-10',amount:16,note:'Legacy edit',fromAccountId:'piraeus-payroll'});
+    expect(preserveCreditEventEditLink(newPayment,legacy).cardId).toBeUndefined();
+    expect(newPayment.statementId).toBeUndefined();
+  });
+
   it('clamps closing days safely for short months',()=>{
     expect(statementCloseDateForPurchase('2026-02-20',31,'include-closing-day')).toBe('2026-02-28');
     expect(statementOpenDateForClose('2026-02-28',31)).toBe('2026-02-01');

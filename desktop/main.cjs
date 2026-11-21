@@ -700,8 +700,9 @@ function registerIpcHandlers() {
     return true;
   });
   ipcMain.handle('myfinhub:backup-status', async (event, unlockToken) => {
-    await requireBackupAccess(event, unlockToken);
-    return desktopBackupStore.status();
+    const snapshot = await requireBackupAccess(event, unlockToken);
+    // Derive current revision from owner+AAL2+PIN /api/data, never renderer input.
+    return { ...desktopBackupStore.status(), currentRevision: snapshot.revision };
   });
   ipcMain.handle('myfinhub:backup-save', async (event, unlockToken) => {
     const snapshot = await requireBackupAccess(event, unlockToken);

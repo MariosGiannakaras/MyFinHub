@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances, effectiveLegacyTransactions, monthlyFlow } from '../src/lib/domain.js';
+import { accountBalances, createEvent, effectiveLegacyTransactions, monthlyFlow } from '../src/lib/domain.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
 import { effectiveLegacyTransaction, restoreLegacyOriginal, withLegacyOverride, withLegacyTombstone } from '../src/lib/legacyTransactions.js';
 import type { FinanceData, LegacyTransaction } from '../src/types.js';
 
@@ -49,6 +50,24 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(effectiveLegacyTransactions(next)).toHaveLength(1);
     expect(monthlyFlow(next, '2026-08').expense).toBe(65);
     expect(accountBalances(next, '2026-08-31')['bank-a']).toBe(975);
+  });
+
+  it('keeps same-merchant charges on distinct ledger identities and linked accounts (#649 I07.04)', () => {
+    const data=fixture();
+    const original=structuredClone(data.seed.transactions[0]);
+    data.state.customTransactions=[{...original,id:'legacy-2',accountId:'bank-b',cell:'B13'}];
+    const extra=createEvent({kind:'expense',date:'2026-08-10',amount:40,note:original.note,category:'Τρόφιμα',accountId:'bank-a'});
+    data.state.events=[extra];
+    expect(effectiveLegacyTransactions(data).map(row=>[row.id,row.accountId,row.note])).toEqual([
+      ['legacy-1','bank-a',original.note],['legacy-2','bank-b',original.note],
+    ]);
+    expect(new Set([...effectiveLegacyTransactions(data).map(row=>row.id),extra.id]).size).toBe(3);
+    expect(monthlyFlow(data,'2026-08').expense).toBe(120);
+    // The seed import's original charge is already incorporated into the bank-a
+    // snapshot; only the two post-snapshot overlay charges move live cash.
+    expect(accountBalances(fixture(),'2026-08-31')).toMatchObject({'bank-a':1000,'bank-b':200});
+    expect(accountBalances(data,'2026-08-31')).toMatchObject({'bank-a':960,'bank-b':160});
+    expect(data.seed.transactions[0]).toEqual(original);
   });
 
   it('makes a later manual edit authoritative by clearing the prior confirmed review decision only for that row', () => {
@@ -131,6 +150,36 @@ describe('legacy transaction overrides and tombstones', () => {
     const adjustment = withLegacyOverride(data, { ...data.seed.transactions[0], type: 'adjustment', accountId: 'bank-a', amount: -25 });
     expect(adjustment.state.overrides['legacy-1'].amount).toBe(-25);
     expect(accountBalances(adjustment, '2026-08-31')['bank-a']).toBe(1015);
+  });
+
+  it('keeps the compact legacy edit date check equivalent to the canonical calendar validator', () => {
+    const data = fixture();
+    const original = data.seed.transactions[0];
+    for (const year of [1900, 2000, 2026, 2028]) {
+      for (const month of [0, 1, 2, 4, 6, 12, 13]) {
+        for (const day of [0, 1, 28, 29, 30, 31, 32]) {
+          const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const attempt = () => withLegacyOverride(data, { ...original, date });
+          if (isValidDateOnly(date)) expect(attempt().state.overrides['legacy-1']?.date).toBe(date);
+          else expect(attempt).toThrow('Διάλεξε έγκυρη ημερομηνία.');
+        }
+      }
+    }
+  });
+
+  it('rejects impossible calendar dates in owner edits without changing the imported seed', () => {
+    const data = fixture();
+    const original = structuredClone(data.seed.transactions[0]);
+    for (const date of ['2026-02-29', '2026-02-30', '2026-04-31', '2026-13-01', '2026-00-01', '0000-01-01']) {
+      expect(() => withLegacyOverride(data, { ...original, date })).toThrow('Διάλεξε έγκυρη ημερομηνία.');
+    }
+    for (const date of ['2026-02-28', '2028-02-29']) {
+      const edited = withLegacyOverride(data, { ...original, date });
+      expect(edited.state.overrides['legacy-1']?.date).toBe(date);
+      expect(edited.seed.transactions[0]).toEqual(original);
+    }
+    expect(data.seed.transactions[0]).toEqual(original);
+    expect(data.state.overrides).toEqual({});
   });
 
   it('fails closed for unknown seed ids, invalid routes and non-positive normal amounts', () => {

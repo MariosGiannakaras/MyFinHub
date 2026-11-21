@@ -30,6 +30,47 @@ describe('finance input semantics', () => {
     expect(entryDraftError('split', { amount: '', person: '', actualBalance: '', parts: [part, secondPart] })).toBeNull();
   });
 
+  it('refuses exponent, hex and overprecision input before generic or reconciliation finance posting',()=>{
+    const draft={amount:'1e3',person:'Someone',actualBalance:'12.00',parts:[part,secondPart]};
+    for(const kind of ['expense','income','transfer','refund','lending','repayment','saving_cash_offset'] as const){
+      expect(entryDraftError(kind,draft)).toMatch(/ποσό/i);
+    }
+    expect(entryDraftError('expense',{...draft,amount:'0x10'})).toMatch(/ποσό/i);
+    expect(entryDraftError('expense',{...draft,amount:'1.234'})).toMatch(/ποσό/i);
+    expect(entryDraftError('expense',{...draft,amount:'0,01'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,amount:'',actualBalance:'-12,34'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,actualBalance:'-1e3'})).toMatch(/υπόλοιπο/i);
+    expect(entryDraftError('reconciliation',{...draft,actualBalance:'0xFF'})).toMatch(/υπόλοιπο/i);
+  });
+
+  it('rejects a malformed optional reconciliation statement movement without changing valid signed cents',()=>{
+    const draft={amount:'',person:'',actualBalance:'12,34',statementMovement:'1e3',parts:[part,secondPart]};
+    expect(entryDraftError('reconciliation',draft)).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'0x10'})).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'-0,001'})).toMatch(/κίνηση λογαριασμού/i);
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:'-10,05'})).toBeNull();
+    expect(entryDraftError('reconciliation',{...draft,statementMovement:''})).toBeNull();
+  });
+
+  it('rejects unbookable fractional cents in split parts, loan totals, installments and recurring drafts',()=>{
+    const entry={amount:'',person:'',actualBalance:'',parts:[part,secondPart]};
+    for(const amount of [0.0001,0.001,0.005,1.005,2.999]){
+      expect(entryDraftError('split',{...entry,parts:[{...part,amount},secondPart]})).toMatch(/επιμέρους/);
+    }
+    expect(entryDraftError('split',{...entry,parts:[{...part,amount:0.01},{...secondPart,amount:0.2}]})).toBeNull();
+    const loan:Loan={id:'loan',name:'Loan',total:100,installment:25,installments:4,paidCount:1};
+    for(const amount of [0.0001,0.001,1.005,2.999]){
+      expect(loanDraftError({...loan,total:amount})).toMatch(/συνολικό ποσό/);
+      expect(loanDraftError({...loan,installment:amount})).toMatch(/δόση/);
+    }
+    expect(loanDraftError({...loan,total:0.01,installment:0.01})).toBeNull();
+    const recurring:RecurringItem={id:'rec',name:'Rent',amount:500,day:1,accountId:'expense-account',category:'Έξοδα',active:true};
+    for(const amount of [0.0001,0.001,1.005,2.999]){
+      expect(recurringDraftError({...recurring,amount})).toMatch(/ποσό/);
+    }
+    expect(recurringDraftError({...recurring,amount:0.01})).toBeNull();
+  });
+
   it('rejects invalid loan installment counts and paid baselines', () => {
     const valid: Loan = { id: 'loan', name: 'Loan', total: 100, installment: 25, installments: 4, paidCount: 1 };
     expect(loanDraftError(valid)).toBeNull();

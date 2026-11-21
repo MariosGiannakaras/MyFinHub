@@ -36,7 +36,7 @@ export function DialogShell({
   const systemReduced=useReducedMotion();
   // App-level motion preferences are legacy compatibility only; OS reduced-motion is authoritative.
   const reduce=Boolean(systemReduced);
-  const modalRef=useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose);
+  const modalRef=useModalFocus<HTMLElement>(open,preferredFocus,onRequestClose,focusActive);
   const modalClassName=['quick-modal',className,'surface-raised'].filter(Boolean).join(' ');
 
   if(motionMode==='none')return open?<div className="modal-backdrop" onMouseDown={onRequestClose}>

@@ -139,6 +139,15 @@ describe('Savings page action hierarchy',()=>{
     expect(remediationQa).not.toContain('const restored=await state();');
   });
 
+  it('keeps every personal goal tied to one shared, unreserved savings balance (#649 I06.03)',()=>{
+    expect(source).toContain('const savingsBalance=savingsGoalBalance(data,periodEndDate)');
+    expect(source).toContain('const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}))');
+    expect(source).toContain('const combinedGoalTargets=goals.reduce((sum,goal)=>sum+goal.targetAmount,0)');
+    expect(source).toContain('const combinedGoalGap=Math.max(0,combinedGoalTargets-savingsBalance)');
+    expect(source).toContain('Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.');
+    expect(source).toContain('data-shared-goal-gap');
+  });
+
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
     expect(source).toContain('className="empty-state savings-goals-empty"');
     expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');

@@ -45,7 +45,14 @@ try{
   c.on('Network.responseReceived',params=>{const response=params.response;if(response?.status>=400)findings.push(`HTTP ${response.status}: ${response.url}`)});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const urlFor=params=>{const url=new URL(baseUrl);for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));return url.href};
-  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
+  // Read-only DOM probes can cross a Page.reload navigation while Chromium
+  // retires its previous execution context. Count that as one failed poll,
+  // never retry mutating CDP calls or ignore an unrelated browser exception.
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){
+    try{if(await c.call(fn,args))return}
+    catch(error){if(!/Cannot find context with specified id|Execution context was destroyed/.test(String(error)))throw error}
+    await sleep(100)
+  }throw new Error(`Timed out waiting for ${label}`)}
   const clean=async label=>{await sleep(260);assert(findings.length===0,`${label}: ${findings.join(' | ')}`);if(recoverableAssets.length){const fallback=await c.call("function(){return document.querySelectorAll('.bank-logo-fallback').length}");assert(fallback>0,`${label}: external bank-logo request failed without rendering a local fallback: ${recoverableAssets.join(' | ')}`);console.warn(`Runtime QA recovered ${recoverableAssets.length} external bank-logo image failure(s) with local fallback: ${recoverableAssets.join(' | ')}`)}recoverableAssets.length=0;requests.clear()};
   const navigate=async(params,heading)=>{findings.length=0;recoverableAssets.length=0;requests.clear();await c.send('Page.navigate',{url:urlFor(params)});if(heading)await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`heading ${heading}`,[heading]);else await waitFor("function(){return document.readyState==='complete'&&Boolean(document.body?.innerText.trim())}",'document ready');await clean(JSON.stringify(params))};
 
@@ -55,6 +62,35 @@ try{
   await viewport(375,812);for(const [page,heading] of Object.entries(PAGE_HEADINGS))await navigate({page},heading);
   console.log('Runtime QA: auth, loading, conflict and error-state surfaces');
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
+
+  // The real MFA input must accept six digits pasted with a grouping space,
+  // without the browser truncating the raw seven-character clipboard value.
+  console.log('Runtime QA: MFA pasted code, error semantics and 200% zoom');
+  await navigate({screen:'mfa-error'},null);
+  await waitFor("function(){return Boolean(document.querySelector('#mfa-code'))}",'MFA input');
+  const paste=await c.call("function(){const input=document.querySelector('#mfa-code');if(!input)return null;const clipboard=new DataTransfer();clipboard.setData('text','123 456');input.focus();const canceled=!input.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));return {canceled,describedBy:input.getAttribute('aria-describedby'),label:document.querySelector('label[for=mfa-code]')?.textContent,alert:document.querySelector('#mfa-error[role=alert]')?.textContent||''}}");
+  assert(paste?.canceled&&paste.describedBy==='mfa-error'&&paste.label?.includes('6ψήφιος')&&paste.alert.includes('Ο κωδικός επαλήθευσης'),'MFA grouped paste is normalized before maxlength and errors remain announced');
+  await waitFor("function(){return document.documentElement.dataset.qaMfaVerifyCount==='1'}",'exactly one MFA verification after grouped paste');
+  await waitFor("function(){return document.querySelector('#mfa-code')?.value===''}",'MFA rejected code clears for retry');
+  await sleep(160);
+  assert(await c.call("function(){return document.documentElement.dataset.qaMfaVerifyCount==='1'&&document.activeElement?.id==='mfa-code'}"),'MFA paste verified once and refocused its input');
+
+  const authZoom=async (screen,label)=>{
+    await viewport(640,900);
+    await navigate({screen},null);
+    const proof=await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('dark');document.documentElement.style.zoom='200%';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const card=document.querySelector('.login-card');const input=document.querySelector('#mfa-code')||document.querySelector('#login-password');const alert=document.querySelector('.login-error[role=alert]');const box=card?.getBoundingClientRect();const field=input?.getBoundingClientRect();const parts=[...document.querySelectorAll('.login-card,.login-brand,.login-shield,.login-shield span,.login-form,.login-field,.login-input,.login-input .app-control,.login-submit,.login-error')].map(el=>{const rect=el.getBoundingClientRect();return {selector:el.className||el.tagName,left:rect.left,right:rect.right}});const clipped=parts.filter(part=>part.left<-.5||part.right>innerWidth+.5||(box&&(part.left<box.left-.5||part.right>box.right+.5)));return {theme:document.documentElement.dataset.theme,zoom:document.documentElement.style.zoom,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,cardRight:box?.right,inputRight:field?.right,cardOverflow:card?card.scrollWidth-card.clientWidth:0,clipped,alert:alert?.textContent||'',described:input?.getAttribute('aria-describedby'),inputId:input?.id}}");
+    // Capture even on failure so a real clipping defect is visible in the
+    // immutable CI artifact, not only reported as a bounding-box number.
+    const image=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
+    const png=Buffer.from(image.data,'base64');
+    writeFileSync(`${evidenceDir}/runtime-${label}-dark-200pct-zoom.png`,png);
+    const imageWidth=png.readUInt32BE(16);
+    assert(proof.theme==='dark'&&proof.zoom==='200%'&&proof.overflow<=1&&proof.cardOverflow<=1&&proof.clipped.length===0&&imageWidth<=641&&proof.cardRight<=640.5&&proof.inputRight<=640.5,screen+': dark 200% zoom must contain card, shield, fields, controls, alerts and actual screenshot '+JSON.stringify({imageWidth,...proof}));
+    assert(Boolean(proof.alert)&&Boolean(proof.described),screen+': live alert and corresponding accessible input description required');
+  };
+  await authZoom('mfa-error','mfa');
+  await authZoom('login-error','login');
+  await viewport(375,812);
 
   console.log('Runtime QA: auth expiry and MFA downgrade recovery');
   await navigate({screen:'session-signal'},null);
@@ -67,6 +103,30 @@ try{
   await c.call("function(){window.dispatchEvent(new Event('rheomiq:auth-expired'));return true}");
   await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))&&(document.body.textContent||'').includes('Σύνδεση')}",'expired session recovery');
   const authExpiredShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-auth-expired.png`,Buffer.from(authExpiredShot.data,'base64'));
+
+  // I03.03: older authenticated responses must never reopen finance after
+  // expiry or override the newer MFA-required state.
+  console.log('Runtime QA: held AAL2 responses after expiry and MFA downgrade');
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe=authenticated]')!==null}",'race fixture initial authenticated');
+  await c.call("function(){globalThis.__myfinhubQaHoldNextSession?.();window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return globalThis.__myfinhubQaHeldSessionCount?.()===1}",'held stale authenticated read');
+  assert(await c.call("function(){window.dispatchEvent(new Event('rheomiq:auth-expired'));return globalThis.__myfinhubQaReleaseSession?.()===true}"),'stale request released after expiry');
+  await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'expiry login');
+  await sleep(350);
+  assert(await c.call("function(){return Boolean(document.querySelector('#login-title'))&&!document.querySelector('[data-session-probe=authenticated]')}"),'stale AAL2 response reopened expired workspace');
+  const expiredRaceShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-expired-inflight-session-375.png`,Buffer.from(expiredRaceShot.data,'base64'));
+
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe=authenticated]')!==null}",'race fixture reset authenticated');
+  await c.call("function(){globalThis.__myfinhubQaHoldNextSession?.();window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return globalThis.__myfinhubQaHeldSessionCount?.()===1}",'held previous AAL2 read');
+  await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return Boolean(document.querySelector('#mfa-title')&&document.querySelector('#mfa-code'))}",'new MFA result');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseSession?.()===true}"),'older AAL2 result released');
+  await sleep(350);
+  assert(await c.call("function(){return Boolean(document.querySelector('#mfa-title')&&document.querySelector('#mfa-code'))&&!document.querySelector('[data-session-probe=authenticated]')}"),'stale AAL2 response overrode MFA downgrade');
+  const mfaRaceShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-mfa-overlapping-session-375.png`,Buffer.from(mfaRaceShot.data,'base64'));
 
   await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);

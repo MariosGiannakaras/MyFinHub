@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { transactionPaintState, settleTransactionCapture, releaseTransactionCapture } from './transaction-paint-probe.mjs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-transactions-scanability-qa';
@@ -34,13 +35,28 @@ try{
   const chooseOwned=async(label,option)=>{assert(await c.call("function(label){const input=[...document.querySelectorAll(`input[role=\"combobox\"][aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);if(!input)return false;input.click();return true}",[label]),`could not open ${label}`);await waitFor("function(label){return Boolean([...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0))}",`${label} options`,[label]);assert(await c.call("function(label,option){const dialog=[...document.querySelectorAll(`.owned-select-popover[aria-label=\"${label}\"]`)].find(item=>item.getClientRects().length>0);const button=[...(dialog?.querySelectorAll('[role=option]')||[])].find(item=>(item.textContent||'').trim().includes(option));if(!button)return false;button.click();return true}",[label,option]),`could not choose ${option}`);await sleep(120)};
   const scrollTo=async selector=>{assert(await c.call("function(selector){const node=document.querySelector(selector);if(!node)return false;node.scrollIntoView({block:'center',inline:'nearest'});return true}",[selector]),`could not scroll to ${selector}`);await sleep(160)};
   const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
+  const shotFullPage=async name=>{
+    const before=await c.call(transactionPaintState.toString());
+    assert(before.ready,'Transactions screenshot requires all claimed rows painted');
+    await c.call(settleTransactionCapture.toString());
+    try{
+      const after=await c.call(transactionPaintState.toString());
+      assert(after.ready&&after.expected===before.expected&&after.total===before.total,
+        'settled screenshot motion override preserves exact ledger count and layout');
+      const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
+      const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:Math.ceil(size.width),height:Math.min(16000,Math.ceil(size.height)),scale:1}});
+      writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'));
+    }finally{
+      await c.call(releaseTransactionCapture.toString());
+    }
+  };
   const shotElement=async(name,selector)=>{await scrollTo(selector);const rect=await c.call("function(selector){const node=document.querySelector(selector);if(!node)return null;const r=node.getBoundingClientRect();return {x:Math.max(0,r.left+scrollX-12),y:Math.max(0,r.top+scrollY-12),width:Math.min(document.documentElement.scrollWidth,Math.max(1,r.width+24)),height:Math.max(1,r.height+24)}}",[selector]);assert(rect,`missing screenshot target ${selector}`);const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{...rect,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
 
   console.log('Transactions QA: desktop baseline hierarchy');
   await navigate(`${baseUrl}?page=transactions`,1280,900);
   const baseline=await c.call("function(){const workspace=document.querySelector('.transactions-workspace');const rows=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const headers=[...document.querySelectorAll('.transaction-semantic-table thead th')];const controls=[...document.querySelectorAll('.desktop-finance-table.transaction-filter-controls input[role=combobox]')].filter(item=>item.getClientRects().length>0);const legacy=rows.find(row=>row.getAttribute('data-transaction-source')==='legacy');const event=rows.find(row=>row.getAttribute('data-transaction-source')==='event');return {rows:rows.length,headers:headers.map(node=>(node.textContent||'').trim()),headerComboboxes:document.querySelectorAll('.transaction-semantic-table thead [role=combobox]').length,controls:controls.length,hasInternalProvenance:(workspace?.textContent||'').includes('MyFinHub'),hasInternalKind:(workspace?.textContent||'').includes('saving_cash_offset'),legacyActions:legacy?.querySelectorAll('.row-actions button').length||0,eventActions:event?.querySelectorAll('.row-actions button').length||0,hasDescriptions:rows.every(row=>Boolean(row.querySelector('.transaction-description-cell b'))),hasAmounts:rows.every(row=>Boolean(row.querySelector('td.amount'))),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   assert(baseline.rows>=5,'baseline transaction rows render');assert(baseline.controls===2,'desktop type/account filters share one compact surface');assert(baseline.headerComboboxes===0,'desktop table headers contain no filter widgets');assert(baseline.headers.length===6&&baseline.headers.includes('Περιγραφή')&&baseline.headers.includes('Λογαριασμός')&&baseline.headers.includes('Ποσό'),'desktop semantic headers remain concise');assert(!baseline.hasInternalProvenance&&!baseline.hasInternalKind,'internal provenance and raw event-kind labels are absent');assert(baseline.legacyActions===2&&baseline.eventActions===2,'legacy and new rows expose consistent edit/delete actions');assert(baseline.hasDescriptions&&baseline.hasAmounts,'primary description and amount hierarchy is present');assert(!baseline.overflow,'desktop baseline has no page overflow');
-  const dateControlState=()=>c.call("function(){const range=document.querySelector('.transactions-approved-date');const shells=[...document.querySelectorAll('.transactions-approved-date .owned-date-shell')];const separator=[...document.querySelectorAll('.transactions-approved-date>span')].find(node=>!node.classList.contains('owned-date-shell'));const rect=node=>node?.getBoundingClientRect()||null;const first=rect(shells[0]),second=rect(shells[1]),middle=rect(separator);return {rangeWidth:range?.getBoundingClientRect().width||0,shellWidths:shells.map(node=>node.getBoundingClientRect().width),ordered:Boolean(first&&middle&&second&&first.right<=middle.left+1&&middle.right<=second.left+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  const dateControlState=()=>c.call("function(){const range=document.querySelector('.transactions-approved-filters .transactions-approved-date');const shells=[...document.querySelectorAll('.transactions-approved-filters .transactions-approved-date .owned-date-shell')];const separator=[...document.querySelectorAll('.transactions-approved-filters .transactions-approved-date>span')].find(node=>!node.classList.contains('owned-date-shell'));const rect=node=>node?.getBoundingClientRect()||null;const first=rect(shells[0]),second=rect(shells[1]),middle=rect(separator);return {rangeWidth:range?.getBoundingClientRect().width||0,shellWidths:shells.map(node=>node.getBoundingClientRect().width),ordered:Boolean(first&&middle&&second&&first.right<=middle.left+1&&middle.right<=second.left+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   let dateControls=await dateControlState();assert(dateControls.rangeWidth>=229.5&&dateControls.shellWidths.length===2&&dateControls.shellWidths.every(width=>width>=104)&&dateControls.ordered&&!dateControls.overflow,'desktop date range keeps both full date controls separated and readable');
   await viewport(1112,834);await sleep(180);dateControls=await dateControlState();assert(dateControls.rangeWidth>=229.5&&dateControls.shellWidths.every(width=>width>=104)&&dateControls.ordered&&!dateControls.overflow,'tablet-width desktop filters reflow without crowding the date range');
   await viewport(834,1112);await sleep(180);const tabletTable=await c.call("function(){const ledger=document.querySelector('.transactions-ledger-panel'),detail=document.querySelector('.transactions-detail-panel'),table=document.querySelector('.transactions-approved-table'),wrap=document.querySelector('.transactions-approved-table-wrap');const headers=[...document.querySelectorAll('.transactions-approved-table thead th')].filter(node=>node.getClientRects().length>0);const lr=ledger?.getBoundingClientRect(),dr=detail?.getBoundingClientRect(),tr=table?.getBoundingClientRect(),wr=wrap?.getBoundingClientRect();return {stacked:Boolean(lr&&dr&&dr.top>=lr.bottom-1),tableContained:Boolean(tr&&wr&&tr.left>=wr.left-1&&tr.right<=wr.right+1),headerFits:headers.every(node=>node.scrollWidth<=node.clientWidth+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");assert(tabletTable.stacked&&tabletTable.headerFits&&!tabletTable.overflow,'tablet transaction table stacks details, scrolls inside its own region when needed, and keeps headers readable');await shot('transactions-tablet-desktop');
@@ -71,6 +87,46 @@ try{
   await setInput('.transaction-searchbar input','κανένα-τέτοιο-αποτέλεσμα');await waitFor("function(){return Boolean(document.querySelector('.transaction-empty-state'))}",'zero-result state');
   await setInput('.transaction-searchbar input','');await waitFor("function(){return document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length>0}",'search reset');
 
+
+  console.log('Transactions QA: dated and categorized ledger filters');
+  // The real August fixture has entries on both days; [0-9] survives the CDP string boundary.
+  await clickText('.sort-direction-control button','DESC');
+  await waitFor("function(){const day=document.querySelector('.transactions-approved-table tbody .transaction-row td:nth-child(5)')?.textContent||'';return day.startsWith('26')}",'descending recent-first date order restored');
+  const calendarDayNumbers=await c.call("function(){return [...new Set([...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')].map(row=>Number((row.cells[4]?.textContent||'').match(/[0-9]+/)?.[0]||0)))].filter(day=>day>=1&&day<=31).sort((a,b)=>a-b)}");
+  assert(calendarDayNumbers.includes(24)&&calendarDayNumbers.includes(25),'real fixture exposes different dated transactions for filter proof');
+  const selectDate=async(label,iso)=>{
+    assert(await c.call("function(name){const input=[...document.querySelectorAll('input[aria-label]')].find(node=>node.getClientRects().length>0&&node.getAttribute('aria-label')===name);if(!input||!input.readOnly)return false;input.click();return true}",[label]),label+' owned calendar is reachable');
+    await waitFor("function(name){return Boolean([...document.querySelectorAll('.owned-date-popover')].find(node=>node.getAttribute('aria-label')===name))}",label+' calendar opens',[label]);
+    assert(await c.call("function(name,value){const popup=[...document.querySelectorAll('.owned-date-popover')].find(node=>node.getAttribute('aria-label')===name);const cell=[...(popup?.querySelectorAll('[data-date]')||[])].find(node=>node.getAttribute('data-date')===value);if(!cell||cell.disabled)return false;cell.click();return true}",[label,iso]),label+' permits '+iso);
+  };
+  // August 1 contains many historical fixtures, so an end-date-only filter
+  // would correctly remain capped at 20 visible rows and prove no total change.
+  await selectDate('Από ημερομηνία','2026-08-24');
+  await selectDate('Έως ημερομηνία','2026-08-25');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];return rows.length>0&&rows.every(row=>{const day=Number((row.cells[4]?.textContent||'').match(/[0-9]+/)?.[0]||0);return day>=24&&day<=25})}",'end-date filtered transactions');
+  const dated=await c.call("function(){const count=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;return {count,semantic:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||'',overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(dated.count>0&&dated.count<baselineCount&&dated.semantic===dated.count
+    &&dated.footer.includes('Εμφανίζονται '+dated.count+' από '+dated.count+' συναλλαγές')&&!dated.overflow,
+    'end-date filter preserves exact filtered/semantic rows, truthful count and viewport containment');
+  await shot('transactions-date-range-filter-desktop');
+  await selectDate('Έως ημερομηνία','2026-08-31');
+  await selectDate('Από ημερομηνία','2026-08-01');
+  await waitFor("function(n){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length===n}",'date filter restores all rows',[baselineCount]);
+
+  // This rare but persisted fixture category filters below the 20-row cap.
+  const chosenCategory='Τηλεπικοινωνίες';
+  assert(await c.call("function(){const input=[...document.querySelectorAll('input[role=combobox][aria-label=\"Φίλτρο κατηγορίας\"]')].find(node=>node.getClientRects().length>0);if(!input)return false;input.click();return true}"),'category selector opens');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover[aria-label=\"Φίλτρο κατηγορίας\"]'))}",'category selector options');
+  assert(await c.call("function(value){const list=document.querySelector('.owned-select-popover[aria-label=\"Φίλτρο κατηγορίας\"]');const item=[...(list?.querySelectorAll('[role=option]')||[])].find(node=>(node.textContent||'').trim()===value);if(!item)return false;item.click();return true}",[chosenCategory]),'exact persisted category option selected');
+  await waitFor("function(value){const rows=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];return rows.length>0&&rows.every(row=>(row.querySelector('.transactions-category-cell > span:last-child')?.textContent||'').trim()===value)}",'exact category filtered transactions',[chosenCategory]);
+  const categorized=await c.call("function(){const count=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;return {count,semantic:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||''}}");
+  assert(categorized.count>0&&categorized.count<=baselineCount&&categorized.semantic===categorized.count
+    &&categorized.footer.includes('Εμφανίζονται '+categorized.count+' από '+categorized.count+' συναλλαγές'),
+    'exact category keeps row identity, semantic parity and truthful footer');
+  await shot('transactions-category-filter-desktop');
+  await chooseOwned('Φίλτρο κατηγορίας','Όλες οι κατηγορίες');
+  await waitFor("function(n){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length===n}",'category filter reset',[baselineCount]);
+
   console.log('Transactions QA: large split disclosure');
   await clickAria('Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
   await setAriaInput('Περιγραφή μέρους 1','Τρόφιμα εβδομάδας');await setAriaInput('Ποσό μέρους 1','40');await setAriaInput('Περιγραφή μέρους 2','Είδη σπιτιού');await setAriaInput('Ποσό μέρους 2','25');
@@ -83,9 +139,34 @@ try{
 
   console.log('Transactions QA: mobile hierarchy');
   await viewport(375,812);await sleep(180);
-  const mobile=await c.call("function(){const list=document.querySelector('.mobile-transaction-list');const rows=[...document.querySelectorAll('.mobile-transaction-row')];const splitRow=document.querySelector('[data-mobile-transaction-kind=split]');const toggle=splitRow?.querySelector('.transaction-split-toggle');const actions=[...document.querySelectorAll('.mobile-row-actions button')].filter(item=>item.getClientRects().length>0);const filter=document.querySelector('.mobile-transaction-filters');const labels=[...(filter?.querySelectorAll('.filter-label')||[])];const widths=labels.map(label=>label.getBoundingClientRect().width);const tops=labels.map(label=>label.getBoundingClientRect().top);return {listVisible:list?getComputedStyle(list).display!=='none':false,desktopVisible:[...document.querySelectorAll('.desktop-finance-table:not(.transaction-filter-controls)')].some(item=>item.getClientRects().length>0),rows:rows.length,hasDescriptions:rows.every(row=>Boolean(row.querySelector('.mobile-transaction-identity b'))),hasAmounts:rows.every(row=>Boolean(row.querySelector('.mobile-transaction-main>strong'))),actionHeights:actions.map(button=>button.getBoundingClientRect().height),toggleHeight:toggle?.getBoundingClientRect().height||0,filterLabels:labels.length,filterStacked:tops.length===2&&tops[1]>tops[0]+20,filterWidths:widths,filterHeight:filter?.getBoundingClientRect().height||0,rawKind:(document.querySelector('.transactions-workspace')?.textContent||'').includes('saving_cash_offset'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(mobile.listVisible&&!mobile.desktopVisible&&mobile.rows>0,'mobile uses the dedicated transaction list');assert(mobile.hasDescriptions&&mobile.hasAmounts,'mobile preserves description and amount hierarchy');assert(mobile.actionHeights.length>0&&mobile.actionHeights.every(height=>height>=43.5),'mobile edit/delete controls preserve touch targets');assert(mobile.toggleHeight>=43.5,'mobile split disclosure preserves a touch target');assert(mobile.filterLabels===2&&mobile.filterStacked&&mobile.filterWidths.every(width=>width>260)&&mobile.filterHeight<170,'mobile filters remain compact while giving selected values readable width');assert(!mobile.rawKind,'mobile hides raw internal event-kind labels');assert(!mobile.overflow,'mobile transaction page has no horizontal overflow');
+  const mobile=await c.call("function(){const list=document.querySelector('.mobile-transaction-list');const rows=[...document.querySelectorAll('.mobile-transaction-row')];const splitRow=document.querySelector('[data-mobile-transaction-kind=split]');const toggle=splitRow?.querySelector('.transaction-split-toggle');const actions=[...document.querySelectorAll('.mobile-row-actions button')].filter(item=>item.getClientRects().length>0);const filter=document.querySelector('.mobile-transaction-filters');const labels=[...(filter?.querySelectorAll(':scope > .filter-label')||[])];const widths=labels.map(label=>label.getBoundingClientRect().width);const tops=labels.map(label=>label.getBoundingClientRect().top);return {listVisible:list?getComputedStyle(list).display!=='none':false,desktopVisible:[...document.querySelectorAll('.desktop-finance-table:not(.transaction-filter-controls)')].some(item=>item.getClientRects().length>0),rows:rows.length,hasDescriptions:rows.every(row=>Boolean(row.querySelector('.mobile-transaction-identity b'))),hasAmounts:rows.every(row=>Boolean(row.querySelector('.mobile-transaction-main>strong'))),actionHeights:actions.map(button=>button.getBoundingClientRect().height),toggleHeight:toggle?.getBoundingClientRect().height||0,filterLabels:labels.length,filterStacked:tops.length===3&&tops.every((top,index)=>index===0||top>tops[index-1]+20),dateShells:[...(filter?.querySelectorAll('.mobile-transaction-date .owned-date-shell')||[])].map(node=>node.getBoundingClientRect().width),filterWidths:widths,filterHeight:filter?.getBoundingClientRect().height||0,rawKind:(document.querySelector('.transactions-workspace')?.textContent||'').includes('saving_cash_offset'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  console.log('Transactions QA mobile filter geometry: '+JSON.stringify(mobile));await shot('transactions-mobile-filters-geometry-375');
+  assert(mobile.listVisible&&!mobile.desktopVisible&&mobile.rows>0,'mobile uses the dedicated transaction list');assert(mobile.hasDescriptions&&mobile.hasAmounts,'mobile preserves description and amount hierarchy');assert(mobile.actionHeights.length>0&&mobile.actionHeights.every(height=>height>=43.5),'mobile edit/delete controls preserve touch targets');assert(mobile.toggleHeight>=43.5,'mobile split disclosure preserves a touch target');assert(mobile.filterLabels===3&&mobile.filterStacked&&mobile.filterWidths.every(width=>width>260)&&mobile.dateShells.length===2&&mobile.dateShells.every(width=>width>=110)&&mobile.filterHeight<390,'mobile filters include 3 full-width selects, date range and reset within 390px without overflow: '+JSON.stringify(mobile));assert(!mobile.rawKind,'mobile hides raw internal event-kind labels');assert(!mobile.overflow,'mobile transaction page has no horizontal overflow');
   await scrollTo('[data-mobile-transaction-kind=split]');assert(await c.call("function(){const button=document.querySelector('[data-mobile-transaction-kind=split] .transaction-split-toggle');if(!button)return false;if(button.getAttribute('aria-expanded')!=='true')button.click();return true}"),'mobile split toggle is actionable');await waitFor("function(){return document.querySelectorAll('[data-mobile-transaction-kind=split] .transaction-split-part').length===5}",'mobile five split parts');await shotElement('transactions-large-split-mobile','[data-mobile-transaction-kind=split]');
+
+  console.log('Transactions QA: mobile category/date parity and explicit reset');
+  await navigate(baseUrl+'?page=transactions',375,812);
+  await chooseOwned('Φίλτρο κατηγορίας','Τηλεπικοινωνίες');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.mobile-transaction-row')];return rows.length===1&&rows[0].textContent.includes('Cosmote')}",'mobile category selects actual one-row result');
+  assert(await c.call("function(){const foot=document.querySelector('.mobile-transaction-progress')?.textContent||'';return foot.includes('Εμφανίζονται 1 από 1 συναλλαγές')&&Boolean(document.querySelector('.mobile-transaction-filter-reset button'))}"),'mobile category count and reset are visible');
+  await shot('transactions-mobile-category-filter-375');
+  assert(await c.call("function(){const btn=document.querySelector('.mobile-transaction-filter-reset button');btn?.click();return Boolean(btn)}"),'mobile reset is operable');
+  await waitFor("function(){return document.querySelectorAll('.mobile-transaction-row').length>=10&&document.querySelectorAll('.mobile-transaction-filter-reset button').length===0}",'mobile category reset restores full period');
+  await selectDate('Από ημερομηνία','2026-08-24');
+  await selectDate('Έως ημερομηνία','2026-08-25');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.mobile-transaction-row')];return rows.length===2&&rows.some(node=>node.textContent.includes('Μισθοδοσία Αυγούστου'))&&rows.some(node=>node.textContent.includes('ΔΕΗ'))}",'mobile date range keeps two exact existing records');
+  const mobileDate=await c.call("function(){const dates=[...document.querySelectorAll('.mobile-transaction-date .owned-date-shell')].map(el=>el.getBoundingClientRect().width);const labels=[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>el.value);const foot=document.querySelector('.mobile-transaction-progress')?.textContent||'';return {dates,labels,foot,fonts:[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>parseFloat(getComputedStyle(el).fontSize)),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(mobileDate.dates.length===2&&mobileDate.dates.every(width=>width>=110)&&mobileDate.fonts.length===2&&mobileDate.fonts.every(size=>size>=15.9)&&mobileDate.labels.join('|')==='24/8/2026|25/8/2026'&&mobileDate.foot.includes('Εμφανίζονται 2 από 2 συναλλαγές')&&!mobileDate.overflow,'375px mobile date filter is truthful and contained');
+  await shot('transactions-mobile-date-filter-375');
+  await viewport(320,760);await sleep(180);
+  const narrowMobile=await c.call("function(){const dates=[...document.querySelectorAll('.mobile-transaction-date .owned-date-shell')].map(el=>el.getBoundingClientRect());return {dates:dates.map(rect=>rect.width),controls:[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>{const style=getComputedStyle(el),ctx=document.createElement('canvas').getContext('2d');if(ctx)ctx.font=style.font;return {label:el.value,font:parseFloat(style.fontSize),fits:!!ctx&&ctx.measureText(el.value).width<=el.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)+1}}),fonts:[...document.querySelectorAll('.mobile-transaction-date .owned-input')].map(el=>parseFloat(getComputedStyle(el).fontSize)),within:dates.every(rect=>rect.left>=-1&&rect.right<=innerWidth+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  console.log('Transactions QA 320px date text: '+JSON.stringify(narrowMobile));
+  await scrollTo('.mobile-transaction-date');
+  await shot('transactions-mobile-date-filter-320');
+  assert(narrowMobile.dates.length===2&&narrowMobile.dates.every(width=>width>=100)&&narrowMobile.fonts.length===2&&narrowMobile.fonts.every(size=>size>=15.9)&&narrowMobile.controls.map(item=>item.label).join('|')==='24/8/2026|25/8/2026'&&narrowMobile.controls.every(item=>item.fits)&&narrowMobile.within&&!narrowMobile.overflow,'320px date controls remain readable without horizontal overflow');
+  await viewport(375,812);await sleep(120);
+  assert(await c.call("function(){const btn=document.querySelector('.mobile-transaction-filter-reset button');btn?.click();return Boolean(btn)}"),'mobile date range reset is available');
+  await waitFor("function(){return document.querySelectorAll('.mobile-transaction-row').length>=10}",'mobile date reset restores full month');
 
   console.log('Transactions QA: long-content case');
   await navigate(`${baseUrl}?page=transactions&state=extreme`,375,812);await setInput('.transaction-searchbar input','Πολύ μεγάλη περιγραφή συναλλαγής');await waitFor("function(){return [...document.querySelectorAll('.mobile-transaction-row')].some(item=>(item.textContent||'').includes('Πολύ μεγάλη περιγραφή συναλλαγής'))}",'extreme long transaction search');
@@ -97,6 +178,36 @@ try{
   assert(!unicode.overflow&&!unicode.hasUnexpectedMarkup,'Unicode/unbroken transaction remains contained and text-only');
 
 
+  console.log('Transactions QA: 200% zoom, long Greek notes and keyboard-reachable mobile actions');
+  await navigate(`${baseUrl}?page=transactions&state=extreme`,640,900);
+  assert(await c.call("async function(){document.documentElement.style.zoom='200%';await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);return document.documentElement.style.zoom==='200%'}"),'actual 200% browser zoom applied to Transactions');
+  await setInput('.transaction-searchbar input','Πολύ μεγάλη περιγραφή συναλλαγής');
+  await waitFor("function(){return [...document.querySelectorAll('.mobile-transaction-row')].some(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Πολύ μεγάλη περιγραφή συναλλαγής'))}",'200% zoom long Greek transaction row');
+  const zoom200=await c.call("function(){const row=[...document.querySelectorAll('.mobile-transaction-row')].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Πολύ μεγάλη περιγραφή συναλλαγής'));const first=row?.querySelector('.mobile-transaction-identity b')?.getBoundingClientRect();const money=row?.querySelector('.mobile-transaction-main>strong')?.getBoundingClientRect();const visible=node=>node.getClientRects().length>0&&getComputedStyle(node).visibility!=='hidden';const targets=[...document.querySelectorAll('.mobile-transaction-row,.mobile-transaction-row .mobile-transaction-main,.mobile-transaction-row .mobile-row-actions button,.mobile-transaction-date .owned-date-shell,.transaction-searchbar input')].filter(visible);const clipped=targets.map(node=>({label:node.getAttribute('aria-label')||node.className||node.tagName,left:node.getBoundingClientRect().left,right:node.getBoundingClientRect().right})).filter(item=>item.left<-.5||item.right>innerWidth+.5);const action=row?.querySelector('.mobile-row-actions button');action?.focus({preventScroll:true});return {zoom:document.documentElement.style.zoom,mobile:matchMedia('(max-width:680px)').matches,rowPresent:Boolean(row),clipped,overlap:Boolean(first&&money&&first.right>money.left&&first.bottom>money.top&&money.bottom>first.top),focused:document.activeElement===action,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(zoom200.zoom==='200%'&&zoom200.mobile&&zoom200.rowPresent&&zoom200.focused
+    &&zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1,
+    '200% Transactions zoom keeps long Greek note, dates, action focus and amount inside viewport: '+JSON.stringify(zoom200));
+  // The header is shared across routes. At 200% zoom the media width stays
+  // 640px, but the brand grid track becomes narrower than the brand lockup.
+  const sharedHeader=()=>c.call("function(){const topbar=document.querySelector('.topbar');const brand=document.querySelector('.mobile-brand .brand-home-button');const mark=document.querySelector('.mobile-brand .brand-mark-icon');const copy=document.querySelector('.mobile-brand .brand-mark-copy');const search=document.querySelector('.top-actions .top-action-command');const actions=[...document.querySelectorAll('.top-actions button')].filter(node=>node.getClientRects().length>0);const r=node=>node?.getBoundingClientRect();const bar=r(topbar),b=r(brand),m=r(mark),s=r(search),brandBox=r(document.querySelector('.mobile-brand'));const actionBounds=actions.map(r);return {brandContainer:document.querySelector('.mobile-brand')?{width:brandBox?.width,type:getComputedStyle(document.querySelector('.mobile-brand')).containerType}:null,bar:bar?{left:bar.left,right:bar.right}:null,brand: b?{left:b.left,right:b.right}:null,mark:m?{left:m.left,right:m.right,width:m.width,height:m.height}:null,search:s?{left:s.left,right:s.right}:null,copyVisible:Boolean(copy&&copy.getClientRects().length&&getComputedStyle(copy).display!=='none'),actions:actionBounds.length,actionContained:Boolean(bar&&actionBounds.every(box=>box.left>=bar.left-1&&box.right<=bar.right+1)),buttonOrder:actionBounds.every((box,index)=>index===0||actionBounds[index-1].right<=box.left+1),separate:Boolean(b&&s&&b.right<=s.left-3),label:brand?.getAttribute('aria-label')||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  const zoomHeader=await sharedHeader();
+  assert(zoomHeader.actions>=3&&!zoomHeader.copyVisible&&zoomHeader.actionContained&&zoomHeader.buttonOrder
+    &&zoomHeader.separate&&zoomHeader.mark?.width>=25&&zoomHeader.label.includes('Dashboard')&&zoomHeader.overflow<=1,
+    '200% zoom AppShell brand/search/history controls must remain distinct and actionable: '+JSON.stringify(zoomHeader));
+  await scrollTo('.mobile-transaction-row');
+  await shot('transactions-extreme-200pct-zoom-mobile');
+  // Check the same shared header without zoom, including its existing
+  // 320px icon-only rule. This must not regress normal mobile branding.
+  await c.call("function(){document.documentElement.style.zoom='100%';return true}");
+  for(const width of [390,320]){
+    await viewport(width,844);
+    const header=await sharedHeader();
+    assert(header.actions>=3&&header.actionContained&&header.buttonOrder&&header.separate
+      &&header.mark?.width>=25&&header.overflow<=1,
+      width+'px standard mobile AppShell controls must not overlap: '+JSON.stringify(header));
+    await shot('transactions-shell-header-'+width);
+  }
+
   console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
@@ -105,6 +216,25 @@ try{
   assert(initialLedgerCount&&Number(initialLedgerCount[1])===large.visible&&Number(initialLedgerCount[2])>=1500,
     `large dataset keeps a truthful initial visible/total count (including baseline transactions): ${JSON.stringify(large)}`);
   assert(large.domRows<500&&!large.pager&&!large.overflow,'large continuous list has no pagination and bounded initial DOM');
+  // I05.04: screenshot only a fully painted 20-row ledger, not a misleading
+  // footer count while sibling rows are still transparent.
+  const waitForFirstPaint=async mode=>{
+    let state=null;
+    for(let i=0;i<100;i++){
+      state=await c.call(transactionPaintState.toString());
+      if(state.ready&&state.total>=1500&&state.mode===mode)return state;
+      await sleep(60);
+    }
+    throw new Error('Transactions initial paint differs from footer count: '+JSON.stringify(state));
+  };
+  const firstDesktopPaint=await waitForFirstPaint('desktop');
+  assert(firstDesktopPaint.rendered===large.visible,'all initially claimed desktop ledger rows are painted');
+  await shotFullPage('transactions-first-20-painted-desktop');
+  await viewport(375,812);
+  const firstMobilePaint=await waitForFirstPaint('mobile');
+  assert(firstMobilePaint.rendered===large.visible,'all initially claimed mobile ledger rows are painted');
+  await shotFullPage('transactions-first-20-painted-mobile');
+  await viewport(1280,900);
   await c.call("function(){document.querySelector('.transactions-ledger-footer')?.scrollIntoView({block:'end'});return true}");
   await waitFor("function(previous){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>previous}",'continuous ledger reveals additional rows on scroll',[large.visible]);
   const appended=await c.call("function(){const visual=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;const semantic=document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length;const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visual,semantic,footer,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size'))}}");

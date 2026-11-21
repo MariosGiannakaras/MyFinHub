@@ -16,7 +16,7 @@ import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
-import { lendingHistory, lendingOutstandingFor, lendingRows } from '../lib/lending';
+import { lendingHistory, lendingOutstandingFor, lendingRepaymentLimit, lendingRows } from '../lib/lending';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent } from '../types';
@@ -52,12 +52,25 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   },[commandPerson,commandPersonKey,rows]);
   useEffect(()=>{
     if(!commandPerson||selectedPerson!==commandPerson)return;
+    // Route transitions and closing Command Palette can restore the opener
+    // after the first paint. Focus the exact selected person after route layout
+    // settles, as for Account Management, without changing its finance state.
+    let secondFrame=0;
     const frame=requestAnimationFrame(()=>{
-      const selected=document.querySelector<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]');
-      selected?.scrollIntoView({block:'nearest',behavior:'auto'});
-      selected?.focus({preventScroll:true});
+      secondFrame=requestAnimationFrame(()=>{
+        // Command results target the visible route variant. The desktop
+        // person list is display:none on phones; focus the matching mobile
+        // article instead of a hidden desktop button.
+        const desktop=[...document.querySelectorAll<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]')]
+          .find(row=>row.textContent?.includes(commandPerson)&&row.getClientRects().length>0);
+        const mobile=[...document.querySelectorAll<HTMLElement>('.receivable-person-grid > article[tabindex="-1"]')]
+          .find(row=>row.querySelector('h3')?.textContent?.trim()===commandPerson&&row.getClientRects().length>0);
+        const selected=desktop??mobile;
+        selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+        selected?.focus({preventScroll:true});
+      });
     });
-    return()=>cancelAnimationFrame(frame);
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
   },[commandPerson,commandPersonKey,selectedPerson]);
 
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);
@@ -72,7 +85,7 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
   const start=(next:'lending'|'repayment',presetPerson='')=>{setKind(next);setPerson(presetPerson);setAmount('');setDate(asOf);setExpectedReturnDate('');setAccount(preferredAccount(next));setNote('');setError('');setOpen(true)};
   const startForPerson=(next:'lending'|'repayment',presetPerson:string)=>{if(onQuickAdd){onQuickAdd({mode:'lending',action:next==='lending'?'lend':'repay',person:presetPerson,amount:next==='repayment'?lendingOutstandingFor(data,presetPerson,asOf):undefined,accountId:preferredAccount(next)});return}start(next,presetPerson)};
   const close=()=>{setOpen(false);setError('')};
-  const submit=()=>{const cleanPerson=person.trim();const numeric=Number(amount.replace(',','.'));if(!cleanPerson){setError('Γράψε το όνομα του προσώπου για να ξέρεις σε ποιον αφορά η κίνηση.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!accounts.some(item=>item.id===account)){setError('Επίλεξε διαθέσιμο λογαριασμό για αυτή την κίνηση.');return}if(kind==='lending'&&expectedReturnDate&&expectedReturnDate<date){setError('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');return}if(kind==='repayment'){const outstanding=lendingOutstandingFor(data,cleanPerson,asOf);if(outstanding<=0){setError('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');return}if(numeric>outstanding+.01){setError(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);return}}try{const event=createEvent({kind,date,amount:numeric,note:note.trim()||(kind==='lending'?'Πλήρωσα για άλλον':'Επιστροφή δανεικών'),accountId:account,person:cleanPerson,expectedReturnDate:kind==='lending'?(expectedReturnDate||undefined):undefined});onCreateEvent(event);setSelectedPerson(cleanPerson);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
+  const submit=()=>{const cleanPerson=person.trim();const numeric=Number(amount.replace(',','.'));if(!cleanPerson){setError('Γράψε το όνομα του προσώπου για να ξέρεις σε ποιον αφορά η κίνηση.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!accounts.some(item=>item.id===account)){setError('Επίλεξε διαθέσιμο λογαριασμό για αυτή την κίνηση.');return}if(kind==='lending'&&expectedReturnDate&&expectedReturnDate<date){setError('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');return}if(kind==='repayment'){const outstanding=lendingRepaymentLimit(data,cleanPerson,date);if(outstanding<=0){setError('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');return}if(numeric>outstanding+.005){setError(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);return}}try{const event=createEvent({kind,date,amount:numeric,note:note.trim()||(kind==='lending'?'Πλήρωσα για άλλον':'Επιστροφή δανεικών'),accountId:account,person:cleanPerson,expectedReturnDate:kind==='lending'?(expectedReturnDate||undefined):undefined});onCreateEvent(event);setSelectedPerson(cleanPerson);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
 
   return <div className="page-stack lending-page">
     <div className="lending-approved-desktop">
@@ -124,7 +137,7 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
 
     <PageHeader className="lending-mobile-only" eyebrow="ΔΑΝΕΙΚΑ / ΟΦΕΙΛΕΣ" title="Δανεικά / Οφειλές" description={<p>Πλήρες ιστορικό για όσα πλήρωσες για άλλους και όσα σου επέστρεψαν. Δεν θεωρούνται προσωπικό έξοδο όσο παραμένουν απαίτηση.</p>} actions={<><Button variant="secondary" type="button" className="privacy-toggle" aria-pressed={privacyVisible} onClick={()=>onPrivacyVisibleChange(!privacyVisible)}>{privacyVisible?<EyeOff size={17}/>:<Eye size={17}/>} {privacyVisible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'}</Button><Button variant="primary" type="button" onClick={()=>start('lending')}><HandCoins size={17}/> Νέα κίνηση</Button></>}/>
     <section className="credit-hero receivable-hero surface-raised lending-mobile-only"><div><span>Συνολικά προς είσπραξη</span><b><AnimatedAmount value={total} hidden={!privacyVisible}/></b><small>{rows.length} πρόσωπα με ιστορικό</small></div><HandCoins size={54}/></section>
-    <section className="receivable-person-grid lending-mobile-only" data-content-entrance="grid">{rows.map(row=><article className="panel surface-raised" key={row.person}><div className="loan-title"><span className="account-mark"><UserRound/></span><div><h3 className={!privacyVisible?'private-text':''}>{row.person}</h3><small>{row.events} καταγεγραμμένες κινήσεις</small></div><b className={row.outstanding>0?'positive':''}><AnimatedAmount value={row.outstanding} hidden={!privacyVisible}/></b></div><div className="receivable-person-actions"><span>{row.outstanding>0?'Εκκρεμεί':'Εξοφλημένο'}</span><Button variant="ghost" type="button" onClick={()=>startForPerson('lending',row.person)}><Plus size={14}/> Νέο</Button>{row.outstanding>0?<Button variant="ghost" type="button" onClick={()=>startForPerson('repayment',row.person)}><RotateCcw size={14}/> Επιστροφή</Button>:null}
+    <section className="receivable-person-grid lending-mobile-only" data-content-entrance="grid">{rows.map(row=><article className="panel surface-raised" tabIndex={-1} key={row.person}><div className="loan-title"><span className="account-mark"><UserRound/></span><div><h3 className={!privacyVisible?'private-text':''}>{row.person}</h3><small>{row.events} καταγεγραμμένες κινήσεις</small></div><b className={row.outstanding>0?'positive':''}><AnimatedAmount value={row.outstanding} hidden={!privacyVisible}/></b></div><div className="receivable-person-actions"><span>{row.outstanding>0?'Εκκρεμεί':'Εξοφλημένο'}</span><Button variant="ghost" type="button" onClick={()=>startForPerson('lending',row.person)}><Plus size={14}/> Νέο</Button>{row.outstanding>0?<Button variant="ghost" type="button" onClick={()=>startForPerson('repayment',row.person)}><RotateCcw size={14}/> Επιστροφή</Button>:null}
     {row.outstanding>0&&onQuickAdd?<Button variant="ghost" type="button" onClick={()=>onQuickAdd({mode:'lending',action:'writeoff',person:row.person,amount:row.outstanding})}>Διαγραφή απαίτησης</Button>:null}
 {row.outstanding>0&&onSaveLendingPlan?<Button variant="ghost" type="button" onClick={()=>{setSelectedPerson(row.person);setSettlementOpen(true)}}>Πρόγραμμα επιστροφής</Button>:null}</div>
 {(data.state.lendingPlans??[]).some(plan=>plan.person===row.person)?<small className={!privacyVisible?'private-text':''}>Υπάρχει επιβεβαιωμένο πρόγραμμα επιστροφής · δεν έχει καταχωριστεί αυτόματη είσπραξη.</small>:null}</article>)}</section>

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronUp, CirclePause, ListFilter, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
@@ -25,11 +25,15 @@ const RULE_PAGE_SIZE=24;
 
 export function TransactionRulesWorkspace({
   data,
+  focusRuleId,
+  focusRuleKey,
   onUpsertRule,
   onDeleteRule,
   onReorderRule,
 }:{
   data:FinanceData;
+  focusRuleId?:string|null;
+  focusRuleKey?:number;
   onUpsertRule:(rule:TransactionRule)=>Promise<void>;
   onDeleteRule:(id:string)=>Promise<void>;
   onReorderRule:(id:string,direction:-1|1)=>Promise<void>;
@@ -130,6 +134,13 @@ export function TransactionRulesWorkspace({
     setRuleError('');
     setEditorOpen(true);
   };
+  useEffect(()=>{
+    if(!focusRuleId||!focusRuleKey)return;
+    const target=rules.find(rule=>rule.id===focusRuleId);
+    if(!target){setRuleActionError('Ο κανόνας δεν είναι πλέον διαθέσιμος. Επαναφόρτωσε τη λίστα.');return}
+    // This is a navigation-only focus request, never an implicit finance write.
+    editRule(target);
+  },[focusRuleId,focusRuleKey]);
   const saveRule=async()=>{
     if(operationRef.current)return;
     try{

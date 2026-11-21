@@ -9,6 +9,10 @@ const listeners=new Set<()=>void>();
 export function getDatabaseSaveSnapshot(){return current}
 export function subscribeDatabaseSaves(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 function publish(next:DatabaseSaveSnapshot){current=next;for(const listener of listeners)listener()}
+/** Write receipts exist, but the aggregate post-write readback is unverified.
+ * Preserve recorded completions while surfacing an error until a new attempt.
+ */
+export function markDatabaseSaveUnverified(){publish({...current,failed:true})}
 export async function trackDatabaseWrite<T>(work:()=>Promise<T>):Promise<T>{
   publish({pending:current.pending+1,failed:current.pending>0&&current.failed,completion:current.completion});
   try{

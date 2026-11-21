@@ -5,6 +5,8 @@ import { validateCompleteFinanceData } from '../server/financeDataValidation.js'
 import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
+import { runDirectReceivableRpcProof } from './real-stack-receivable-rpc.js';
+import { financeBackupVaultPrivacyRisk } from './real-stack-vault-privacy.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -322,12 +324,48 @@ async function main(){
     const initial=await primary.request('/api/data');
     expect(initial,200,undefined,'data-read');
     assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    // Distinct from the browser's early preview denial: the real API must
+    // still reject malformed payloads on its own, with finance untouched.
+    console.log('[real-stack] stage invalid-import-authoritative-validation');
+    const invalidApiImport=await primary.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(initial.body?.revision||'')},
+      body:{app:'RheomIQ',schemaVersion:3},
+    });
+    expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation');
+    const afterInvalidApiImport=await primary.request('/api/data');
+    expect(afterInvalidApiImport,200,undefined,'invalid-import-finance-unchanged');
+    assert(afterInvalidApiImport.body?.revision===initial.body?.revision
+      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(initial.body?.data),
+      'Authoritatively rejected import mutated confirmed finance.');
     const initialRevision=String(initial.body?.revision||'');
     console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
+    const directRpcSessions=await runDirectReceivableRpcProof({
+      apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
+      email,password:TEST_PASSWORD,userId,factorId,
+      totpCode:()=>nextTotp(secret,correct),
+      totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode),
+      data:initial.body.data,revision:initialRevision,generation:initialGeneration,
+    });
+    // The direct proof uses a separate synthetic Auth session. Retire only its
+    // session IDs through the existing owner+AAL2 API so the subsequent
+    // two-device lifecycle test retains its original strict count.
+    for(const sessionId of directRpcSessions){
+      const retired=await primary.request('/api/auth/devices',{
+        method:'POST',body:{action:'revoke',sessionId},
+      });
+      expect(retired,200,undefined,'direct-rpc-synthetic-device-retirement');
+    }
+    const afterDirectDevices=await primary.request('/api/auth/devices');
+    expect(afterDirectDevices,200,undefined,'direct-rpc-synthetic-device-count');
+    assert(afterDirectDevices.body?.count===1&&afterDirectDevices.body?.devices?.[0]?.current===true,
+      'Direct RPC proof left synthetic test sessions active.');
+    console.log('[real-stack] PASS direct PostgREST denied AAL1/overpayment/forgery without finance or history commit');
 
     const staleState=structuredClone(initial.body.data.state);
     const nextState=structuredClone(initial.body.data.state);
@@ -424,8 +462,12 @@ async function main(){
     assert(Array.isArray(backupRows)&&backupRows.length===1,'Direct database read-back did not find the real backup row.');
     const backupData=backupRows[0]?.data;
     validateCompleteFinanceData(backupData);
-    const serializedBackup=JSON.stringify(backupData);
-    assert(!serializedBackup.includes(TEST_PAN)&&!serializedBackup.includes(TEST_EXPIRY)&&!serializedBackup.includes(TEST_CVV),'Backup unexpectedly contains card-vault plaintext.');
+    // A three-digit CVV can appear coincidentally in legitimate amounts,
+    // timestamps and opaque IDs. Reject real vault fields and long synthetic
+    // secrets, not an unrelated substring like "123" in finance JSON.
+    const vaultPrivacyRisk=financeBackupVaultPrivacyRisk(backupData,TEST_PAN,TEST_EXPIRY);
+    assert(vaultPrivacyRisk===null,
+      'Backup unexpectedly contains card-vault plaintext ('+vaultPrivacyRisk+').');
 
     console.log('[real-stack] stage post-backup-mutation');
     const postBackupHistory=await primary.request('/api/history');
@@ -442,14 +484,54 @@ async function main(){
     });
     expect(postBackupSave,200,undefined,'post-backup-mutation');
 
-    console.log('[real-stack] stage backup-restore');
+    // Exercise the revision-checked RPC through the real API + owner/AAL2 RLS
+    // on disposable local Supabase, not a mocked 409 or production storage.
+    console.log('[real-stack] stage import-stale-revision-denial');
+    const priorImportData=await primary.request('/api/data');
+    expect(priorImportData,200,undefined,'import-stale-prior-finance');
+    const priorImportHistory=await primary.request('/api/history');
+    expect(priorImportHistory,200,undefined,'import-stale-prior-history');
+    const priorImportBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const priorImportAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const staleChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(redone.body?.revision||'')},
+      body:backupData,
+    });
+    expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision');
+    const malformedChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':'not-a-revision'},
+      body:backupData,
+    });
+    expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision');
+    const afterStaleData=await primary.request('/api/data');
+    expect(afterStaleData,200,undefined,'import-stale-no-write');
+    const afterStaleHistory=await primary.request('/api/history');
+    expect(afterStaleHistory,200,undefined,'import-stale-history-unchanged');
+    const afterStaleBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const afterStaleAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    assert(afterStaleData.body?.revision===priorImportData.body?.revision
+      &&afterStaleData.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Post-backup mutation',
+      'Stale checked import replaced confirmed finance or advanced its revision.');
+    assert(afterStaleHistory.body?.generation===priorImportHistory.body?.generation
+      &&afterStaleHistory.body?.currentPointId===priorImportHistory.body?.currentPointId,
+      'Stale checked import moved the history cursor.');
+    assert(JSON.stringify(afterStaleBackups)===JSON.stringify(priorImportBackups)
+      &&JSON.stringify(afterStaleAudit)===JSON.stringify(priorImportAudit),
+      'Stale checked import changed pre-import backup or audit history.');
+    console.log('[real-stack] stage backup-restore revision-checked');
     const restoredFromBackup=await primary.request('/api/import',{
       method:'POST',
-      headers:{'x-rheomiq-confirm-import':'replace'},
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(postBackupSave.body?.revision||'')},
       body:backupData,
     });
     expect(restoredFromBackup,200,undefined,'backup-restore');
     assert(Number(restoredFromBackup.body?.revision)>Number(postBackupSave.body?.revision),'Backup restore did not advance the canonical revision.');
+    const preImportBackupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?reason=eq.pre-import&order=id.desc&limit=1&select=reason,revision`,local.serviceRole) as any[];
+    assert(Array.isArray(preImportBackupRows)&&preImportBackupRows.length===1
+      &&String(preImportBackupRows[0]?.revision)===String(postBackupSave.body?.revision),
+      'Successful checked import did not atomically back up the prior confirmed revision.');
 
     const recovered=await primary.request('/api/data');
     expect(recovered,200,undefined,'backup-restore-read');
@@ -788,6 +870,44 @@ async function main(){
       return key;
     };
     const serviceAssetKey=await uploadService('original.svg');
+    console.log('[real-stack] stage recurring-service-direct-rpc-path-provenance');
+    // Test actual local AAL2 PostgREST, bypassing the trusted API parser,
+    // so the database alone must reject cross-key and wrong-MIME metadata.
+    const directToken=primary.snapshot().get('rheomiq_access');
+    assert(typeof directToken==='string'&&directToken.length>40,
+      'Local owner AAL2 JWT was unavailable for direct RPC provenance proof.');
+    const originalPath='services/'+serviceAssetKey+'.svg';
+    const directRequest=async(method:'POST'|'PATCH',path:string,body:unknown)=>{
+      const response=await fetch(local.apiUrl+'/rest/v1/'+path,{
+        method,
+        headers:{apikey:local.publishable,authorization:'Bearer '+directToken,
+          accept:'application/json','content-type':'application/json',
+          prefer:'return=representation'},
+        body:JSON.stringify(body),
+      });
+      return {status:response.status,body:await response.json().catch(()=>null)};
+    };
+    const forgedKey='service-asset-ffffffffffffffffffffffff';
+    const crossKey=await directRequest('POST','rpc/rheomiq_register_recurring_service_asset',{
+      p_recurring_id:serviceId,p_asset_key:forgedKey,p_file_name:'cross-key.svg',
+      p_mime_type:'image/svg+xml',p_storage_path:originalPath,p_size_bytes:serviceSvg.byteLength,
+    });
+    assert(crossKey.status===400&&crossKey.body?.code==='23514',
+      'Direct owner RPC misregistered a different Storage object under a forged key.');
+    const wrongMime=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {mime_type:'image/png'});
+    assert(wrongMime.status===400&&wrongMime.body?.code==='23514',
+      'Direct owner table update accepted a MIME/Storage extension mismatch.');
+    const directRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?select=asset_key,mime_type,storage_path&asset_key=in.('+
+      encodeURIComponent(serviceAssetKey)+','+encodeURIComponent(forgedKey)+')',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;
+    assert(Array.isArray(directRows)&&directRows.length===1&&
+      directRows[0]?.asset_key===serviceAssetKey&&
+      directRows[0]?.mime_type==='image/svg+xml'&&
+      directRows[0]?.storage_path===originalPath,
+      'Rejected direct RPC or MIME update modified persistent logo metadata.');
     const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
     const original=await primary.request('/api/data');
@@ -1024,6 +1144,14 @@ async function main(){
     const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
     assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
 
+    // Establish the isolated recovery result before a potentially stalled UI runner.
+    if(process.env.MYFINHUB_ISOLATED_RECOVERY==='1'){
+      assert(process.env.CI==='true','Full recovery rehearsal may run only in isolated CI.');
+      console.log('[real-stack] stage isolated-postgresql-storage-restore-before-browser');
+      execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs'],{
+        stdio:'inherit',env:process.env,timeout:120_000,
+      });
+    }
     console.log('[real-stack] stage actual-browser-ui');
     let browserPreviousCode=lastCode;
     await runRealStackBrowserProof({
@@ -1057,6 +1185,62 @@ async function main(){
     assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
     const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];
     assert(Array.isArray(providerBindings)&&providerBindings.length===2&&providerBindings.every(row=>row?.variant==='universal'&&row?.asset_key===providerAssetKey)&&new Set(providerBindings.map(row=>row?.asset_role)).size===2,'Provider reusable logo/wordmark bindings were not persisted.');
+    console.log('[real-stack] stage provider-direct-rpc-path-provenance');
+    const providerPath=String(providerAssets[0].storage_path);
+    const registerProvider=async(assetKey:string,mimeType:string,storagePath:string)=>directRequest(
+      'POST','rpc/rheomiq_register_financial_provider_asset',{
+        p_provider_id:'real-browser-provider',p_asset_key:assetKey,
+        p_asset_role:'logo',p_variant:'universal',p_file_name:'forged-image.svg',
+        p_mime_type:mimeType,p_storage_path:storagePath,
+        p_size_bytes:Number(providerAssets[0].size_bytes),p_make_primary:false,
+      });
+    const forgedProviderKey='real-browser-provider-asset-ffffffffffff';
+    const differentKey=await registerProvider(forgedProviderKey,'image/svg+xml',providerPath);
+    assert(differentKey.status===400&&differentKey.body?.code==='22023',
+      'Direct owner RPC registered a different provider asset key against an existing Storage object.');
+    const wrongProviderMime=await registerProvider(forgedProviderKey,'image/png',providerPath);
+    assert(wrongProviderMime.status===400&&wrongProviderMime.body?.code==='22023',
+      'Direct owner RPC accepted the wrong provider Storage MIME extension.');
+    const noncanonicalProviderKey=await registerProvider('forged-provider-key','image/svg+xml',providerPath);
+    assert(noncanonicalProviderKey.status===400&&noncanonicalProviderKey.body?.code==='22023',
+      'Direct owner RPC accepted a noncanonical provider asset key.');
+    const modifiedProviderMime=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {mime_type:'image/png'});
+    assert(modifiedProviderMime.status===400&&modifiedProviderMime.body?.code==='23514',
+      'Direct owner table update accepted mismatched provider asset MIME.');
+    // A direct owner UPDATE must not disable an image and erase its Storage
+    // provenance to exploit the SQL three-valued CHECK (NULL is not FALSE).
+    const nulledProviderBucket=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {active:false,storage_bucket:null});
+    // Owner PostgREST can deny/omit an UPDATE via grants/RLS before the row
+    // CHECK is exercised. It must not acknowledge a changed row; independently
+    // exercise the immutable CHECK with the disposable local service role.
+    assert(!(nulledProviderBucket.status>=200&&nulledProviderBucket.status<300&&
+      Array.isArray(nulledProviderBucket.body)&&nulledProviderBucket.body.length>0),
+      'Owner update acknowledged changed provider asset provenance.');
+    const serviceGuardPatch=await fetch(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(providerAssetKey),{
+      method:'PATCH',
+      headers:{apikey:local.serviceRole,authorization:'Bearer '+local.serviceRole,
+        accept:'application/json','content-type':'application/json',prefer:'return=representation'},
+      body:JSON.stringify({active:false,storage_bucket:null}),
+    });
+    const serviceGuardBody=await serviceGuardPatch.json().catch(()=>null) as {code?:string}|null;
+    assert(serviceGuardPatch.status===400&&serviceGuardBody?.code==='23514',
+      'Direct privileged local SQL CHECK did not reject NULL provider Storage provenance (HTTP '+
+      serviceGuardPatch.status+', code '+String(serviceGuardBody?.code||'missing')+').');
+    const forgedProviderRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path,storage_bucket,active&provider_id=eq.real-browser-provider',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string;storage_bucket?:string;active?:boolean}>;
+    assert(Array.isArray(forgedProviderRows)&&forgedProviderRows.length===1&&
+      forgedProviderRows[0]?.asset_key===providerAssetKey&&
+      forgedProviderRows[0]?.mime_type==='image/svg+xml'&&
+      forgedProviderRows[0]?.storage_path===providerPath&&
+      forgedProviderRows[0]?.storage_bucket==='financial-provider-assets'&&
+      forgedProviderRows[0]?.active===true,
+      'Rejected direct provider asset mutations changed persistent metadata.');
     const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
     assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;

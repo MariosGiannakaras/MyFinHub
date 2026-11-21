@@ -28,4 +28,26 @@ describe('budget command frontend action reachability (DV-FB02/03)',()=>{
     expect(modalFocus).toContain('const hasDestination=');
     expect(modalFocus).toContain('focused!==opener.current&&!root.contains(focused)');
   });
+  it('deep-links existing transaction rules through Commands and Reports without an implicit write (#649 I17.05)',()=>{
+    const ruleManager=readFileSync('src/components/TransactionRulesWorkspace.tsx','utf8');
+    const reports=readFileSync('src/pages/ReportsPage.tsx','utf8');
+    const settings=readFileSync('src/pages/SettingsPage.tsx','utf8');
+    expect(search).toContain("type:'rule_focus';ruleId:string");
+    expect(search).toContain("action:{type:'rule_focus',ruleId:rule.id}");
+    for(const entry of [app,qa]){
+      expect(entry).toContain("if(action.type==='rule_focus')");
+      expect(entry).toContain("ruleFocusId={commandRuleId}");
+      expect(entry).toContain("ruleFocusKey={commandRuleKey}");
+      expect(entry).toContain("onOpenRules=");
+    }
+    expect(settings).toContain('focusRuleId={ruleFocusId} focusRuleKey={ruleFocusKey}');
+    expect(ruleManager).toContain('if(!focusRuleId||!focusRuleKey)return;');
+    expect(ruleManager).toContain('editRule(target);');
+    expect(reports).toContain('className="report-rules-link" onClick={onOpenRules}');
+    expect(reports).not.toContain('<TransactionRulesWorkspace');
+    expect(rendered).toContain('command-rule-editor-from-reports');
+    expect(rendered).toContain('command-rule-editor-same-route');
+    expect(rendered).toContain('reports-to-settings-rules-mobile-375');
+    expect(rendered).toContain('rule navigation never creates a finance write');
+  });
 });

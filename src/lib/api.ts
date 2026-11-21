@@ -56,6 +56,16 @@ export class ApiError extends Error {
   }
 }
 
+// HTTP transport loss or 5xx does not prove a database write never committed.
+export function importOutcomeMayBeCommitted(error:unknown):boolean {
+  return error instanceof ApiError&&(error.status===0||error.status>=500);
+}
+
+/** A lost backup RPC response is uncertain, not proof of rollback. */
+export function backupOutcomeMayBeCommitted(error:unknown):boolean {
+  return importOutcomeMayBeCommitted(error);
+}
+
 async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {
@@ -240,14 +250,22 @@ export async function moveHistory(direction:'undo'|'redo',revision:string,histor
   }));
 }
 
-export async function importData(data: FinanceData): Promise<DataEnvelope> {
+export async function importData(data: FinanceData, revision: string): Promise<DataEnvelope> {
   return json(await apiRequest('/api/import', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace' },
+    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace', 'if-match': revision },
     body: JSON.stringify(data),
   }));
 }
 
 export async function createBackup(): Promise<{ path: string }> {
-  return json(await apiRequest('/api/backup', { method: 'POST' }));
+  const receipt=await json<unknown>(await apiRequest('/api/backup', { method: 'POST' }));
+  // HTTP 200 alone is not a verified backup receipt. An invalid response may
+  // follow an already committed RPC; do not invite a duplicate write.
+  const path=receipt&&typeof receipt==='object'&&!Array.isArray(receipt)
+    ?(receipt as {path?:unknown}).path:null;
+  if(typeof path!=='string'||!path.trim()){
+    throw new ApiError('Δεν επιβεβαιώθηκε η δημιουργία αντιγράφου ασφαλείας.',503,'BACKUP_RECEIPT_UNVERIFIED');
+  }
+  return {path};
 }

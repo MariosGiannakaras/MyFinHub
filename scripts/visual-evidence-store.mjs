@@ -7,6 +7,22 @@ const packageVersion=JSON.parse(readFileSync(resolve(repositoryRoot,'package.jso
 const gitValue=(...args)=>{try{return execFileSync('git',args,{encoding:'utf8'}).trim()}catch{return ''}};
 const sanitize=value=>value.replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'capture';
 
+/**
+ * Final 216-image screenshot artifacts are strictly synthetic UI/QA evidence.
+ * Never follow RHEOMIQ_QA_URL to a hosted app, an authenticated local API,
+ * a credentialed URL, or a URL that may contain private finance query data.
+ */
+export function assertSyntheticVisualQaUrl(value){
+  let parsed;
+  try{parsed=new URL(value)}catch{throw new Error('Final screenshots require a local synthetic QA URL.')}
+  if(parsed.protocol!=='http:'||parsed.hostname!=='127.0.0.1'||!parsed.port||
+    parsed.pathname!=='/qa.html'||parsed.search||parsed.hash||
+    parsed.username||parsed.password){
+    throw new Error('Final screenshots require the loopback synthetic /qa.html page.');
+  }
+  return parsed.href;
+}
+
 export function visualEvidenceContext(date=new Date()){
   const appVersion=(process.env.MYFINHUB_QA_APP_VERSION||`v${packageVersion}`).trim();
   if(!/^v\d+\.\d+(?:\.\d+)?(?:[-+][A-Za-z0-9.-]+)?$/.test(appVersion))throw new Error(`Invalid visual QA app version: ${appVersion}`);

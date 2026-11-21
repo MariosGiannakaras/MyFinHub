@@ -13,10 +13,10 @@ const run=(...args:string[])=>spawnSync(process.execPath,[cli,...args],{cwd:root
 describe('curated defect intelligence and read-only preflight',()=>{
   it('accepts verified registry entries with real guards',()=>{
     expect(validateRegistry(registry,root)).toEqual([]);
-    expect(registry.patterns.map((p:{id:string})=>p.id)).toEqual(Array.from({length:23},(_,i)=>'FP-'+String(i+1).padStart(3,'0')));
+    expect(registry.patterns.map((p:{id:string})=>p.id)).toEqual(Array.from({length:registry.patterns.length},(_,i)=>'FP-'+String(i+1).padStart(3,'0')));
     const result=run('--check-registry');
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('23 patterns');
+    expect(result.stdout).toContain(`${registry.patterns.length} patterns`);
   });
 
   it('rejects unverified evidence, duplicate IDs, and missing or unsafe guards',()=>{

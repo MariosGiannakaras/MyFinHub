@@ -18,7 +18,7 @@ export function MoneyInput({value,onValueChange,currency='€',invalid=false,wra
       type="text"
       inputMode="decimal"
       value={value}
-      aria-invalid={invalid||undefined}
+      aria-invalid={invalid||inputProps['aria-invalid']||undefined}
       onChange={event=>onValueChange(normalizeMoneyInputText(event.target.value))}
     />
   </span>;

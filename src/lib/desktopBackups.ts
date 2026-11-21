@@ -13,6 +13,9 @@ export interface LocalBackupStatus {
   intervalHours: number;
   retentionDays: number;
   lastValidBackupAt: string | null;
+  lastValidBackupRevision?: string | null;
+  // Returned only by owner-authorized Electron IPC; no renderer-supplied revision.
+  currentRevision?: string | null;
   lastFailureAt: string | null;
   backups: LocalBackupItem[];
 }
