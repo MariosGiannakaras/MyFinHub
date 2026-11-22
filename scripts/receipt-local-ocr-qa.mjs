@@ -585,6 +585,59 @@ try {
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'stale handoff QA remount');
   assert((await receiptCount())===0,'stale QA fixture leaves no private receipt behind');
 
+  console.log('Receipt OCR QA: deleted cross-tab receipt prefill must deny finance before dispatch');
+  const seededDeleted=await c.call(`async function(){return await new Promise((resolve,reject)=>{
+    const open=indexedDB.open('myfinhub-local-receipts-v1',1);
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('receipts','readwrite'),now=new Date().toISOString();
+      const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),x=>x.charCodeAt(0));
+      const image=new Blob([bytes],{type:'image/png'});
+      tx.objectStore('receipts').put({
+        id:'qa-deleted-handoff',capturedAt:now,updatedAt:now,status:'ready',
+        image,mimeType:'image/png',bytes:image.size,width:1,height:1,
+        proposal:{merchant:'QA DELETED CROSS TAB',date:'2026-08-22',total:19.61,currency:'EUR'},
+      });
+      tx.oncomplete=()=>{db.close();resolve(true)};
+      tx.onerror=()=>{db.close();reject(tx.error)};
+    };
+    open.onerror=()=>reject(open.error);
+  })}`);
+  assert(seededDeleted,'synthetic future-deleted receipt fixture persisted in local IndexedDB');
+  await openReceiptInbox();
+  await waitFor("function(){return Boolean([...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&!b.disabled))}",'deleted receipt initially allows valid handoff');
+  const deletedHandoff=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&!b.disabled);b?.click();return Boolean(b)}");
+  assert(deletedHandoff,'actual Quick Entry receives the not-yet-deleted receipt');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))&&!document.querySelector('.receipt-inbox')}",'deleted receipt Quick Entry mounted');
+  const writesBeforeDeleted=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  // Simulate a separate tab committing IndexedDB DELETE while the first tab's
+  // prefilled Quick Entry stays mounted. This must fail before finance dispatch.
+  const deletedElsewhere=await c.call(`async function(){return await new Promise((resolve,reject)=>{
+    const open=indexedDB.open('myfinhub-local-receipts-v1',1);
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('receipts','readwrite'),store=tx.objectStore('receipts');
+      store.delete('qa-deleted-handoff');
+      tx.oncomplete=()=>{db.close();resolve(true)};
+      tx.onerror=()=>{db.close();reject(tx.error)};
+    };
+    open.onerror=()=>reject(open.error);
+  })}`);
+  assert(deletedElsewhere,'another-tab synthetic receipt deletion committed before stale Quick Entry submit');
+  const deletedSubmit=await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(b=>(b.textContent||'').includes('Καταχώριση'));if(!b||b.disabled)return false;b.click();return true}");
+  assert(deletedSubmit,'Quick Entry submitted deleted receipt to read-only prefinance guard');
+  await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Η απόδειξη δεν υπάρχει πλέον')}",'deleted receipt rejected before finance dispatch');
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===writesBeforeDeleted,
+    'another-tab deleted receipt cannot trigger any finance write');
+  assert((await receiptCount())===0,'missing receipt remains absent after rejected Quick Entry submit');
+  await waitFor("function(){const alert=document.querySelector('#quick-add-error');if(!alert)return false;const opacity=Number(getComputedStyle(alert).opacity);const pending=alert.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming()?.endTime));return opacity>=.995&&!pending}",'deleted receipt error fully opaque before screenshot');
+  const deletedError=await c.call("function(){const alert=document.querySelector('#quick-add-error'),modal=document.querySelector('.quick-modal:not(.contextual-quick-modal)');if(!alert||!modal)return null;const rect=alert.getBoundingClientRect(),root=modal.getBoundingClientRect();return {text:alert.textContent?.trim()||'',visible:rect.width>0&&rect.height>0&&rect.top>=root.top&&rect.bottom<=root.bottom,opacity:Number(getComputedStyle(alert).opacity)}}");
+  assert(deletedError?.visible&&deletedError.opacity>=.995&&deletedError.text.includes('Η απόδειξη δεν υπάρχει πλέον'),'deleted receipt warning is fully readable and contained');
+  await screenshot('receipt-deleted-prefill-cross-tab-preflight-denied');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'deleted receipt QA remount');
+  assert((await receiptCount())===0,'deleted cross-tab receipt stays absent after reload');
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===0,
+    'fresh QA remount has no synthetic finance write after deleted draft');
+
   console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   const mobileQuickOpened=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=\"mobile\"]');button?.click();return Boolean(button)}");

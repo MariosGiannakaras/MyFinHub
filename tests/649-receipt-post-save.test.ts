@@ -50,6 +50,11 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('receipt-local-posted-after-reload');
     expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
     expect(qa).toContain('receipt-stale-prefill-cross-tab-preflight-denied');
+    expect(qa).toContain('receipt-deleted-prefill-cross-tab-preflight-denied');
+    expect(qa).toContain('another-tab synthetic receipt deletion committed before stale Quick Entry submit');
+    expect(qa).toContain('another-tab deleted receipt cannot trigger any finance write');
+    expect(qa).toContain('deleted receipt error fully opaque before screenshot');
+    expect(qa).toContain("(document.querySelector('#quick-add-error')?.textContent||'').includes('Η απόδειξη δεν υπάρχει πλέον')");
     expect(qa).toContain('stale receipt error fully opaque before screenshot');
     expect(qa).toContain('settledError?.visible&&settledError.opacity>=.995');
     expect(qa).toContain('another-tab synthetic receipt posted status committed before stale Quick Entry submit');
