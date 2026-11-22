@@ -1,3 +1,13 @@
+## 2026-11-23 — #649 provider auth-scope catalog/transport negative regression candidate
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact-head [CI #45079519482](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45079519482) on `508ec16cf3c9dd04c275169bc3d8339a353df346` completed **SUCCESS** with `validate`, CodeQL and Unified; the source-level I19.04/I22.02 provider cross-auth-scope receipt protection is **accepted**. Draft-only Real Stack, focused rendered, Windows, WebKit and Lighthouse were **skipped**, not passed.
+
+**Focused follow-up tests (no production change):** The existing provider auth-scope test guarded a late HTTP-200 response for metadata POST/PATCH and artwork/binding PUT, plus a scope reset during metadata catalog GET. New cases prove that a **valid-looking catalog GET** completing after scope reset also cannot validate *either* artwork upload or binding, without a second write; separately, an existing binding network loss keeps its established same-session API/unknown-outcome behavior, while a network loss across auth reset is surfaced as `UnverifiedFinancialProviderWrite('binding')`. This preserves accepted idempotent explicit-retry semantics without changing the UI or binding RPC. No speculative delete/reconciliation modification: a Storage DELETE 503/lost receipt is not enough to prove absence or authorize metadata purge. Reuse the same `tests/649-provider-catalog-readback.test.ts`; no duplicated suite, SQL, RLS, finance, auth, Storage, QA fixture or Android source modifications.
+
+**New test-only candidate acceptance PENDING exact-head `validate`, CodeQL and Unified.** Counters unchanged; original I19.04/I22.02 remain partially accepted. #654 Draft → `develop` stays unmerged; Real Stack opt-in OFF, no hosted/production changes, destructive restore, release, or Android. Next: read exact new-head CI and fix only evidenced failures, then proceed to another concrete original P0/P1 requirement without re-running previously accepted DB/browser suites. Final Ready acceptance still pending.
+
+---
+
 ## 2026-11-23 — #649 I19.04/I22.02 retired-auth-scope provider receipt candidate
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Prior exact `f1f867fc02f7428164b1d424860848ac07f395e9` [CI #45078360611](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45078360611) finished **SUCCESS** (`validate`, CodeQL, Unified). Its provider uploaded-key set matching guard and positive/negative test matrix are **accepted as source-validated**. Draft-only Real Stack/browser/Windows/WebKit/Lighthouse remained skipped, not passed.

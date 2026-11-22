@@ -115,6 +115,85 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(providerCatalogMatchesWrite(catalog,input,slots,[primaryKey,primaryKey],[expected,other])).toBe(false);
   });
 
+  it.each(['asset','binding'] as const)(
+    'rejects a %s success after owner auth changes while catalog GET is in flight',async scenario=>{
+      const scopeWindow=new EventTarget();
+      vi.stubGlobal('window',scopeWindow);
+      const key='qa-scope-bank-asset-112233aabbcc';
+      const asset={
+        assetKey:key,role:'logo',variant:'light',fileName:'logo.png',
+        mimeType:'image/png',sizeBytes:2,url:'https://assets.example/logo.png',
+      };
+      const operations:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method??'GET');
+        operations.push(method+' '+String(request));
+        if(method==='PUT'){
+          return new Response(JSON.stringify(scenario==='asset'?{asset}:{ok:true}),{
+            status:200,headers:{'content-type':'application/json'},
+          });
+        }
+        if(method==='GET'){
+          // The readback itself is well formed. Its response belongs to the
+          // retired session and cannot validate a write in the new scope.
+          scopeWindow.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+          return new Response(JSON.stringify({providers:[{
+            id:'qa-scope-bank',displayName:'QA Scope Bank',shortName:'QA Scope',
+            providerKind:'bank',countryCode:'GR',sortOrder:117,
+            logoAssetKey:null,wordmarkAssetKey:null,logoUrl:null,wordmarkUrl:null,
+            assets:[asset],
+            bindings:[{role:'logo',variant:'light',assetKey:key}],
+          }]}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        throw new Error('No speculative provider retry');
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {uploadFinancialProviderAsset,setFinancialProviderAssetBinding}=await import(clientPath);
+      const action=scenario==='asset'
+        ?uploadFinancialProviderAsset({
+          providerId:'qa-scope-bank',role:'logo',variant:'light',
+          file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),
+        })
+        :setFinancialProviderAssetBinding({
+          providerId:'qa-scope-bank',role:'logo',variant:'light',assetKey:key,
+        });
+      await expect(action).rejects.toMatchObject({
+        name:'UnverifiedFinancialProviderWrite',operation:scenario,
+      });
+      expect(operations.map(value=>value.split(' ',1)[0])).toEqual(['PUT','GET']);
+    },
+  );
+
+  it.each([false,true] as const)(
+    'preserves binding transport semantics after network loss (retired auth=%s)',async retired=>{
+      const scopeWindow=new EventTarget();
+      vi.stubGlobal('window',scopeWindow);
+      const operations:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
+        operations.push(String(init?.method??'GET')+' '+String(request));
+        if(retired)scopeWindow.dispatchEvent(new Event('myfinhub:auth-expired'));
+        throw new TypeError('Synthetic lost binding response');
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {setFinancialProviderAssetBinding}=await import(clientPath);
+      const operation=setFinancialProviderAssetBinding({
+        providerId:'qa-scope-bank',role:'logo',variant:'light',
+        assetKey:'qa-scope-bank-asset-112233aabbcc',refreshCatalog:false,
+      });
+      if(retired){
+        await expect(operation).rejects.toMatchObject({
+          name:'UnverifiedFinancialProviderWrite',operation:'binding',
+        });
+      }else{
+        await expect(operation).rejects.toMatchObject({
+          name:'ApiError',status:0,code:'NETWORK_ERROR',
+        });
+      }
+      expect(operations).toHaveLength(1);
+      expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-asset-binding');
+    },
+  );
+
   it('skips acknowledged provider metadata on asset-only retry but detects every changed field',async()=>{
     // Keep the runtime import dynamic: the NodeNext hygiene check does not
     // resolve the browser-only provider client's extensionless imports.
