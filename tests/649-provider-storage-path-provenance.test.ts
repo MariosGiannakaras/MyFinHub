@@ -6,6 +6,36 @@ const direct=readFileSync('scripts/real-stack-receivable-rpc.ts','utf8');
 const real=readFileSync('scripts/real-stack-e2e.ts','utf8');
 
 describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
+  it('requires binding asset provenance at the table FK even when owner AAL2 directly writes',()=>{
+    const constraint=readFileSync('supabase/migrations/20261122211000_guard_provider_binding_cross_provider.sql','utf8');
+    expect(constraint).toContain('create unique index if not exists rheomiq_provider_assets_provider_key_unique_idx');
+    expect(constraint).toContain('on public.rheomiq_financial_provider_assets(provider_id,asset_key)');
+    expect(constraint).toContain('rheomiq_provider_binding_same_provider_fk');
+    expect(constraint).toContain('foreign key (provider_id,asset_key)');
+    expect(constraint).toContain('references public.rheomiq_financial_provider_assets(provider_id,asset_key)');
+    expect(constraint).toContain('EXISTING_PROVIDER_BINDING_CROSS_PROVIDER');
+    expect(constraint).toContain('not valid;');
+    expect(constraint).toContain('validate constraint rheomiq_provider_binding_same_provider_fk');
+    expect(constraint).not.toMatch(/security definer|drop table|delete from|truncate table|drop schema/i);
+    expect(direct).toContain("const crossProviderId='qa-cross-provider-'+randomUUID()");
+    expect(direct).toContain("const crossCreated=await rpc('rheomiq_create_financial_provider',aal2Token,{");
+    expect(direct).toContain("const crossStored=await storageRequest('POST',aal2Token,crossStorage)");
+    expect(direct).toContain("const crossAsset=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{");
+    expect(direct).toContain("const originalCrossBaseline=await selectProviderBinding(serviceRole,protectedProviderId)");
+    expect(direct).toContain("const crossSlotBefore=await selectProviderBinding(serviceRole,crossProviderId)");
+    expect(direct).toContain("const foreignInsert=await fetch(");
+    expect(direct).toContain("foreignInsert.status===409&&String(foreignInsertBody?.code)==='23503'");
+    expect(direct).toContain("const foreignPatch=await fetch(");
+    expect(direct).toContain("foreignPatch.status===409&&String(foreignPatchBody?.code)==='23503'");
+    expect(direct).toContain("JSON.stringify(originalCrossAfter.body)===JSON.stringify(originalCrossBaseline.body)");
+    expect(direct).toContain("crossSlotAfter.body.length===0");
+    expect(direct).toContain('for(const providerId of syntheticCrossProviderIds)');
+    expect(direct.indexOf('for(const binding of syntheticRegisteredBindings)'))
+      .toBeLessThan(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'));
+    expect(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'))
+      .toBeLessThan(direct.indexOf('for(const providerId of syntheticCrossProviderIds)'));
+  });
+
   it('binds server-issued immutable keys, owner directory and MIME at row level while retaining curated legacy keys',()=>{
     expect(sql).toContain('rheomiq_provider_server_asset_exact_storage_path');
     expect(sql).toContain("asset_key ~ '^[a-z][a-z0-9-]{0,63}-asset-[a-f0-9]{12}$'");

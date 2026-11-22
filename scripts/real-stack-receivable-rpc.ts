@@ -300,6 +300,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   type StorageFixture={bucket:StorageBucket;path:string};
   const syntheticStoragePaths:StorageFixture[]=[];
   const syntheticRegisteredAssets:string[]=[];
+  const syntheticCrossProviderIds:string[]=[];
   const syntheticRegisteredBindings:Array<{providerId:string;assetRole:string;variant:string;assetKey:string}>=[];
   const syntheticRegisteredRecurringAssets:string[]=[];
   const newStoragePath=(bucket:StorageBucket,providerId='qa-direct-rpc'):StorageFixture=>{
@@ -508,6 +509,92 @@ export async function runDirectReceivableRpcProof(options:Options){
       await assertDeniedBindingMutations(label,token,protectedProviderId,registeredAssetKey);
     }
 
+    // A legitimate owner+AAL2 token can bypass the invoker RPC and write
+    // binding rows directly. The database must independently enforce that
+    // a bound asset belongs to the SAME provider, not merely exists.
+    // Create a second random local-only provider with its own real
+    // Storage-backed artwork, preserving the seeded provider and all slots.
+    const crossProviderId='qa-cross-provider-'+randomUUID().replace(/-/g,'').slice(0,12);
+    const crossProviderBefore=await selectProvider(aal2Token,crossProviderId);
+    assert(crossProviderBefore.status===200&&Array.isArray(crossProviderBefore.body)&&
+      crossProviderBefore.body.length===0,
+      'Cross-provider QA id unexpectedly overlaps an existing provider.');
+    syntheticCrossProviderIds.push(crossProviderId);
+    const crossCreated=await rpc('rheomiq_create_financial_provider',aal2Token,{
+      p_id:crossProviderId,p_display_name:'QA Cross Provider',
+      p_short_name:'QA Cross',p_provider_kind:'bank',p_country_code:'GR',p_sort_order:421,
+    });
+    assert(crossCreated.status===200&&Array.isArray(crossCreated.body)&&
+      crossCreated.body.length===1&&crossCreated.body[0]?.id===crossProviderId,
+      'Valid owner AAL2 could not create its isolated second provider.');
+    const crossStorage=newStoragePath('financial-provider-assets',crossProviderId);
+    const crossAssetKey=crossStorage.path.split('/').at(-1)?.replace(/\.svg$/,'')||'';
+    syntheticRegisteredAssets.push(crossAssetKey);
+    const crossStored=await storageRequest('POST',aal2Token,crossStorage);
+    assert([200,201].includes(crossStored.status)&&await storageExists(crossStorage),
+      'Second provider Storage positive control was not uploaded.');
+    const crossAsset=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{
+      p_provider_id:crossProviderId,p_asset_key:crossAssetKey,
+      p_asset_role:'card-mark',p_variant:'dark',
+      p_file_name:crossAssetKey+'.svg',p_mime_type:'image/svg+xml',
+      p_storage_path:crossStorage.path,p_size_bytes:svgBytes.length,p_make_primary:false,
+    });
+    assert(crossAsset.status===200&&Array.isArray(crossAsset.body)&&
+      crossAsset.body.length===1&&crossAsset.body[0]?.asset_key===crossAssetKey&&
+      crossAsset.body[0]?.provider_id===crossProviderId,
+      'Second provider artwork must be a real owner-registered asset.');
+    const originalCrossBaseline=await selectProviderBinding(serviceRole,protectedProviderId);
+    const crossSlotBefore=await selectProviderBinding(serviceRole,crossProviderId);
+    assert(originalCrossBaseline.status===200&&Array.isArray(originalCrossBaseline.body)&&
+      originalCrossBaseline.body.length===1&&
+      originalCrossBaseline.body[0]?.asset_key===registeredAssetKey&&
+      crossSlotBefore.status===200&&Array.isArray(crossSlotBefore.body)&&
+      crossSlotBefore.body.length===0,
+      'Cross-provider negative DML must start with exact owner-positive and empty slots.');
+
+    // Enroll both potential corrupt rows in scoped cleanup before any
+    // probe, so even a discovered FK bypass cannot leave a cross-binding.
+    syntheticRegisteredBindings.push({
+      providerId:crossProviderId,assetRole:'card-mark',variant:'dark',assetKey:registeredAssetKey,
+    });
+    const foreignInsert=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings',{
+      method:'POST',headers:{
+        apikey:publishable,authorization:'Bearer '+aal2Token,accept:'application/json',
+        'content-type':'application/json',prefer:'return=representation',
+      },
+      body:JSON.stringify({
+        provider_id:crossProviderId,asset_role:'card-mark',
+        variant:'dark',asset_key:registeredAssetKey,
+      }),
+    });
+    const foreignInsertBody=await foreignInsert.json().catch(()=>null);
+    assert(foreignInsert.status===409&&String(foreignInsertBody?.code)==='23503',
+      'Owner AAL2 direct cross-provider INSERT bypassed provider/asset FK provenance.');
+    const crossSlotAfter=await selectProviderBinding(serviceRole,crossProviderId);
+    assert(crossSlotAfter.status===200&&Array.isArray(crossSlotAfter.body)&&
+      crossSlotAfter.body.length===0,
+      'Rejected cross-provider INSERT persisted an unauthorized binding.');
+
+    syntheticRegisteredBindings.push({
+      providerId:protectedProviderId,assetRole:'card-mark',variant:'dark',assetKey:crossAssetKey,
+    });
+    const foreignPatch=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?'+
+      new URLSearchParams({
+        provider_id:'eq.'+protectedProviderId,asset_role:'eq.card-mark',variant:'eq.dark',
+      }),{
+      method:'PATCH',headers:{
+        apikey:publishable,authorization:'Bearer '+aal2Token,accept:'application/json',
+        'content-type':'application/json',prefer:'return=representation',
+      },body:JSON.stringify({asset_key:crossAssetKey}),
+    });
+    const foreignPatchBody=await foreignPatch.json().catch(()=>null);
+    assert(foreignPatch.status===409&&String(foreignPatchBody?.code)==='23503',
+      'Owner AAL2 direct cross-provider UPDATE bypassed provider/asset FK provenance.');
+    const originalCrossAfter=await selectProviderBinding(serviceRole,protectedProviderId);
+    assert(originalCrossAfter.status===200&&Array.isArray(originalCrossAfter.body)&&
+      JSON.stringify(originalCrossAfter.body)===JSON.stringify(originalCrossBaseline.body),
+      'Rejected cross-provider UPDATE changed the original binding or timestamp.');
+
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},
@@ -649,6 +736,21 @@ export async function runDirectReceivableRpcProof(options:Options){
         'Isolated direct Storage fixture cleanup failed.');
       assert(!(await storageExists(fixture)),
         'Isolated direct Storage cleanup left a synthetic object behind.');
+    }
+    // Every cross-provider fixture is a new random provider, never a seeded
+    // owner record; delete it after the bindings, assets and Storage objects.
+    for(const providerId of syntheticCrossProviderIds){
+      const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_providers?id=eq.'+
+        encodeURIComponent(providerId),{
+        method:'DELETE',headers:{
+          apikey:serviceRole,authorization:'Bearer '+serviceRole,
+          prefer:'return=representation',accept:'application/json',
+        },
+      });
+      const rows=await response.json().catch(()=>null);
+      assert(response.status===200&&Array.isArray(rows)&&rows.length<=1&&
+        rows.every((row:{id?:unknown})=>row.id===providerId),
+        'Isolated cross-provider fixture cleanup escaped its random provider ID.');
     }
     const cleanup=await fetch(apiUrl+'/rest/v1/rheomiq_account_metadata?account_id=eq.'+encodeURIComponent(privateAccountId),{
       method:'DELETE',headers:{
