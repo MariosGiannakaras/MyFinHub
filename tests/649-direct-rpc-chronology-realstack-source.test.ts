@@ -88,6 +88,28 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf('const revokedProviderRead=await selectProvider(aal2Token,protectedProviderId)'))
       .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
   });
+  it('proves asset registry direct SELECT RLS with a real owner-registered Storage-backed row',()=>{
+    expect(direct).toContain("apiUrl+'/rest/v1/rheomiq_financial_provider_assets?'+query");
+    expect(direct).toContain('const registeredAssetStorage=newStoragePath(');
+    expect(direct).toContain('const registeredAssetKey=registeredAssetStorage.path');
+    expect(direct).toContain("const storedAsset=await storageRequest('POST',aal2Token,registeredAssetStorage)");
+    expect(direct).toContain("const registered=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{");
+    expect(direct).toContain("p_make_primary:false");
+    expect(direct).toContain("const ownerAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey)");
+    expect(direct).toContain("ownerAssetRead.body[0]?.storage_path===registeredAssetStorage.path");
+    expect(direct).toContain("const deniedAssetRead=await selectProviderAsset(token,registeredAssetKey)");
+    expect(direct).toContain("deniedAssetRead.body.length===0");
+    expect(direct).toContain("const revokedAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey)");
+    expect(direct).toContain("revokedAssetRead.body.length===0");
+    expect(direct).toContain('for(const assetKey of syntheticRegisteredAssets)');
+    expect(direct).toContain("rows.every((row:{asset_key?:unknown})=>row.asset_key===assetKey)");
+    expect(direct.indexOf("const registered=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{"))
+      .toBeLessThan(direct.indexOf("const deniedAssetRead=await selectProviderAsset(token,registeredAssetKey)"));
+    expect(direct.indexOf("const revokedAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey)"))
+      .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
+    expect(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'))
+      .toBeLessThan(direct.indexOf('for(const fixture of syntheticStoragePaths)'));
+  });
   it('also denies every metadata, provider and Storage registry RPC to a revoked AAL2 owner session',()=>{
     expect(direct).toContain('const protectedMetadataMutations=[');
     expect(direct).toContain('for(const entry of protectedMetadataMutations){');

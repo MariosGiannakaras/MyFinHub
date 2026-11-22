@@ -214,6 +214,18 @@ export async function runDirectReceivableRpcProof(options:Options){
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
+  // A sibling RLS read boundary protects owner-managed artwork metadata
+  // independently from the provider table and Storage object permissions.
+  const selectProviderAsset=async(token:string,assetKey:string)=>{
+    const query=new URLSearchParams({
+      select:'asset_key,provider_id,storage_path,active',
+      asset_key:'eq.'+assetKey,
+    });
+    const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?'+query,{
+      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
   // #649 I22.02: genuine local GoTrue identities must also obey direct
   // Supabase Storage INSERT/DELETE policies, not only PostgreSQL RPC/RLS.
   // Use a valid SVG and positive owner AAL2 controls so malformed content
@@ -221,10 +233,11 @@ export async function runDirectReceivableRpcProof(options:Options){
   type StorageBucket='financial-provider-assets'|'recurring-service-assets';
   type StorageFixture={bucket:StorageBucket;path:string};
   const syntheticStoragePaths:StorageFixture[]=[];
-  const newStoragePath=(bucket:StorageBucket):StorageFixture=>{
+  const syntheticRegisteredAssets:string[]=[];
+  const newStoragePath=(bucket:StorageBucket,providerId='qa-direct-rpc'):StorageFixture=>{
     const nonce=randomUUID().replace(/-/g,'');
     const path=bucket==='financial-provider-assets'
-      ?'providers/qa-direct-rpc/qa-direct-rpc-asset-'+nonce.slice(0,12)+'.svg'
+      ?'providers/'+providerId+'/'+providerId+'-asset-'+nonce.slice(0,12)+'.svg'
       :'services/service-asset-'+nonce.slice(0,24)+'.svg';
     const fixture={bucket,path};
     syntheticStoragePaths.push(fixture);
@@ -302,6 +315,40 @@ export async function runDirectReceivableRpcProof(options:Options){
     await assertDeniedStorage('owner AAL1',aal1Token);
     await assertDeniedStorage('nonowner AAL2',nonownerAal2);
 
+    // Register a real, active artwork row through the already-protected
+    // owner AAL2 Storage + provider RPC. Without a known positive row, an
+    // empty AAL1/nonowner response would prove nothing about asset SELECT.
+    const registeredAssetStorage=newStoragePath('financial-provider-assets',protectedProviderId);
+    const registeredAssetKey=registeredAssetStorage.path.split('/').at(-1)?.replace(/\.svg$/,'')||'';
+    assert(registeredAssetKey.startsWith(protectedProviderId+'-asset-'),
+      'Synthetic provider asset key did not match its actual provider Storage path.');
+    syntheticRegisteredAssets.push(registeredAssetKey);
+    const storedAsset=await storageRequest('POST',aal2Token,registeredAssetStorage);
+    assert([200,201].includes(storedAsset.status)&&await storageExists(registeredAssetStorage),
+      'Owner AAL2 could not upload its registered provider artwork fixture.');
+    const registered=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{
+      p_provider_id:protectedProviderId,p_asset_key:registeredAssetKey,
+      p_asset_role:'logo',p_variant:'universal',
+      p_file_name:registeredAssetKey+'.svg',p_mime_type:'image/svg+xml',
+      p_storage_path:registeredAssetStorage.path,p_size_bytes:svgBytes.length,p_make_primary:false,
+    });
+    assert(registered.status===200&&Array.isArray(registered.body)&&registered.body.length===1&&
+      registered.body[0]?.asset_key===registeredAssetKey&&registered.body[0]?.active===true,
+      'Valid owner AAL2 could not register its real active provider artwork row.');
+    const ownerAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey);
+    assert(ownerAssetRead.status===200&&Array.isArray(ownerAssetRead.body)&&ownerAssetRead.body.length===1&&
+      ownerAssetRead.body[0]?.asset_key===registeredAssetKey&&
+      ownerAssetRead.body[0]?.provider_id===protectedProviderId&&
+      ownerAssetRead.body[0]?.storage_path===registeredAssetStorage.path&&
+      ownerAssetRead.body[0]?.active===true,
+      'Owner AAL2 direct PostgREST provider asset SELECT did not return its exact registered artwork.');
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const deniedAssetRead=await selectProviderAsset(token,registeredAssetKey);
+      assert(deniedAssetRead.status===200&&Array.isArray(deniedAssetRead.body)&&
+        deniedAssetRead.body.length===0,
+        'Direct financial provider asset SELECT leaked real registered artwork metadata to '+label+'.');
+    }
+
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},
@@ -358,6 +405,10 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(revokedProviderRead.status===200&&Array.isArray(revokedProviderRead.body)&&
     revokedProviderRead.body.length===0,
     'Revoked owner AAL2 device retained direct financial provider SELECT visibility.');
+  const revokedAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey);
+  assert(revokedAssetRead.status===200&&Array.isArray(revokedAssetRead.body)&&
+    revokedAssetRead.body.length===0,
+    'Revoked owner AAL2 device retained direct financial provider asset SELECT visibility.');
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
   // The JWT still parses after device revocation. Every previously tested
   // direct metadata/asset RPC must now deny the same revoked AAL2 identity.
@@ -372,6 +423,23 @@ export async function runDirectReceivableRpcProof(options:Options){
   // synthetic session, never re-revoke a row already retired above.
   return aal1Claims.session_id===aal2Claims.session_id?[]:[aal1Claims.session_id!];
   }finally{
+    // An asset registry row must be removed before its Storage object:
+    // preserve production FK semantics while cleaning only random fixtures
+    // in the disposable local Supabase. An empty DELETE return is valid if
+    // the test failed before registration was committed.
+    for(const assetKey of syntheticRegisteredAssets){
+      const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+        encodeURIComponent(assetKey),{
+        method:'DELETE',headers:{
+          apikey:serviceRole,authorization:'Bearer '+serviceRole,
+          prefer:'return=representation',accept:'application/json',
+        },
+      });
+      const rows=await response.json().catch(()=>null);
+      assert(response.status===200&&Array.isArray(rows)&&rows.length<=1&&
+        rows.every((row:{asset_key?:unknown})=>row.asset_key===assetKey),
+        'Isolated direct provider asset registry cleanup was not confined to its synthetic key.');
+    }
     // Delete only our own random loopback fixtures through the confined local
     // service role, even if a negative assertion discovered a Storage bypass.
     for(const fixture of syntheticStoragePaths){
