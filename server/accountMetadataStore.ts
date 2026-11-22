@@ -430,6 +430,9 @@ async function writeProviderRpc(rpc:string,input:FinancialProviderWrite,accessTo
   // An HTTP 200 can conceal a committed mutation with a malformed receipt.
   // Do not infer success from an absent, duplicated or mismatched RPC row.
   if(!Array.isArray(payload)||payload.length!==1)throw unverified();
+  // The create/update RPC must acknowledge an active provider, as required
+  // for ambiguous postcommit recovery. Archived/missing active is unverified.
+  if((payload[0] as {active?:unknown}|null)?.active!==true)throw unverified();
   const row=mapFinancialProviderRow(payload[0]);
   if(!matches(row))throw unverified();
   return row;

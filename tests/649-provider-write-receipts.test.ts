@@ -26,7 +26,7 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
   it.each([
     'valid-create','valid-update','empty-receipt','duplicate-receipt',
     'wrong-id','wrong-display','wrong-short','wrong-kind','wrong-country',
-    'wrong-order','malformed-row',
+    'wrong-order','inactive-create','inactive-update','missing-active','malformed-row',
   ] as const)('does not accept a false-green provider RPC for %s',async scenario=>{
     config();
     const receipt:Record<string,unknown>={...row()};
@@ -36,6 +36,8 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
     if(scenario==='wrong-kind')receipt.provider_kind='wallet';
     if(scenario==='wrong-country')receipt.country_code='US';
     if(scenario==='wrong-order')receipt.sort_order=43;
+    if(scenario==='inactive-create'||scenario==='inactive-update')receipt.active=false;
+    if(scenario==='missing-active')delete receipt.active;
     if(scenario==='malformed-row')receipt.sort_order='42';
     const data=scenario==='empty-receipt'?[]:scenario==='duplicate-receipt'?[receipt,{...receipt}]:[receipt];
     const calls:Array<{url:string;method:string;body:string}>=[];
@@ -43,7 +45,8 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       calls.push({url:String(request),method:String(init?.method??'GET'),body:String(init?.body??'')});
       return new Response(JSON.stringify(data),{status:200,headers:{'content-type':'application/json'}});
     }));
-    const act=scenario==='valid-update'?updateFinancialProvider:writeFinancialProvider;
+    const update=scenario==='valid-update'||scenario==='inactive-update';
+    const act=update?updateFinancialProvider:writeFinancialProvider;
     if(scenario.startsWith('valid')){
       await expect(act(input(),'owner-jwt')).resolves.toMatchObject({
         id:'owner-bank',displayName:'Owner Bank',shortName:'Owner',providerKind:'bank',
@@ -57,7 +60,7 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
     }
     expect(calls).toHaveLength(1);
     expect(calls[0]?.method).toBe('POST');
-    expect(calls[0]?.url).toContain('/rpc/rheomiq_'+(scenario==='valid-update'?'update':'create')+'_financial_provider');
+    expect(calls[0]?.url).toContain('/rpc/rheomiq_'+(update?'update':'create')+'_financial_provider');
     expect(JSON.parse(calls[0]?.body??'{}')).toMatchObject({
       p_id:'owner-bank',p_display_name:'Owner Bank',p_short_name:'Owner',
       p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42,
