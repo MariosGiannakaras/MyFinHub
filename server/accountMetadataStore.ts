@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { ApiError, copyBoundedBinaryValue } from './http.js';
 import { fetchUpstream } from './upstream.js';
 import { isValidIban } from '../src/lib/iban.js';
@@ -453,6 +453,54 @@ const PROVIDER_ASSET_EXTENSION:Record<string,string>={
 
 const RECURRING_SERVICE_ASSET_BUCKET='recurring-service-assets';
 
+// A Storage POST can commit even if its 5xx/timeout receipt is lost. Both
+// artwork buckets already serve public image bytes. Confirm the exact newly
+// generated path AND bytes before a one-time PostgreSQL registration. Never
+// replay POST, delete the object, or infer success from Storage listing alone.
+async function confirmedAmbiguousArtworkUpload(
+  url:string,apiKey:string,authorization:string,
+  bucket:'financial-provider-assets'|'recurring-service-assets',
+  encodedPath:string,expectedContent:Buffer,
+):Promise<boolean>{
+  const controller=new AbortController();
+  // The timeout includes the response body, not just the GET headers.
+  const timer=setTimeout(()=>controller.abort(),12_000);
+  try{
+    const response=await fetch(`${url}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodedPath}`,{
+      method:'GET',cache:'no-store',signal:controller.signal,
+      headers:{apikey:apiKey,authorization,'cache-control':'no-store'},
+    });
+    if(!response.ok||!response.body)return false;
+    const length=response.headers.get('content-length');
+    if(length!==null&&(!/^\\d+$/.test(length)||Number(length)!==expectedContent.byteLength))
+      return false;
+    const reader=response.body.getReader();
+    const actualHash=createHash('sha256');
+    let size=0,complete=false;
+    try{
+      while(true){
+        const next=await reader.read();
+        if(next.done){complete=true;break}
+        size+=next.value.byteLength;
+        if(size>expectedContent.byteLength)return false;
+        actualHash.update(next.value);
+      }
+    }finally{
+      if(!complete)await reader.cancel().catch(()=>{});
+      reader.releaseLock();
+    }
+    return size===expectedContent.byteLength&&
+      actualHash.digest('hex')===createHash('sha256').update(expectedContent).digest('hex');
+  }catch{
+    // A 404, unreadable object, truncated body, transport error or timeout
+    // is an UNKNOWN upload outcome. Never delete or register on that basis.
+    return false;
+  }finally{
+    clearTimeout(timer);
+    controller.abort();
+  }
+}
+
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
   role:'logo'|'wordmark'|'card-mark';
@@ -471,18 +519,35 @@ export async function uploadFinancialProviderAsset(input:{
   const storagePath=`providers/${input.providerId}/${storageFileName}`;
   const {url,apiKey,authorization}=config(accessToken);
   const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
-  const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
-    method:'POST',
-    headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
-    body:Uint8Array.from(content),
-  },'DATA');
-  if(!upload.ok){
+  let upload:Response|null=null;
+  try{
+    upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
+      method:'POST',
+      headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
+      body:Uint8Array.from(content),
+    },'DATA');
+  }catch(error){
+    // Network timeout/5xx is not proof of rollback: a fresh owner-owned
+    // Storage object may already exist under this single generated key.
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+  }
+  if(upload&&!upload.ok&&upload.status!==408&&upload.status!==429&&upload.status<500){
     const payload=await upload.json().catch(()=>null) as any;
     const marker=`${payload?.statusCode??''} ${payload?.error??''} ${payload?.message??''}`;
     if(upload.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
     if(upload.status===403||/forbidden|42501/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
-    if(upload.status>=500)throw new ApiError(503,'PROVIDER_ASSET_STORAGE_UNAVAILABLE','Provider image storage is temporarily unavailable.');
     throw new ApiError(502,'PROVIDER_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  }
+  if(!upload||!upload.ok){
+    // Verify real bytes, not an object-name listing or a possibly stale
+    // registration. Never retry the non-idempotent Storage POST.
+    const matched=await confirmedAmbiguousArtworkUpload(
+      url,apiKey,authorization,PROVIDER_ASSET_BUCKET,encodedPath,content);
+    if(!matched){
+      console.error('[RheomIQ provider artwork upload]',{assetKey,status:'storage-receipt-unverified'});
+      throw new ApiError(503,'PROVIDER_ASSET_UPLOAD_UNVERIFIED',
+        'Η μεταφόρτωση εικόνας δεν επιβεβαιώθηκε. Έλεγξε τις εικόνες πριν από νέα μεταφόρτωση.');
+    }
   }
 
   // A failed response does not prove the registration RPC rolled back: the
@@ -641,18 +706,35 @@ export async function uploadRecurringServiceAsset(input:{
   const storagePath=`services/${assetKey}.${extension}`;
   const {url,apiKey,authorization}=config(accessToken);
   const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
-  const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
-    method:'POST',
-    headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
-    body:Uint8Array.from(content),
-  },'DATA');
-  if(!upload.ok){
+  let upload:Response|null=null;
+  try{
+    upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
+      method:'POST',
+      headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
+      body:Uint8Array.from(content),
+    },'DATA');
+  }catch(error){
+    // Network timeout/5xx is not proof of rollback: a fresh owner-owned
+    // Storage object may already exist under this single generated key.
+    if(!(error instanceof ApiError)||error.status<500)throw error;
+  }
+  if(upload&&!upload.ok&&upload.status!==408&&upload.status!==429&&upload.status<500){
     const payload=await upload.json().catch(()=>null) as any;
     const marker=`${payload?.statusCode??''} ${payload?.error??''} ${payload?.message??''}`;
     if(upload.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
     if(upload.status===403||/forbidden|42501/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
-    if(upload.status>=500)throw new ApiError(503,'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE','Η αποθήκευση εικόνας υπηρεσίας δεν είναι προσωρινά διαθέσιμη.');
     throw new ApiError(502,'RECURRING_SERVICE_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας υπηρεσίας.');
+  }
+  if(!upload||!upload.ok){
+    // Verify real bytes, not an object-name listing or a possibly stale
+    // registration. Never retry the non-idempotent Storage POST.
+    const matched=await confirmedAmbiguousArtworkUpload(
+      url,apiKey,authorization,RECURRING_SERVICE_ASSET_BUCKET,encodedPath,content);
+    if(!matched){
+      console.error('[RheomIQ recurring artwork upload]',{assetKey,status:'storage-receipt-unverified'});
+      throw new ApiError(503,'RECURRING_SERVICE_ASSET_UPLOAD_UNVERIFIED',
+        'Η μεταφόρτωση λογοτύπου υπηρεσίας δεν επιβεβαιώθηκε. Έλεγξε τις εικόνες πριν από νέα μεταφόρτωση.');
+    }
   }
 
   // The registration RPC can COMMIT before an upstream 5xx/timeout. Treat

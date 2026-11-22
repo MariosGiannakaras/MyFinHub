@@ -370,6 +370,70 @@ describe('provider branding management',()=>{
     expect(receiptQaSource).toContain("'receipt switch confirmation has settled at full opacity'");
     expect(receiptQaSource).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
   });
+
+  it('reconciles provider Storage 503 only after exact public bytes before one registration',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const requests:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=init?.method||'GET';
+      requests.push({url,method});
+      if(requests.length===1)return new Response('{}',{status:503});
+      if(requests.length===2){
+        expect(method).toBe('GET');
+        expect(url).toContain('/storage/v1/object/public/financial-provider-assets/providers/demo-bank/');
+        return new Response(bytes,{status:200,headers:{'content-length':String(bytes.byteLength)}});
+      }
+      if(requests.length===3){
+        const path=new URL(requests[0].url).pathname.split('/financial-provider-assets/')[1];
+        const assetKey=path.split('/').at(-1)!.replace(/\.png$/,'');
+        return new Response(JSON.stringify([{asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',
+          variant:'light',file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+          storage_path:path,size_bytes:bytes.byteLength,updated_at:'2026-11-22T20:00:00Z',active:true}]),{status:200});
+      }
+      throw new Error('Upload reconciliation must not perform another POST or cleanup DELETE');
+    }));
+    const result=await uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',
+      mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:bytes},'owner-aal2-token');
+    expect(result.assetKey).toMatch(/^demo-bank-asset-[a-f0-9]{12}$/);
+    expect(requests.map(row=>row.method)).toEqual(['POST','GET','POST']);
+    expect(requests[2].url).toContain('/rpc/rheomiq_register_financial_provider_asset');
+    expect(requests.every(row=>!row.url.includes('/storage/v1/object/list/'))).toBe(true);
+  });
+
+  it.each(['missing','mismatch','oversized','timeout'] as const)(
+    'never registers, retries or deletes uncertain provider Storage when byte readback is %s',async scenario=>{
+      process.env.SUPABASE_URL='https://project.example.supabase.co';
+      process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+      const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+      const calls:Array<{url:string;method:string}>=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=init?.method||'GET';
+        calls.push({url,method});
+        if(calls.length===1){
+          if(scenario==='timeout')throw new Error('lost Storage POST response');
+          return new Response('{}',{status:503});
+        }
+        if(calls.length===2){
+          expect(method).toBe('GET');
+          if(scenario==='missing')return new Response('{}',{status:404});
+          if(scenario==='oversized')return new Response(Buffer.alloc(bytes.length+1),{status:200});
+          return new Response(Buffer.from([...bytes.slice(0,-1),42]),{status:200});
+        }
+        throw new Error('Unsafe provider Storage replay, deletion or registration');
+      }));
+      const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+      try{
+        await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',
+          mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:bytes},'owner-aal2-token'))
+          .rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_UPLOAD_UNVERIFIED'});
+        expect(calls.map(c=>c.method)).toEqual(['POST','GET']);
+        expect(log).toHaveBeenCalledWith('[RheomIQ provider artwork upload]',
+          expect.objectContaining({status:'storage-receipt-unverified'}));
+      }finally{log.mockRestore()}
+    });
+
   it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
