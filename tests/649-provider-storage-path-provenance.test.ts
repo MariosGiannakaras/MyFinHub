@@ -17,6 +17,7 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(guard).toContain('before update of active on public.rheomiq_financial_provider_assets');
     expect(guard).not.toMatch(/security definer|delete from|truncate table|drop table|drop schema/i);
     expect(direct).toContain('const boundAssetBefore=await selectProviderAsset(serviceRole,registeredAssetKey)');
+    expect(direct).toContain('headers:{apikey:token===serviceRole?serviceRole:publishable,');
     expect(direct).toContain("deniedBoundDeactivate.status===409&&String(deniedBoundBody?.code)==='23503'");
     expect(direct).toContain('JSON.stringify(boundAssetAfter.body)===JSON.stringify(boundAssetBefore.body)');
     expect(direct).toContain('JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body)');

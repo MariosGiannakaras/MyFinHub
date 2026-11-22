@@ -222,7 +222,11 @@ export async function runDirectReceivableRpcProof(options:Options){
       asset_key:'eq.'+assetKey,
     });
     const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?'+query,{
-      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+      // Service-role readback must use both admin credentials. Supplying only
+      // the service JWT with a public API key can be rejected by the gateway
+      // before any PostgreSQL/RLS assertion is reached.
+      headers:{apikey:token===serviceRole?serviceRole:publishable,
+        authorization:'Bearer '+token,accept:'application/json'},
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
