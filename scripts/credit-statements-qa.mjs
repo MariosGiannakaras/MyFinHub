@@ -26,6 +26,18 @@ try{
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(80)}throw new Error(`Timed out waiting for ${label}`)};
+  // Align screenshot evidence below sticky AppShell chrome. A plain
+  // scrollIntoView(start) had visually hidden the section title in 320/375px
+  // captures; this measured framing asserts the complete Greek title is shown.
+  const frameStatementHeading=async label=>{
+    const positioned=await c.call("function(){const title=document.querySelector('#credit-statements-title');if(!title)return false;title.scrollIntoView({block:'start'});const bar=document.querySelector('.topbar');const top=title.getBoundingClientRect().top;const clearance=(bar?.getBoundingClientRect().bottom||0)+12;window.scrollBy({top:Math.min(0,top-clearance),behavior:'instant'});return true}");
+    assert(positioned,'statement heading exists for screenshot framing');
+    await sleep(120);
+    const bounds=await c.call("function(){const title=document.querySelector('#credit-statements-title'),bar=document.querySelector('.topbar');const r=title?.getBoundingClientRect();return {titleTop:r?.top??-999,titleBottom:r?.bottom??999,chromeBottom:bar?.getBoundingClientRect().bottom??0}}");
+    assert(bounds.titleTop>=bounds.chromeBottom+6&&bounds.titleBottom<innerHeight-12,
+      `frame credit statement title stays below sticky topbar (${label}): ${JSON.stringify(bounds)}`);
+  };
+
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')&&Boolean(document.querySelector('[data-credit-statements]'))}",'credit statement page');
 
@@ -36,7 +48,7 @@ try{
   assert(hierarchy.primary.includes('20/08/2026')&&hierarchy.primary.includes('90,00'),'primary statement exposes due date and remaining balance');
   assert(hierarchy.pay.includes('Πληρωμή'),'primary unpaid statement exposes payment CTA');
   assert(hierarchy.overflow<=1,`desktop horizontal overflow ${hierarchy.overflow}px`);
-  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");await sleep(120);
+  await frameStatementHeading('desktop-1440');
   await shot(c,'credit-statements-active-desktop');
 
   await c.call("function(){document.querySelector('[data-primary-credit-statement] button.save-button')?.click();return true}");
@@ -57,11 +69,11 @@ try{
   const mobileHeading=await c.call("function(){const el=document.querySelector('#credit-statements-title'),r=el?.getBoundingClientRect();return {text:el?.textContent?.trim(),contained:Boolean(r&&r.left>=-1&&r.right<=innerWidth+1),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
   assert(mobileHeading.text==='Καταστάσεις λογαριασμού πιστωτικής'&&mobileHeading.contained&&mobileHeading.overflow<=1,'Greek heading remains readable and contained at 375px');
   await sleep(160);
-  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");
+  await frameStatementHeading('mobile-375');
   await waitFor("function(){const node=document.querySelector('[data-primary-credit-statement]');if(!node)return false;const r=node.getBoundingClientRect();return r.bottom>90&&r.top<innerHeight-100}",'mobile primary statement visible in evidence viewport');
   await shot(c,'credit-statements-active-mobile');
   await c.send('Emulation.setDeviceMetricsOverride',{width:320,height:740,deviceScaleFactor:1,mobile:true});
-  await sleep(120);
+  await frameStatementHeading('mobile-320');
   const smallMobile=await c.call("function(){const el=document.querySelector('#credit-statements-title'),r=el?.getBoundingClientRect();return {text:el?.textContent?.trim(),contained:Boolean(r&&r.left>=-1&&r.right<=innerWidth+1),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
   assert(smallMobile.text==='Καταστάσεις λογαριασμού πιστωτικής'&&smallMobile.contained&&smallMobile.overflow<=1,'Greek account statement heading remains contained at 320px');
   await shot(c,'credit-statements-localized-320');

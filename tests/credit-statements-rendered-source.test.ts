@@ -32,6 +32,11 @@ describe('historical statement rendered regression proof (DV-FB05)',()=>{
     expect(page).toContain('data-credit-statements');
     expect(page).toContain('creditStatementViews(data,card.id,asOf)');
     expect(browser).toContain('credit-statements-localized-320');
+    expect(browser).toContain("frameStatementHeading('desktop-1440')");
+    expect(browser).toContain("frameStatementHeading('mobile-375')");
+    expect(browser).toContain("frameStatementHeading('mobile-320')");
+    expect(browser).toContain('frame credit statement title stays below sticky topbar');
+
     expect(browser).toContain("Greek account statement heading is truthful and contained at 1440px");
     expect(browser).toContain("Greek heading remains readable and contained at 375px");
     expect(browser).toContain("Greek account statement heading remains contained at 320px");
