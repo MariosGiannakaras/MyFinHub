@@ -233,6 +233,19 @@ export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft[
  * IndexedDB row BEFORE attempting a separate DELETE; a lost DELETE must not
  * make the same receipt look unposted after a reload.
  */
+/** A receipt prefill can outlive its IndexedDB row (e.g. when another tab
+ * finished posting or discarded it). Recheck the persisted status immediately
+ * before a new finance write, rather than trusting Quick Entry's stale prefill.
+ * This is a fail-closed preflight, not a cross-tab distributed write lock.
+ */
+export async function assertReceiptDraftUnposted(id: string): Promise<void> {
+  await withStore('readonly', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή. Επίλεξε άλλη απόδειξη.');
+    if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Μην καταχωρίσεις ξανά την ίδια απόδειξη.');
+  });
+}
+
 export async function markReceiptDraftPosted(id: string): Promise<void> {
   await withStore('readwrite', async (store) => {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);

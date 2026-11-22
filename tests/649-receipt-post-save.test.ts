@@ -18,6 +18,13 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(owner).toContain('await deleteReceiptDraft(id)');
     expect(owner).toContain('setPending(current=>current.filter(id=>!completed.includes(id)))');
     expect(handoff).toContain('await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)');
+    expect(handoff).toContain('if(handledId)await assertReceiptDraftUnposted(handledId)');
+    expect(handoff.indexOf('if(handledId)await assertReceiptDraftUnposted(handledId)'))
+      .toBeLessThan(handoff.indexOf('await saveFinanceThenCleanupReceipt('));
+    const drafts=readFileSync('src/lib/receiptDrafts.ts','utf8');
+    expect(drafts).toContain("export async function assertReceiptDraftUnposted(id: string)");
+    expect(drafts).toContain("await withStore('readonly'");
+    expect(drafts).toContain("draft.status === 'posted'");
     expect(owner).toContain("rows.filter(row=>row.status==='posted')");
     expect(inbox).toContain("selected.status==='posted' ? <div className");
     expect(inbox).toContain("selected.status!=='posted'?<Button");
@@ -38,6 +45,9 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('receipt-local-retry-still-blocked');
     expect(qa).toContain('receipt-local-posted-after-reload');
     expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
+    expect(qa).toContain('receipt-stale-prefill-cross-tab-preflight-denied');
+    expect(qa).toContain('another-tab synthetic receipt posted status committed before stale Quick Entry submit');
+    expect(qa).toContain('stale receipt handoff was blocked before any finance write');
     expect(qa).toContain("receiptQaUrl.searchParams.set('receipt-persist-posted-qa','1')");
     expect(qa).toContain('restoredSyntheticFinance');
     const fixture=readFileSync('src/qa.tsx','utf8');

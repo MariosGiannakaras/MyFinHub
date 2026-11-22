@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  assertReceiptDraftUnposted,
   createReceiptDraft,
   deleteReceiptDraft,
   listReceiptDrafts,
@@ -131,6 +132,15 @@ describe('local receipts: real persistence functions with serialized IndexedDB t
     ]);
     expect(secondDelete).toBeUndefined();
     expect(laterError).toBeNull();
+    expect(await listReceiptDrafts()).toEqual([]);
+  });
+  it('blocks a stale Quick Entry receipt handoff after another tab posted or deleted the draft',async()=>{
+    vi.stubGlobal('indexedDB',localIndexedDb([existing('stale',1)]));
+    await expect(assertReceiptDraftUnposted('stale')).resolves.toBeUndefined();
+    await markReceiptDraftPosted('stale');
+    await expect(assertReceiptDraftUnposted('stale')).rejects.toThrow('Μην καταχωρίσεις ξανά');
+    await deleteReceiptDraft('stale');
+    await expect(assertReceiptDraftUnposted('stale')).rejects.toThrow('δεν υπάρχει πλέον');
     expect(await listReceiptDrafts()).toEqual([]);
   });
   it('retains a durably posted receipt after local cleanup fails and disallows a second finance handoff',async()=>{

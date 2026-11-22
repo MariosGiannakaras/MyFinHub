@@ -1,7 +1,7 @@
 import { ReceiptText } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { deleteReceiptDraft, markReceiptDraftPosted, type ReceiptProposal } from '../lib/receiptDrafts';
+import { assertReceiptDraftUnposted, deleteReceiptDraft, markReceiptDraftPosted, type ReceiptProposal } from '../lib/receiptDrafts';
 import { receiptSplitParts } from '../lib/receiptItemReview';
 import { saveFinanceThenCleanupReceipt } from '../lib/receiptPostSave';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
@@ -96,6 +96,9 @@ export function ReceiptAwareQuickAdd({
 
   const completeWithReceipt = async (saveFinance:()=>Promise<void>) => {
     const handledId=receiptDraftId;
+    // A stale prefill (another tab posted/deleted this draft) must fail
+    // before ANY finance write. The later local cleanup is independent.
+    if(handledId)await assertReceiptDraftUnposted(handledId);
     // The finance save is acknowledged first. A later local IndexedDB failure
     // must not cause QuickAdd to report a false finance error or post twice.
     await saveFinanceThenCleanupReceipt(

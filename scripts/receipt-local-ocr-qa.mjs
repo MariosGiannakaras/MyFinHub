@@ -513,6 +513,71 @@ try {
   await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'reviewed receipt deletion completes');
   assert((await receiptCount())===0,'local receipt deleted only after explicit confirmation');
 
+  console.log('Receipt OCR QA: stale receipt prefill from another tab must deny new finance write');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'clean QA remount before stale handoff');
+  const seededStale=await c.call(`async function(){return await new Promise((resolve,reject)=>{
+    const open=indexedDB.open('myfinhub-local-receipts-v1',1);
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('receipts','readwrite'),now=new Date().toISOString();
+      const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),x=>x.charCodeAt(0));
+      const image=new Blob([bytes],{type:'image/png'});
+      tx.objectStore('receipts').put({
+        id:'qa-stale-handoff',capturedAt:now,updatedAt:now,status:'ready',
+        image,mimeType:'image/png',bytes:image.size,width:1,height:1,
+        proposal:{merchant:'QA STALE CROSS TAB',date:'2026-08-22',total:13.49,currency:'EUR'},
+      });
+      tx.oncomplete=()=>{db.close();resolve(true)};
+      tx.onerror=()=>{db.close();reject(tx.error)};
+    };
+    open.onerror=()=>reject(open.error);
+  })}`);
+  assert(seededStale,'synthetic stale receipt fixture persisted in local-only IndexedDB');
+  await openReceiptInbox();
+  await waitFor("function(){return Boolean([...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&!b.disabled))}",'stale receipt can initially hand off before another tab posts it');
+  const staleHandoff=await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(b=>(b.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση')&&!b.disabled);b?.click();return Boolean(b)}");
+  assert(staleHandoff,'actual Quick Entry accepts initial unposted receipt prefill');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))&&!document.querySelector('.receipt-inbox')}",'stale receipt handoff into actual Quick Entry');
+  const writesBeforeStale=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  // The first tab's prefill stays mounted while a second tab posts the same
+  // IndexedDB row. QA simulates only the durable cross-tab store update.
+  const markedElsewhere=await c.call(`async function(){return await new Promise((resolve,reject)=>{
+    const open=indexedDB.open('myfinhub-local-receipts-v1',1);
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('receipts','readwrite'),store=tx.objectStore('receipts'),get=store.get('qa-stale-handoff');
+      let updated=false;
+      get.onsuccess=()=>{
+        if(!get.result){db.close();reject(new Error('Stale QA row vanished'));return;}
+        store.put({...get.result,status:'posted',updatedAt:new Date().toISOString()});updated=true;
+      };
+      get.onerror=()=>reject(get.error);
+      tx.oncomplete=()=>{db.close();resolve(updated)};
+      tx.onerror=()=>{db.close();reject(tx.error)};
+    };
+    open.onerror=()=>reject(open.error);
+  })}`);
+  assert(markedElsewhere,'another-tab synthetic receipt posted status committed before stale Quick Entry submit');
+  const staleSubmit=await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(b=>(b.textContent||'').includes('Καταχώριση'));if(!b||b.disabled)return false;b.click();return true}");
+  assert(staleSubmit,'real Quick Entry submit reaches receipt preflight');
+  await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Μην καταχωρίσεις ξανά')}",'stale posted receipt rejected before finance write');
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===writesBeforeStale,
+    'stale receipt handoff was blocked before any finance write, not after duplicate posting');
+  assert((await receiptCount())===1,'stale posted receipt remains local evidence after rejected handoff');
+  await screenshot('receipt-stale-prefill-cross-tab-preflight-denied');
+  const staleCleanup=await c.call(`async function(){return await new Promise((resolve,reject)=>{
+    const open=indexedDB.open('myfinhub-local-receipts-v1',1);
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('receipts','readwrite');
+      tx.objectStore('receipts').delete('qa-stale-handoff');
+      tx.oncomplete=()=>{db.close();resolve(true)};
+      tx.onerror=()=>{db.close();reject(tx.error)};
+    };
+    open.onerror=()=>reject(open.error);
+  })}`);
+  assert(staleCleanup,'synthetic second-tab receipt is removed by local-only QA cleanup');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'stale handoff QA remount');
+  assert((await receiptCount())===0,'stale QA fixture leaves no private receipt behind');
 
   console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
