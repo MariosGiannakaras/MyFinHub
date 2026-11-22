@@ -73,6 +73,21 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf("await assertDeniedStorage('revoked owner AAL2',aal2Token)"))
       .toBeGreaterThan(direct.indexOf("const revokedDevice=await fetch"));
   });
+  it('enforces direct real-JWT provider SELECT RLS for AAL1, nonowner AAL2 and revoked AAL2',()=>{
+    expect(direct).toContain("apiUrl+'/rest/v1/rheomiq_financial_providers?'+query");
+    expect(direct).toContain("authorization:'Bearer '+token");
+    expect(direct).toContain('const ownerCatalog=await selectProvider(aal2Token)');
+    expect(direct).toContain("ownerCatalog.body[0]?.active===true");
+    expect(direct).toContain("['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]");
+    expect(direct).toContain('const deniedProvider=await selectProvider(token,protectedProviderId)');
+    expect(direct).toContain('deniedProvider.body.length===0');
+    expect(direct).toContain('const revokedProviderRead=await selectProvider(aal2Token,protectedProviderId)');
+    expect(direct).toContain('revokedProviderRead.body.length===0');
+    expect(direct.indexOf('const ownerCatalog=await selectProvider(aal2Token)'))
+      .toBeLessThan(direct.indexOf('const revokedDevice=await fetch'));
+    expect(direct.indexOf('const revokedProviderRead=await selectProvider(aal2Token,protectedProviderId)'))
+      .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
+  });
   it('rejects direct provider metadata create/update by nonowner and AAL1 at the real RPC boundary',()=>{
     expect(direct).toContain("method:'rheomiq_create_financial_provider'");
     expect(direct).toContain("method:'rheomiq_update_financial_provider'");

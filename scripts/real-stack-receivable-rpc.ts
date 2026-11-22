@@ -203,6 +203,16 @@ export async function runDirectReceivableRpcProof(options:Options){
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
+  // Positive seeded-row control ensures direct JWT denials are not vacuous.
+  const selectProvider=async(token:string,providerId?:string)=>{
+    const query=new URLSearchParams({select:'id,active',active:'eq.true'});
+    if(providerId)query.set('id','eq.'+providerId);
+    else{query.set('order','id.asc');query.set('limit','1');}
+    const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_providers?'+query,{
+      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
   // #649 I22.02: genuine local GoTrue identities must also obey direct
   // Supabase Storage INSERT/DELETE policies, not only PostgreSQL RPC/RLS.
   // Use a valid SVG and positive owner AAL2 controls so malformed content
@@ -270,6 +280,19 @@ export async function runDirectReceivableRpcProof(options:Options){
         'Direct account metadata SELECT leaked owner IBAN to '+label+'.');
     }
 
+    const ownerCatalog=await selectProvider(aal2Token);
+    const protectedProviderId=String(ownerCatalog.body?.[0]?.id??'');
+    assert(ownerCatalog.status===200&&Array.isArray(ownerCatalog.body)&&
+      ownerCatalog.body.length===1&&ownerCatalog.body[0]?.active===true&&
+      /^[a-z][a-z0-9-]{0,63}$/.test(protectedProviderId),
+      'Local owner AAL2 cannot read an active seeded provider catalog row.');
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const deniedProvider=await selectProvider(token,protectedProviderId);
+      assert(deniedProvider.status===200&&Array.isArray(deniedProvider.body)&&
+        deniedProvider.body.length===0,
+        'Direct financial provider SELECT leaked owner catalog data to '+label+'.');
+    }
+
     for(const fixture of protectedStorage){
       const inserted=await storageRequest('POST',aal2Token,fixture);
       assert([200,201].includes(inserted.status)&&await storageExists(fixture),
@@ -330,6 +353,10 @@ export async function runDirectReceivableRpcProof(options:Options){
   const revokedRead=await selectMetadata(aal2Token);
   assert(revokedRead.status===200&&Array.isArray(revokedRead.body)&&revokedRead.body.length===0,
     'Revoked owner AAL2 device retained direct account metadata visibility.');
+  const revokedProviderRead=await selectProvider(aal2Token,protectedProviderId);
+  assert(revokedProviderRead.status===200&&Array.isArray(revokedProviderRead.body)&&
+    revokedProviderRead.body.length===0,
+    'Revoked owner AAL2 device retained direct financial provider SELECT visibility.');
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
   // The AAL1 and AAL2 tokens may share the same local GoTrue session_id.
   // The suite's outer owner-authorized cleanup should revoke only an active
