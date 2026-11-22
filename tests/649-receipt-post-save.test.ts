@@ -18,9 +18,13 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(owner).toContain('await deleteReceiptDraft(id)');
     expect(owner).toContain('setPending(current=>current.filter(id=>!completed.includes(id)))');
     expect(handoff).toContain('await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)');
-    expect(handoff).toContain('if(handledId)await assertReceiptDraftUnposted(handledId)');
-    expect(handoff.indexOf('if(handledId)await assertReceiptDraftUnposted(handledId)'))
-      .toBeLessThan(handoff.indexOf('await saveFinanceThenCleanupReceipt('));
+    expect(handoff).toContain('if(receiptDraftId)await assertReceiptDraftUnposted(receiptDraftId)');
+    expect(handoff).toContain('onBeforeFinanceWrite={verifyReceiptBeforeFinance}');
+    const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
+    expect(quick).toContain('await onBeforeFinanceWrite?.();');
+    expect(quick.indexOf('await onBeforeFinanceWrite?.();'))
+      .toBeLessThan(quick.indexOf('financeDispatched=true;'));
+    expect(handoff).not.toContain('if(handledId)await assertReceiptDraftUnposted(handledId)');
     const drafts=readFileSync('src/lib/receiptDrafts.ts','utf8');
     expect(drafts).toContain("export async function assertReceiptDraftUnposted(id: string)");
     expect(drafts).toContain("await withStore('readonly'");

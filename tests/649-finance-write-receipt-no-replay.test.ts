@@ -49,6 +49,9 @@ describe('#649 I19.04 fail closed after uncertain finance write acknowledgments'
     expect(contextual).toContain("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event)");
     expect(contextual).toContain('await onCreateLinkedTransfer(event,fee)');
     expect(quick).toContain('await onCreateLinkedTransfer(event,fee)');
+    expect(quick).toContain('await onBeforeFinanceWrite?.();');
+    expect(quick.indexOf('await onBeforeFinanceWrite?.();'))
+      .toBeLessThan(quick.indexOf('financeDispatched=true;'));
     const qa=readFileSync('src/qa.tsx','utf8');
     expect(qa.indexOf('addEvent(event);')).toBeLessThan(qa.indexOf("if(params.get('quick-event-save-ambiguous')==='1')"));
     expect(qa).toContain("params.get('quick-event-save-rejected')==='1'");

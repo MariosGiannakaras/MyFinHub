@@ -94,11 +94,11 @@ export function ReceiptAwareQuickAdd({
     setReceiptSession((value) => value + 1);
   };
 
+  const verifyReceiptBeforeFinance=async()=>{
+    if(receiptDraftId)await assertReceiptDraftUnposted(receiptDraftId);
+  };
   const completeWithReceipt = async (saveFinance:()=>Promise<void>) => {
     const handledId=receiptDraftId;
-    // A stale prefill (another tab posted/deleted this draft) must fail
-    // before ANY finance write. The later local cleanup is independent.
-    if(handledId)await assertReceiptDraftUnposted(handledId);
     // The finance save is acknowledged first. A later local IndexedDB failure
     // must not cause QuickAdd to report a false finance error or post twice.
     await saveFinanceThenCleanupReceipt(
@@ -134,6 +134,7 @@ export function ReceiptAwareQuickAdd({
         onClose={onClose}
         onCreate={create}
         onCreateLinkedTransfer={createLinked}
+        onBeforeFinanceWrite={verifyReceiptBeforeFinance}
         currentBalance={currentBalance}
       />
       {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={requestReceiptOpen}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
