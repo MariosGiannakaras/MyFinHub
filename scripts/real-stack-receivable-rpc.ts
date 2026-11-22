@@ -227,15 +227,58 @@ export async function runDirectReceivableRpcProof(options:Options){
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
   // Bindings have an independent owner+AAL2 table SELECT policy.
-  const selectProviderBinding=async(token:string,providerId:string)=>{
+  const selectProviderBinding=async(token:string,providerId:string,variant:'light'|'dark'='dark')=>{
     const query=new URLSearchParams({
-      select:'provider_id,asset_role,variant,asset_key',
-      provider_id:'eq.'+providerId,asset_role:'eq.card-mark',variant:'eq.dark',
+      select:'provider_id,asset_role,variant,asset_key,updated_at',
+      provider_id:'eq.'+providerId,asset_role:'eq.card-mark',variant:'eq.'+variant,
     });
     const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?'+query,{
-      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+      headers:{apikey:token===serviceRole?serviceRole:publishable,
+        authorization:'Bearer '+token,accept:'application/json'},
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
+  };
+  // A real existing binding provides a positive control for UPDATE/DELETE.
+  // The unused second slot provides a distinct INSERT target, so a uniqueness
+  // constraint cannot masquerade as proof that a denied INSERT obeyed RLS.
+  const assertDeniedBindingMutations=async(label:string,token:string,providerId:string,assetKey:string)=>{
+    const baseline=await selectProviderBinding(serviceRole,providerId);
+    const empty=await selectProviderBinding(serviceRole,providerId,'light');
+    assert(baseline.status===200&&Array.isArray(baseline.body)&&baseline.body.length===1&&
+      baseline.body[0]?.asset_key===assetKey&&typeof baseline.body[0]?.updated_at==='string'&&
+      empty.status===200&&Array.isArray(empty.body)&&empty.body.length===0,
+      'Direct binding DML must start with one real owner row and an empty insertion slot.');
+    for(const method of ['POST','PATCH','DELETE'] as const){
+      const query=method==='POST'?'':('?'+new URLSearchParams({
+        provider_id:'eq.'+providerId,asset_role:'eq.card-mark',variant:'eq.dark',
+      }));
+      const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings'+query,{
+        method,headers:{
+          apikey:publishable,authorization:'Bearer '+token,accept:'application/json',
+          prefer:'return=representation',
+          ...(method!=='DELETE'?{'content-type':'application/json'}:{}),
+        },
+        ...(method==='POST'?{body:JSON.stringify({
+          provider_id:providerId,asset_role:'card-mark',variant:'light',asset_key:assetKey,
+        })}:method==='PATCH'?{body:JSON.stringify({
+          updated_at:'2020-01-01T00:00:00.000Z',
+        })}:{}),
+      });
+      const result=await response.json().catch(()=>null);
+      if(method==='POST'){
+        assert(response.status===403&&String(result?.code)==='42501',
+          'Direct provider binding INSERT unexpectedly accepted '+label+'.');
+      }else{
+        assert(response.status===200&&Array.isArray(result)&&result.length===0,
+          'Direct provider binding '+method+' unexpectedly modified a protected owner row for '+label+'.');
+      }
+      const after=await selectProviderBinding(serviceRole,providerId);
+      const afterEmpty=await selectProviderBinding(serviceRole,providerId,'light');
+      assert(after.status===200&&Array.isArray(after.body)&&
+        JSON.stringify(after.body)===JSON.stringify(baseline.body)&&
+        afterEmpty.status===200&&Array.isArray(afterEmpty.body)&&afterEmpty.body.length===0,
+        'Denied '+label+' '+method+' changed an owner binding or inserted a new slot.');
+    }
   };
   // A separate owner-user-scoped recurring service artwork registry uses
   // RLS in addition to its Storage bucket. Verify its actual positive row.
@@ -448,11 +491,21 @@ export async function runDirectReceivableRpcProof(options:Options){
       ownerBindingRead.body[0]?.variant==='dark'&&
       ownerBindingRead.body[0]?.asset_key===registeredAssetKey,
       'Owner AAL2 direct provider binding SELECT lost its positive control.');
+    // Enroll the exact unpopulated second slot for cleanup BEFORE attempting
+    // negative INSERT, even if a broken RLS policy permits that insertion.
+    const unusedBindingSlot=await selectProviderBinding(aal2Token,protectedProviderId,'light');
+    assert(unusedBindingSlot.status===200&&Array.isArray(unusedBindingSlot.body)&&
+      unusedBindingSlot.body.length===0,
+      'Cannot use a populated provider light slot for negative INSERT proof.');
+    syntheticRegisteredBindings.push({
+      providerId:protectedProviderId,assetRole:'card-mark',variant:'light',assetKey:registeredAssetKey,
+    });
     for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
       const deniedBindingRead=await selectProviderBinding(token,protectedProviderId);
       assert(deniedBindingRead.status===200&&Array.isArray(deniedBindingRead.body)&&
         deniedBindingRead.body.length===0,
         'Direct provider binding SELECT leaked owner metadata to '+label+'.');
+      await assertDeniedBindingMutations(label,token,protectedProviderId,registeredAssetKey);
     }
 
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
@@ -523,6 +576,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(revokedBindingRead.status===200&&Array.isArray(revokedBindingRead.body)&&
     revokedBindingRead.body.length===0,
     'Revoked owner AAL2 retained provider binding SELECT visibility.');
+  await assertDeniedBindingMutations('revoked owner AAL2',aal2Token,protectedProviderId,registeredAssetKey);
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
   // The JWT still parses after device revocation. Every previously tested
   // direct metadata/asset RPC must now deny the same revoked AAL2 identity.

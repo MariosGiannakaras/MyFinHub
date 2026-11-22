@@ -136,6 +136,27 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf('for(const binding of syntheticRegisteredBindings)'))
       .toBeLessThan(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'));
   });
+  it('denies direct provider binding INSERT, UPDATE and DELETE for AAL1, nonowner and revoked owner with unchanged positive rows',()=>{
+    expect(direct).toContain("const assertDeniedBindingMutations=async(label:string,token:string,providerId:string,assetKey:string)=>{");
+    expect(direct).toContain("for(const method of ['POST','PATCH','DELETE'] as const)");
+    expect(direct).toContain("method==='POST'?'':('?'+new URLSearchParams({");
+    expect(direct).toContain("provider_id:providerId,asset_role:'card-mark',variant:'light',asset_key:assetKey");
+    expect(direct).toContain("updated_at:'2020-01-01T00:00:00.000Z'");
+    expect(direct).toContain("response.status===403&&String(result?.code)==='42501'");
+    expect(direct).toContain("response.status===200&&Array.isArray(result)&&result.length===0");
+    expect(direct).toContain('JSON.stringify(after.body)===JSON.stringify(baseline.body)');
+    expect(direct).toContain("afterEmpty.body.length===0");
+    expect(direct).toContain("const unusedBindingSlot=await selectProviderBinding(aal2Token,protectedProviderId,'light')");
+    expect(direct).toContain("variant:'light',assetKey:registeredAssetKey");
+    expect(direct).toContain('await assertDeniedBindingMutations(label,token,protectedProviderId,registeredAssetKey)');
+    expect(direct).toContain("await assertDeniedBindingMutations('revoked owner AAL2',aal2Token,protectedProviderId,registeredAssetKey)");
+    expect(direct.indexOf('const unusedBindingSlot=await selectProviderBinding'))
+      .toBeLessThan(direct.indexOf('await assertDeniedBindingMutations(label,token,protectedProviderId,registeredAssetKey)'));
+    expect(direct.indexOf("await assertDeniedBindingMutations('revoked owner AAL2',aal2Token,protectedProviderId,registeredAssetKey)"))
+      .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
+    expect(direct.indexOf('for(const binding of syntheticRegisteredBindings)'))
+      .toBeLessThan(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'));
+  });
   it('proves direct recurring service asset SELECT owner/AAL2 RLS with a real Storage-backed registry row',()=>{
     expect(direct).toContain("apiUrl+'/rest/v1/rheomiq_recurring_service_assets?'+query");
     expect(direct).toContain("const recurringStorage=protectedStorage.find(fixture=>fixture.bucket==='recurring-service-assets')");
