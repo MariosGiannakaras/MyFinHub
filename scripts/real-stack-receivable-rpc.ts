@@ -226,6 +226,18 @@ export async function runDirectReceivableRpcProof(options:Options){
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
+  // A separate owner-user-scoped recurring service artwork registry uses
+  // RLS in addition to its Storage bucket. Verify its actual positive row.
+  const selectRecurringAsset=async(token:string,assetKey:string)=>{
+    const query=new URLSearchParams({
+      select:'owner_user_id,asset_key,recurring_id,storage_path,active',
+      asset_key:'eq.'+assetKey,
+    });
+    const response=await fetch(apiUrl+'/rest/v1/rheomiq_recurring_service_assets?'+query,{
+      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
   // #649 I22.02: genuine local GoTrue identities must also obey direct
   // Supabase Storage INSERT/DELETE policies, not only PostgreSQL RPC/RLS.
   // Use a valid SVG and positive owner AAL2 controls so malformed content
@@ -234,6 +246,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   type StorageFixture={bucket:StorageBucket;path:string};
   const syntheticStoragePaths:StorageFixture[]=[];
   const syntheticRegisteredAssets:string[]=[];
+  const syntheticRegisteredRecurringAssets:string[]=[];
   const newStoragePath=(bucket:StorageBucket,providerId='qa-direct-rpc'):StorageFixture=>{
     const nonce=randomUUID().replace(/-/g,'');
     const path=bucket==='financial-provider-assets'
@@ -314,6 +327,39 @@ export async function runDirectReceivableRpcProof(options:Options){
     }
     await assertDeniedStorage('owner AAL1',aal1Token);
     await assertDeniedStorage('nonowner AAL2',nonownerAal2);
+
+    // The recurring Storage object is already a positive real owner AAL2
+    // fixture. Register it through the same protected RPC before comparing
+    // any identity's direct SELECT result; never treat an empty table as RLS.
+    const recurringStorage=protectedStorage.find(fixture=>fixture.bucket==='recurring-service-assets');
+    assert(!!recurringStorage,'Missing known recurring Storage fixture.');
+    const recurringAssetKey=recurringStorage.path.split('/').at(-1)?.replace(/\.svg$/,'')||'';
+    assert(/^service-asset-[a-f0-9]{24}$/.test(recurringAssetKey),
+      'Synthetic recurring asset key is not storage-backed.');
+    syntheticRegisteredRecurringAssets.push(recurringAssetKey);
+    const registeredRecurring=await rpc('rheomiq_register_recurring_service_asset',aal2Token,{
+      p_recurring_id:'qa-direct-rpc',p_asset_key:recurringAssetKey,
+      p_file_name:recurringAssetKey+'.svg',p_mime_type:'image/svg+xml',
+      p_storage_path:recurringStorage.path,p_size_bytes:svgBytes.length,
+    });
+    assert(registeredRecurring.status===200&&Array.isArray(registeredRecurring.body)&&
+      registeredRecurring.body.length===1&&registeredRecurring.body[0]?.asset_key===recurringAssetKey&&
+      registeredRecurring.body[0]?.owner_user_id===userId&&registeredRecurring.body[0]?.active===true,
+      'Legitimate owner AAL2 cannot register its actual recurring service artwork.');
+    const ownerRecurringRead=await selectRecurringAsset(aal2Token,recurringAssetKey);
+    assert(ownerRecurringRead.status===200&&Array.isArray(ownerRecurringRead.body)&&
+      ownerRecurringRead.body.length===1&&ownerRecurringRead.body[0]?.owner_user_id===userId&&
+      ownerRecurringRead.body[0]?.asset_key===recurringAssetKey&&
+      ownerRecurringRead.body[0]?.recurring_id==='qa-direct-rpc'&&
+      ownerRecurringRead.body[0]?.storage_path===recurringStorage.path&&
+      ownerRecurringRead.body[0]?.active===true,
+      'Owner AAL2 direct recurring asset SELECT lost the registered positive readback.');
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const deniedRecurringRead=await selectRecurringAsset(token,recurringAssetKey);
+      assert(deniedRecurringRead.status===200&&Array.isArray(deniedRecurringRead.body)&&
+        deniedRecurringRead.body.length===0,
+        'Direct recurring service asset SELECT leaked owner artwork metadata to '+label+'.');
+    }
 
     // Register a real, active artwork row through the already-protected
     // owner AAL2 Storage + provider RPC. Without a known positive row, an
@@ -405,6 +451,10 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(revokedProviderRead.status===200&&Array.isArray(revokedProviderRead.body)&&
     revokedProviderRead.body.length===0,
     'Revoked owner AAL2 device retained direct financial provider SELECT visibility.');
+  const revokedRecurringRead=await selectRecurringAsset(aal2Token,recurringAssetKey);
+  assert(revokedRecurringRead.status===200&&Array.isArray(revokedRecurringRead.body)&&
+    revokedRecurringRead.body.length===0,
+    'Revoked owner AAL2 device retained direct recurring service asset SELECT visibility.');
   const revokedAssetRead=await selectProviderAsset(aal2Token,registeredAssetKey);
   assert(revokedAssetRead.status===200&&Array.isArray(revokedAssetRead.body)&&
     revokedAssetRead.body.length===0,
@@ -439,6 +489,20 @@ export async function runDirectReceivableRpcProof(options:Options){
       assert(response.status===200&&Array.isArray(rows)&&rows.length<=1&&
         rows.every((row:{asset_key?:unknown})=>row.asset_key===assetKey),
         'Isolated direct provider asset registry cleanup was not confined to its synthetic key.');
+    }
+    for(const assetKey of syntheticRegisteredRecurringAssets){
+      const response=await fetch(apiUrl+'/rest/v1/rheomiq_recurring_service_assets?'+
+        new URLSearchParams({owner_user_id:'eq.'+userId,asset_key:'eq.'+assetKey}),{
+        method:'DELETE',headers:{
+          apikey:serviceRole,authorization:'Bearer '+serviceRole,
+          prefer:'return=representation',accept:'application/json',
+        },
+      });
+      const rows=await response.json().catch(()=>null);
+      assert(response.status===200&&Array.isArray(rows)&&rows.length<=1&&
+        rows.every((row:{owner_user_id?:unknown;asset_key?:unknown})=>
+          row.owner_user_id===userId&&row.asset_key===assetKey),
+        'Isolated recurring service asset cleanup was not scoped to the true synthetic owner/key.');
     }
     // Delete only our own random loopback fixtures through the confined local
     // service role, even if a negative assertion discovered a Storage bypass.
