@@ -637,8 +637,16 @@ export async function runDirectReceivableRpcProof(options:Options){
         prefer:'return=minimal',
       },body:JSON.stringify({active:false}),
     });
+    // When PostgREST rejects an UPDATE, record only its bounded public
+    // SQLSTATE (never the response message, JWT or sensitive row bytes).
+    // Distinguish a trigger regression from the pre-existing active-only
+    // provider-asset SELECT RLS boundary before changing any policy.
+    const unboundDeactivateBody=await unboundDeactivate.json().catch(()=>null);
     assert([200,204].includes(unboundDeactivate.status),
-      'Direct owner AAL2 could not deactivate genuinely unbound provider artwork.');
+      'Direct owner AAL2 could not deactivate genuinely unbound provider artwork: '+
+      'HTTP '+unboundDeactivate.status+' / SQLSTATE '+
+      String(typeof unboundDeactivateBody?.code==='string'&&/^[A-Z0-9]{5}$/.test(unboundDeactivateBody.code)
+        ?unboundDeactivateBody.code:'unavailable'));
     const unboundAssetAfter=await selectProviderAsset(serviceRole,crossAssetKey);
     assert(unboundAssetAfter.status===200&&Array.isArray(unboundAssetAfter.body)&&
       unboundAssetAfter.body.length===1&&unboundAssetAfter.body[0]?.asset_key===crossAssetKey&&

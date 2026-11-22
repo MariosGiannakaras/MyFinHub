@@ -23,6 +23,9 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(direct).toContain('JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body)');
     expect(direct).toContain('const unboundAssetBefore=await selectProviderAsset(serviceRole,crossAssetKey)');
     expect(direct).toContain('[200,204].includes(unboundDeactivate.status)');
+    expect(direct).toContain("unboundDeactivate.status+' / SQLSTATE '+");
+    expect(direct).toContain("typeof unboundDeactivateBody?.code==='string'");
+    expect(direct).not.toContain('unboundDeactivateBody?.message');
     expect(direct).toContain('unboundAssetAfter.body[0]?.active===false');
     expect(direct.indexOf('const deniedBoundDeactivate=await fetch('))
       .toBeGreaterThan(direct.indexOf("const bound=await rpc('rheomiq_set_financial_provider_asset_binding'"));
