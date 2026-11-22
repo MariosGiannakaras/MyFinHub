@@ -563,6 +563,12 @@ try {
   assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===writesBeforeStale,
     'stale receipt handoff was blocked before any finance write, not after duplicate posting');
   assert((await receiptCount())===1,'stale posted receipt remains local evidence after rejected handoff');
+  // Error alerts enter with rh-error-in (220ms). Capture an actually readable
+  // full-opacity alert, not its pale first animation frame. Keep the same
+  // strict error and zero-finance-write assertions above.
+  await waitFor("function(){const alert=document.querySelector('#quick-add-error');if(!alert)return false;const opacity=Number(getComputedStyle(alert).opacity);const pending=alert.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming()?.endTime));return opacity>=.995&&!pending}",'stale receipt error fully opaque before screenshot');
+  const settledError=await c.call("function(){const node=document.querySelector('#quick-add-error'),modal=document.querySelector('.quick-modal:not(.contextual-quick-modal)');if(!node||!modal)return null;const r=node.getBoundingClientRect(),root=modal.getBoundingClientRect();return {text:node.textContent?.trim()||'',visible:r.width>0&&r.height>0&&r.top>=root.top&&r.bottom<=root.bottom,opacity:Number(getComputedStyle(node).opacity)}}");
+  assert(settledError?.visible&&settledError.opacity>=.995&&settledError.text.includes('Μην καταχωρίσεις ξανά'),'stale receipt alert must remain readable and contained after entrance');
   await screenshot('receipt-stale-prefill-cross-tab-preflight-denied');
   const staleCleanup=await c.call(`async function(){return await new Promise((resolve,reject)=>{
     const open=indexedDB.open('myfinhub-local-receipts-v1',1);

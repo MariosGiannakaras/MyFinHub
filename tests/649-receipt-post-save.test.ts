@@ -50,6 +50,8 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('receipt-local-posted-after-reload');
     expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
     expect(qa).toContain('receipt-stale-prefill-cross-tab-preflight-denied');
+    expect(qa).toContain('stale receipt error fully opaque before screenshot');
+    expect(qa).toContain('settledError?.visible&&settledError.opacity>=.995');
     expect(qa).toContain('another-tab synthetic receipt posted status committed before stale Quick Entry submit');
     expect(qa).toContain('stale receipt handoff was blocked before any finance write');
     expect(qa).toContain("receiptQaUrl.searchParams.set('receipt-persist-posted-qa','1')");
