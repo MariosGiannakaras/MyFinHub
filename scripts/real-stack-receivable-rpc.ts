@@ -218,7 +218,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   // independently from the provider table and Storage object permissions.
   const selectProviderAsset=async(token:string,assetKey:string)=>{
     const query=new URLSearchParams({
-      select:'asset_key,provider_id,storage_path,active',
+      select:'asset_key,provider_id,storage_path,active,usage_note',
       asset_key:'eq.'+assetKey,
     });
     const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?'+query,{
@@ -623,12 +623,13 @@ export async function runDirectReceivableRpcProof(options:Options){
       JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body),
       'Denied bound artwork deactivation changed asset state, timestamp or binding.');
 
-    // Positive control: a different real, unbound image from the disposable
-    // second provider can still be deactivated by an owner+AAL2 direct PATCH.
+    // Separate the existing active-only SELECT RLS contract from this new
+    // bound-artwork trigger: even an unbound asset cannot become invisible
+    // through owner PostgREST UPDATE active=false under existing RLS.
     const unboundAssetBefore=await selectProviderAsset(serviceRole,crossAssetKey);
     assert(unboundAssetBefore.status===200&&Array.isArray(unboundAssetBefore.body)&&
       unboundAssetBefore.body.length===1&&unboundAssetBefore.body[0]?.active===true,
-      'Unbound provider artwork positive control must start active.');
+      'Unbound provider artwork control must start as a real active row.');
     const unboundDeactivate=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
       encodeURIComponent(crossAssetKey),{
       method:'PATCH',headers:{
@@ -637,21 +638,37 @@ export async function runDirectReceivableRpcProof(options:Options){
         prefer:'return=minimal',
       },body:JSON.stringify({active:false}),
     });
-    // When PostgREST rejects an UPDATE, record only its bounded public
-    // SQLSTATE (never the response message, JWT or sensitive row bytes).
-    // Distinguish a trigger regression from the pre-existing active-only
-    // provider-asset SELECT RLS boundary before changing any policy.
+    // The existing active-only SELECT policy independently rejects this
+    // transition with 42501; do not weaken owner-data visibility to
+    // turn an intentionally denied operation into an artificial positive.
     const unboundDeactivateBody=await unboundDeactivate.json().catch(()=>null);
-    assert([200,204].includes(unboundDeactivate.status),
-      'Direct owner AAL2 could not deactivate genuinely unbound provider artwork: '+
-      'HTTP '+unboundDeactivate.status+' / SQLSTATE '+
-      String(typeof unboundDeactivateBody?.code==='string'&&/^[A-Z0-9]{5}$/.test(unboundDeactivateBody.code)
-        ?unboundDeactivateBody.code:'unavailable'));
+    assert(unboundDeactivate.status===403&&String(unboundDeactivateBody?.code)==='42501',
+      'Unbound artwork deactivation escaped existing active-only SELECT RLS.');
+    const unboundAfterDenied=await selectProviderAsset(serviceRole,crossAssetKey);
+    assert(JSON.stringify(unboundAfterDenied.body)===JSON.stringify(unboundAssetBefore.body),
+      'RLS-denied unbound artwork deactivation modified registry data.');
+
+    // True owner+AAL2 positive control exercises UPDATE OF active (true→true)
+    // through the new invoker trigger and an allowed metadata update,
+    // without broadening active-only RLS or touching an existing binding.
+    const unboundEdit=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(crossAssetKey),{
+      method:'PATCH',headers:{
+        apikey:publishable,authorization:'Bearer '+aal2Token,
+        'content-type':'application/json',accept:'application/json',
+        prefer:'return=minimal',
+      },body:JSON.stringify({active:true,usage_note:'Synthetic unbound artwork QA control'}),
+    });
+    assert([200,204].includes(unboundEdit.status),
+      'Owner AAL2 lost valid unbound active-artwork metadata UPDATE.');
     const unboundAssetAfter=await selectProviderAsset(serviceRole,crossAssetKey);
     assert(unboundAssetAfter.status===200&&Array.isArray(unboundAssetAfter.body)&&
-      unboundAssetAfter.body.length===1&&unboundAssetAfter.body[0]?.asset_key===crossAssetKey&&
-      unboundAssetAfter.body[0]?.active===false,
-      'Unbound provider artwork deactivation did not persist without modifying its binding.');
+      unboundAssetAfter.body.length===1&&
+      unboundAssetAfter.body[0]?.asset_key===crossAssetKey&&
+      unboundAssetAfter.body[0]?.active===true&&
+      unboundAssetAfter.body[0]?.usage_note==='Synthetic unbound artwork QA control'&&
+      unboundAssetAfter.body[0]?.storage_path===unboundAssetBefore.body[0]?.storage_path,
+      'Unbound artwork allowed metadata update did not persist or changed its identity.');
 
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[

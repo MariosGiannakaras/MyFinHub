@@ -22,15 +22,18 @@ describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
     expect(direct).toContain('JSON.stringify(boundAssetAfter.body)===JSON.stringify(boundAssetBefore.body)');
     expect(direct).toContain('JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body)');
     expect(direct).toContain('const unboundAssetBefore=await selectProviderAsset(serviceRole,crossAssetKey)');
-    expect(direct).toContain('[200,204].includes(unboundDeactivate.status)');
-    expect(direct).toContain("unboundDeactivate.status+' / SQLSTATE '+");
-    expect(direct).toContain("typeof unboundDeactivateBody?.code==='string'");
+    expect(direct).toContain("unboundDeactivate.status===403&&String(unboundDeactivateBody?.code)==='42501'");
+    expect(direct).toContain('JSON.stringify(unboundAfterDenied.body)===JSON.stringify(unboundAssetBefore.body)');
+    expect(direct).toContain("body:JSON.stringify({active:true,usage_note:'Synthetic unbound artwork QA control'})");
+    expect(direct).toContain('[200,204].includes(unboundEdit.status)');
+    expect(direct).toContain("unboundAssetAfter.body[0]?.usage_note==='Synthetic unbound artwork QA control'");
+    expect(direct).toContain('unboundAssetAfter.body[0]?.active===true');
+    expect(direct).toContain('unboundAssetAfter.body[0]?.storage_path===unboundAssetBefore.body[0]?.storage_path');
     expect(direct).not.toContain('unboundDeactivateBody?.message');
-    expect(direct).toContain('unboundAssetAfter.body[0]?.active===false');
     expect(direct.indexOf('const deniedBoundDeactivate=await fetch('))
       .toBeGreaterThan(direct.indexOf("const bound=await rpc('rheomiq_set_financial_provider_asset_binding'"));
-    expect(direct.indexOf('const unboundDeactivate=await fetch('))
-      .toBeGreaterThan(direct.indexOf('const foreignPatch=await fetch('));
+    expect(direct.indexOf('const unboundEdit=await fetch('))
+      .toBeGreaterThan(direct.indexOf('const unboundDeactivate=await fetch('));
   });
 
   it('requires binding asset provenance at the table FK even when owner AAL2 directly writes',()=>{
