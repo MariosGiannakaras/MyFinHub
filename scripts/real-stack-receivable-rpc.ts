@@ -149,6 +149,14 @@ export async function runDirectReceivableRpcProof(options:Options){
   // Genuine local GoTrue JWTs, not forged claims. Invoker RPCs must
   // reject AAL1 and nonowner AAL2 before any Storage or metadata write.
   for(const entry of [
+    {method:'rheomiq_create_financial_provider',params:{
+      p_id:'qa-direct-rpc',p_display_name:'Synthetic QA Provider',p_short_name:'QA',
+      p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42,
+    }},
+    {method:'rheomiq_update_financial_provider',params:{
+      p_id:'qa-direct-rpc',p_display_name:'Synthetic QA Provider',p_short_name:'QA',
+      p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42,
+    }},
     {method:'rheomiq_register_recurring_service_asset',params:{
       p_recurring_id:'qa-direct-rpc',p_asset_key:'service-asset-ffffffffffffffffffffffff',
       p_file_name:'qa.svg',p_mime_type:'image/svg+xml',

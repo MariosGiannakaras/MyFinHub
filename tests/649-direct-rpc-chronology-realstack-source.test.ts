@@ -73,4 +73,12 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf("await assertDeniedStorage('revoked owner AAL2',aal2Token)"))
       .toBeGreaterThan(direct.indexOf("const revokedDevice=await fetch"));
   });
+  it('rejects direct provider metadata create/update by nonowner and AAL1 at the real RPC boundary',()=>{
+    expect(direct).toContain("method:'rheomiq_create_financial_provider'");
+    expect(direct).toContain("method:'rheomiq_update_financial_provider'");
+    expect(direct).toContain("p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42");
+    expect(direct).toContain("['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]");
+    expect(direct).toContain("denied.status===403&&denied.body?.code==='42501'");
+    expect(direct).toContain("await register(nonownerClaims.session_id!,nonownerUserId)");
+  });
 });
