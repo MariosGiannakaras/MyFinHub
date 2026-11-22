@@ -6,6 +6,29 @@ const direct=readFileSync('scripts/real-stack-receivable-rpc.ts','utf8');
 const real=readFileSync('scripts/real-stack-e2e.ts','utf8');
 
 describe('#649 I19.04/I22.02 direct provider image provenance',()=>{
+  it('prevents direct owner AAL2 deactivation of artwork with a live binding, while allowing unbound edits',()=>{
+    const guard=readFileSync('supabase/migrations/20261122225000_guard_bound_provider_artwork_active.sql','utf8');
+    expect(guard).toContain('security invoker');
+    expect(guard).toContain("current_user <> 'authenticated'");
+    expect(guard).toContain('old.active is not true or new.active is not false');
+    expect(guard).toContain('from public.rheomiq_financial_provider_asset_bindings b');
+    expect(guard).toContain('from public.rheomiq_financial_providers p');
+    expect(guard).toContain("message='FINANCIAL_PROVIDER_ASSET_IN_USE'");
+    expect(guard).toContain('before update of active on public.rheomiq_financial_provider_assets');
+    expect(guard).not.toMatch(/security definer|delete from|truncate table|drop table|drop schema/i);
+    expect(direct).toContain('const boundAssetBefore=await selectProviderAsset(serviceRole,registeredAssetKey)');
+    expect(direct).toContain("deniedBoundDeactivate.status===409&&String(deniedBoundBody?.code)==='23503'");
+    expect(direct).toContain('JSON.stringify(boundAssetAfter.body)===JSON.stringify(boundAssetBefore.body)');
+    expect(direct).toContain('JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body)');
+    expect(direct).toContain('const unboundAssetBefore=await selectProviderAsset(serviceRole,crossAssetKey)');
+    expect(direct).toContain('[200,204].includes(unboundDeactivate.status)');
+    expect(direct).toContain('unboundAssetAfter.body[0]?.active===false');
+    expect(direct.indexOf('const deniedBoundDeactivate=await fetch('))
+      .toBeGreaterThan(direct.indexOf("const bound=await rpc('rheomiq_set_financial_provider_asset_binding'"));
+    expect(direct.indexOf('const unboundDeactivate=await fetch('))
+      .toBeGreaterThan(direct.indexOf('const foreignPatch=await fetch('));
+  });
+
   it('requires binding asset provenance at the table FK even when owner AAL2 directly writes',()=>{
     const constraint=readFileSync('supabase/migrations/20261122211000_guard_provider_binding_cross_provider.sql','utf8');
     expect(constraint).toContain('create unique index if not exists rheomiq_provider_assets_provider_key_unique_idx');

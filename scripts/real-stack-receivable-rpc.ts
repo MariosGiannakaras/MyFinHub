@@ -595,6 +595,52 @@ export async function runDirectReceivableRpcProof(options:Options){
       JSON.stringify(originalCrossAfter.body)===JSON.stringify(originalCrossBaseline.body),
       'Rejected cross-provider UPDATE changed the original binding or timestamp.');
 
+    // Unlike the binding FK, a foreign key alone cannot enforce active=true.
+    // A direct owner+AAL2 PATCH to the registered image must not deactivate
+    // it while the real synthetic dark-slot binding still references it.
+    const boundAssetBefore=await selectProviderAsset(serviceRole,registeredAssetKey);
+    assert(boundAssetBefore.status===200&&Array.isArray(boundAssetBefore.body)&&
+      boundAssetBefore.body.length===1&&boundAssetBefore.body[0]?.active===true,
+      'Bound provider artwork deactivation proof requires one active registered row.');
+    const deniedBoundDeactivate=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(registeredAssetKey),{
+      method:'PATCH',headers:{
+        apikey:publishable,authorization:'Bearer '+aal2Token,
+        'content-type':'application/json',accept:'application/json',
+        prefer:'return=representation',
+      },body:JSON.stringify({active:false}),
+    });
+    const deniedBoundBody=await deniedBoundDeactivate.json().catch(()=>null);
+    assert(deniedBoundDeactivate.status===409&&String(deniedBoundBody?.code)==='23503',
+      'Direct owner AAL2 deactivated a still-bound provider artwork row.');
+    const boundAssetAfter=await selectProviderAsset(serviceRole,registeredAssetKey);
+    const boundBindingAfter=await selectProviderBinding(serviceRole,protectedProviderId);
+    assert(JSON.stringify(boundAssetAfter.body)===JSON.stringify(boundAssetBefore.body)&&
+      JSON.stringify(boundBindingAfter.body)===JSON.stringify(originalCrossBaseline.body),
+      'Denied bound artwork deactivation changed asset state, timestamp or binding.');
+
+    // Positive control: a different real, unbound image from the disposable
+    // second provider can still be deactivated by an owner+AAL2 direct PATCH.
+    const unboundAssetBefore=await selectProviderAsset(serviceRole,crossAssetKey);
+    assert(unboundAssetBefore.status===200&&Array.isArray(unboundAssetBefore.body)&&
+      unboundAssetBefore.body.length===1&&unboundAssetBefore.body[0]?.active===true,
+      'Unbound provider artwork positive control must start active.');
+    const unboundDeactivate=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(crossAssetKey),{
+      method:'PATCH',headers:{
+        apikey:publishable,authorization:'Bearer '+aal2Token,
+        'content-type':'application/json',accept:'application/json',
+        prefer:'return=minimal',
+      },body:JSON.stringify({active:false}),
+    });
+    assert([200,204].includes(unboundDeactivate.status),
+      'Direct owner AAL2 could not deactivate genuinely unbound provider artwork.');
+    const unboundAssetAfter=await selectProviderAsset(serviceRole,crossAssetKey);
+    assert(unboundAssetAfter.status===200&&Array.isArray(unboundAssetAfter.body)&&
+      unboundAssetAfter.body.length===1&&unboundAssetAfter.body[0]?.asset_key===crossAssetKey&&
+      unboundAssetAfter.body[0]?.active===false,
+      'Unbound provider artwork deactivation did not persist without modifying its binding.');
+
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
   const negativeCases=[
     {name:'dated overpayment',state:overpay,marker:'RECEIVABLE_CHRONOLOGY_CONFLICT'},
