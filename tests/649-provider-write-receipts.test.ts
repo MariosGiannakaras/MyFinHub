@@ -20,7 +20,7 @@ const input=()=>({
 const row=()=>({
   id:'owner-bank',display_name:'Owner Bank',short_name:'Owner',
   provider_kind:'bank',country_code:'GR',sort_order:42,
-  logo_asset_key:null,wordmark_asset_key:null,
+  logo_asset_key:null,wordmark_asset_key:null,active:true,
 });
 describe('#649 I19.04 exact provider write and binding receipts',()=>{
   it.each([
@@ -171,6 +171,7 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
     'owner-revoked','owner-unavailable','missing-row','duplicate-row',
     'wrong-id','wrong-display','wrong-short','wrong-kind','wrong-country',
     'wrong-order','malformed-row','readback-unavailable',
+    'inactive-provider-record','inactive-update-network','missing-active-column','invalid-active-column',
     'definite-conflict','definite-invalid','definite-forbidden',
   ] as const)('reconciles lost provider metadata acknowledgement for %s with no replay',async scenario=>{
     config();
@@ -183,7 +184,8 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
         authorization:headers.get('authorization'),apiKey:headers.get('apikey')});
       if(url.includes('/rpc/rheomiq_create_financial_provider')||
         url.includes('/rpc/rheomiq_update_financial_provider')){
-        if(scenario==='update-network-committed')throw new TypeError('Synthetic committed response lost');
+        if(scenario==='update-network-committed'||scenario==='inactive-update-network')
+          throw new TypeError('Synthetic committed response lost');
         if(scenario==='definite-conflict')
           return new Response(JSON.stringify({code:'23505',message:'PROVIDER_ID_CONFLICT'}),{status:409});
         if(scenario==='definite-invalid')
@@ -206,13 +208,16 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
         if(scenario==='wrong-country')record.country_code='US';
         if(scenario==='wrong-order')record.sort_order=43;
         if(scenario==='malformed-row')record.sort_order='42';
+        if(scenario==='inactive-provider-record'||scenario==='inactive-update-network')record.active=false;
+        if(scenario==='missing-active-column')delete record.active;
+        if(scenario==='invalid-active-column')record.active='true';
         const records=scenario==='missing-row'?[]:
           scenario==='duplicate-row'?[record,{...record}]:[record];
         return new Response(JSON.stringify(records),{status:200});
       }
       throw new Error('Unexpected provider reconciliation endpoint '+url);
     }));
-    const call=scenario==='update-network-committed'
+    const call=scenario==='update-network-committed'||scenario==='inactive-update-network'
       ?updateFinancialProvider:writeFinancialProvider;
     const saved=call(input(),'owner-jwt');
     if(scenario==='create-503-committed'||scenario==='update-network-committed')
@@ -239,7 +244,8 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
     });
     if(expected.includes('GET')){
       expect(captured[2]?.url).toContain('id=eq.owner-bank');
-      expect(captured[2]?.url).toContain('select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key');
+      expect(captured[2]?.url).toContain('select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key,active');
+      expect(captured[2]?.url).toContain('active=eq.true');
     }
   });
 });

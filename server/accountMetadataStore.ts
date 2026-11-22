@@ -413,9 +413,11 @@ async function writeProviderRpc(rpc:string,input:FinancialProviderWrite,accessTo
         {method:'POST',body:'{}'},accessToken);
       if(owner!==true)throw unverified();
       const records=await request(
-        'rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key&id=eq.'+encodeURIComponent(input.id),
+        'rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,sort_order,logo_asset_key,wordmark_asset_key,active&id=eq.'+encodeURIComponent(input.id)+'&active=eq.true',
         {method:'GET'},accessToken);
-      if(!Array.isArray(records)||records.length!==1)throw unverified();
+      // A matching archived provider is not evidence of a committed create
+      // or update. Require the exact live row, not a stale soft-deleted copy.
+      if(!Array.isArray(records)||records.length!==1||records[0]?.active!==true)throw unverified();
       const row=mapFinancialProviderRow(records[0]);
       if(!matches(row))throw unverified();
       return row;
