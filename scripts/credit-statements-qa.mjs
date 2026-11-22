@@ -30,6 +30,8 @@ try{
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')&&Boolean(document.querySelector('[data-credit-statements]'))}",'credit statement page');
 
   const hierarchy=await c.call("function(){const statements=document.querySelector('[data-credit-statements]');const purchases=document.querySelector('.credit-purchases-table');const primary=document.querySelector('[data-primary-credit-statement]');return {statementBeforePurchases:Boolean(statements&&purchases&&(statements.compareDocumentPosition(purchases)&Node.DOCUMENT_POSITION_FOLLOWING)),primary:primary?.textContent||'',pay:primary?.querySelector('button.save-button')?.textContent||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  const greekHeading=await c.call("function(){const title=document.querySelector('#credit-statements-title');return {text:title?.textContent?.trim()||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(greekHeading.text==='Καταστάσεις λογαριασμού πιστωτικής'&&greekHeading.overflow<=1,'Greek account statement heading is truthful and contained at 1440px');
   assert(hierarchy.statementBeforePurchases,'statements are presented before raw purchase history');
   assert(hierarchy.primary.includes('20/08/2026')&&hierarchy.primary.includes('90,00'),'primary statement exposes due date and remaining balance');
   assert(hierarchy.pay.includes('Πληρωμή'),'primary unpaid statement exposes payment CTA');
@@ -52,10 +54,17 @@ try{
   const mobile=await c.call("function(){const overflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;const controls=[...document.querySelectorAll('[data-credit-statements] button,[data-credit-statements] summary')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
   assert(mobile.overflow<=1,`mobile horizontal overflow ${mobile.overflow}px`);
   assert(mobile.minTouch>=41,`mobile statement touch target ${mobile.minTouch}px`);
+  const mobileHeading=await c.call("function(){const el=document.querySelector('#credit-statements-title'),r=el?.getBoundingClientRect();return {text:el?.textContent?.trim(),contained:Boolean(r&&r.left>=-1&&r.right<=innerWidth+1),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(mobileHeading.text==='Καταστάσεις λογαριασμού πιστωτικής'&&mobileHeading.contained&&mobileHeading.overflow<=1,'Greek heading remains readable and contained at 375px');
   await sleep(160);
   await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");
   await waitFor("function(){const node=document.querySelector('[data-primary-credit-statement]');if(!node)return false;const r=node.getBoundingClientRect();return r.bottom>90&&r.top<innerHeight-100}",'mobile primary statement visible in evidence viewport');
   await shot(c,'credit-statements-active-mobile');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:320,height:740,deviceScaleFactor:1,mobile:true});
+  await sleep(120);
+  const smallMobile=await c.call("function(){const el=document.querySelector('#credit-statements-title'),r=el?.getBoundingClientRect();return {text:el?.textContent?.trim(),contained:Boolean(r&&r.left>=-1&&r.right<=innerWidth+1),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  assert(smallMobile.text==='Καταστάσεις λογαριασμού πιστωτικής'&&smallMobile.contained&&smallMobile.overflow<=1,'Greek account statement heading remains contained at 320px');
+  await shot(c,'credit-statements-localized-320');
 
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await c.send('Page.navigate',{url:url.href});
@@ -63,7 +72,7 @@ try{
   assert(await c.call("function(){const button=document.querySelector('.page-heading button[aria-label^=\\\"Αρχείο καρτών\\\"]');button?.click();return Boolean(button)}"),'credit archive action remains semantically reachable');
   await waitFor("function(){return Boolean(document.querySelector('.card-archive-manager'))}",'archive manager');
   const archive=await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));return {text:row?.textContent||'',deleteEnabled:Boolean(row?.querySelector('button.danger:not([disabled])'))}}");
-  assert(archive.text.includes('Statements 1'),'archive manager preserves statement count');
+  assert(archive.text.includes('Καταστάσεις λογαριασμού 1'),'archive manager preserves one historical account statement');
   assert(archive.deleteEnabled,'settled archived card remains eligible for hard delete');
   await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));row?.querySelector('button.danger:not([disabled])')?.click();return true}");
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'hard-delete confirmation');
@@ -72,7 +81,7 @@ try{
   await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.card-archive-manager')}",'archive manager close after deletion');
   const deleted=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const identity=section?.querySelector('.deleted-credit-history-card > .panel-head')?.textContent||'';const text=section?.textContent||'';return {text,identity,identityLeaksNickname:/QA Settled/.test(identity),leaksProtectedIdentity:/2222|ΠΕΙΡΑΙΩΣ/.test(text),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
-  assert(deleted.text.includes('Διαγραμμένη κάρτα')&&deleted.text.includes('δήλωση'),'deleted-card statement history stays readable with neutral identity');
+  assert(deleted.text.includes('Διαγραμμένη κάρτα')&&deleted.text.includes('κατάσταση'),'deleted-card statement history stays readable with neutral identity');
   assert(!deleted.identityLeaksNickname,'deleted card identity does not retain the former nickname');
   assert(!deleted.leaksProtectedIdentity,'deleted statement history does not retain last4 or bank identity');
   assert(deleted.overflow<=1,`deleted history desktop overflow ${deleted.overflow}px`);
