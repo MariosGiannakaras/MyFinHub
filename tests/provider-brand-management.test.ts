@@ -371,7 +371,8 @@ describe('provider branding management',()=>{
     expect(receiptQaSource).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
   });
 
-  it('reconciles provider Storage 503 only after exact public bytes before one registration',async()=>{
+  it.each(['503','408','429','network-loss'] as const)(
+    'reconciles provider Storage %s only after exact public bytes before one registration',async scenario=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
     const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
@@ -379,7 +380,10 @@ describe('provider branding management',()=>{
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input),method=init?.method||'GET';
       requests.push({url,method});
-      if(requests.length===1)return new Response('{}',{status:503});
+      if(requests.length===1){
+        if(scenario==='network-loss')throw new Error('Lost Storage POST response');
+        return new Response('{}',{status:Number(scenario)});
+      }
       if(requests.length===2){
         expect(method).toBe('GET');
         expect(url).toContain('/storage/v1/object/public/financial-provider-assets/providers/demo-bank/');
@@ -402,7 +406,7 @@ describe('provider branding management',()=>{
     expect(requests.every(row=>!row.url.includes('/storage/v1/object/list/'))).toBe(true);
   });
 
-  it.each(['missing','mismatch','oversized','timeout'] as const)(
+  it.each(['missing','mismatch','oversized','timeout','declared-size-mismatch','invalid-content-length','truncated'] as const)(
     'never registers, retries or deletes uncertain provider Storage when byte readback is %s',async scenario=>{
       process.env.SUPABASE_URL='https://project.example.supabase.co';
       process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
@@ -419,6 +423,9 @@ describe('provider branding management',()=>{
           expect(method).toBe('GET');
           if(scenario==='missing')return new Response('{}',{status:404});
           if(scenario==='oversized')return new Response(new Uint8Array(bytes.length+1),{status:200});
+          if(scenario==='declared-size-mismatch')return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':String(bytes.length+1)}});
+          if(scenario==='invalid-content-length')return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':'invalid'}});
+          if(scenario==='truncated')return new Response(Uint8Array.from(bytes.slice(0,-1)),{status:200});
           return new Response(Uint8Array.from([...bytes.slice(0,-1),42]),{status:200});
         }
         throw new Error('Unsafe provider Storage replay, deletion or registration');

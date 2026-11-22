@@ -43,7 +43,8 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
   });
 
 
-  it('reconciles recurring Storage lost 503 only after exact binary readback before registration',async()=>{
+  it.each(['503','408','429','network-loss'] as const)(
+    'reconciles recurring Storage %s only after exact binary readback before registration',async scenario=>{
     process.env.SUPABASE_URL='https://example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='public-test-key';
     const {uploadRecurringServiceAsset}=await import('../server/accountMetadataStore.js');
@@ -52,11 +53,14 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input),method=init?.method||'GET';
       calls.push({url,method});
-      if(calls.length===1)return new Response('{}',{status:503});
+      if(calls.length===1){
+        if(scenario==='network-loss')throw new Error('Lost Storage POST response');
+        return new Response('{}',{status:Number(scenario)});
+      }
       if(calls.length===2){
         expect(method).toBe('GET');
         expect(url).toContain('/storage/v1/object/public/recurring-service-assets/services/');
-        return new Response(Uint8Array.from(bytes),{status:200});
+        return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':String(bytes.byteLength)}});
       }
       if(calls.length===3){
         const path=new URL(calls[0].url).pathname.split('/recurring-service-assets/')[1];
