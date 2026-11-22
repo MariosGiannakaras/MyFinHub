@@ -4,7 +4,7 @@
 
 **One #649 implementation owner:** [Draft PR #654](https://github.com/MariosGiannakaras/MyFinHub/pull/654), `fix/649-bulk-remediation` → `develop`. This roadmap and the original evidence are now available on the *implementation* branch; independent draft audit PR #650 is superseded. Do **not** open a new PR per defect, resume an already accepted item, or treat an inactive branch as the implementation head.
 
-**Exact active code progress: Implementations 6/23 completed · Sub-implementations 102/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
+**Exact active code progress: Implementations 6/23 completed · Sub-implementations 103/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
 
 ### Consolidated execution sequence (one coherent milestone, no PR proliferation)
 
