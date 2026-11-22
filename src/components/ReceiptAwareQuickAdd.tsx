@@ -1,7 +1,7 @@
 import { ReceiptText } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { deleteReceiptDraft, type ReceiptProposal } from '../lib/receiptDrafts';
+import { deleteReceiptDraft, markReceiptDraftPosted, type ReceiptProposal } from '../lib/receiptDrafts';
 import { receiptSplitParts } from '../lib/receiptItemReview';
 import { saveFinanceThenCleanupReceipt } from '../lib/receiptPostSave';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
@@ -100,7 +100,7 @@ export function ReceiptAwareQuickAdd({
     // must not cause QuickAdd to report a false finance error or post twice.
     await saveFinanceThenCleanupReceipt(
       saveFinance,
-      handledId?()=>deleteReceiptDraft(handledId):null,
+      handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null,
       ()=>{if(handledId)onReceiptCleanupFailure?.(handledId)},
     );
     if(handledId){

@@ -4,6 +4,7 @@ import {
   deleteReceiptDraft,
   listReceiptDrafts,
   markReceiptDraftError,
+  markReceiptDraftPosted,
   saveReceiptProposal,
   type NormalizedReceiptImage,
   type ReceiptDraft,
@@ -132,4 +133,17 @@ describe('local receipts: real persistence functions with serialized IndexedDB t
     expect(laterError).toBeNull();
     expect(await listReceiptDrafts()).toEqual([]);
   });
+  it('retains a durably posted receipt after local cleanup fails and disallows a second finance handoff',async()=>{
+    vi.stubGlobal('indexedDB',localIndexedDb([existing('committed',1)]));
+    await markReceiptDraftPosted('committed');
+    expect(await listReceiptDrafts()).toMatchObject([{id:'committed',status:'posted'}]);
+    await expect(saveReceiptProposal('committed',{merchant:'duplicate'}))
+      .rejects.toThrow('Η οικονομική κίνηση έχει ήδη καταχωριστεί');
+    await expect(markReceiptDraftError('committed')).resolves.toMatchObject({status:'posted'});
+    expect(await listReceiptDrafts()).toMatchObject([{id:'committed',status:'posted'}]);
+    await markReceiptDraftPosted('committed'); // idempotent local marker
+    await deleteReceiptDraft('committed');
+    expect(await listReceiptDrafts()).toEqual([]);
+  });
+
 });

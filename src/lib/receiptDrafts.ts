@@ -36,7 +36,7 @@ export type ReceiptProposal = {
   confidence?: ReceiptFieldConfidence;
 };
 
-type ReceiptDraftStatus = 'pending' | 'ready' | 'error';
+type ReceiptDraftStatus = 'pending' | 'ready' | 'error' | 'posted';
 
 export type ReceiptDraft = {
   id: string;
@@ -200,6 +200,7 @@ export async function saveReceiptProposal(id: string, proposal: ReceiptProposal)
   return withStore('readwrite', async (store) => {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
+    if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Επιτρέπεται μόνο η τοπική διαγραφή.');
     const next: ReceiptDraft = {
       ...draft,
       status: 'ready',
@@ -216,6 +217,7 @@ export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft[
   return withStore('readwrite', async (store) => {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) return null;
+    if (draft.status === 'posted') return draft;
     const next: ReceiptDraft = {
       ...draft,
       status: 'error',
@@ -224,6 +226,19 @@ export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft[
     };
     store.put(next);
     return next;
+  });
+}
+
+/** Finance was durably acknowledged. Keep this marker in the existing local
+ * IndexedDB row BEFORE attempting a separate DELETE; a lost DELETE must not
+ * make the same receipt look unposted after a reload.
+ */
+export async function markReceiptDraftPosted(id: string): Promise<void> {
+  await withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) return; // Another tab has already removed the local image.
+    if (draft.status === 'posted') return;
+    store.put({...draft,status:'posted',updatedAt:new Date().toISOString()});
   });
 }
 

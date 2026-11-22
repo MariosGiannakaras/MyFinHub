@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * A local receipt cleanup may fail AFTER the finance save is committed.
@@ -10,6 +10,19 @@ export function useReceiptCleanup(){
   const [pending,setPending]=useState<string[]>([]);
   const [busy,setBusy]=useState(false);
   const inFlight=useRef(false);
+
+  // Recovery is strictly local. Only a successfully committed, persisted
+  // 'posted' marker is trusted; an ordinary draft is never auto-deleted.
+  useEffect(()=>{
+    let active=true;
+    void import('../lib/receiptDrafts').then(({listReceiptDrafts})=>listReceiptDrafts())
+      .then(rows=>{
+        if(!active)return;
+        const posted=rows.filter(row=>row.status==='posted').map(row=>row.id);
+        if(posted.length)setPending(current=>[...new Set([...current,...posted])]);
+      }).catch(()=>{/* Local storage may be unavailable; no finance retry. */});
+    return()=>{active=false};
+  },[]);
 
   const onFailure=(draftId:string)=>{
     setPending(current=>current.includes(draftId)?current:[...current,draftId]);

@@ -454,12 +454,30 @@ try {
   }finally{
     await c.call("function(){window.__qaRestoreReceiptDelete?.();delete window.__qaRestoreReceiptDelete;return true}");
   }
+  // The finance receipt remains final across page reloads even when the
+  // independent IndexedDB DELETE never completed. Re-entering the receipt
+  // must not expose another finance posting action.
+  const durablePosted=await c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readonly'),request=tx.objectStore('receipts').getAll();request.onsuccess=()=>{const values=request.result;db.close();resolve(values.length===1&&values[0]?.status==='posted')};request.onerror=()=>{db.close();reject(request.error)}};open.onerror=()=>reject(open.error)})}`);
+  assert(durablePosted,'failed local cleanup durably marks the confirmed receipt posted before delete');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after committed finance/failed receipt deletion');
+  await waitFor("function(){return [...document.querySelectorAll('.operation-feedback[data-feedback-tone=warning]')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'posted receipt cleanup warning recovered after reload');
+  const writesAfterReload=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  assert(writesAfterReload===0,'synthetic QA finance writer is not replayed on page reload');
+  await screenshot('receipt-local-posted-after-reload');
+  await openReceiptInbox();
+  await waitFor("function(){return (document.querySelector('.receipt-draft-open')?.textContent||'').includes('Ήδη καταχωρισμένη')}",'posted receipt label in reloaded inbox');
+  const postedInbox=await c.call("function(){const pane=document.querySelector('.receipt-review-pane'),actions=document.querySelector('.receipt-review-actions');return {posted:(pane?.textContent||'').includes('Η οικονομική κίνηση έχει ήδη καταχωριστεί.'),noEntry:![...actions?.querySelectorAll('button')||[]].some(node=>/Χρήση|καταχώριση|Σάρωση/.test(node.textContent||'')),deleteOnly:!![...actions?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Διαγραφή'))}}");
+  assert(postedInbox.posted&&postedInbox.noEntry&&postedInbox.deleteOnly,'posted receipt cannot hand off, rescan or re-post after reload');
+  await screenshot('receipt-local-posted-no-repost-after-reload');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return [...document.querySelectorAll('.operation-feedback[data-feedback-tone=warning]')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'recovered receipt cleanup control');
   const retryLocalCleanup=await c.call("function(){const warning=[...document.querySelectorAll('.operation-feedback[data-feedback-tone=\"warning\"]')].find(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'));const button=[...warning?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Επανάληψη καθαρισμού'));button?.click();return Boolean(button)}");
   assert(retryLocalCleanup,'explicit local-only receipt cleanup retry exists');
   await waitFor("function(){return ![...document.querySelectorAll('.operation-feedback')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'successful local-only retry clears partial-success warning');
   await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after local-only retry');
   assert((await receiptCount()) === 0, 'local-only retry removes draft without another finance submit');
-  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===financeWritesBefore+1,'successful local-only cleanup retry does not post finance a second time');
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===writesAfterReload,'successful local-only cleanup retry does not post finance a second time: post-reload cleanup retry never posts finance');
   console.log('Receipt OCR QA: owner reviews existing-purchase association without another finance save');
   const seededDuplicate=await c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readwrite');const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),x=>x.charCodeAt(0));const image=new Blob([bytes],{type:'image/png'}),now=new Date().toISOString();tx.objectStore('receipts').put({id:'qa-reviewed-existing',capturedAt:now,updatedAt:now,status:'ready',image,mimeType:'image/png',bytes:image.size,width:1,height:1,proposal:{merchant:'QA CORRECTED MARKET',date:'2026-08-22',total:31.75,currency:'EUR'}});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};open.onerror=()=>reject(open.error)})}`);
   assert(seededDuplicate,'private synthetic already-posted receipt fixture saved to IndexedDB only');

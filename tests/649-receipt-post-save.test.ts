@@ -7,6 +7,8 @@ describe('#649 receipt post-save second-store boundary',()=>{
     const app=readFileSync('src/App.tsx','utf8');
     const qa=readFileSync('src/qa.tsx','utf8');
     const owner=readFileSync('src/hooks/useReceiptCleanup.ts','utf8');
+    const handoff=readFileSync('src/components/ReceiptAwareQuickAdd.tsx','utf8');
+    const inbox=readFileSync('src/components/ReceiptInbox.tsx','utf8');
     const notice=readFileSync('src/components/ReceiptCleanupNotice.tsx','utf8');
     for(const consumer of [app,qa]){
       expect(consumer).toContain('const receiptCleanup=useReceiptCleanup();');
@@ -15,6 +17,11 @@ describe('#649 receipt post-save second-store boundary',()=>{
     }
     expect(owner).toContain('await deleteReceiptDraft(id)');
     expect(owner).toContain('setPending(current=>current.filter(id=>!completed.includes(id)))');
+    expect(handoff).toContain('await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)');
+    expect(owner).toContain("rows.filter(row=>row.status==='posted')");
+    expect(inbox).toContain("selected.status==='posted' ? <div className");
+    expect(inbox).toContain("selected.status!=='posted'?<Button");
+    expect(inbox).toContain('Ήδη καταχωρισμένη · μόνο διαγραφή');
     expect(owner).not.toContain('addEvent(');
     expect(owner).not.toContain('onCreate(');
     expect(notice).toContain('Η οικονομική κίνηση έχει αποθηκευτεί');
@@ -29,6 +36,10 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('Επανάληψη καθαρισμού');
     expect(qa).toContain('receipt-local-after-finance-cleanup-failed');
     expect(qa).toContain('receipt-local-retry-still-blocked');
+    expect(qa).toContain('receipt-local-posted-after-reload');
+    expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
+    expect(readFileSync('.github/workflows/fb-focused-rendered-qa.yml','utf8')).toContain('<!-- run-649-receipt-reload-qa -->');
+    expect(qa).toContain('post-reload cleanup retry never posts finance');
     expect(qa).toContain('financeWritesAfterCommit===financeWritesBefore+1');
     expect(qa).toContain('failed local-only retry never re-posts');
     expect(qa).toContain('successful local-only cleanup retry does not post finance a second time');
