@@ -20,7 +20,7 @@ import { cleanNote, money, shortDate } from '../lib/format';
 import { receivableCashDirection } from '../lib/receivableCashDirection';
 import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectMonthlyFlow } from '../lib/selectors';
-import { accountDisplayName, eventKindLabel } from '../lib/ui';
+import { accountDisplayName, eventKindLabel, monthComparisonLabel, monthComparisonPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, LegacyTransaction, SplitPart } from '../types';
 import '../styles/transactions-approved.css';
@@ -29,7 +29,6 @@ function noteParts(note:string){
   const lines=note.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
   return {title:lines[0]||'Χωρίς περιγραφή',comment:lines.slice(1).join('\n')};
 }
-function percentChange(current:number,previous:number){return Math.abs(previous)>0.005?Math.round(((current-previous)/Math.abs(previous))*100):null}
 
 type TransactionRow={
   id:string;date:string;note:string;category:string;subcategory?:string;accountIds:string[];kind:string;amount:number;
@@ -170,8 +169,8 @@ export function TransactionsPage({
   const flow=selectMonthlyFlow(data,month);const previousMonth=shiftReportingMonth(month,-1);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const transactionCountFor=(targetMonth:string)=>effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(targetMonth)).length+(data.state.events??[]).filter(e=>e.date.startsWith(targetMonth)&&!['card_purchase','card_payment'].includes(e.kind)).length;
   const previousCount=transactionCountFor(previousMonth);
-  const incomeDelta=percentChange(flow.income,previousFlow.income);const expenseDelta=percentChange(flow.expense,previousFlow.expense);const netDelta=percentChange(flow.net,previousFlow.net);const countDelta=sourceRows.length-previousCount;
-  const trendText=(value:number|null)=>value===null?'— έναντι προηγ. μήνα':`${value>0?'↑':value<0?'↓':'→'} ${Math.abs(value)}% από προηγ. μήνα`;
+  const incomeDelta=monthComparisonPercent(flow.income,previousFlow.income);const expenseDelta=monthComparisonPercent(flow.expense,previousFlow.expense);const netDelta=monthComparisonPercent(flow.net,previousFlow.net);const countDelta=sourceRows.length-previousCount;
+  const trendText=(value:number|null)=>monthComparisonLabel(value,'προηγ. μήνα');
   const trendClass=(value:number|null,betterWhenLower=false)=>value===null?'':(betterWhenLower?value<=0:value>=0)?'positive':'negative';
 
   const accountText=(ids:string[])=>ids.map(id=>accountDisplayName(data,id)).join(' → ')||'—';

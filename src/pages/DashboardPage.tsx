@@ -21,7 +21,7 @@ import { receivableCashDirection } from '../lib/receivableCashDirection';
 import { activeRecurringItems } from '../lib/recurring';
 import { reportingPeriodEndDate, shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectCategoryTotals, selectMonthlyFlow } from '../lib/selectors';
-import { accountDisplayName } from '../lib/ui';
+import { accountDisplayName, monthComparisonLabel, monthComparisonPercent } from '../lib/ui';
 import type { Account, FinanceData, FinanceEvent, LegacyTransaction } from '../types';
 import './DashboardCompletion.css';
 
@@ -41,7 +41,6 @@ function formatRange(month:string){const {start,end}=monthRange(month);return `$
 function compactAccountLabel(account:Account,data:FinanceData){return accountDisplayName(data,account.id)||account.name||account.short||account.id}
 function signedMoney(value:number){return `${value<0?'−':''}${money.format(Math.abs(value))}`}
 function safePercent(value:number){return Number.isFinite(value)?Math.round(value):0}
-function percentChange(current:number,previous:number){return Math.abs(previous)>0.005?safePercent(((current-previous)/Math.abs(previous))*100):null}
 function movementAmountLabel(item:DashboardMovement){const cashDirection=receivableCashDirection(item.kind);if(cashDirection)return `${cashDirection<0?'−':'+'}${money.format(Math.abs(item.amount))}`;if(item.neutral)return `↔ ${money.format(Math.abs(item.amount))}`;if(item.expense)return `−${money.format(Math.abs(item.amount))}`;return item.amount>0?`+${money.format(Math.abs(item.amount))}`:money.format(0)}
 
 function Sparkline({values,tone='blue',target,comparison}: {values:number[];tone?:'blue'|'green'|'red'|'purple';target?:number[];comparison?:number[]}){
@@ -134,8 +133,8 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const savingsAccounts=accounts.filter(isSavingsAccount);
   const accountSavingsGoal=dashboardSavingsGoal(data.state.savingsGoals,savingsAccounts.length);
   const savingAmount=flow.saving;const savingsRate=flow.income>0?savingAmount/flow.income:0;const previousSavingsRate=previousFlow.income>0?previousFlow.saving/previousFlow.income:null;
-  const incomeComparison=percentChange(flow.income,previousFlow.income);const expenseComparison=percentChange(flow.expense,previousFlow.expense);const savingComparison=percentChange(savingAmount,previousFlow.saving);const savingsRateDelta=previousSavingsRate===null?null:safePercent((savingsRate-previousSavingsRate)*100);
-  const comparisonText=(value:number|null)=>value===null?`— έναντι ${previousMonthLabel}`:`${value>0?'↑':value<0?'↓':'→'} ${Math.abs(value)}% από ${previousMonthLabel}`;
+  const incomeComparison=monthComparisonPercent(flow.income,previousFlow.income);const expenseComparison=monthComparisonPercent(flow.expense,previousFlow.expense);const savingComparison=monthComparisonPercent(savingAmount,previousFlow.saving);const savingsRateDelta=previousSavingsRate===null?null:safePercent((savingsRate-previousSavingsRate)*100);
+  const comparisonText=(value:number|null)=>monthComparisonLabel(value,previousMonthLabel);
   const incomeCumulative=dailyFlow.reduce<number[]>((rows,row)=>{rows.push((rows.at(-1)??0)+row.income);return rows},[]);const expenseCumulative=dailyFlow.reduce<number[]>((rows,row)=>{rows.push((rows.at(-1)??0)+row.expense);return rows},[]);
 
   const recurringCategoryByName=useMemo(()=>new Map(activeRecurringItems(data).map(item=>[item.name,item.category])),[data]);
@@ -158,7 +157,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
 
   const visibleSecondary=remaining.slice(0,4);const hiddenSecondary=Math.max(0,remaining.length-visibleSecondary.length);
   const largestCategory=categories[0];const daysElapsed=month===asOf.slice(0,7)?Math.max(1,Number(asOf.slice(-2))):Number(range.end.slice(-2));const previousDays=Math.max(1,Number(previousRange.end.slice(-2)));
-  const averageDailyExpense=flow.expense/daysElapsed;const previousAverageDailyExpense=previousFlow.expense/previousDays;const dailyExpenseComparison=percentChange(averageDailyExpense,previousAverageDailyExpense);
+  const averageDailyExpense=flow.expense/daysElapsed;const previousAverageDailyExpense=previousFlow.expense/previousDays;const dailyExpenseComparison=monthComparisonPercent(averageDailyExpense,previousAverageDailyExpense);
   const budgetRows=budgetProgress(data,month,asOf,false);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
   const openingDate=previousDate(range.start);const openingBalances=selectAccountBalances(data,openingDate);const openingTotal=accounts.reduce((sum,account)=>sum+(openingBalances[account.id]??0),0);const endingTotal=accounts.reduce((sum,account)=>sum+(balances[account.id]??0),0);
   const privacyMoney=(value:number)=>privacyVisible?money.format(value):'•••••• €';

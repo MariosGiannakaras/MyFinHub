@@ -38,3 +38,16 @@ export function ratioPercent(value: number, target: number): number | null {
   if (!Number.isFinite(value) || !Number.isFinite(target) || target <= 0) return null;
   return Math.max(0, Math.min(100, (value / target) * 100));
 }
+
+/** Monthly change is undefined without a meaningful prior amount; never invent a percentage. */
+export function monthComparisonPercent(current:number,previous:number):number|null{
+  if(!Number.isFinite(current)||!Number.isFinite(previous)||Math.abs(previous)<=.005)return null;
+  const percentage=((current-previous)/Math.abs(previous))*100;
+  return Number.isFinite(percentage)?Math.round(percentage):null;
+}
+
+/** Keep zero-baseline explanations consistent across the two finance summaries. */
+export function monthComparisonLabel(change:number|null,previousLabel:string):string{
+  return change===null?'— χωρίς βάση σύγκρισης':
+    `${change>0?'↑':change<0?'↓':'→'} ${Math.abs(change)}% από ${previousLabel}`;
+}

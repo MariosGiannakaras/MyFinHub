@@ -18,7 +18,8 @@ jobs:
     if: >-
       github.event.pull_request.draft == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (contains(github.event.pull_request.body, '<!-- run-649-iban-receipt-qa -->') ||
+      (contains(github.event.pull_request.body, '<!-- run-649-month-comparison-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-iban-receipt-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-credit-copy-stale-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-card-copy-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-settings-data-qa -->') ||
@@ -48,7 +49,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-iban-receipt-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-month-comparison-qa -->') &&
+          'shell-dashboard-hierarchy transactions-scanability' ||
+          contains(github.event.pull_request.body, '<!-- run-649-iban-receipt-qa -->') &&
           'account-metadata' ||
           contains(github.event.pull_request.body, '<!-- run-649-card-vault-receipt-qa -->') &&
           'card-vault-runtime' ||

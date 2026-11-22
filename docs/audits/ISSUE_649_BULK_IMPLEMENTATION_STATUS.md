@@ -1,3 +1,13 @@
+## 2026-11-22 — #649 P1 I04.04 shared month comparison zero-basis copy (candidate, staged after P0)
+
+**Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged pending focused acceptance). On the preceding `e5e6212` head, the full reviewed source security cohort is independently under CI and one controlled isolated Real Stack validation; do not invalidate that head until its conclusion is known.
+
+**Confirmed shared presentation defect:** Dashboard and Transactions calculated the same monthly percentage threshold independently and, for a prior-month zero baseline, displayed only an unexplained dash. Extract the existing percent formula with the same 0.005 threshold and nearest-int rounding into shared `src/lib/ui.ts`; provide a short accessible visible Greek explanation `— χωρίς βάση σύγκρισης` for undefined comparisons, while retaining existing signed percentage/directional labels for nonzero bases. Both pages import one shared owner rather than copy formatting. The true Transactions EOD first-account balance labels and exact `selectAccountBalances(data,row.date)` semantics remain unchanged, as do all canonical finance data, privacy toggle state, navigation, API and RLS. New deterministic and source sibling tests lock both surfaces and zero, negative, nonfinite and valid amount cases.
+
+**Acceptance:** This is a changed visual source candidate, not final acceptance. Run exact new-head validate/CodeQL/Unified, targeted Dashboard/Transactions desktop/375px Chromium when available, and inspect screenshot geometry directly before counting I04.04. Preserve the unchanged 528.0 KiB JS and 560.0 KiB CSS limits. Do not force a full Ready matrix during implementation; final coherent browser/WebKit/Windows/Lighthouse release gates remain separate. No production, Android, merge or hosted migration change.
+
+---
+
 ## 2026-11-22 — #649 bulk P0 I22.02 revoked-owner direct metadata/RPC matrix (candidate)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged; complete I22.02 and I19.04 are not yet closed). Previous [`14c93d8`](https://github.com/MariosGiannakaras/MyFinHub/commit/14c93d88441e6e72f5992b4da472d755df271fbb) has [CI #44997030741](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44997030741) **SUCCESS** (338 test files/2,293 tests, CodeQL, Unified) and [isolated Real Stack #44997141622](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/44997141622) **SUCCESS** (true local TOTP identities, provider catalog direct owner/AAL2 SELECT denial, owner read positive, Storage, scratch DB+Storage recovery and roll-forward). The one-shot Real Stack PR marker was removed after that accepted run.
