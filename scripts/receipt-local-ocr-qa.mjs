@@ -1,7 +1,9 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
-const baseUrl = process.env.RHEOMIQ_QA_URL || 'http://127.0.0.1:5173/qa.html?page=dashboard';
+const receiptQaUrl=new URL(process.env.RHEOMIQ_QA_URL || 'http://127.0.0.1:5173/qa.html?page=dashboard');
+receiptQaUrl.searchParams.set('receipt-persist-posted-qa','1');
+const baseUrl=receiptQaUrl.href;
 const evidenceDir = process.env.MYFINHUB_UX_EVIDENCE_DIR || '/tmp/myfinhub-ui-ux-qa';
 mkdirSync(evidenceDir, { recursive: true });
 const configured = process.env.MYFINHUB_QA_USE_FALLBACK === '1'
@@ -462,6 +464,8 @@ try {
   await c.send('Page.reload',{ignoreCache:true});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after committed finance/failed receipt deletion');
   await waitFor("function(){return [...document.querySelectorAll('.operation-feedback[data-feedback-tone=warning]')].some(node=>(node.textContent||'').includes('Η οικονομική κίνηση έχει αποθηκευτεί'))}",'posted receipt cleanup warning recovered after reload');
+  const restoredSyntheticFinance=await c.call("function(){return Boolean(sessionStorage.getItem('myfinhub:qa-receipt-confirmed-event'))}");
+  assert(restoredSyntheticFinance,'QA-only previously acknowledged purchase survives reload for later duplicate-purchase proof');
   const writesAfterReload=await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
   assert(writesAfterReload===0,'synthetic QA finance writer is not replayed on page reload');
   await screenshot('receipt-local-posted-after-reload');

@@ -38,6 +38,12 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('receipt-local-retry-still-blocked');
     expect(qa).toContain('receipt-local-posted-after-reload');
     expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
+    expect(qa).toContain("receiptQaUrl.searchParams.set('receipt-persist-posted-qa','1')");
+    expect(qa).toContain('restoredSyntheticFinance');
+    const fixture=readFileSync('src/qa.tsx','utf8');
+    expect(fixture).toContain("sessionStorage.setItem('myfinhub:qa-receipt-confirmed-event'");
+    expect(fixture).toContain("sessionStorage.getItem('myfinhub:qa-receipt-confirmed-event')");
+    expect(fixture).toContain("event.note.includes('QA CORRECTED MARKET')");
     expect(readFileSync('.github/workflows/fb-focused-rendered-qa.yml','utf8')).toContain('<!-- run-649-receipt-reload-qa -->');
     expect(qa).toContain('post-reload cleanup retry never posts finance');
     expect(qa).toContain('financeWritesAfterCommit===financeWritesBefore+1');

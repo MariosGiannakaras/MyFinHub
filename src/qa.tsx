@@ -525,6 +525,20 @@ function buildQaData(params:URLSearchParams){
       id:'qa-account-delete-race',name:'QA λογαριασμός για έλεγχο διαγραφής',kind:'bank',providerId:'alpha',provider:'Alpha Bank',custom:true,showInQuickChoices:true,
     }];
   }
+  // The real app reloads previously acknowledged events from its remote ledger.
+  // This single *synthetic, opt-in* receipt QA fixture preserves that same event
+  // across Page.reload so a later existing-purchase check cannot false-fail.
+  if(params.get('receipt-persist-posted-qa')==='1'){
+    try{
+      const payload=sessionStorage.getItem('myfinhub:qa-receipt-confirmed-event');
+      const event=payload?JSON.parse(payload) as FinanceEvent:null;
+      if(event?.kind==='expense'&&typeof event.id==='string'&&
+        event.date==='2026-08-22'&&event.amount===31.75&&
+        typeof event.note==='string'&&event.note.includes('QA CORRECTED MARKET')){
+        next.state.events=[...(next.state.events??[]),event];
+      }
+    }catch{/* Untrusted QA session data never alters real finance persistence. */}
+  }
   return next;
 }
 
@@ -644,6 +658,10 @@ function QaWorkspace(){
       (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
     });
     addEvent(event);
+    if(params.get('receipt-persist-posted-qa')==='1'){
+      try{sessionStorage.setItem('myfinhub:qa-receipt-confirmed-event',JSON.stringify(event))}
+      catch{/* QA-only session may be unavailable; browser read-back will fail closed. */}
+    }
     document.documentElement.dataset.qaFinanceWrites=String(Number(document.documentElement.dataset.qaFinanceWrites||0)+1);
     if(params.get('quick-event-save-ambiguous')==='1')
       throw new ApiError('Η δοκιμαστική απάντηση χάθηκε μετά την οικονομική εγγραφή.',0,'NETWORK_TIMEOUT');
