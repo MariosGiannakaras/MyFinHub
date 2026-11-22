@@ -20,7 +20,7 @@ import { cleanNote, money, shortDate } from '../lib/format';
 import { receivableCashDirection } from '../lib/receivableCashDirection';
 import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectMonthlyFlow } from '../lib/selectors';
-import { accountDisplayName, eventKindLabel, monthComparisonLabel, monthComparisonPercent } from '../lib/ui';
+import { accountDisplayName, eventKindLabel, expenseMoneyLabel, monthComparisonLabel, monthComparisonPercent, signedNetMoneyLabel } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, LegacyTransaction, SplitPart } from '../types';
 import '../styles/transactions-approved.css';
@@ -270,8 +270,8 @@ export function TransactionsPage({
 
     <section className="transactions-approved-summary desktop-finance-table" aria-label="Σύνοψη συναλλαγών μήνα">
       <Surface as="article" variant="flat" className="transactions-summary-card income"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εσόδων</small><strong>{money.format(flow.income)}</strong><span className={trendClass(incomeDelta)}>{trendText(incomeDelta)}</span></div></Surface>
-      <Surface as="article" variant="flat" className="transactions-summary-card expense"><span className="transactions-summary-icon"><TrendingDown size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εξόδων</small><strong className="negative">−{money.format(flow.expense)}</strong><span className={trendClass(expenseDelta,true)}>{trendText(expenseDelta)}</span></div></Surface>
-      <Surface as="article" variant="flat" className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={flow.net>=0?'positive':'negative'}>{flow.net>=0?'+':'−'}{money.format(Math.abs(flow.net))}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></Surface>
+      <Surface as="article" variant="flat" className="transactions-summary-card expense"><span className="transactions-summary-icon"><TrendingDown size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εξόδων</small><strong className={Math.abs(flow.expense)<.005?'neutral':'negative'}>{expenseMoneyLabel(flow.expense)}</strong><span className={trendClass(expenseDelta,true)}>{trendText(expenseDelta)}</span></div></Surface>
+      <Surface as="article" variant="flat" className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={Math.abs(flow.net)<.005?'neutral':flow.net>0?'positive':'negative'}>{signedNetMoneyLabel(flow.net)}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></Surface>
       <Surface as="article" variant="flat" className="transactions-summary-card count"><span className="transactions-summary-icon"><List size={24}/></span><div className="transactions-summary-copy"><small>Συναλλαγές μήνα</small><strong>{sourceRows.length}</strong><span className="neutral">{countDelta===0?'→ ίδιο με προηγ. μήνα':`${countDelta>0?'↑':'↓'} ${Math.abs(countDelta)} από προηγ. μήνα`}</span></div></Surface>
     </section>
 

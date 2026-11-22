@@ -1,4 +1,5 @@
 import { allAccounts } from './domain.js';
+import { money } from './format.js';
 import type { EventKind, FinanceData, RecurringItem, ReviewSuggestion } from '../types.js';
 
 export function effectiveRecurringItems(data: FinanceData): RecurringItem[] {
@@ -50,4 +51,16 @@ export function monthComparisonPercent(current:number,previous:number):number|nu
 export function monthComparisonLabel(change:number|null,previousLabel:string):string{
   return change===null?'— χωρίς βάση σύγκρισης':
     `${change>0?'↑':change<0?'↓':'→'} ${Math.abs(change)}% από ${previousLabel}`;
+}
+
+/** Presentation-only signs follow the EUR cent actually rendered. */
+export function expenseMoneyLabel(amount:number):string{
+  const abs=Math.abs(amount);
+  return `${amount>=.005?'−':amount<=-.005?'+':''}${money.format(abs)}`;
+}
+
+/** Avoid reporting +0,00 € or −0,00 € in zero-balance summaries. */
+export function signedNetMoneyLabel(amount:number):string{
+  const abs=Math.abs(amount);
+  return `${amount>=.005?'+':amount<=-.005?'−':''}${money.format(abs)}`;
 }

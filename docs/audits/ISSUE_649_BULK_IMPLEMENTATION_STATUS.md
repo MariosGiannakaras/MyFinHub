@@ -1,3 +1,13 @@
+## 2026-11-22 — #649 I04.04 accepted shared zero-basis; signed-zero sibling candidate
+
+**Implementations 6/23 completed · Sub-implementations 102/132 completed** (+1 I04.04, no full-package increment). Previous exact [`ee88a14`](https://github.com/MariosGiannakaras/MyFinHub/commit/ee88a14bbab43dcde314f177ec1cb59870b8792a) passed [CI #45010709576](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45010709576) **SUCCESS** for validate, CodeQL and Unified and [focused browser #45010730905](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45010730905) **SUCCESS** for Dashboard and Transactions. Artifact #14750031252 downloaded; directly inspected the Dashboard/Transactions empty-state desktop, Dashboard mobile, Transactions 375px filters and 200% zoom PNGs. Shared Greek zero-denominator explanation is readable, EOD account labels remain truthful, and no horizontal clipping was observed. I04.04 accepted; remaining I04 package items separate.
+
+**Visual sibling failure class confirmed in the actual empty Transactions PNG:** summary displayed `−0,00 €` expenses and `+0,00 €` net despite zero EUR. New shared presentation-only `expenseMoneyLabel`/`signedNetMoneyLabel` in `src/lib/ui.ts` removes spurious signs below 0.005 EUR, reused in Dashboard and Transactions. The zero state uses neutral typography, and exact rendered empty-state guards now reject false signs. No finance selector, privacy, account balance, API, RLS, migrations or domain rounding changed. **This follow-up is candidate** pending exact new-head source CI and two-route browser evidence; do not claim its PASS early.
+
+Last security head [`e5e6212`](https://github.com/MariosGiannakaras/MyFinHub/commit/e5e621281f29c38802e03af8f7ee51ef667ae72a): [CI #45010081487](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45010081487) and [isolated Real Stack #45010222898](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45010222898) **SUCCESS** for genuine local revoked owner AAL2/RPC denials, recovery and migration roll-forward. Real Stack opt-in is OFF; pending original I19.04/I22.02 and remaining P1, final Ready Windows/WebKit/Lighthouse/visual release gates, integration and production. Android/main/hosted finance untouched.
+
+---
+
 ## 2026-11-22 — #649 P1 I04.04 shared month comparison zero-basis copy (candidate, staged after P0)
 
 **Implementations 6/23 completed · Sub-implementations 101/132 completed** (unchanged pending focused acceptance). On the preceding `e5e6212` head, the full reviewed source security cohort is independently under CI and one controlled isolated Real Stack validation; do not invalidate that head until its conclusion is known.
