@@ -33,8 +33,8 @@ try{
     const positioned=await c.call("function(){const title=document.querySelector('#credit-statements-title');if(!title)return false;title.scrollIntoView({block:'start'});const bar=document.querySelector('.topbar');const top=title.getBoundingClientRect().top;const clearance=(bar?.getBoundingClientRect().bottom||0)+12;window.scrollBy({top:Math.min(0,top-clearance),behavior:'instant'});return true}");
     assert(positioned,'statement heading exists for screenshot framing');
     await sleep(120);
-    const bounds=await c.call("function(){const title=document.querySelector('#credit-statements-title'),bar=document.querySelector('.topbar');const r=title?.getBoundingClientRect();return {titleTop:r?.top??-999,titleBottom:r?.bottom??999,chromeBottom:bar?.getBoundingClientRect().bottom??0}}");
-    assert(bounds.titleTop>=bounds.chromeBottom+6&&bounds.titleBottom<innerHeight-12,
+    const bounds=await c.call("function(){const title=document.querySelector('#credit-statements-title'),bar=document.querySelector('.topbar');const r=title?.getBoundingClientRect();return {titleTop:r?.top??-999,titleBottom:r?.bottom??999,chromeBottom:bar?.getBoundingClientRect().bottom??0,viewportHeight:innerHeight}}");
+    assert(bounds.titleTop>=bounds.chromeBottom+6&&bounds.titleBottom<bounds.viewportHeight-12,
       `frame credit statement title stays below sticky topbar (${label}): ${JSON.stringify(bounds)}`);
   };
 

@@ -36,6 +36,8 @@ describe('historical statement rendered regression proof (DV-FB05)',()=>{
     expect(browser).toContain("frameStatementHeading('mobile-375')");
     expect(browser).toContain("frameStatementHeading('mobile-320')");
     expect(browser).toContain('frame credit statement title stays below sticky topbar');
+    expect(browser).toContain('viewportHeight:innerHeight');
+    expect(browser).toContain('bounds.titleBottom<bounds.viewportHeight-12');
 
     expect(browser).toContain("Greek account statement heading is truthful and contained at 1440px");
     expect(browser).toContain("Greek heading remains readable and contained at 375px");
