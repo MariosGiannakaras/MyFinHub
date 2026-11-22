@@ -929,6 +929,41 @@ async function main(){
     const reloadedServices=await restored.request('/api/data');
     expect(reloadedServices,200,undefined,'recurring-service-reload');
     assert(reloadedServices.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'New recurring logo reference failed revisioned save/reload.');
+    // A browser owner+AAL2 JWT is allowed direct PostgREST table DML. It
+    // must NOT bypass the release RPC's finance-reference guard by PATCHing
+    // active=false or deleting an active binary registration outright.
+    const inUseRegistrationUrl=local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey);
+    const beforeDirectLifecycle=await upstreamJson(inUseRegistrationUrl+
+      '&select=asset_key,recurring_id,active,updated_at,storage_path,mime_type',local.serviceRole);
+    assert(Array.isArray(beforeDirectLifecycle)&&beforeDirectLifecycle.length===1&&
+      beforeDirectLifecycle[0]?.active===true,
+      'Real recurring direct-DML proof is missing its active referenced positive row.');
+    const deniedDirectDeactivate=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {active:false});
+    assert(deniedDirectDeactivate.status===409&&deniedDirectDeactivate.body?.code==='23503',
+      'Direct owner AAL2 recurring asset deactivate bypassed finance reference protection.');
+    const deniedDirectRepoint=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {recurring_id:'qa-repointed-recurring'});
+    assert(deniedDirectRepoint.status===400&&deniedDirectRepoint.body?.code==='23514',
+      'Direct owner AAL2 recurring asset UPDATE changed immutable registration ownership.');
+    const deniedDirectDeleteResponse=await fetch(inUseRegistrationUrl,{
+      method:'DELETE',headers:{
+        apikey:local.publishable,authorization:'Bearer '+directToken,
+        accept:'application/json',prefer:'return=representation',
+      },
+    });
+    const deniedDirectDeleteBody=await deniedDirectDeleteResponse.json().catch(()=>null);
+    assert(deniedDirectDeleteResponse.status===400&&deniedDirectDeleteBody?.code==='23514',
+      'Direct owner AAL2 DELETE bypassed recurring asset two-phase release.');
+    const afterDirectLifecycle=await upstreamJson(inUseRegistrationUrl+
+      '&select=asset_key,recurring_id,active,updated_at,storage_path,mime_type',local.serviceRole);
+    assert(JSON.stringify(afterDirectLifecycle)===JSON.stringify(beforeDirectLifecycle),
+      'Denied direct recurring asset DML changed its row or timestamp.');
+    assert((await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets')).length===
+      initialServiceObjects.length+1,'Denied direct recurring asset DML changed Storage binary presence.');
     const assetPath=(key:string)=>'/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',assetKey:key});
     expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-reference-protection');
     const staleServiceState=structuredClone(original.body.data.state);

@@ -12,6 +12,35 @@ afterEach(()=>{
 });
 
 describe('#649 I19.04 recurring-service public asset readback',()=>{
+  it('guards direct owner+AAL2 recurring asset UPDATE/DELETE without bypassing the release RPC or rewriting finance',()=>{
+    const sql=readFileSync('supabase/migrations/20261122214000_guard_recurring_asset_direct_lifecycle.sql','utf8');
+    const real=readFileSync('scripts/real-stack-e2e.ts','utf8');
+    expect(sql).toContain('security invoker');
+    expect(sql).toContain("current_user <> 'authenticated'");
+    expect(sql).toContain("new.recurring_id,new.file_name");
+    expect(sql).toContain('RECURRING_SERVICE_ASSET_IMMUTABLE_REGISTRATION');
+    expect(sql).toContain('RECURRING_SERVICE_ASSET_REACTIVATION_FORBIDDEN');
+    expect(sql).toContain('RECURRING_SERVICE_ASSET_RELEASE_REQUIRED');
+    expect(sql).toContain('RECURRING_SERVICE_ASSET_IN_USE');
+    for(const part of ["private.rheomiq_recurring r","{state,recurringOverrides}",
+      "{state,recurringCustom}","{seed,recurring}"])expect(sql).toContain(part);
+    expect(sql).toContain('before update or delete on public.rheomiq_recurring_service_assets');
+    expect(sql).not.toMatch(/security definer|delete from|truncate table|drop table|drop schema/i);
+    expect(real).toContain('const beforeDirectLifecycle=await upstreamJson(');
+    expect(real).toContain("const deniedDirectDeactivate=await directRequest('PATCH'");
+    expect(real).toContain("deniedDirectDeactivate.status===409&&deniedDirectDeactivate.body?.code==='23503'");
+    expect(real).toContain("const deniedDirectRepoint=await directRequest('PATCH'");
+    expect(real).toContain("deniedDirectRepoint.status===400&&deniedDirectRepoint.body?.code==='23514'");
+    expect(real).toContain("method:'DELETE',headers:{");
+    expect(real).toContain("deniedDirectDeleteResponse.status===400&&deniedDirectDeleteBody?.code==='23514'");
+    expect(real).toContain('JSON.stringify(afterDirectLifecycle)===JSON.stringify(beforeDirectLifecycle)');
+    expect(real.indexOf('const deniedDirectDeactivate=await directRequest('))
+      .toBeGreaterThan(real.indexOf('const firstServiceSave=await primary.request('));
+    expect(real.indexOf("const deniedDirectDeactivate=await directRequest("))
+      .toBeLessThan(real.indexOf("expect(await primary.request(assetPath(serviceAssetKey)"));
+    expect(real).toContain("expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),200");
+  });
+
   it.each([
     'valid','foreign-storage-key','text-bytes','fractional-bytes',
     'negative-bytes','zero-bytes','unsafe-bytes','duplicate-registration',

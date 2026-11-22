@@ -70,6 +70,7 @@ const releasePending=[
   "20261120001000_guard_provider_asset_path_provenance.sql",
   "20261122080000_restrict_provider_catalog_to_owner_aal2.sql",
   "20261122211000_guard_provider_binding_cross_provider.sql",
+  "20261122214000_guard_recurring_asset_direct_lifecycle.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
