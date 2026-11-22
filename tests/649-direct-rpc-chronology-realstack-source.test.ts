@@ -88,6 +88,19 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf('const revokedProviderRead=await selectProvider(aal2Token,protectedProviderId)'))
       .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
   });
+  it('also denies every metadata, provider and Storage registry RPC to a revoked AAL2 owner session',()=>{
+    expect(direct).toContain('const protectedMetadataMutations=[');
+    expect(direct).toContain('for(const entry of protectedMetadataMutations){');
+    expect(direct).toContain('const denied=await rpc(entry.method,aal2Token,entry.params)');
+    expect(direct).toContain("denied.status===403&&String(denied.body?.code)==='42501'");
+    expect(direct).toContain("'Revoked owner AAL2 retained direct '+entry.method+' mutation access.");
+    expect(direct.indexOf('const denied=await rpc(entry.method,aal2Token,entry.params)'))
+      .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
+    expect(direct).toContain("await assertDeniedStorage('revoked owner AAL2',aal2Token)");
+    expect(direct).toContain("method:'rheomiq_register_financial_provider_asset'");
+    expect(direct).toContain("method:'rheomiq_set_financial_provider_asset_binding'");
+    expect(direct).toContain("method:'rheomiq_upsert_account_metadata'");
+  });
   it('rejects direct provider metadata create/update by nonowner and AAL1 at the real RPC boundary',()=>{
     expect(direct).toContain("method:'rheomiq_create_financial_provider'");
     expect(direct).toContain("method:'rheomiq_update_financial_provider'");

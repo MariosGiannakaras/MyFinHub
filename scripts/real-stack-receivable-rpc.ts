@@ -148,7 +148,7 @@ export async function runDirectReceivableRpcProof(options:Options){
 
   // Genuine local GoTrue JWTs, not forged claims. Invoker RPCs must
   // reject AAL1 and nonowner AAL2 before any Storage or metadata write.
-  for(const entry of [
+  const protectedMetadataMutations=[
     {method:'rheomiq_create_financial_provider',params:{
       p_id:'qa-direct-rpc',p_display_name:'Synthetic QA Provider',p_short_name:'QA',
       p_provider_kind:'bank',p_country_code:'GR',p_sort_order:42,
@@ -178,7 +178,8 @@ export async function runDirectReceivableRpcProof(options:Options){
       p_account_id:'qa-direct-rpc-owner-iban',
       p_iban:'GR1601101250000000012300695',p_expected_revision:0,
     }},
-  ]){
+  ];
+  for(const entry of protectedMetadataMutations){
     for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
       const denied=await rpc(entry.method,token,entry.params);
       assert(denied.status===403&&denied.body?.code==='42501',
@@ -358,6 +359,14 @@ export async function runDirectReceivableRpcProof(options:Options){
     revokedProviderRead.body.length===0,
     'Revoked owner AAL2 device retained direct financial provider SELECT visibility.');
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
+  // The JWT still parses after device revocation. Every previously tested
+  // direct metadata/asset RPC must now deny the same revoked AAL2 identity.
+  // No request is replayed and any write would abort the disposable proof.
+  for(const entry of protectedMetadataMutations){
+    const denied=await rpc(entry.method,aal2Token,entry.params);
+    assert(denied.status===403&&String(denied.body?.code)==='42501',
+      'Revoked owner AAL2 retained direct '+entry.method+' mutation access.');
+  }
   // The AAL1 and AAL2 tokens may share the same local GoTrue session_id.
   // The suite's outer owner-authorized cleanup should revoke only an active
   // synthetic session, never re-revoke a row already retired above.
