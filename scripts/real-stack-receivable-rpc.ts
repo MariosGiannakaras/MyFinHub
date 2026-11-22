@@ -226,6 +226,17 @@ export async function runDirectReceivableRpcProof(options:Options){
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
+  // Bindings have an independent owner+AAL2 table SELECT policy.
+  const selectProviderBinding=async(token:string,providerId:string)=>{
+    const query=new URLSearchParams({
+      select:'provider_id,asset_role,variant,asset_key',
+      provider_id:'eq.'+providerId,asset_role:'eq.card-mark',variant:'eq.dark',
+    });
+    const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?'+query,{
+      headers:{apikey:publishable,authorization:'Bearer '+token,accept:'application/json'},
+    });
+    return {status:response.status,body:await response.json().catch(()=>null)};
+  };
   // A separate owner-user-scoped recurring service artwork registry uses
   // RLS in addition to its Storage bucket. Verify its actual positive row.
   const selectRecurringAsset=async(token:string,assetKey:string)=>{
@@ -246,6 +257,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   type StorageFixture={bucket:StorageBucket;path:string};
   const syntheticStoragePaths:StorageFixture[]=[];
   const syntheticRegisteredAssets:string[]=[];
+  const syntheticRegisteredBindings:Array<{providerId:string;assetRole:string;variant:string;assetKey:string}>=[];
   const syntheticRegisteredRecurringAssets:string[]=[];
   const newStoragePath=(bucket:StorageBucket,providerId='qa-direct-rpc'):StorageFixture=>{
     const nonce=randomUUID().replace(/-/g,'');
@@ -392,7 +404,7 @@ export async function runDirectReceivableRpcProof(options:Options){
       'Owner AAL2 could not upload its registered provider artwork fixture.');
     const registered=await rpc('rheomiq_register_financial_provider_asset',aal2Token,{
       p_provider_id:protectedProviderId,p_asset_key:registeredAssetKey,
-      p_asset_role:'logo',p_variant:'universal',
+      p_asset_role:'card-mark',p_variant:'dark',
       p_file_name:registeredAssetKey+'.svg',p_mime_type:'image/svg+xml',
       p_storage_path:registeredAssetStorage.path,p_size_bytes:svgBytes.length,p_make_primary:false,
     });
@@ -411,6 +423,36 @@ export async function runDirectReceivableRpcProof(options:Options){
       assert(deniedAssetRead.status===200&&Array.isArray(deniedAssetRead.body)&&
         deniedAssetRead.body.length===0,
         'Direct financial provider asset SELECT leaked real registered artwork metadata to '+label+'.');
+    }
+
+    // Never overwrite any existing provider binding: this non-primary
+    // synthetic slot must be absent before its invoker write.
+    const bindingBefore=await selectProviderBinding(aal2Token,protectedProviderId);
+    assert(bindingBefore.status===200&&Array.isArray(bindingBefore.body)&&
+      bindingBefore.body.length===0,
+      'Synthetic card-mark/dark test would overwrite a populated binding.');
+    syntheticRegisteredBindings.push({
+      providerId:protectedProviderId,assetRole:'card-mark',variant:'dark',assetKey:registeredAssetKey,
+    });
+    const bound=await rpc('rheomiq_set_financial_provider_asset_binding',aal2Token,{
+      p_provider_id:protectedProviderId,p_asset_role:'card-mark',
+      p_variant:'dark',p_asset_key:registeredAssetKey,
+    });
+    assert([200,204].includes(bound.status),
+      'Owner AAL2 could not create the temporary provider binding.');
+    const ownerBindingRead=await selectProviderBinding(aal2Token,protectedProviderId);
+    assert(ownerBindingRead.status===200&&Array.isArray(ownerBindingRead.body)&&
+      ownerBindingRead.body.length===1&&
+      ownerBindingRead.body[0]?.provider_id===protectedProviderId&&
+      ownerBindingRead.body[0]?.asset_role==='card-mark'&&
+      ownerBindingRead.body[0]?.variant==='dark'&&
+      ownerBindingRead.body[0]?.asset_key===registeredAssetKey,
+      'Owner AAL2 direct provider binding SELECT lost its positive control.');
+    for(const [label,token] of [['owner AAL1',aal1Token],['nonowner AAL2',nonownerAal2]] as const){
+      const deniedBindingRead=await selectProviderBinding(token,protectedProviderId);
+      assert(deniedBindingRead.status===200&&Array.isArray(deniedBindingRead.body)&&
+        deniedBindingRead.body.length===0,
+        'Direct provider binding SELECT leaked owner metadata to '+label+'.');
     }
 
   // Keep the owner IBAN fixture until the revoked-session RLS readback.
@@ -477,6 +519,10 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(revokedAssetRead.status===200&&Array.isArray(revokedAssetRead.body)&&
     revokedAssetRead.body.length===0,
     'Revoked owner AAL2 device retained direct financial provider asset SELECT visibility.');
+  const revokedBindingRead=await selectProviderBinding(aal2Token,protectedProviderId);
+  assert(revokedBindingRead.status===200&&Array.isArray(revokedBindingRead.body)&&
+    revokedBindingRead.body.length===0,
+    'Revoked owner AAL2 retained provider binding SELECT visibility.');
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
   // The JWT still parses after device revocation. Every previously tested
   // direct metadata/asset RPC must now deny the same revoked AAL2 identity.
@@ -495,6 +541,24 @@ export async function runDirectReceivableRpcProof(options:Options){
     // preserve production FK semantics while cleaning only random fixtures
     // in the disposable local Supabase. An empty DELETE return is valid if
     // the test failed before registration was committed.
+    for(const binding of syntheticRegisteredBindings){
+      const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?'+
+        new URLSearchParams({
+          provider_id:'eq.'+binding.providerId,asset_role:'eq.'+binding.assetRole,
+          variant:'eq.'+binding.variant,asset_key:'eq.'+binding.assetKey,
+        }),{
+        method:'DELETE',headers:{
+          apikey:serviceRole,authorization:'Bearer '+serviceRole,
+          prefer:'return=representation',accept:'application/json',
+        },
+      });
+      const rows=await response.json().catch(()=>null);
+      assert(response.status===200&&Array.isArray(rows)&&rows.length<=1&&
+        rows.every((row:{provider_id?:unknown;asset_role?:unknown;variant?:unknown;asset_key?:unknown})=>
+          row.provider_id===binding.providerId&&row.asset_role===binding.assetRole&&
+          row.variant===binding.variant&&row.asset_key===binding.assetKey),
+        'Synthetic binding cleanup escaped its exact provider/slot/key.');
+    }
     for(const assetKey of syntheticRegisteredAssets){
       const response=await fetch(apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
         encodeURIComponent(assetKey),{

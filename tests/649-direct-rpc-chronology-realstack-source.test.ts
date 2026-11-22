@@ -115,6 +115,27 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'))
       .toBeLessThan(direct.indexOf('for(const fixture of syntheticStoragePaths)'));
   });
+  it('proves provider binding direct RLS with an owner-positive row and real-session negatives',()=>{
+    expect(direct).toContain("apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?'+query");
+    expect(direct).toContain("const bindingBefore=await selectProviderBinding(aal2Token,protectedProviderId)");
+    expect(direct).toContain('bindingBefore.body.length===0');
+    expect(direct).toContain("const bound=await rpc('rheomiq_set_financial_provider_asset_binding',aal2Token,{");
+    expect(direct).toContain("p_variant:'dark',p_asset_key:registeredAssetKey");
+    expect(direct).toContain("const ownerBindingRead=await selectProviderBinding(aal2Token,protectedProviderId)");
+    expect(direct).toContain("ownerBindingRead.body[0]?.asset_key===registeredAssetKey");
+    expect(direct).toContain("const deniedBindingRead=await selectProviderBinding(token,protectedProviderId)");
+    expect(direct).toContain("deniedBindingRead.body.length===0");
+    expect(direct).toContain("const revokedBindingRead=await selectProviderBinding(aal2Token,protectedProviderId)");
+    expect(direct).toContain("revokedBindingRead.body.length===0");
+    expect(direct).toContain("for(const binding of syntheticRegisteredBindings)");
+    expect(direct).toContain("asset_key:'eq.'+binding.assetKey");
+    expect(direct.indexOf("const bound=await rpc('rheomiq_set_financial_provider_asset_binding',aal2Token,{"))
+      .toBeLessThan(direct.indexOf("const deniedBindingRead=await selectProviderBinding(token,protectedProviderId)"));
+    expect(direct.indexOf("const revokedBindingRead=await selectProviderBinding(aal2Token,protectedProviderId)"))
+      .toBeGreaterThan(direct.indexOf('const revokedDevice=await fetch'));
+    expect(direct.indexOf('for(const binding of syntheticRegisteredBindings)'))
+      .toBeLessThan(direct.indexOf('for(const assetKey of syntheticRegisteredAssets)'));
+  });
   it('proves direct recurring service asset SELECT owner/AAL2 RLS with a real Storage-backed registry row',()=>{
     expect(direct).toContain("apiUrl+'/rest/v1/rheomiq_recurring_service_assets?'+query");
     expect(direct).toContain("const recurringStorage=protectedStorage.find(fixture=>fixture.bucket==='recurring-service-assets')");
