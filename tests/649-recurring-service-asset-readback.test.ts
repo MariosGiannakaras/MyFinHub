@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readRecurringServiceAssets } from '../server/accountMetadataStore.js';
 
