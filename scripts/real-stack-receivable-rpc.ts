@@ -262,13 +262,16 @@ export async function runDirectReceivableRpcProof(options:Options){
   ];
   const svgBytes=Buffer.from(
     '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path d="M0 0"/></svg>','utf8');
-  const storageRequest=async(method:'POST'|'DELETE',token:string,fixture:StorageFixture)=>{
+  // Different valid SVG bytes make an unauthorized overwrite observable.
+  const replacementBytes=Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><circle cx="4" cy="4" r="3"/></svg>','utf8');
+  const storageRequest=async(method:'POST'|'PUT'|'DELETE',token:string,fixture:StorageFixture)=>{
     const response=await fetch(apiUrl+'/storage/v1/object/'+fixture.bucket+'/'+fixture.path,{
       method,headers:{
         apikey:token===serviceRole?serviceRole:publishable,authorization:'Bearer '+token,
-        ...(method==='POST'?{'content-type':'image/svg+xml'}:{}),
+        ...(method!=='DELETE'?{'content-type':'image/svg+xml'}:{}),
       },
-      ...(method==='POST'?{body:Uint8Array.from(svgBytes)}:{}),
+      ...(method!=='DELETE'?{body:Uint8Array.from(method==='PUT'?replacementBytes:svgBytes)}:{}),
     });
     return {status:response.status,body:await response.json().catch(()=>null)};
   };
@@ -280,6 +283,16 @@ export async function runDirectReceivableRpcProof(options:Options){
     assert(response.status===200&&Array.isArray(response.body),
       'Local privileged Storage readback failed.');
     return response.body.some((row:{name?:unknown})=>row?.name===fixture.path.slice(delimiter+1));
+  };
+  const storageBytesUnchanged=async(fixture:StorageFixture)=>{
+    // These are public-artwork buckets; fresh bytes, not an object listing,
+    // prove a denied UPDATE did not overwrite existing owner content.
+    const response=await fetch(
+      apiUrl+'/storage/v1/object/public/'+fixture.bucket+'/'+fixture.path+'?qa='+randomUUID(),{
+        headers:{apikey:serviceRole,authorization:'Bearer '+serviceRole},
+      });
+    assert(response.status===200,'Local positive Storage byte readback failed.');
+    return Buffer.from(await response.arrayBuffer()).equals(svgBytes);
   };
   const assertDeniedStorage=async(label:string,token:string)=>{
     for(const fixture of protectedStorage){
@@ -294,6 +307,11 @@ export async function runDirectReceivableRpcProof(options:Options){
         'Direct '+fixture.bucket+' Storage DELETE unexpectedly accepted '+label+'.');
       assert(await storageExists(fixture),
         'Denied '+label+' Storage DELETE removed a legitimate owner AAL2 object.');
+      const deniedOverwrite=await storageRequest('PUT',token,fixture);
+      assert(deniedOverwrite.status>=400&&deniedOverwrite.status<500,
+        'Direct '+fixture.bucket+' Storage UPDATE unexpectedly accepted '+label+'.');
+      assert(await storageBytesUnchanged(fixture),
+        'Denied '+label+' Storage UPDATE changed the owner artwork bytes.');
     }
   };
   try{

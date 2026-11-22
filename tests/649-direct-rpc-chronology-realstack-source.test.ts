@@ -62,6 +62,11 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("const deniedInsert=await storageRequest('POST',token,candidate)");
     expect(direct).toContain("assert(!(await storageExists(candidate))");
     expect(direct).toContain("const deniedDelete=await storageRequest('DELETE',token,fixture)");
+    expect(direct).toContain("const deniedOverwrite=await storageRequest('PUT',token,fixture)");
+    expect(direct).toContain("deniedOverwrite.status>=400&&deniedOverwrite.status<500");
+    expect(direct).toContain("assert(await storageBytesUnchanged(fixture)");
+    expect(direct).toContain("Buffer.from(await response.arrayBuffer()).equals(svgBytes)");
+    expect(direct).toContain("method==='PUT'?replacementBytes:svgBytes");
     expect(direct).toContain("assert(await storageExists(fixture)");
     expect(direct).toContain("for(const fixture of syntheticStoragePaths)");
     expect(direct).toContain("const response=await storageRequest('DELETE',serviceRole,fixture)");
