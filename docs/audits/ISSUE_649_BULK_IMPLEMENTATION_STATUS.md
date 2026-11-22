@@ -1,3 +1,9 @@
+## 2026-11-22 — #649 I19.04 ambiguous binary upload source self-review correction
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Immediate self-review of [`38ce510`](https://github.com/MariosGiannakaras/MyFinHub/commit/38ce5107e63929d853741534710c5a043e18a519) caught an incorrectly escaped decimal Content-Length regex in the new bounded Storage byte readback (`/^\\d+$/` matches a literal slash+d instead of decimal digits). Fix it to `/^\d+$/`, so valid Storage Content-Length is recognized and an excessive/invalid length still rejects before reading. Normalize unit mock Response payloads to `Uint8Array` for stable DOM `BodyInit` typing. No change to real safety contract, no DB/Storage production write, RLS/grant/finance semantics, client behavior or Android. Exact-head CI still required before accepting this new I19.04 slice; the preceding first-candidate CI may report an obsolete result and must not be misread as current acceptance.
+
+---
+
 ## 2026-11-22 — #649 I19.04 Storage POST uncertain-receipt byte-verified recovery (candidate)
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Previous accepted schema [`afd871d`](https://github.com/MariosGiannakaras/MyFinHub/commit/afd871dd107897d1a84ff407203bdb070634210f) passed [CI #45071784608](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45071784608) and [isolated Real Stack #45071805623](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45071805623), both **SUCCESS**; the docs-only acceptance checkpoint [`53353a8`](https://github.com/MariosGiannakaras/MyFinHub/commit/53353a89df24ac1a696bb278a0d18ac527f78018) passed [CI #45073447173](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45073447173) **SUCCESS**. Schema opt-in remains OFF; no repeat accepted Real Stack.

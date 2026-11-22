@@ -383,7 +383,7 @@ describe('provider branding management',()=>{
       if(requests.length===2){
         expect(method).toBe('GET');
         expect(url).toContain('/storage/v1/object/public/financial-provider-assets/providers/demo-bank/');
-        return new Response(bytes,{status:200,headers:{'content-length':String(bytes.byteLength)}});
+        return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':String(bytes.byteLength)}});
       }
       if(requests.length===3){
         const path=new URL(requests[0].url).pathname.split('/financial-provider-assets/')[1];
@@ -418,8 +418,8 @@ describe('provider branding management',()=>{
         if(calls.length===2){
           expect(method).toBe('GET');
           if(scenario==='missing')return new Response('{}',{status:404});
-          if(scenario==='oversized')return new Response(Buffer.alloc(bytes.length+1),{status:200});
-          return new Response(Buffer.from([...bytes.slice(0,-1),42]),{status:200});
+          if(scenario==='oversized')return new Response(new Uint8Array(bytes.length+1),{status:200});
+          return new Response(Uint8Array.from([...bytes.slice(0,-1),42]),{status:200});
         }
         throw new Error('Unsafe provider Storage replay, deletion or registration');
       }));

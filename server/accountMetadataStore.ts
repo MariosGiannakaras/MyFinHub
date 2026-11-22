@@ -472,7 +472,7 @@ async function confirmedAmbiguousArtworkUpload(
     });
     if(!response.ok||!response.body)return false;
     const length=response.headers.get('content-length');
-    if(length!==null&&(!/^\\d+$/.test(length)||Number(length)!==expectedContent.byteLength))
+    if(length!==null&&(!/^\d+$/.test(length)||Number(length)!==expectedContent.byteLength))
       return false;
     const reader=response.body.getReader();
     const actualHash=createHash('sha256');

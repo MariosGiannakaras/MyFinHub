@@ -56,7 +56,7 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
       if(calls.length===2){
         expect(method).toBe('GET');
         expect(url).toContain('/storage/v1/object/public/recurring-service-assets/services/');
-        return new Response(bytes,{status:200});
+        return new Response(Uint8Array.from(bytes),{status:200});
       }
       if(calls.length===3){
         const path=new URL(calls[0].url).pathname.split('/recurring-service-assets/')[1];
@@ -83,7 +83,7 @@ describe('#649 I19.04 recurring-service public asset readback',()=>{
     vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
       methods.push(init?.method||'GET');
       if(methods.length===1)throw new Error('network response lost');
-      if(methods.length===2)return new Response(Buffer.from([...bytes.slice(0,-1),42]),{status:200});
+      if(methods.length===2)return new Response(Uint8Array.from([...bytes.slice(0,-1),42]),{status:200});
       throw new Error('Recurring asset must not be registered or deleted after unverified bytes');
     }));
     const log=vi.spyOn(console,'error').mockImplementation(()=>{});
