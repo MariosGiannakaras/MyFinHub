@@ -58,9 +58,23 @@ CREATE POLICY finance_owner ON public.rheomiq_app_state TO authenticated
  USING ((select public.rheomiq_is_owner_aal2()));
 GRANT SELECT ON public.rheomiq_app_state TO authenticated;
 
+-- #649: model both historical broad-read provider tables with synthetic rows.
+CREATE TABLE public.rheomiq_financial_providers(id text PRIMARY KEY,active boolean NOT NULL DEFAULT true);
+INSERT INTO public.rheomiq_financial_providers VALUES ('qa-owner-provider',true);
+CREATE TABLE public.rheomiq_financial_provider_assets(asset_key text PRIMARY KEY,active boolean NOT NULL DEFAULT true);
+INSERT INTO public.rheomiq_financial_provider_assets VALUES ('qa-owner-asset',true);
+ALTER TABLE public.rheomiq_financial_providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rheomiq_financial_provider_assets ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public.rheomiq_financial_providers,public.rheomiq_financial_provider_assets TO authenticated;
+CREATE POLICY rheomiq_financial_providers_authenticated_read ON public.rheomiq_financial_providers
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY rheomiq_financial_provider_assets_authenticated_read ON public.rheomiq_financial_provider_assets
+  FOR SELECT TO authenticated USING (active = true);
+
 -- Execute the same forward migrations destined for the MyFinHub repository.
 \i supabase/migrations/20261024150000_add_device_details_and_nicknames.sql
 \i supabase/migrations/20261024160000_shared_owner_app_lock.sql
+\i supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql
 
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claims',jsonb_build_object(
@@ -80,10 +94,18 @@ DECLARE
 BEGIN
  SELECT count(*) INTO found_count FROM public.rheomiq_app_state;
  IF found_count<>1 THEN RAISE EXCEPTION 'Baseline owner/AAL2 denied'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_providers;
+ IF found_count<>1 THEN RAISE EXCEPTION 'Owner AAL2 provider catalog RLS positive control failed'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_provider_assets;
+ IF found_count<>1 THEN RAISE EXCEPTION 'Owner AAL2 provider asset RLS positive control failed'; END IF;
  result:=public.myfinhub_app_lock_action('configure',null,'1234',5);
  IF result->>'ok'<>'true' THEN RAISE EXCEPTION 'Configure failed'; END IF;
  SELECT count(*) INTO found_count FROM public.rheomiq_app_state;
  IF found_count<>0 THEN RAISE EXCEPTION 'Direct finance RLS leaked while locked'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_providers;
+ IF found_count<>0 THEN RAISE EXCEPTION 'Locked owner read provider catalog'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_provider_assets;
+ IF found_count<>0 THEN RAISE EXCEPTION 'Locked owner read provider artwork metadata'; END IF;
  FOR i IN 1..5 LOOP
    result:=public.myfinhub_app_lock_action('verify','0000');
    IF result->>'error'<>'APP_LOCK_WRONG_PIN' THEN RAISE EXCEPTION 'Wrong PIN accepted'; END IF;
@@ -113,6 +135,10 @@ BEGIN
  END IF;
  SELECT count(*) INTO found_count FROM public.rheomiq_app_state;
  IF found_count<>1 THEN RAISE EXCEPTION 'Valid ticket failed finance RLS'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_providers;
+ IF found_count<>1 THEN RAISE EXCEPTION 'Owner unlocked provider registry read failed'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_provider_assets;
+ IF found_count<>1 THEN RAISE EXCEPTION 'Owner unlocked provider artwork read failed'; END IF;
  IF NOT public.myfinhub_app_lock_ticket('touch',encode(extensions.digest(receipt,'sha256'),'hex')) THEN
    RAISE EXCEPTION 'Ticket refresh failed';
  END IF;
@@ -121,6 +147,8 @@ BEGIN
  END IF;
  SELECT count(*) INTO found_count FROM public.rheomiq_app_state;
  IF found_count<>0 THEN RAISE EXCEPTION 'Direct JWT finance access survived lock'; END IF;
+ SELECT count(*) INTO found_count FROM public.rheomiq_financial_providers;
+ IF found_count<>0 THEN RAISE EXCEPTION 'Provider registry remained visible after PIN lock'; END IF;
  result:=public.myfinhub_app_lock_action('disable','5678');
  IF result->>'enabled'<>'false' OR NOT public.rheomiq_is_owner_aal2() THEN
    RAISE EXCEPTION 'Safe disable failed';
@@ -154,6 +182,10 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>2 THEN RAISE EXCEPTION 'AAL1 App Lock denials were incomplete'; END IF;
+ IF (SELECT count(*) FROM public.rheomiq_financial_providers)<>0 OR
+    (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
+   RAISE EXCEPTION 'AAL1 read the protected provider catalog';
+ END IF;
 END $$;
 RESET ROLE;
 
@@ -208,6 +240,10 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>3 THEN RAISE EXCEPTION 'Non-owner App Lock denials were incomplete'; END IF;
+ IF (SELECT count(*) FROM public.rheomiq_financial_providers)<>0 OR
+    (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
+   RAISE EXCEPTION 'Non-owner AAL2 read protected provider catalog records';
+ END IF;
 END $$;
 RESET ROLE;
 
@@ -236,6 +272,10 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN rejected:=rejected+1;
   END;
   IF rejected<>2 THEN RAISE EXCEPTION 'Revoked device App Lock denials were incomplete'; END IF;
+ IF (SELECT count(*) FROM public.rheomiq_financial_providers)<>0 OR
+    (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
+   RAISE EXCEPTION 'Revoked owner AAL2 read protected provider catalog records';
+ END IF;
 END $$;
 RESET ROLE;
 ROLLBACK;

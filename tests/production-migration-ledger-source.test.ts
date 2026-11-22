@@ -68,6 +68,7 @@ const releasePending=[
   "20261119081500_guard_changed_event_cent_precision.sql",
   "20261120000500_guard_recurring_service_asset_path_provenance.sql",
   "20261120001000_guard_provider_asset_path_provenance.sql",
+  "20261122080000_restrict_provider_catalog_to_owner_aal2.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -98,6 +99,31 @@ describe('production migration ledger source contract',()=>{
     expect(sql.indexOf('perform private.rheomiq_guard_changed_draft_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
     expect(sql.indexOf('perform private.rheomiq_guard_changed_event_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
     expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;');
+  });
+
+  it('guards legacy provider SELECT policies without mutating finance records or removing owner access',()=>{
+    const sql=readFileSync('supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql','utf8');
+    const smoke=readFileSync('scripts/app-lock-local-postgres-smoke.sh','utf8');
+    expect(releasePending).toContain('20261122080000_restrict_provider_catalog_to_owner_aal2.sql');
+    for(const name of ['rheomiq_financial_providers','rheomiq_financial_provider_assets']){
+      expect(sql).toContain('drop policy if exists '+name+'_authenticated_read');
+      expect(sql).toContain('on public.'+name);
+      expect(sql).toContain('create policy '+name+'_owner_aal2_select');
+    }
+    expect(sql.match(/for select to authenticated/g)).toHaveLength(2);
+    expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(2);
+    expect(sql).toContain('using (active = true and (select public.rheomiq_is_owner_aal2()))');
+    expect(sql).not.toMatch(/delete\s+from|truncate\s+|drop\s+table|security\s+definer|revoke\s+select/i);
+    expect(smoke).toContain('\\i supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql');
+    for(const marker of [
+      'Owner AAL2 provider catalog RLS positive control failed',
+      'Owner AAL2 provider asset RLS positive control failed',
+      'Locked owner read provider catalog',
+      'Owner unlocked provider registry read failed',
+      'AAL1 read the protected provider catalog',
+      'Non-owner AAL2 read protected provider catalog records',
+      'Revoked owner AAL2 read protected provider catalog records',
+    ])expect(smoke).toContain(marker);
   });
 
   it('tracks the relational cutover and provider management as production-applied history',()=>{
