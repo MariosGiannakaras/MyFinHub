@@ -221,8 +221,13 @@ export function providerCatalogMatchesWrite(
   // A matching Storage/DB key alone does not prove the catalog registered
   // the actual uploaded binary. Check independent role, variant and bytes.
   if(expectedUploads){
+    // Equal counts are not evidence of the exact uploaded objects. Reject a
+    // foreign/stale expected key even when both keys exist in this catalog.
+    const uploadedKeySet=new Set(uploadedKeys);
     if(expectedUploads.length!==uploadedKeys.length||
-      new Set(expectedUploads.map(upload=>upload.assetKey)).size!==uploadedKeys.length)return false;
+      uploadedKeySet.size!==uploadedKeys.length||
+      new Set(expectedUploads.map(upload=>upload.assetKey)).size!==uploadedKeys.length||
+      expectedUploads.some(upload=>!uploadedKeySet.has(upload.assetKey)))return false;
     if(expectedUploads.some(expected=>{
       if(!assets.has(expected.assetKey))return true;
       const actual=provider.assets?.find(asset=>asset.assetKey===expected.assetKey);

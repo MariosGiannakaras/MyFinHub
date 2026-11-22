@@ -5,6 +5,38 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it('confirms the exact uploaded key set, not just equal counts and existing catalog objects',async()=>{
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {providerCatalogMatchesWrite}=await import(clientPath);
+    const primaryKey='qa-receipt-bank-asset-aaaaaaaaaaaa';
+    const otherKey='qa-receipt-bank-asset-bbbbbbbbbbbb';
+    const input={
+      id:'qa-receipt-bank',displayName:'QA Receipt Bank',shortName:'QA Receipt',
+      providerKind:'bank' as const,countryCode:'GR',sortOrder:124,
+    };
+    const expected={
+      assetKey:primaryKey,role:'logo' as const,variant:'light' as const,
+      fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+    };
+    const other={...expected,assetKey:otherKey,fileName:'other.png',sizeBytes:3};
+    const catalog={
+      loaded:true,loading:false,error:null,providers:[{
+        id:input.id,displayName:input.displayName,shortName:input.shortName,
+        kind:'bank',countryCode:'GR',sortOrder:124,
+        assets:[expected,other],
+        bindings:[{role:'logo',variant:'light',assetKey:primaryKey}],
+      }],
+    };
+    const slots=[{role:'logo',variant:'light',assetKey:primaryKey}];
+    expect(providerCatalogMatchesWrite(catalog,input,slots,[primaryKey],[expected])).toBe(true);
+    // A genuine pair of distinct uploads may be returned in either order.
+    expect(providerCatalogMatchesWrite(catalog,input,slots,[otherKey,primaryKey],[expected,other])).toBe(true);
+    // Both keys exist, and both array lengths match: this must still fail.
+    expect(providerCatalogMatchesWrite(catalog,input,slots,[otherKey],[expected])).toBe(false);
+    // Duplicate acknowledged keys cannot prove two independent uploads.
+    expect(providerCatalogMatchesWrite(catalog,input,slots,[primaryKey,primaryKey],[expected,other])).toBe(false);
+  });
+
   it('skips acknowledged provider metadata on asset-only retry but detects every changed field',async()=>{
     // Keep the runtime import dynamic: the NodeNext hygiene check does not
     // resolve the browser-only provider client's extensionless imports.
