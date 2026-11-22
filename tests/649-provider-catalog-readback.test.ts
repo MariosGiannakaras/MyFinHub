@@ -5,6 +5,84 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+
+  it.each(['create','update','asset','binding'] as const)(
+    'does not accept a late %s receipt from a retired owner auth scope',async scenario=>{
+      const scopeWindow=new EventTarget();
+      vi.stubGlobal('window',scopeWindow);
+      const operations:string[]=[];
+      const input={
+        id:'qa-scope-bank',displayName:'QA Scope Bank',shortName:'QA Scope',
+        providerKind:'bank' as const,countryCode:'GR',sortOrder:117,
+      };
+      vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
+        operations.push((init?.method??'GET')+' '+String(request));
+        // The first store can commit, but its receipt arrives after a new
+        // authentication scope begins. There must be no catalog GET or retry.
+        scopeWindow.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+        const payload=scenario==='asset'?{asset:{
+          assetKey:'qa-scope-bank-asset-112233aabbcc',role:'logo',variant:'light',
+          fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+          url:'https://assets.example/logo.png',
+        }}:scenario==='binding'?{ok:true}:{provider:input};
+        return new Response(JSON.stringify(payload),{
+          status:200,headers:{'content-type':'application/json'},
+        });
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {
+        saveFinancialProvider,updateFinancialProvider,
+        uploadFinancialProviderAsset,setFinancialProviderAssetBinding,
+      }=await import(clientPath);
+      const action=scenario==='create'?saveFinancialProvider(input,false):
+        scenario==='update'?updateFinancialProvider(input,false):
+          scenario==='asset'?uploadFinancialProviderAsset({
+            providerId:input.id,role:'logo',variant:'light',
+            file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),
+            refreshCatalog:false,
+          }):setFinancialProviderAssetBinding({
+            providerId:input.id,role:'logo',variant:'light',
+            assetKey:'qa-scope-bank-asset-112233aabbcc',refreshCatalog:false,
+          });
+      await expect(action).rejects.toMatchObject({
+        name:'UnverifiedFinancialProviderWrite',
+        operation:scenario==='create'||scenario==='update'?'metadata':scenario,
+      });
+      expect(operations).toHaveLength(1);
+      expect(operations[0]).toContain('/api/account-metadata?resource=');
+    },
+  );
+
+  it('rejects a provider metadata write when auth scope changes during catalog readback',async()=>{
+    const scopeWindow=new EventTarget();
+    vi.stubGlobal('window',scopeWindow);
+    const input={
+      id:'qa-scope-bank',displayName:'QA Scope Bank',shortName:'QA Scope',
+      providerKind:'bank' as const,countryCode:'GR',sortOrder:117,
+    };
+    const operations:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
+      const method=String(init?.method??'GET');
+      operations.push(method+' '+String(request));
+      if(method==='POST')
+        return new Response(JSON.stringify({provider:input}),{status:200});
+      if(method==='GET'){
+        scopeWindow.dispatchEvent(new Event('myfinhub:auth-completed'));
+        return new Response(JSON.stringify({providers:[{
+          ...input,logoAssetKey:null,wordmarkAssetKey:null,
+          logoUrl:null,wordmarkUrl:null,assets:[],bindings:[],
+        }]}),{status:200});
+      }
+      throw new Error('No speculative provider replay');
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {saveFinancialProvider}=await import(clientPath);
+    await expect(saveFinancialProvider(input)).rejects.toMatchObject({
+      name:'UnverifiedFinancialProviderWrite',operation:'metadata',
+    });
+    expect(operations.map(value=>value.split(' ',1)[0])).toEqual(['POST','GET']);
+  });
+
   it('confirms the exact uploaded key set, not just equal counts and existing catalog objects',async()=>{
     const clientPath:string='../src/lib/financialProviderClient.js';
     const {providerCatalogMatchesWrite}=await import(clientPath);

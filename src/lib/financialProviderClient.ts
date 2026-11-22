@@ -251,6 +251,7 @@ export function providerCatalogMatchesWrite(
 
 async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
   return trackDatabaseWrite(async()=>{
+  const requestEpoch=authEpoch();
   let response:Response;
   try{
     response=await apiRequest('/api/account-metadata?resource=financial-providers',{
@@ -265,6 +266,9 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
     throw new UnverifiedFinancialProviderWrite('metadata');
   }
   const payload=await json(response);
+  // The old owner session may have committed before logout/reverification.
+  // Its late receipt is never proof of a write in the new auth scope.
+  if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('metadata');
   if(!response.ok){
     if(response.status===408||response.status===429||response.status>=500)
       throw new UnverifiedFinancialProviderWrite('metadata');
@@ -284,7 +288,10 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
     // Even HTTP 200 can conceal a committed POST/PATCH when its receipt is
     // malformed. Treat it as uncertain, never as safe for blind new-key POST.
     throw new UnverifiedFinancialProviderWrite('metadata');
-  if(refreshCatalog)await refreshFinancialProviders(true);
+  if(refreshCatalog){
+    await refreshFinancialProviders(true);
+    if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('metadata');
+  }
   return acknowledged;
   });
 }
@@ -300,6 +307,7 @@ export async function uploadFinancialProviderAsset(input:{
   refreshCatalog?:boolean;
 }){
   return trackDatabaseWrite(async()=>{
+  const requestEpoch=authEpoch();
   const params=new URLSearchParams({
     resource:'financial-provider-assets',
     providerId:input.providerId,
@@ -322,6 +330,7 @@ export async function uploadFinancialProviderAsset(input:{
     throw new UnverifiedFinancialProviderWrite('asset');
   }
   const payload=await json(response);
+  if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('asset');
   if(!response.ok){
     // A timeout/rate limit or upstream 5xx may arrive after Storage/DB commit.
     // Only explicit validation/auth rejections are safe to treat as definite.
@@ -333,7 +342,10 @@ export async function uploadFinancialProviderAsset(input:{
   // Never replay a new-key Storage upload while the outcome is uncertain.
   const asset=confirmedUploadedAsset(payload?.asset,input);
   if(!asset)throw new UnverifiedFinancialProviderWrite('asset');
-  if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
+  if(input.refreshCatalog!==false){
+    await refreshFinancialProviders(true);
+    if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('asset');
+  }
   return asset;
   });
 }
@@ -346,18 +358,29 @@ export async function setFinancialProviderAssetBinding(input:{
   refreshCatalog?:boolean;
 }){
   return trackDatabaseWrite(async()=>{
+  const requestEpoch=authEpoch();
   // Binding PUT sets one explicit provider/role/variant key. A known 5xx or
   // lost response is safe to retry explicitly using the same idempotent input;
   // unlike a binary upload it never generates a fresh Storage key.
-  const response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
-    method:'PUT',
-    credentials:'same-origin',
-    headers:{accept:'application/json','content-type':'application/json'},
-    body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
-  });
+  let response:Response;
+  try{
+    response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
+      method:'PUT',
+      credentials:'same-origin',
+      headers:{accept:'application/json','content-type':'application/json'},
+      body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
+    });
+  }catch(error){
+    if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('binding');
+    throw error;
+  }
   const payload=await json(response);
+  if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('binding');
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
   if(payload?.ok!==true)throw new UnverifiedFinancialProviderWrite('binding');
-  if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
+  if(input.refreshCatalog!==false){
+    await refreshFinancialProviders(true);
+    if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('binding');
+  }
   });
 }
