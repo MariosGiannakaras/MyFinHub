@@ -347,7 +347,7 @@ try {
     proto.open=function(...args){
       if(args[0]==='myfinhub-local-receipts-v1'){
         gate.opens++;
-        if(gate.opens>2)throw new Error('QA_UNEXPECTED_READ_AFTER_LOCAL_WRITE_COMMIT');
+        if(gate.opens>1)throw new Error('QA_UNEXPECTED_READ_AFTER_LOCAL_WRITE_COMMIT');
       }
       return original.apply(this,args);
     };
@@ -359,7 +359,7 @@ try {
     assert(clicked,'corrected local review can be submitted while redundant list reads are denied');
     await waitFor("function(){const field=document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]');const success=(document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις');return Boolean(field?.value==='QA προϊόν χωρίς δεύτερη ανάγνωση'&&success&&!document.querySelector('#receipt-inbox-error')&&!document.querySelector('.receipt-inbox-layout')?.inert)}",'confirmed local review remains visible and truthful without follow-up read');
     const observed=await c.call("function(){const gate=window.__qaReceiptPostSaveReadGuard;return {opens:gate?.opens,success:Boolean(document.querySelector('.receipt-success')),error:Boolean(document.querySelector('#receipt-inbox-error')),selectedText:document.querySelector('input[aria-label=\"Διόρθωση περιγραφής γραμμής 1\"]')?.value}}");
-    assert(observed.opens===2&&observed.success&&!observed.error&&observed.selectedText==='QA προϊόν χωρίς δεύτερη ανάγνωση','successful local review must reconcile confirmed write with zero redundant read: '+JSON.stringify(observed));
+    assert(observed.opens===1&&observed.success&&!observed.error&&observed.selectedText==='QA προϊόν χωρίς δεύτερη ανάγνωση','successful local review must reconcile confirmed write with zero redundant read: '+JSON.stringify(observed));
     await screenshot('receipt-local-review-save-without-secondary-read-desktop');
   }finally{
     const restored=await c.call("function(){const gate=window.__qaReceiptPostSaveReadGuard;if(!gate)return false;gate.proto.open=gate.original;delete window.__qaReceiptPostSaveReadGuard;return true}");

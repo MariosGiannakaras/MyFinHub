@@ -24,14 +24,14 @@ describe('receipt to Quick Entry contract',()=>{
     expect(inbox).not.toContain('onCreate: (event: FinanceEvent)');
     expect(bridge).toContain('await saveFinanceThenCleanupReceipt(');
     expect(bridge).toContain('const create = async (event:FinanceEvent)=>completeWithReceipt(()=>onCreate(event));');
-    expect(bridge).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(bridge).toContain('handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null');
     expect(bridge).not.toContain('void deleteReceiptDraft(handledId)');
   });
 
   it('keeps the draft when Quick Entry is cancelled and deletes it only after normal submit',()=>{
     const create=bridge.slice(bridge.indexOf('const completeWithReceipt = async'),bridge.indexOf('if (!open) return null'));
     expect(create).toContain('await saveFinanceThenCleanupReceipt(');
-    expect(create).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(create).toContain('handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null');
     expect(create).toContain('onReceiptCleanupFailure?.(handledId)');
     expect(create).not.toContain('void deleteReceiptDraft');
     expect(bridge).not.toMatch(/onClose[^\n]*deleteReceiptDraft/);

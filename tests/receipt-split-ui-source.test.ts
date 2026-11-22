@@ -13,7 +13,7 @@ describe('receipt split handoff cannot bypass canonical finance save',()=>{
  expect(quick).toContain("setParts(initialKind==='split'&&prefill?.parts?.length?prefill.parts:freshParts())");
  expect(quick).toContain('event=createExpenseSplitEvent(data,{date,note:note||labelForKind(kind),accountId,parts})');
  expect(bridge).toContain('const create = async (event:FinanceEvent)=>completeWithReceipt(()=>onCreate(event))');
- expect(bridge).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+ expect(bridge).toContain('handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null');
  const postSave=readFileSync('src/lib/receiptPostSave.ts','utf8');
  expect(postSave.indexOf('await saveFinance();')).toBeGreaterThan(-1);
  expect(postSave.indexOf('await deleteLocalDraft()')).toBeGreaterThan(postSave.indexOf('await saveFinance();'));

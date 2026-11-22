@@ -43,7 +43,7 @@ describe('Quick Entry owner-reference contract',()=>{
     expect(postSave.indexOf('await saveFinance();')).toBeLessThan(postSave.indexOf('await deleteLocalDraft()'));
     expect(postSave).toContain('try{onCleanupFailure();}');
     expect(postSave).toContain('catch{/* The durable finance receipt remains authoritative. */}');
-    expect(receiptAware).toContain('handledId?()=>deleteReceiptDraft(handledId):null');
+    expect(receiptAware).toContain('handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null');
     expect(receiptAware).not.toContain('void deleteReceiptDraft(handledId)');
     expect(qa).toContain("params.get('quick-event-save-failure')==='1'");
     expect(negative).toContain('quick-entry-finance-receipt-failure-mobile');
