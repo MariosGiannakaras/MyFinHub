@@ -637,6 +637,24 @@
         "tests/649-provider-catalog-readback.test.ts",
         "tests/649-provider-storage-path-provenance.test.ts"
       ]
+    },
+    {
+      "id": "FP-033",
+      "title": "Lost recurring asset release acknowledgement must not trigger a second DELETE",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The recurring asset browser client treated a rejected DELETE transport or HTTP 408/429/5xx as an ordinary error. A server-side release could already have committed before that response disappeared, leaving the UI able to dispatch a second destructive release without a verified fresh catalog.",
+      "prevention": "Acquire a synchronous per-key release lock, reconcile ambiguous DELETE replies with exactly one fresh owner-scoped catalog GET, fail closed and block further same-key DELETE when readback is inconclusive, preserve retry after a definite 400, and never let an old auth epoch unlock a new one.",
+      "paths": [
+        "src/lib/recurringServiceAssetClient.ts",
+        "tests/649-recurring-service-client-readback.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-service-client-readback.test.ts"
+      ]
     }
   ]
 }

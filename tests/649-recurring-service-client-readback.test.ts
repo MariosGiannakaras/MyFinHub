@@ -107,6 +107,54 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
     expect(methods).not.toContain('DELETE');
   });
 
+  it.each(['network-loss','408','429','503'] as const)(
+    'reconciles ambiguous recurring release %s by read-only catalog, without replay',async scenario=>{
+      for(const absent of [true,false]){
+        const methods:string[]=[];
+        vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+          const method=init?.method??'GET';
+          methods.push(method);
+          if(method==='DELETE'){
+            if(scenario==='network-loss')throw new Error('Connection lost after release');
+            return new Response('{}',{status:Number(scenario)});
+          }
+          if(method==='GET')return new Response(JSON.stringify({assets:absent?[]:[row()]}),{status:200});
+          throw new Error('Unexpected write');
+        }));
+        const service=await client();
+        if(absent){
+          await expect(service.deleteRecurringServiceAsset(key)).resolves.toBeUndefined();
+        }else{
+          await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
+          await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
+        }
+        expect(methods).toEqual(['DELETE','GET']);
+        vi.resetModules();
+        vi.unstubAllGlobals();
+      }
+    }
+  );
+
+  it('serializes same-key release before any response, but permits retry after definite 400',async()=>{
+    const methods:string[]=[];
+    let finish:(response:Response)=>void=()=>{throw new Error('Missing first release')};
+    vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      const method=init?.method??'GET';methods.push(method);
+      if(method!=='DELETE')throw new Error('No catalog read for definite 400');
+      if(methods.length===1)return new Promise<Response>(resolve=>{finish=resolve});
+      return new Response(JSON.stringify({error:'Invalid key'}),{status:400});
+    }));
+    const service=await client();
+    const first=service.deleteRecurringServiceAsset(key);
+    expect(methods).toEqual(['DELETE']);
+    await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('ήδη σε εξέλιξη');
+    expect(methods).toEqual(['DELETE']);
+    finish(new Response(JSON.stringify({error:'Invalid key'}),{status:400}));
+    await expect(first).rejects.toThrow('Invalid key');
+    await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('Invalid key');
+    expect(methods).toEqual(['DELETE','DELETE']);
+  });
+
   it.each(['valid','unconfirmed-status','retained-row','unavailable-GET'] as const)(
     'never claims a successful deletion without verified absence for %s',async scenario=>{
       const calls:string[]=[];

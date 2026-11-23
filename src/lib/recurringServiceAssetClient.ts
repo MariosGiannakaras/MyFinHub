@@ -40,6 +40,14 @@ export class RecurringServiceUploadInProgress extends Error {
 const uncertainUploads=new Set<string>();
 // Shared-owner guard: a second same-tick Save must not allocate another Storage key.
 const inFlightUploads=new Set<string>();
+// A lost release receipt can follow a committed registry/Storage deactivation.
+// No blind second DELETE for this exact key in the same owner session.
+const uncertainReleases=new Set<string>();
+const inFlightReleases=new Set<string>();
+function unverifiedRelease(assetKey:string,requestEpoch:number):never{
+  if(requestEpoch===authEpoch())uncertainReleases.add(assetKey);
+  throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε. Έλεγξε τα δεδομένα πριν από επανάληψη.');
+}
 function unverifiedUpload(recurringId:string,requestEpoch:number):never{
   // A late result from a retired auth scope cannot block the new session.
   if(requestEpoch===authEpoch())uncertainUploads.add(recurringId);
@@ -56,6 +64,8 @@ const authEpoch=watchAuthScope(()=>{
   pending=null;
   uncertainUploads.clear();
   inFlightUploads.clear();
+  uncertainReleases.clear();
+  inFlightReleases.clear();
   publish({loaded:false,loading:false,assets:[],error:null});
 });
 
@@ -164,27 +174,47 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
 
 export async function deleteRecurringServiceAsset(assetKey:string){
   if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey))throw new Error('Μη έγκυρη αναφορά λογοτύπου υπηρεσίας.');
-  return trackDatabaseWrite(async()=>{
   const epoch=authEpoch();
-  const params=new URLSearchParams({resource:'recurring-service-assets',assetKey});
-  const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
-    method:'DELETE',
-    credentials:'same-origin',
-    headers:{accept:'application/json'},
-  });
-  const payload=await json(response);
-  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η αποδέσμευση εικόνας.');
-  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
-  if(payload?.ok!==true)
-    throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε.');
-  // A release/Storage purge can complete while the final response is stale.
-  // Confirm the asset is absent via a fresh owner-scoped catalog GET, without
-  // issuing another destructive DELETE after an ambiguous acknowledgement.
-  if(pending)await pending;
-  const confirmed=await refreshRecurringServiceAssets(true);
-  if(epoch!==authEpoch()||confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
-    throw new Error('Η αποδέσμευση της εικόνας δεν επιβεβαιώθηκε. Έλεγξε τα δεδομένα πριν από επανάληψη.');
-  });
+  if(uncertainReleases.has(assetKey))return unverifiedRelease(assetKey,epoch);
+  if(inFlightReleases.has(assetKey))
+    throw new Error('Η αποδέσμευση της εικόνας βρίσκεται ήδη σε εξέλιξη.');
+  inFlightReleases.add(assetKey);
+  try{
+    return await trackDatabaseWrite(async()=>{
+      const params=new URLSearchParams({resource:'recurring-service-assets',assetKey});
+      let response:Response|null=null;
+      try{
+        response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
+          method:'DELETE',
+          credentials:'same-origin',
+          headers:{accept:'application/json'},
+        });
+      }catch{
+        // A lost transport response does not prove that the server skipped
+        // the release RPC. Reconcile by owner-scoped GET; never repeat DELETE.
+      }
+      const payload=response?await json(response):null;
+      if(epoch!==authEpoch())return unverifiedRelease(assetKey,epoch);
+      if(response&&!response.ok&&response.status!==408&&response.status!==429&&response.status<500)
+        throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
+      if(response?.ok&&payload?.ok!==true)return unverifiedRelease(assetKey,epoch);
+      // Both acknowledged DELETE and ambiguous 408/429/5xx/lost replies
+      // require a fresh catalog proving the key is absent. The same key
+      // remains blocked after inconclusive readback in this auth scope.
+      try{
+        if(pending)await pending;
+        const confirmed=await refreshRecurringServiceAssets(true);
+        if(epoch!==authEpoch()||confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
+          return unverifiedRelease(assetKey,epoch);
+        uncertainReleases.delete(assetKey);
+      }catch{
+        return unverifiedRelease(assetKey,epoch);
+      }
+    });
+  }finally{
+    // Retired-session completions must never unlock a new session's request.
+    if(epoch===authEpoch())inFlightReleases.delete(assetKey);
+  }
 }
 
 export function recurringServiceAssetByKey(assetKey:string|null|undefined){
