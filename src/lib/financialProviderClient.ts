@@ -21,6 +21,10 @@ let snapshot:FinancialProviderSnapshot={
 let pending:Promise<FinancialProviderSnapshot>|null=null;
 // A binary upload allocates a new key; never dispatch twice to one provider slot.
 const inFlightAssetUploads=new Set<string>();
+// A lost new-key upload receipt may follow a committed Storage registration.
+// Closing/reopening the editor is not a rollback; block blind same-slot
+// re-uploads until a genuinely new authentication scope begins.
+const uncertainAssetUploads=new Set<string>();
 const listeners=new Set<()=>void>();
 
 const kindLabels:Record<FinancialProviderKind,string>={
@@ -36,6 +40,7 @@ export function subscribeFinancialProviders(listener:()=>void){listeners.add(lis
 const authEpoch=watchAuthScope(()=>{
   pending=null;
   inFlightAssetUploads.clear();
+  uncertainAssetUploads.clear();
   publish({loaded:false,loading:false,providers:FALLBACK,error:null});
 });
 
@@ -152,6 +157,13 @@ export class UnverifiedFinancialProviderWrite extends Error{
         :'Η απόκριση ανάθεσης εικόνας δεν επιβεβαιώθηκε· η ανάθεση μπορεί ήδη να έχει αποθηκευτεί.');
     this.name='UnverifiedFinancialProviderWrite';
   }
+}
+
+// Mark uncertainty only for the session which originated the Storage PUT.
+// A late retired-session response must not poison the new owner's slot.
+function unverifiedAssetUpload(slot:string,requestEpoch:number):never{
+  if(requestEpoch===authEpoch())uncertainAssetUploads.add(slot);
+  throw new UnverifiedFinancialProviderWrite('asset');
 }
 
 // Server-generated assets use a canonical immutable owner directory, key and
@@ -331,6 +343,7 @@ export async function uploadFinancialProviderAsset(input:{
 }){
   const requestEpoch=authEpoch();
   const uploadSlot=JSON.stringify([input.providerId,input.role,input.variant]);
+  if(uncertainAssetUploads.has(uploadSlot))throw new UnverifiedFinancialProviderWrite('asset');
   if(inFlightAssetUploads.has(uploadSlot))throw new FinancialProviderAssetUploadInProgress();
   inFlightAssetUploads.add(uploadSlot);
   try{
@@ -354,24 +367,24 @@ export async function uploadFinancialProviderAsset(input:{
   }catch{
     // A dropped connection does not prove the one-time server-generated asset
     // was rolled back. Do not create a new key by blindly retrying this upload.
-    throw new UnverifiedFinancialProviderWrite('asset');
+    return unverifiedAssetUpload(uploadSlot,requestEpoch);
   }
   const payload=await json(response);
-  if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('asset');
+  if(requestEpoch!==authEpoch())return unverifiedAssetUpload(uploadSlot,requestEpoch);
   if(!response.ok){
     // A timeout/rate limit or upstream 5xx may arrive after Storage/DB commit.
     // Only explicit validation/auth rejections are safe to treat as definite.
     if(response.status===408||response.status===429||response.status>=500)
-      throw new UnverifiedFinancialProviderWrite('asset');
+      return unverifiedAssetUpload(uploadSlot,requestEpoch);
     throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
   }
   // A successful status without an exact receipt does not prove registration.
   // Never replay a new-key Storage upload while the outcome is uncertain.
   const asset=confirmedUploadedAsset(payload?.asset,input);
-  if(!asset)throw new UnverifiedFinancialProviderWrite('asset');
+  if(!asset)return unverifiedAssetUpload(uploadSlot,requestEpoch);
   if(input.refreshCatalog!==false){
     await refreshFinancialProviders(true);
-    if(requestEpoch!==authEpoch())throw new UnverifiedFinancialProviderWrite('asset');
+    if(requestEpoch!==authEpoch())return unverifiedAssetUpload(uploadSlot,requestEpoch);
   }
   return asset;
   });
