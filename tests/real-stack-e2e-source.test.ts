@@ -123,6 +123,13 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("Canonical API read-back is missing one or more generic Quick Entry intents.");
     expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
+    expect(script).toContain("[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback");
+    expect(script).toContain("expect(rejectedBinding,401,'DEVICE_ACCESS_REVOKED','provider-binding-revoked-bearer')");
+    expect(script).toContain("'Revoked bearer unexpectedly cleared a persisted provider image binding.'");
+    expect(script).toContain("'provider-binding-valid-cookie-preserved'");
+    expect(script.indexOf('const revokedDeviceBearer=secondary.snapshot()')).toBeLessThan(script.indexOf('const revokeOthers=await primary.request'));
+    expect(script.indexOf('stage provider-storage-direct-read')).toBeLessThan(script.indexOf('stage provider-binding-revoked-bearer-no-cookie-fallback'));
+    expect(script.indexOf('stage provider-binding-revoked-bearer-no-cookie-fallback')).toBeLessThan(script.indexOf('stage provider-direct-rpc-path-provenance'));
     expect(script).toContain("provider_id=eq.real-browser-provider");
     expect(script).toContain("rheomiq_financial_provider_asset_bindings");
     expect(script).toContain('rheomiq_database_health');
