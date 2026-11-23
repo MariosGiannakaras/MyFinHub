@@ -190,17 +190,20 @@ export async function deleteRecurringServiceAsset(assetKey:string){
           headers:{accept:'application/json'},
         });
       }catch{
-        // A lost transport response does not prove that the server skipped
-        // the release RPC. Reconcile by owner-scoped GET; never repeat DELETE.
+        // Transport loss does not prove that the release RPC was skipped.
       }
       const payload=response?await json(response):null;
       if(epoch!==authEpoch())return unverifiedRelease(assetKey,epoch);
-      if(response&&!response.ok&&response.status!==408&&response.status!==429&&response.status<500)
+      if(!response||response.status===408||response.status===429||response.status>=500)
+        return unverifiedRelease(assetKey,epoch);
+      if(!response.ok)
         throw new Error(payload?.error||'Δεν ήταν δυνατή η αφαίρεση του λογοτύπου.');
-      if(response?.ok&&payload?.ok!==true)return unverifiedRelease(assetKey,epoch);
-      // Both acknowledged DELETE and ambiguous 408/429/5xx/lost replies
-      // require a fresh catalog proving the key is absent. The same key
-      // remains blocked after inconclusive readback in this auth scope.
+      if(payload?.ok!==true)return unverifiedRelease(assetKey,epoch);
+      // Only the server's explicit OK means it completed Storage deletion
+      // and exact-row purge. The public catalog lists active rows only:
+      // absence alone cannot prove purge after an ambiguous DELETE (the
+      // release RPC may have deactivated a row before Storage failed).
+      // On confirmed OK we still require a fresh catalog absence check.
       try{
         if(pending)await pending;
         const confirmed=await refreshRecurringServiceAssets(true);

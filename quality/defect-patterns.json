@@ -643,8 +643,8 @@
       "title": "Lost recurring asset release acknowledgement must not trigger a second DELETE",
       "category": "domain-data",
       "severity": "high",
-      "rootCause": "The recurring asset browser client treated a rejected DELETE transport or HTTP 408/429/5xx as an ordinary error. A server-side release could already have committed before that response disappeared, leaving the UI able to dispatch a second destructive release without a verified fresh catalog.",
-      "prevention": "Acquire a synchronous per-key release lock, reconcile ambiguous DELETE replies with exactly one fresh owner-scoped catalog GET, fail closed and block further same-key DELETE when readback is inconclusive, preserve retry after a definite 400, and never let an old auth epoch unlock a new one.",
+      "rootCause": "The recurring browser client treated transport failure or HTTP 408/429/5xx after DELETE as an ordinary retryable error. The server release can deactivate the row before Storage deletion and purge; its public asset catalog reads only active rows, so an empty catalog following an ambiguous response cannot prove the Storage object or inactive registry row was purged.",
+      "prevention": "Synchronous per-key release lock; treat lost/408/429/5xx/invalid-200 receipts as unverified and block same-key replay in the current auth scope without claiming success from an active-only catalog. Accept success only after server {ok:true} (which follows confirmed Storage deletion and row purge) plus a fresh owner-scoped active-catalog absence check. Preserve definite 4xx retry and old-auth-epoch isolation; guard failed Storage cleanup and double DELETE negatives.",
       "paths": [
         "src/lib/recurringServiceAssetClient.ts",
         "tests/649-recurring-service-client-readback.test.ts"

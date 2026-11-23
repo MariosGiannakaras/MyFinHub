@@ -108,30 +108,24 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
   });
 
   it.each(['network-loss','408','429','503'] as const)(
-    'reconciles ambiguous recurring release %s by read-only catalog, without replay',async scenario=>{
-      for(const absent of [true,false]){
-        const methods:string[]=[];
-        vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
-          const method=init?.method??'GET';
-          methods.push(method);
-          if(method==='DELETE'){
-            if(scenario==='network-loss')throw new Error('Connection lost after release');
-            return new Response('{}',{status:Number(scenario)});
-          }
-          if(method==='GET')return new Response(JSON.stringify({assets:absent?[]:[row()]}),{status:200});
-          throw new Error('Unexpected write');
-        }));
-        const service=await client();
-        if(absent){
-          await expect(service.deleteRecurringServiceAsset(key)).resolves.toBeUndefined();
-        }else{
-          await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
-          await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
+    'fails closed on ambiguous recurring release %s without false active-catalog purge proof',async scenario=>{
+      const methods:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=init?.method??'GET';
+        methods.push(method);
+        if(method==='DELETE'){
+          if(scenario==='network-loss')throw new Error('Connection lost after release');
+          return new Response('{}',{status:Number(scenario)});
         }
-        expect(methods).toEqual(['DELETE','GET']);
-        vi.resetModules();
-        vi.unstubAllGlobals();
-      }
+        // Even an empty active-only catalog would not prove purge: the release
+        // RPC may have set active=false before Storage DELETE failed.
+        if(method==='GET')return new Response(JSON.stringify({assets:[]}),{status:200});
+        throw new Error('Unexpected write');
+      }));
+      const service=await client();
+      await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
+      await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('δεν επιβεβαιώθηκε');
+      expect(methods).toEqual(['DELETE']);
     }
   );
 

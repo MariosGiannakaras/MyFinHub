@@ -1,5 +1,12 @@
 # MyFinHub — full application correction roadmap (#649, consolidated)
 
+## 2026-11-23 — FP-033 self-review: active-only catalog cannot certify Storage purge
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Before candidate acceptance, checked the actual server `deleteRecurringServiceAsset`: its first release RPC may mark the row inactive and a subsequent Storage deletion may fail with 503; `readRecurringServiceAssets` filters `active=eq.true`. Therefore, after ambiguous DELETE, an empty public GET **cannot** certify Storage deletion or exact-row purge. Corrected the candidate to fail closed and block repeat same-key DELETE on transport/408/429/5xx or invalid HTTP-200 receipt, without claiming success from an active-only catalog. Only explicit server `{ok:true}` (issued after verified Storage DELETE and purge) proceeds to the existing fresh catalog absence proof. Four ambiguous-negative tests now assert no GET and no replay, with same-key concurrency and definite 400 retry coverage. FP-033 registry prevention corrected. No server/RLS changes, DB/Storage writes or finance mutation. Source/CodeQL/Unified **PENDING new exact head**.
+
+---
+
+
 ## 2026-11-23 — FP-033 recurring asset release ambiguous DELETE (source candidate)
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. On the existing consolidated Draft #654 → develop, the I19.04 recurring browser release client previously retried as a normal failure after network-loss/408/429/5xx DELETE even though its owner-scoped server release could have committed. This candidate uses per-key synchronous release ownership, a fresh read-only catalog absence check after ambiguous or acknowledged responses, fail-closed same-key retry lock when readback is inconclusive, and retired-auth-epoch protection. Definite 400 keeps its original retry contract; finance revision, Storage/RLS policy, other provider assets and Android are unchanged. Existing test file adds four ambiguous statuses × both definitive absent/retained catalog cases plus duplicate-delete concurrency. FP-033 records the regression class.
