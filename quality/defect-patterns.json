@@ -747,6 +747,26 @@
       "guards": [
         "tests/649-provider-write-receipts.test.ts"
       ]
+    },
+    {
+      "id": "FP-039",
+      "title": "Provider binary upload uncertainty resets on editor close and permits a second same-slot Storage key",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The client guarded concurrent provider binary PUTs only while a single request was in flight. After network loss, HTTP 408/429/5xx or a malformed HTTP 200 registration receipt, finally cleared the slot guard; reopening the provider editor allowed another non-idempotent upload of an independent freshly generated key even when the first Storage/DB write may have committed.",
+      "prevention": "Quarantine the exact provider/role/variant slot for the originating authentication scope after any ambiguous binary upload. Reject new same-slot PUTs even with changed File objects; do not affect independent slots, proved precommit 400/403 rejections or a genuinely new auth scope. Ignore old-scope late outcomes. Explain the hold and safe manual catalog review in the existing provider warning, and cover the desktop/mobile screenshot states.",
+      "paths": [
+        "src/lib/financialProviderClient.ts",
+        "src/components/FinancialProviderManagementSettings.tsx",
+        "scripts/provider-brand-management-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-catalog-readback.test.ts",
+        "scripts/provider-brand-management-qa.mjs"
+      ]
     }
   ]
 }
