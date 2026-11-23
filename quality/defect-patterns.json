@@ -766,6 +766,24 @@
       "guards": [
         "tests/649-provider-catalog-readback.test.ts"
       ]
+    },
+    {
+      "id": "FP-040",
+      "title": "Stale Card Vault read and write responses can cross a newer owner authentication scope",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "Card Vault browser reads and encrypted save/delete mutations did not compare their originating auth epoch against the active scope after transport/body completion. An older successful reveal could populate PAN/CVV in a newer session; an old successful mutation could raise an incorrect new-scope saved receipt, and an old delayed 401 could dispatch auth-expired and invalidate a newer browser session.",
+      "prevention": "Bind each Card Vault request to the global authenticated scope epoch. Check AFTER the response body settles but BEFORE notifyAuthExpired, discard any older response or transport result, and keep late legacy IndexedDB CVV fallback from returning a retired owner's secret. Classify stale write/delete receipts as unverified, never successful; preserve the normal current-scope definite 401/logout behavior. Never log/store PAN/CVV or weaken server owner+AAL2/device/RLS boundaries.",
+      "paths": [
+        "src/lib/cardVaultClient.ts",
+        "scripts/card-vault-runtime-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-card-vault-auth-scope.test.ts"
+      ]
     }
   ]
 }
