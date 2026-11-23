@@ -1,5 +1,17 @@
 # MyFinHub — full application correction roadmap (#649, consolidated)
 
+## 2026-11-23 — consolidated dependency/portfolio acceptance boundary (current)
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Draft PR #654 on exact previous code head `0f1553d04de988fe596d70b90fd77084dac3bc5b` has now passed [source/security CI #45088883896](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45088883896), [isolated local Real Stack #45092659037](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45092659037), [focused shared-controls Chromium #45093220360](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45093220360) and [focused desktop-backup Chromium #45093220381](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45093220381), all **SUCCESS on the exact same source head**. Downloaded artifacts **#14781822640 (104 PNG + logs)** and **#14782271324 (24 PNG)**, manually inspected contact sheets and representative full-size desktop/mobile/320px dark/light, errors and restore-dialog states. No evidenced new visual defect in inspected samples; do not equate focused tests or samples with the required final whole-app visual acceptance. All one-shot PR-body QA markers are **OFF**. Full Windows installer/clean launch/first run, WebKit, Lighthouse, complete responsive matrix, review-ready migration/security/recovery and integration gates **not yet run** on this Draft head.
+
+Source-overlaid bot PRs #657/#658/#660 remain open **without standalone merging** until their accepted composite changes reach protected `develop`. The prior standalone #660 lock mismatch was repaired by exact root/desktop linked-lock parity; its earlier local Supabase registry rate-limit/seed timeout did not recur in the successful combined Real Stack. Current production read-only finance revision 499 has 498 newest in-app backup, exact owner-approved taxonomy JSON 4/4, zero observed owner-join leg/account/asset/history/card-reference orphan anomalies; see the latest status and #616 issue comment. Hosted full restoration, owner AAL2 activation provenance and #645 production release remain separate owner-approved acceptance.
+
+**I22.04 Free-plan bound:** Supabase's official documentation says leaked-password protection is **Pro+ only**. #266 mandates normal MyFinHub operation remain viable on Supabase Free. Treat the Auth advisor as a reviewed, paid-setting/product-risk boundary rather than silently enabling a paid feature or altering existing owner MFA/RLS.
+
+**Next:** preserve no-opt-in state while resuming genuinely unaccepted original I19.04/I22.02/P1 code paths, then one protected Ready review head with full gates. Docs-only checkpoint must obtain its own normal CI. No production writes, Android changes, main merge, physical-device dependency or release.
+
+---
+
 ## 2026-11-23 — coordinated all-open-issue/PR execution scope
 
 **Owner direction:** Work on all currently open MyFinHub issues/PRs in coordinated compatible batches, not one #649 micro-task at a time. Live inventory: open issues **#266, #616, #617, #637, #641, #649, #655**, PRs **#645, #654, #657, #658, #660**. Only this repository; separate Android code is excluded. Preserve established branch ownership and release boundaries; the instruction does **not** approve main promotion or destructive hosted data actions.
