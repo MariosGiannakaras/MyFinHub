@@ -764,8 +764,7 @@
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
-        "tests/649-provider-catalog-readback.test.ts",
-        "scripts/provider-brand-management-qa.mjs"
+        "tests/649-provider-catalog-readback.test.ts"
       ]
     }
   ]
