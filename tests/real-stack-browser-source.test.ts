@@ -26,6 +26,25 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("'recurring screenshot content entrance visually settled'");
     expect(source).not.toContain("await sleep(600);await shot('recurring-domain-persisted')");
   });
+  it('waits for the Reports-to-Credit Framer Motion route to be visually opaque before evidence',()=>{
+    const drill=source.indexOf("'correct credit card and original purchase in drilldown'");
+    const settled=source.indexOf("'credit drillthrough route transition and purchase row visually settled'");
+    const picture=source.indexOf("await shot('reports-credit-drillthrough')");
+    expect(drill).toBeGreaterThan(0);
+    expect(settled).toBeGreaterThan(drill);
+    expect(picture).toBeGreaterThan(settled);
+    const guard=source.slice(drill,settled);
+    expect(guard).toContain("document.querySelector('#main-workspace')");
+    expect(guard).toContain("firstElementChild");
+    expect(guard).toContain(".credit-card-redesign-page");
+    expect(guard).toContain(".credit-purchases-table tbody tr");
+    expect(guard).toContain("getComputedStyle(route).opacity");
+    expect(guard).toContain("getComputedStyle(purchase).opacity");
+    expect(guard).toContain("route.getAnimations({subtree:true})");
+    expect(guard).toContain("!entranceRunning");
+    expect(source.slice(drill,picture)).not.toContain('await sleep(');
+  });
+
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain('/json/new?about:blank');

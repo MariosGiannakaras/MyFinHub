@@ -691,6 +691,24 @@
       "guards": [
         "tests/real-stack-browser-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-036",
+      "title": "Report-to-credit navigation evidence must wait for route opacity and collection entrance",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "The actual Chromium Real Stack Reports credit drillthrough screenshot was captured as soon as the destination heading and purchase row appeared. AppShell AnimatePresence motion.div remained at fractional opacity during the 180ms route transition, washing out the entire credit card, numbers and heading despite correct settled content.",
+      "prevention": "After verifying the actual card purchase row on the Credit route, wait for the live AppShell route wrapper, destination page and visible purchase row to reach full computed opacity and for bounded collection entrance animation to finish before capturing evidence. Never replace a valid product transition with global disabled motion or a guessed fixed sleep.",
+      "paths": [
+        "scripts/real-stack-browser-e2e.ts",
+        "tests/real-stack-browser-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/real-stack-browser-source.test.ts"
+      ]
     }
   ]
 }

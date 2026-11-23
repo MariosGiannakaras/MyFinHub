@@ -306,6 +306,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     assert(openedCredit,'Credit purchase must link to the Credit workspace, not hidden Transactions.');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit domain from report');
     await waitFor("function(){return [...document.querySelectorAll('.credit-purchases-table tbody tr')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'correct credit card and original purchase in drilldown');
+    // AppShell's AnimatePresence route wrapper can still be partly transparent
+    // after the Credit DOM and finance rows are complete. Capturing at this
+    // stage produces a washed-out false visual regression from Reports.
+    await waitFor("function(){const workspace=document.querySelector('#main-workspace');const route=workspace?.firstElementChild;const credit=route?.querySelector('.credit-card-redesign-page');const purchase=credit?.querySelector('.credit-purchases-table tbody tr');if(!(route instanceof HTMLElement)||!(credit instanceof HTMLElement)||!(purchase instanceof HTMLElement)||purchase.getClientRects().length===0)return false;const entranceRunning=route.getAnimations({subtree:true}).some(anim=>anim.playState==='running'&&(anim.animationName==='rh-bank-in'||anim.animationName==='rh-backdrop-in'));return !entranceRunning&&Number(getComputedStyle(route).opacity)>=.995&&Number(getComputedStyle(credit).opacity)>=.995&&Number(getComputedStyle(purchase).opacity)>=.995}",'credit drillthrough route transition and purchase row visually settled');
     await shot('reports-credit-drillthrough');
 
     console.log('[real-browser] stage savings-goal-transfer-reload');
