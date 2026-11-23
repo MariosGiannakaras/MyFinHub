@@ -81,7 +81,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
         const payload=scenario==='asset'?{asset:{
           assetKey:'qa-scope-bank-asset-112233aabbcc',role:'logo',variant:'light',
           fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
-          url:'https://assets.example/logo.png',
+          url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-scope-bank/qa-scope-bank-asset-112233aabbcc.png?v=2026-11-23',
         }}:scenario==='binding'?{ok:true}:{provider:input};
         return new Response(JSON.stringify(payload),{
           status:200,headers:{'content-type':'application/json'},
@@ -182,7 +182,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
       const key='qa-scope-bank-asset-112233aabbcc';
       const asset={
         assetKey:key,role:'logo',variant:'light',fileName:'logo.png',
-        mimeType:'image/png',sizeBytes:2,url:'https://assets.example/logo.png',
+        mimeType:'image/png',sizeBytes:2,url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-scope-bank/qa-scope-bank-asset-112233aabbcc.png?v=2026-11-23',
       };
       const operations:string[]=[];
       vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
