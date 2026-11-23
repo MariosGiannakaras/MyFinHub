@@ -855,16 +855,6 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
   }
   const unverifiedPurge=()=>new ApiError(503,'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
     'Η οριστική αφαίρεση της εικόνας υπηρεσίας δεν επιβεβαιώθηκε.');
-  if(purgeReceiptAmbiguous){
-    // An empty RLS SELECT can also mean the owner device was revoked between
-    // purge and readback. Confirm the current authenticated owner+AAL2
-    // device before treating absence as proof of a committed purge.
-    let activeOwner=false;
-    try{
-      activeOwner=await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
-    }catch{ /* Permission and upstream failures cannot prove deletion. */ }
-    if(!activeOwner)throw unverifiedPurge();
-  }
   // The purge RPC RETURNS void: HTTP 200/null is not a deletion receipt.
   // Query the exact key including inactive rows. Never replay Storage DELETE.
   let remaining:unknown;
@@ -877,4 +867,12 @@ export async function deleteRecurringServiceAsset(assetKey:string,accessToken:st
     throw error;
   }
   if(!Array.isArray(remaining)||remaining.length!==0)throw unverifiedPurge();
+  // A revoked owner/AAL2/device session can make a retained row appear absent
+  // through RLS. Check authorization *after* the exact-row read for both
+  // acknowledged and ambiguous purge RPC receipts, not only before it.
+  let activeOwner=false;
+  try{
+    activeOwner=await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
+  }catch{ /* Permission and upstream failures cannot prove deletion. */ }
+  if(!activeOwner)throw unverifiedPurge();
 }

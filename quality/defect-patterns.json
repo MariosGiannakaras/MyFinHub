@@ -655,6 +655,24 @@
       "guards": [
         "tests/649-recurring-service-client-readback.test.ts"
       ]
+    },
+    {
+      "id": "FP-034",
+      "title": "RLS-hidden recurring asset purge row cannot count as confirmed deletion",
+      "category": "security",
+      "severity": "high",
+      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup.",
+      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization.",
+      "paths": [
+        "server/accountMetadataStore.ts",
+        "tests/recurring-service-assets.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/recurring-service-assets.test.ts"
+      ]
     }
   ]
 }

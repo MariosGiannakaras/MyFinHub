@@ -312,6 +312,7 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===4)return new Response('{}',{status:404});
       if(calls.length===5)return new Response('null',{status:200});
       if(calls.length===6)return new Response('[]',{status:200});
+      if(calls.length===7)return new Response('true',{status:200});
       throw new Error('No speculative extra delete or purge');
     }));
     await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
@@ -319,7 +320,8 @@ describe('recurring service asset foundation',()=>{
     });
     expect(calls.map(x=>x.method)).toEqual(['POST','DELETE']);
     await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
-    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST','GET']);
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST','GET','POST']);
+    expect(calls[6].url).toContain('rpc/rheomiq_is_owner_aal2');
     expect(calls[1].url).toBe(calls[3].url);
     expect(calls[5].url).toContain('asset_key=eq.'+key);
     expect(calls[4].url).toContain('rpc/rheomiq_purge_recurring_service_asset');
@@ -338,6 +340,7 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===3)return new Response('{}',{status:200});
       if(calls.length===4)return new Response('null',{status:200});
       if(calls.length===5)return new Response('[]',{status:200});
+      if(calls.length===6)return new Response('true',{status:200});
       throw new Error('Unexpected duplicate release/delete after retry');
     }));
     await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
@@ -345,7 +348,8 @@ describe('recurring service asset foundation',()=>{
     });
     expect(calls.map(x=>x.method)).toEqual(['POST']);
     await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
-    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST','GET']);
+    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST','GET','POST']);
+    expect(calls[5].url).toContain('rpc/rheomiq_is_owner_aal2');
     expect(calls[2].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[3].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
   });
@@ -361,12 +365,14 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===2)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('null',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===4)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===5)return new Response('true',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected recurring service asset delete request');
     });
     vi.stubGlobal('fetch',fetchMock);
 
     await deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token');
-    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
+    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET','POST']);
+    expect(calls[4].url).toContain('rpc/rheomiq_is_owner_aal2');
     expect(calls[0].url).toContain('/rest/v1/rpc/rheomiq_release_recurring_service_asset');
     expect(calls[1].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[2].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
@@ -401,6 +407,44 @@ describe('recurring service asset foundation',()=>{
     expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
     expect(calls[3].url).toContain('asset_key=eq.'+key);
   });
+
+  it.each(['valid-owner','revoked-after-purge','owner-probe-unavailable','malformed-owner-receipt'] as const)(
+    'rejects RLS-empty readback without current owner proof after acknowledged purge: %s',
+    async scenario=>{
+      process.env.SUPABASE_URL='https://project.example.supabase.co';
+      process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+      const key='service-asset-1234567890abcdef12345678';
+      const path='services/'+key+'.svg';
+      const calls:Array<{url:string;method:string}>=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=String(init?.method??'GET');calls.push({url,method});
+        if(url.includes('/rpc/rheomiq_release_recurring_service_asset'))
+          return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+        if(url.includes('/storage/v1/object/recurring-service-assets/'))
+          return new Response('{}',{status:200});
+        if(url.includes('/rpc/rheomiq_purge_recurring_service_asset'))
+          return new Response('null',{status:200});
+        // An RLS-hidden inactive row can look like a successful deletion.
+        if(url.includes('/rheomiq_recurring_service_assets?'))
+          return new Response('[]',{status:200});
+        if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+          if(scenario==='owner-probe-unavailable')return new Response('{}',{status:503});
+          if(scenario==='malformed-owner-receipt')return new Response('{"ok":true}',{status:200});
+          return new Response(scenario==='valid-owner'?'true':'false',{status:200});
+        }
+        throw new Error('No extra Storage/DB request: '+url);
+      }));
+      const outcome=deleteRecurringServiceAsset(key,'access-token');
+      if(scenario==='valid-owner')await expect(outcome).resolves.toBeUndefined();
+      else await expect(outcome).rejects.toMatchObject({
+        status:503,code:'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+      });
+      expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET','POST']);
+      expect(calls.filter(call=>call.method==='DELETE')).toHaveLength(1);
+      expect(calls[3]?.url).toContain('asset_key=eq.'+key);
+      expect(calls[4]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
+    }
+  );
 
   it.each([
     'postcommit-503','postcommit-network-loss','retained-inactive',
@@ -446,14 +490,14 @@ describe('recurring service asset foundation',()=>{
     });
     const methods=calls.map(call=>call.method);
     const expected=scenario==='definite-denial'?['POST','DELETE','POST']:
-      scenario==='owner-check-unavailable'||scenario==='revoked-session'?
-        ['POST','DELETE','POST','POST']:['POST','DELETE','POST','POST','GET'];
+      ['unavailable-readback','retained-inactive','malformed-readback'].includes(scenario)?
+        ['POST','DELETE','POST','GET']:['POST','DELETE','POST','GET','POST'];
     expect(methods).toEqual(expected);
     expect(calls.filter(call=>call.method==='DELETE')).toHaveLength(1);
     expect(calls[1]?.url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[2]?.url).toContain('/rpc/rheomiq_purge_recurring_service_asset');
-    if(methods.length>=4&&scenario!=='definite-denial')
-      expect(calls[3]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
-    if(methods.includes('GET'))expect(calls.at(-1)?.url).toContain('asset_key=eq.'+key);
+    if(methods.includes('GET'))expect(calls[3]?.url).toContain('asset_key=eq.'+key);
+    if(methods.at(-1)==='POST'&&scenario!=='definite-denial')
+      expect(calls.at(-1)?.url).toContain('/rpc/rheomiq_is_owner_aal2');
   });
 });
