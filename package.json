@@ -49,10 +49,10 @@
     "@tesseract.js-data/eng": "1.0.0",
     "express": "^5.3.0",
     "framer-motion": "^12.43.0",
-    "lucide-react": "^1.61.0",
+    "lucide-react": "^1.77.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "recharts": "^3.10.1",
+    "recharts": "^3.11.0",
     "tesseract.js": "7.0.0"
   },
   "devDependencies": {
@@ -60,12 +60,12 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "concurrently": "^10.0.6",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^10.0.7",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   },
   "overrides": {
     "shell-quote": "1.12.0",
