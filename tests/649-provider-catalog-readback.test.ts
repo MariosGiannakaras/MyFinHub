@@ -679,12 +679,12 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
   });
 
   it.each([
-    ['other-provider-directory',(url:string)=>url.replace('/providers/qa-brand/','/providers/other-bank/')],
-    ['different-asset-key',(url:string)=>url.replace('qa-brand-asset-123456abcdef','qa-brand-asset-ffffffffffff')],
-    ['other-storage-bucket',(url:string)=>url.replace('/financial-provider-assets/','/recurring-service-assets/')],
-    ['wrong-mime-extension',(url:string)=>url.replace('.png?','.svg?')],
-    ['unrelated-legacy-image',(_url:string)=>'https://assets.example/legacy-unrelated.png'],
-    ['nested-path',(url:string)=>url.replace('/providers/qa-brand/','/providers/qa-brand/nested/')],
+    ['other-provider-directory',(url:string):string=>url.replace('/providers/qa-brand/','/providers/other-bank/')],
+    ['different-asset-key',(url:string):string=>url.replace('qa-brand-asset-123456abcdef','qa-brand-asset-ffffffffffff')],
+    ['other-storage-bucket',(url:string):string=>url.replace('/financial-provider-assets/','/recurring-service-assets/')],
+    ['wrong-mime-extension',(url:string):string=>url.replace('.png?','.svg?')],
+    ['unrelated-legacy-image',(_url:string):string=>'https://assets.example/legacy-unrelated.png'],
+    ['nested-path',(url:string):string=>url.replace('/providers/qa-brand/','/providers/qa-brand/nested/')],
   ] as const)('rejects a forged HTTP-200 provider upload URL for %s without binding or replay',async(_label,change)=>{
     const calls:string[]=[];
     const valid='https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-brand/qa-brand-asset-123456abcdef.png?v=2026-11-23';
