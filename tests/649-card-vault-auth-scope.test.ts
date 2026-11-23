@@ -143,6 +143,15 @@ describe('#649 I22.02 Card Vault auth scope and stale receipt isolation',()=>{
     await expect(stale).rejects.toMatchObject({code:'CARD_VAULT_AUTH_SCOPE_CHANGED'});
   });
 
+  it('guards the actual Chromium stale-owner read and screenshot evidence',()=>{
+    const qa=readFileSync('scripts/card-vault-runtime-qa.mjs','utf8');
+    expect(qa).toContain('Card Vault runtime QA: stale owner auth-scope read');
+    expect(qa).toContain("window.dispatchEvent(new Event('myfinhub:auth-scope-reset'))");
+    expect(qa).toContain("await screenshot('card-vault-stale-auth-scope-read-desktop')");
+    expect(qa).toContain("error announced to screen readers");
+    expect(qa).toContain("staleResult.reads===1");
+  });
+
   it('keeps the Card Vault scope-change message generic, without showing PAN or CVV',async()=>{
     const clientPath:string='../src/lib/cardVaultClient.js';
     const {CardVaultClientError,cardVaultErrorMessage}=await import(clientPath);
