@@ -2,9 +2,18 @@ import { notifyAuthExpired } from './authExpiry.js';
 import { ApiError, apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { readLocalCvv } from './localCvvVault.js';
+import { watchAuthScope } from './authScopedCache.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
+
+// Never show old-owner PAN/CVV or claim a previous-session write succeeded
+// after the cookie/MFA/device authentication scope has changed.
+const authEpoch=watchAuthScope(()=>{});
+function staleVaultScope():CardVaultClientError{
+  return new CardVaultClientError(409,'CARD_VAULT_AUTH_SCOPE_CHANGED',
+    'Η συνεδρία άλλαξε κατά την ενέργεια ασφαλών στοιχείων.');
+}
 
 export class CardVaultClientError extends Error{
   code:string;
@@ -31,25 +40,40 @@ async function requireVaultWriteReceipt<T>(
   action:()=>Promise<T>,
   confirmed:(receipt:T)=>boolean,
 ):Promise<T>{
+  const epoch=authEpoch();
   try{
     const receipt=await action();
-    if(!confirmed(receipt))throw new UnverifiedCardVaultWrite(operation);
+    if(epoch!==authEpoch()||!confirmed(receipt))throw new UnverifiedCardVaultWrite(operation);
     return receipt;
   }catch(reason){
     if(reason instanceof UnverifiedCardVaultWrite)throw reason;
+    if(reason instanceof CardVaultClientError&&reason.code==='CARD_VAULT_AUTH_SCOPE_CHANGED')
+      throw new UnverifiedCardVaultWrite(operation);
     if(vaultMutationMayHaveCommitted(reason))throw new UnverifiedCardVaultWrite(operation);
     throw reason;
   }
 }
 
 async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknown>):Promise<T>{
-  const response=await apiRequest('/api/card-secrets',{
-    method,
-    credentials:'same-origin',
-    headers:{'content-type':'application/json'},
-    body:JSON.stringify(body),
-  });
+  const epoch=authEpoch();
+  let response:Response;
+  try{
+    response=await apiRequest('/api/card-secrets',{
+      method,
+      credentials:'same-origin',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify(body),
+    });
+  }catch(error){
+    // The old request may have reached the server. Never carry its transport
+    // error into a new session as proof of a current-owner outcome.
+    if(epoch!==authEpoch())throw staleVaultScope();
+    throw error;
+  }
   const payload=await response.json().catch(()=>({})) as ErrorPayload&T;
+  // Check after the body resolves and BEFORE notifyAuthExpired: a delayed
+  // old-device 401 must not expire a newer valid owner session.
+  if(epoch!==authEpoch())throw staleVaultScope();
   if(!response.ok){
     const code=payload.code||'CARD_VAULT_ERROR';
     notifyAuthExpired(response.status,code);
@@ -59,6 +83,7 @@ async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknow
 }
 
 export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
+  const epoch=authEpoch();
   let missing=false;
   let payload:{pan:string|null;expiry:string|null;cvv:string|null}={pan:null,expiry:null,cvv:null};
   try{payload=await request<typeof payload>('POST',{cardId})}
@@ -78,6 +103,9 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
       // Local compatibility read is best effort; server data remains authoritative.
     }
   }
+  // Includes an async legacy IndexedDB CVV fallback: an old response must
+  // not leak PAN/CVV after logout, new MFA or another owner auth boundary.
+  if(epoch!==authEpoch())throw staleVaultScope();
   if(missing)throw new CardVaultClientError(404,'CARD_SECRET_NOT_FOUND','Δεν υπάρχουν αποθηκευμένα στοιχεία για αυτή την κάρτα.');
   return secret;
 }
@@ -109,6 +137,7 @@ export function cardVaultErrorMessage(error:unknown){
     if(error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return 'Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Η κατάσταση των αποθηκευμένων στοιχείων δεν επιβεβαιώθηκε.';
   }
   if(error instanceof CardVaultClientError){
+    if(error.code==='CARD_VAULT_AUTH_SCOPE_CHANGED')return 'Η σύνδεση άλλαξε κατά την ενέργεια ασφαλών στοιχείων. Κλείσε τη φόρμα και άνοιξέ την ξανά μετά την επαλήθευση.';
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
     if(error.code==='INVALID_CARD_PAN')return 'Ο αριθμός κάρτας πρέπει να έχει ακριβώς 16 ψηφία (4 τετράδες).';
     if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη: MM/YY, μήνας 01–12 και όχι περασμένη ημερομηνία.';
