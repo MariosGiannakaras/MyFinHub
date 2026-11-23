@@ -730,6 +730,23 @@
         "tests/receipt-draft-concurrency.test.ts",
         "tests/649-receipt-post-save.test.ts"
       ]
+    },
+    {
+      "id": "FP-038",
+      "title": "Provider image binding clear may treat RLS-hidden [] as confirmed deletion after revoked owner session",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "The server accepted empty exact-slot readback as proof of cleared provider image binding on HTTP 200/void without an owner+AAL2 recheck; ambiguous 5xx checked ownership only before GET, leaving revocation between probe and readback unverified.",
+      "prevention": "For both acknowledged and ambiguous provider-binding RPCs, validate the exact slot readback, then require fresh rheomiq_is_owner_aal2 === true before returning ok. Reject unavailable/false/malformed owner proof as unverified; no duplicate RPC or relaxed RLS.",
+      "paths": [
+        "server/accountMetadataStore.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-write-receipts.test.ts"
+      ]
     }
   ]
 }

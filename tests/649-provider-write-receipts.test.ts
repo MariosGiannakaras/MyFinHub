@@ -86,6 +86,8 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       calls.push({url,method,body:String(init?.body??'')});
       if(url.includes('/rpc/rheomiq_set_financial_provider_asset_binding'))
         return new Response('null',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))
+        return new Response('true',{status:200,headers:{'content-type':'application/json'}});
       if(!url.includes('/rheomiq_financial_provider_asset_bindings?'))
         throw new Error('Unexpected binding request');
       if(scenario==='readback-unavailable')
@@ -102,7 +104,10 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
         status:503,code:scenario==='readback-unavailable'
           ?'ACCOUNT_METADATA_UNAVAILABLE':'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
       });
-    expect(calls.map(x=>x.method)).toEqual(['POST','GET']);
+    expect(calls.map(x=>x.method)).toEqual(
+      scenario==='valid-assign'||scenario==='valid-clear'
+        ?['POST','GET','POST']:['POST','GET']);
+    if(calls.length===3)expect(calls[2]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
     expect(calls[1]?.url).toContain('provider_id=eq.owner-bank');
     expect(calls[1]?.url).toContain('asset_role=eq.logo');
     expect(calls[1]?.url).toContain('variant=eq.light');
@@ -153,20 +158,55 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       status:scenario==='definite-forbidden'?403:503,
       code:scenario==='definite-forbidden'?'FORBIDDEN':'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
     });
+    const matchesReadback=['lost-503-assignment','lost-network-clear','revoked-owner','owner-check-unavailable'];
     const expected=scenario==='definite-forbidden'?['POST']:
-      scenario==='revoked-owner'||scenario==='owner-check-unavailable'?['POST','POST']:
-        ['POST','POST','GET'];
+      matchesReadback.includes(scenario)?['POST','GET','POST']:['POST','GET'];
     expect(calls.map(x=>x.method)).toEqual(expected);
     expect(calls.filter(x=>x.url.includes('/rpc/rheomiq_set_financial_provider_asset_binding'))).toHaveLength(1);
-    if(calls.length>1)expect(calls[1]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
-    if(calls.length>2){
-      expect(calls[2]?.url).toContain('provider_id=eq.owner-bank');
-      expect(calls[2]?.url).toContain('asset_role=eq.logo');
-      expect(calls[2]?.url).toContain('variant=eq.light');
+    if(calls.length>1){
+      expect(calls[1]?.url).toContain('provider_id=eq.owner-bank');
+      expect(calls[1]?.url).toContain('asset_role=eq.logo');
+      expect(calls[1]?.url).toContain('variant=eq.light');
     }
+    if(calls.length>2)expect(calls[2]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
     expect(JSON.parse(calls[0]?.body??'{}')).toMatchObject({
       p_provider_id:'owner-bank',p_asset_role:'logo',p_variant:'light',p_asset_key:clear?null:key,
     });
+  });
+
+
+  it.each([
+    'ack200-revoked','ack503-revoked','ack200-unavailable',
+    'ack200-malformed','ack200-true','ack503-true',
+  ] as const)('never treats RLS-hidden empty binding as confirmed clear: %s',async scenario=>{
+    config();
+    const calls:Array<{url:string;method:string;authorization:string|null}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(req:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(req),method=String(init?.method??'GET');
+      calls.push({url,method,authorization:new Headers(init?.headers).get('authorization')});
+      if(url.includes('/rpc/rheomiq_set_financial_provider_asset_binding'))
+        return new Response(scenario.startsWith('ack503')?'{"message":"ambiguous"}':'null',{
+          status:scenario.startsWith('ack503')?503:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rheomiq_financial_provider_asset_bindings?'))
+        return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario.endsWith('unavailable'))return new Response('{}',{status:503});
+        return new Response(scenario.endsWith('malformed')?'"true"':
+          scenario.endsWith('revoked')?'false':'true',{status:200,headers:{'content-type':'application/json'}});
+      }
+      throw new Error('Unexpected provider binding request: '+url);
+    }));
+    const outcome=setFinancialProviderAssetBinding({
+      providerId:'owner-bank',role:'logo',variant:'light',assetKey:null,
+    },'owner-jwt');
+    if(scenario.endsWith('true'))await expect(outcome).resolves.toBeUndefined();
+    else await expect(outcome).rejects.toMatchObject({
+      status:503,code:'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
+    });
+    expect(calls.map(x=>x.method)).toEqual(['POST','GET','POST']);
+    expect(calls[2]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
+    expect(calls.filter(x=>x.url.includes('rheomiq_set_financial_provider_asset_binding'))).toHaveLength(1);
+    expect(calls.every(x=>x.authorization==='Bearer owner-jwt')).toBe(true);
   });
 
   it.each([

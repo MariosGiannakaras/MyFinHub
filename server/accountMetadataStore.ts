@@ -664,15 +664,6 @@ export async function setFinancialProviderAssetBinding(input:{
   }
   const unverifiedBinding=()=>new ApiError(503,'FINANCIAL_PROVIDER_BINDING_UNVERIFIED',
     'Provider image binding acknowledgement is unverified.',false);
-  if(bindingReceiptAmbiguous){
-    // A revoked AAL2 session can see zero rows under RLS. Verify identity
-    // and active device before accepting an absent slot as a cleared binding.
-    let activeOwner=false;
-    try{
-      activeOwner=await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
-    }catch{ /* No unverified authorization can prove a committed mutation. */ }
-    if(!activeOwner)throw unverifiedBinding();
-  }
   // This RPC RETURNS void. A 200/null payload proves transport completion,
   // not the exact requested slot. Confirm the single committed binding (or
   // its removal) before the API sends ok:true to its native/browser clients.
@@ -693,6 +684,16 @@ export async function setFinancialProviderAssetBinding(input:{
       row.variant!==input.variant||row.asset_key!==input.assetKey)
       throw unverifiedBinding();
   }
+  // A clear returns [] by design. RLS can also return [] after owner/AAL2 or
+  // active-device revocation even when a binding remains. Require a *fresh*
+  // owner+AAL2 receipt AFTER the exact slot readback, for both 200/void and
+  // ambiguous RPC acknowledgements. Never replay or claim cleared otherwise.
+  let activeOwner=false;
+  try{
+    activeOwner=await request('rpc/rheomiq_is_owner_aal2',
+      {method:'POST',body:'{}'},accessToken)===true;
+  }catch{ /* Missing/malformed/unavailable authorization is not proof. */ }
+  if(!activeOwner)throw unverifiedBinding();
 }
 
 export async function uploadRecurringServiceAsset(input:{
