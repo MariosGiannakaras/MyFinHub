@@ -827,9 +827,8 @@ async function main(){
       'Final merchant Undo did not leave the actual database history clean.');
     console.log('[real-stack] PASS selected merchant ID, relational payload, stale conflict and Undo/Redo');
 
-    console.log('[real-stack] stage card-vault-delete');
-    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
-
+    // Keep the synthetic Card Vault secret until the revoked-bearer negative
+    // proves an unrelated valid owner browser cookie cannot authorize a purge.
     console.log('[real-stack] stage device-lifecycle');
     const secondary=new CookieClient('QA Browser B');
     let lastCode=await loginAndVerify(secondary,email,TEST_PASSWORD,secret,correct);
@@ -839,8 +838,8 @@ async function main(){
     const other=devices.body.devices.find((item:any)=>item.current===false);
     assert(other?.sessionId,'Secondary device session was not discoverable.');
 
-    // Preserve the revoked AAL2 bearer for a later real provider-binding
-    // negative with an otherwise valid, unrelated owner browser cookie.
+    // Preserve the revoked AAL2 bearer for cross-domain endpoint negatives
+    // with an otherwise valid, unrelated owner browser cookie.
     const revokedDeviceBearer=secondary.snapshot().get('rheomiq_access');
     assert(typeof revokedDeviceBearer==='string'&&revokedDeviceBearer.length>40,
       'Revoked device bearer fixture was unavailable before revocation.');
@@ -860,6 +859,30 @@ async function main(){
     expect(revokeOne,200);
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
+
+    console.log('[real-stack] stage revoked-bearer-finance-vault-no-cookie-fallback');
+    // A revoked native token is authoritative even when a separate, active
+    // owner browser session accompanies the request as an ambient cookie.
+    // Both APIs have their own sensitive read/destructive consequences.
+    expect(await primary.request('/api/data',{
+      headers:{authorization:'Bearer '+revokedDeviceBearer},
+    }),401,'DEVICE_ACCESS_REVOKED','revoked-bearer-finance-read');
+    expect(await primary.request('/api/card-secrets',{
+      method:'DELETE',headers:{authorization:'Bearer '+revokedDeviceBearer},
+      body:{cardId:TEST_CARD_ID},
+    }),401,'DEVICE_ACCESS_REVOKED','revoked-bearer-card-vault-delete');
+    const vaultAfterRevokedBearer=await primary.request('/api/card-secrets',{
+      method:'POST',body:{cardId:TEST_CARD_ID},
+    });
+    expect(vaultAfterRevokedBearer,200,undefined,'card-vault-after-revoked-bearer');
+    assert(vaultAfterRevokedBearer.body?.pan===TEST_PAN&&
+      vaultAfterRevokedBearer.body?.expiry===TEST_EXPIRY&&
+      vaultAfterRevokedBearer.body?.cvv===TEST_CVV,
+      'Revoked bearer deleted or changed the surviving synthetic Card Vault secret.');
+    console.log('[real-stack] stage card-vault-delete');
+    expect(await primary.request('/api/card-secrets',{
+      method:'DELETE',body:{cardId:TEST_CARD_ID},
+    }),200,undefined,'card-vault-delete');
 
     console.log('[real-stack] stage recurring-service-asset-durability');
     const serviceId='real-stack-service-brand-a';
@@ -915,6 +938,34 @@ async function main(){
       'Rejected direct RPC or MIME update modified persistent logo metadata.');
     const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
+    console.log('[real-stack] stage recurring-unreferenced-asset-revoked-bearer-no-cookie-fallback');
+    // Crucially, this asset has no finance reference yet: a false cookie
+    // fallback would otherwise authorize release and irreversible Storage
+    // deletion rather than merely hitting the in-use 409 guard.
+    const serviceRowUrl=local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?select=asset_key,active,storage_path&asset_key=eq.'+
+      encodeURIComponent(serviceAssetKey);
+    const serviceRowsBeforeRevoked=await upstreamJson(serviceRowUrl,local.serviceRole) as
+      Array<{asset_key:string;active:boolean;storage_path:string}>;
+    assert(serviceRowsBeforeRevoked.length===1&&
+      serviceRowsBeforeRevoked[0]?.asset_key===serviceAssetKey&&
+      serviceRowsBeforeRevoked[0]?.active===true,
+      'Revoked bearer asset test lacks a real active, unreferenced Storage registration.');
+    const rejectedServiceRelease=await primary.request(
+      '/api/account-metadata?'+new URLSearchParams({
+        resource:'recurring-service-assets',assetKey:serviceAssetKey,
+      }),{
+        method:'DELETE',headers:{authorization:'Bearer '+revokedDeviceBearer},
+      });
+    expect(rejectedServiceRelease,401,'DEVICE_ACCESS_REVOKED','revoked-bearer-service-asset-delete');
+    const serviceRowsAfterRevoked=await upstreamJson(serviceRowUrl,local.serviceRole);
+    assert(JSON.stringify(serviceRowsAfterRevoked)===JSON.stringify(serviceRowsBeforeRevoked),
+      'Revoked bearer changed a real recurring service Storage registration.');
+    const serviceObjectsAfterRevoked=await upstreamStorageList(
+      local.apiUrl,local.serviceRole,'services','recurring-service-assets');
+    assert(JSON.stringify(serviceObjectsAfterRevoked.map(o=>o.name).sort())===
+      JSON.stringify(serviceObjectsAfterUpload.map(o=>o.name).sort()),
+      'Revoked bearer deleted or added a recurring service Storage object.');
     const original=await primary.request('/api/data');
     expect(original,200,undefined,'recurring-service-finance-before');
     const originalHistory=await primary.request('/api/history');
