@@ -39,6 +39,7 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(inbox).toContain("selected.status==='posted' ? <div className");
     expect(inbox).toContain("selected.status!=='posted'&&selected.status!=='posting'?<Button");
     expect(inbox).toContain("selected.status==='posting' ? <div className=\"receipt-proposal\" role=\"alert\"");
+    expect(inbox).toContain("επιβεβαιωθεί.</b>{' '}<span>Έλεγξε τις οικονομικές κινήσεις");
     expect(inbox).toContain('Ήδη καταχωρισμένη · μόνο διαγραφή');
     expect(owner).not.toContain('addEvent(');
     expect(owner).not.toContain('onCreate(');
