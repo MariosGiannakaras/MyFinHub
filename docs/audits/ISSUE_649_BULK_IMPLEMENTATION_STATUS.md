@@ -1,3 +1,9 @@
+## 2026-11-23 — FP-033 focused QA screenshot loop source-contract correction
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Draft source candidate [`4b624e0`](https://github.com/MariosGiannakaras/MyFinHub/commit/4b624e0717ae0934aa0ab669bf61e2a432c0b780) [CI #45125861008](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45125861008) failed **only one source fixture assertion**, `tests/649-recurring-finance-asset-partial-commit.test.ts`, which expected the interpolated desktop/mobile screenshot names as literal complete filenames in the QA script. 339 test files passed; this was a test-only assertion mismatch, not a browser run or evidence of a production regression. Fixed the guard to assert the actual `[1440,1100,'desktop']` and `[375,812,'mobile']` loop plus its screenshot naming pattern. No negative browser thresholds, new script behavior or app source were relaxed. **New exact-head CI pending**; then one focused Chromium run with evidence inspection. PR #654 stays Draft.
+
+---
+
 ## 2026-11-23 — FP-033 actual Chromium recurring release uncertainty (new focused QA candidate)
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Previous exact source head [`108dabc`](https://github.com/MariosGiannakaras/MyFinHub/commit/108dabc84e8c5511ca13ca33034f13258cbe7ee6) has confirmed [CI #45125282962](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45125282962) **SUCCESS** for `validate`, JS/TS CodeQL and Unified. The corrected FP-033 source and old-auth in-flight negative tests are accepted at source level; this does **not** yet prove the changed user-visible release warning.

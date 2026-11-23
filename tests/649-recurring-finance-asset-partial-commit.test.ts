@@ -28,8 +28,8 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     expect(page).toContain('disabled={editBusy||financeReviewRequired}');
     expect(app).toContain('financeState={finance}');
     expect(qa).toContain('recurring-service-brand-finance-receipt-unverified');
-    expect(qa).toContain('recurring-service-brand-release-unverified-desktop');
-    expect(qa).toContain('recurring-service-brand-release-unverified-mobile');
+    expect(qa).toContain("for(const [width,height,label] of [[1440,1100,'desktop'],[375,812,'mobile']])");
+    expect(qa).toContain("await shot('recurring-service-brand-release-unverified-'+label)");
     expect(qa).toContain("blocked.includes('δεν επιβεβαιώθηκε')&&(await state()).deletes===1");
     expect(qa).toContain('current.writes===1&&current.deletes===0');
     expect(qa).toContain('uncertain.disabled&&uncertain.error.includes');
