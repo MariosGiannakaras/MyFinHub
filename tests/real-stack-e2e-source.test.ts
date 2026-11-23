@@ -124,6 +124,17 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
     expect(script).toContain("[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback");
+    expect(script).toContain("[real-stack] stage revoked-bearer-finance-vault-no-cookie-fallback");
+    expect(script).toContain("'revoked-bearer-finance-read'");
+    expect(script).toContain("'revoked-bearer-card-vault-delete'");
+    expect(script).toContain("'card-vault-after-revoked-bearer'");
+    expect(script).toContain("'Revoked bearer deleted or changed the surviving synthetic Card Vault secret.'");
+    expect(script).toContain("[real-stack] stage recurring-unreferenced-asset-revoked-bearer-no-cookie-fallback");
+    expect(script).toContain("'revoked-bearer-service-asset-delete'");
+    expect(script).toContain("'Revoked bearer changed a real recurring service Storage registration.'");
+    expect(script).toContain("'Revoked bearer deleted or added a recurring service Storage object.'");
+    expect(script.indexOf('stage revoked-bearer-finance-vault-no-cookie-fallback')).toBeLessThan(script.indexOf('stage card-vault-delete'));
+    expect(script.indexOf('stage recurring-unreferenced-asset-revoked-bearer-no-cookie-fallback')).toBeLessThan(script.indexOf("const original=await primary.request('/api/data')",script.indexOf('stage recurring-service-asset-durability')));
     expect(script).toContain("expect(rejectedBinding,401,'DEVICE_ACCESS_REVOKED','provider-binding-revoked-bearer')");
     expect(script).toContain("'Revoked bearer unexpectedly cleared a persisted provider image binding.'");
     expect(script).toContain("'provider-binding-valid-cookie-preserved'");
