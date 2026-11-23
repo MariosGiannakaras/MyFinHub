@@ -124,8 +124,13 @@ try{
   assert((await state()).writes===0,'Cancel does not upload a recurring service asset');
 
   console.log('Recurring service-brand QA: replace propagates to payment and lifecycle');
-  await clickAria('Επεξεργασία QA Streaming');await setLogoFile();await clickText('.editor-actions button','Αποθήκευση');
+  await clickAria('Επεξεργασία QA Streaming');await setLogoFile();
+  // Two click events in one browser task precede a React state rerender.
+  // Their single durable result must not allocate two generated Storage keys.
+  const doubleSave=await c.call("function(){const button=[...document.querySelectorAll('.recurring-editor-dialog .editor-actions button')].find(item=>(item.textContent||'').includes('Αποθήκευση'));if(!button||button.disabled)return false;button.click();button.click();return true}");
+  assert(doubleSave,'recurring Save is available for same-turn duplicate proof');
   await waitFor("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('QA Streaming'));return !document.querySelector('.recurring-editor-dialog')&&row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')==='service-asset-bbbbbbbbbbbbbbbbbbbbbbbb'}",'replaced recurring logo');
+  assert((await state()).writes===1,'same-turn recurring Save cannot launch two Storage PUTs');
   current=await state();assert(current.writes===1&&current.deletes===1,'replacement uploads one asset and releases the old unshared asset after the save');
   await clickAria('Πληρωμή QA Streaming');
   await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'recurring payment dialog');

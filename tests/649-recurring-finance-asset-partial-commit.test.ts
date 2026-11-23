@@ -30,5 +30,6 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     expect(qa).toContain('recurring-service-brand-finance-receipt-unverified');
     expect(qa).toContain('current.writes===1&&current.deletes===0');
     expect(qa).toContain('uncertain.disabled&&uncertain.error.includes');
+    expect(qa).toContain('same-turn recurring Save cannot launch two Storage PUTs');
   });
 });

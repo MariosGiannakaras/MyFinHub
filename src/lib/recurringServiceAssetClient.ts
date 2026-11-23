@@ -32,9 +32,14 @@ const UNVERIFIED_UPLOAD='Η καταχώριση της εικόνας υπηρ�
 export class UnverifiedRecurringServiceAssetWrite extends Error {
   constructor(){super(UNVERIFIED_UPLOAD);this.name='UnverifiedRecurringServiceAssetWrite'}
 }
+export class RecurringServiceUploadInProgress extends Error {
+  constructor(){super('Η μεταφόρτωση εικόνας για αυτό το πάγιο βρίσκεται ήδη σε εξέλιξη.');this.name='RecurringServiceUploadInProgress'}
+}
 // A lost binary-upload response may follow a committed server-generated key.
 // Do not blindly replay for this recurring item within the same auth scope.
 const uncertainUploads=new Set<string>();
+// Shared-owner guard: a second same-tick Save must not allocate another Storage key.
+const inFlightUploads=new Set<string>();
 function unverifiedUpload(recurringId:string,requestEpoch:number):never{
   // A late result from a retired auth scope cannot block the new session.
   if(requestEpoch===authEpoch())uncertainUploads.add(recurringId);
@@ -50,6 +55,7 @@ export function subscribeRecurringServiceAssets(listener:()=>void){listeners.add
 const authEpoch=watchAuthScope(()=>{
   pending=null;
   uncertainUploads.clear();
+  inFlightUploads.clear();
   publish({loaded:false,loading:false,assets:[],error:null});
 });
 
@@ -101,9 +107,12 @@ export async function refreshRecurringServiceAssets(force=false){
 }
 
 export async function uploadRecurringServiceAsset(input:{recurringId:string;file:File}){
-  return trackDatabaseWrite(async()=>{
   const epoch=authEpoch();
   if(uncertainUploads.has(input.recurringId))throw new UnverifiedRecurringServiceAssetWrite();
+  if(inFlightUploads.has(input.recurringId))throw new RecurringServiceUploadInProgress();
+  inFlightUploads.add(input.recurringId);
+  try{
+  return await trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:input.recurringId,fileName:input.file.name});
   let response:Response;
   try{
@@ -147,6 +156,10 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
     return unverifiedUpload(input.recurringId,epoch);
   }
   });
+  }finally{
+    // Old-session completions cannot release a new session's in-flight slot.
+    if(epoch===authEpoch())inFlightUploads.delete(input.recurringId);
+  }
 }
 
 export async function deleteRecurringServiceAsset(assetKey:string){

@@ -19,6 +19,8 @@ let snapshot:FinancialProviderSnapshot={
   error:QA_CATALOG_FAILURE?'Συνθετική QA αποτυχία ανάγνωσης καταλόγου παρόχων.':null,
 };
 let pending:Promise<FinancialProviderSnapshot>|null=null;
+// A binary upload allocates a new key; never dispatch twice to one provider slot.
+const inFlightAssetUploads=new Set<string>();
 const listeners=new Set<()=>void>();
 
 const kindLabels:Record<FinancialProviderKind,string>={
@@ -33,6 +35,7 @@ export function getFinancialProviderSnapshot(){return snapshot}
 export function subscribeFinancialProviders(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 const authEpoch=watchAuthScope(()=>{
   pending=null;
+  inFlightAssetUploads.clear();
   publish({loaded:false,loading:false,providers:FALLBACK,error:null});
 });
 
@@ -135,6 +138,10 @@ export async function refreshFinancialProviders(force=false){
   return pending;
 }
 
+
+export class FinancialProviderAssetUploadInProgress extends Error{
+  constructor(){super('Η μεταφόρτωση εικόνας για αυτή τη θέση βρίσκεται ήδη σε εξέλιξη.');this.name='FinancialProviderAssetUploadInProgress'}
+}
 
 export class UnverifiedFinancialProviderWrite extends Error{
   constructor(public readonly operation:'metadata'|'asset'|'binding'){
@@ -306,8 +313,12 @@ export async function uploadFinancialProviderAsset(input:{
   makePrimary?:boolean;
   refreshCatalog?:boolean;
 }){
-  return trackDatabaseWrite(async()=>{
   const requestEpoch=authEpoch();
+  const uploadSlot=JSON.stringify([input.providerId,input.role,input.variant]);
+  if(inFlightAssetUploads.has(uploadSlot))throw new FinancialProviderAssetUploadInProgress();
+  inFlightAssetUploads.add(uploadSlot);
+  try{
+  return await trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({
     resource:'financial-provider-assets',
     providerId:input.providerId,
@@ -348,6 +359,10 @@ export async function uploadFinancialProviderAsset(input:{
   }
   return asset;
   });
+  }finally{
+    // A retired request must never clear a new auth scope's slot.
+    if(requestEpoch===authEpoch())inFlightAssetUploads.delete(uploadSlot);
+  }
 }
 
 export async function setFinancialProviderAssetBinding(input:{

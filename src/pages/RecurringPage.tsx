@@ -52,6 +52,8 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const [editAmount,setEditAmount]=useState('');
   const [editError,setEditError]=useState('');
   const [editBusy,setEditBusy]=useState(false);
+  // React state updates after a render; this latch blocks same-turn Save re-entry.
+  const editSaveInFlight=useRef(false);
   // Never replay an upload while its finance reference may have committed.
   const [financeReviewRequired,setFinanceReviewRequired]=useState(false);
   const [editLogoFile,setEditLogoFile]=useState<File|null>(null);
@@ -103,12 +105,13 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setEditError('')};
   const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
   const save=async()=>{
-    if(!edit||editBusy||financeReviewRequired)return;
+    if(!edit||editBusy||editSaveInFlight.current||financeReviewRequired)return;
     // Check the finance queue BEFORE uploading independently stored binary data.
     if(financeState&&(financeState.saveState!=='saved'||financeState.savePending)){setEditError('Υπάρχει εκκρεμής ή μη επιβεβαιωμένη οικονομική αλλαγή. Ανανέωσε την αποθηκευμένη κατάσταση πριν ανεβάσεις εικόνα.');return}
     const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
     const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
     if(error){setEditError(error);return}
+    editSaveInFlight.current=true;
     setEditBusy(true);setEditError('');
     let uploaded:RecurringServiceAsset|null=null;
     let persisted=false;
@@ -148,7 +151,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
         }
       }
       setEditError(userErrorMessage(reason,'Η αποθήκευση του παγίου δεν επιβεβαιώθηκε. Επαναφόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.')+cleanupWarning);
-    }finally{setEditBusy(false)}
+    }finally{editSaveInFlight.current=false;setEditBusy(false)}
   };
   const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>onUpsert({...item,status,active:status==='active'});
   const startPay=(item:RecurringItem)=>onPayRecurring(item.id);

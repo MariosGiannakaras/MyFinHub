@@ -6,6 +6,64 @@ afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
 
+  it('serializes same-slot provider binary uploads and permits independent slots',async()=>{
+    const operations:string[]=[];
+    let finishFirst:(response:Response)=>void=()=>{throw new Error('First PUT missing')};
+    vi.stubGlobal('fetch',vi.fn(async(url:RequestInfo|URL,init?:RequestInit)=>{
+      const method=String(init?.method??'GET');
+      operations.push(method+' '+String(url));
+      if(method!=='PUT')throw new Error('Unexpected provider readback');
+      if(operations.length===1)return new Promise<Response>(resolve=>{finishFirst=resolve});
+      return new Response(JSON.stringify({error:'Invalid binary'}),{status:400});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset}=await import(clientPath);
+    const data={providerId:'qa-binary-slot-bank',role:'logo' as const,variant:'light',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false};
+    const first=uploadFinancialProviderAsset(data);
+    expect(operations).toHaveLength(1);
+    await expect(uploadFinancialProviderAsset(data)).rejects.toMatchObject({name:'FinancialProviderAssetUploadInProgress'});
+    expect(operations).toHaveLength(1);
+    await expect(uploadFinancialProviderAsset({...data,variant:'dark'}))
+      .rejects.not.toMatchObject({name:'FinancialProviderAssetUploadInProgress'});
+    expect(operations).toHaveLength(2);
+    finishFirst(new Response(JSON.stringify({error:'Invalid binary'}),{status:400}));
+    await expect(first).rejects.not.toMatchObject({name:'UnverifiedFinancialProviderWrite'});
+    await expect(uploadFinancialProviderAsset(data)).rejects.not.toMatchObject({name:'FinancialProviderAssetUploadInProgress'});
+    expect(operations.map(value=>value.split(' ',1)[0])).toEqual(['PUT','PUT','PUT']);
+  });
+
+  it('does not let a retired provider PUT clear the new session in-flight slot',async()=>{
+    const scopeWindow=new EventTarget();
+    vi.stubGlobal('window',scopeWindow);
+    let finishOld:(response:Response)=>void=()=>{throw new Error('Old PUT missing')};
+    let finishFresh:(response:Response)=>void=()=>{throw new Error('Fresh PUT missing')};
+    let sent=0;
+    vi.stubGlobal('fetch',vi.fn(async()=>{
+      sent++;
+      if(sent===1)return new Promise<Response>(resolve=>{finishOld=resolve});
+      if(sent===2)return new Promise<Response>(resolve=>{finishFresh=resolve});
+      return new Response(JSON.stringify({error:'Invalid binary'}),{status:400});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset}=await import(clientPath);
+    const data={providerId:'qa-binary-slot-bank',role:'logo' as const,variant:'light',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false};
+    const old=uploadFinancialProviderAsset(data);
+    scopeWindow.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+    const fresh=uploadFinancialProviderAsset(data);
+    expect(sent).toBe(2);
+    finishOld(new Response(JSON.stringify({error:'Old committed outcome uncertain'}),{status:503}));
+    await expect(old).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'asset'});
+    await expect(uploadFinancialProviderAsset(data)).rejects.toMatchObject({name:'FinancialProviderAssetUploadInProgress'});
+    expect(sent).toBe(2);
+    finishFresh(new Response(JSON.stringify({error:'Invalid binary'}),{status:400}));
+    await expect(fresh).rejects.not.toMatchObject({name:'UnverifiedFinancialProviderWrite'});
+    await expect(uploadFinancialProviderAsset(data)).rejects.not.toMatchObject({name:'FinancialProviderAssetUploadInProgress'});
+    expect(sent).toBe(3);
+  });
+
+
   it.each(['create','update','asset','binding'] as const)(
     'does not accept a late %s receipt from a retired owner auth scope',async scenario=>{
       const scopeWindow=new EventTarget();

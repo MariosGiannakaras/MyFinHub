@@ -596,6 +596,28 @@
         "tests/card-vault-client.test.ts",
         "tests/client-network-boundary.test.ts"
       ]
+    },
+    {
+      "id": "FP-031",
+      "title": "Same-turn recurring/provider binary uploads must not allocate duplicate Storage keys",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Recurring Save used only asynchronous React editBusy state, and exported recurring/provider binary-upload clients had no synchronous per-target in-flight lock. Two same-task saves or direct client calls could dispatch duplicate PUT requests while the first independently generated Storage key was still unverified.",
+      "prevention": "Acquire a synchronous recurring-item or provider/role/variant slot before dispatching the first binary PUT, reject concurrent same-target calls without issuing a second write, retain independent target concurrency, and clear the lock only for the original auth epoch. Add a RecurringPage save ref guard before any upload or finance writer and keep uncertain-receipt safeguards unchanged.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/lib/recurringServiceAssetClient.ts",
+        "src/lib/financialProviderClient.ts",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-service-upload-uncertainty.test.ts",
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-recurring-finance-asset-partial-commit.test.ts"
+      ]
     }
   ]
 }
