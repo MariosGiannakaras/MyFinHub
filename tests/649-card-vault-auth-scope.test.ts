@@ -162,6 +162,6 @@ describe('#649 I22.02 Card Vault auth scope and stale receipt isolation',()=>{
     expect(message).not.toContain('4111111111111111');
     expect(message).not.toContain('123');
     const source=readFileSync('src/lib/cardVaultClient.ts','utf8');
-    expect(source).toContain('if(epoch!==authEpoch())throw staleVaultScope();');
+    expect(source).toContain('if(epoch!==authScopeEpoch())throw staleVaultScope();');
   });
 });
