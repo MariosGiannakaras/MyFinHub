@@ -100,6 +100,6 @@ describe('top-edge save feedback ownership',()=>{
     const recurring=read('src/lib/recurringServiceAssetClient.ts');
     // Upload and release both remain tracked while their synchronous locks
     // require awaiting the tracked write in a try/finally.
-    expect(recurring.match(/return await trackDatabaseWrite\\(async\\(\\)=>\\{/g)).toHaveLength(2);
+    expect(recurring.split('return await trackDatabaseWrite(async()=>{').length-1).toBe(2);
   });
 });

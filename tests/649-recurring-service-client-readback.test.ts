@@ -129,6 +129,36 @@ describe('#649 I19.04 recurring image catalog and write-readback integrity',()=>
     }
   );
 
+  it('does not let an old session DELETE completion release a new-session in-flight key',async()=>{
+    const scopeWindow=new EventTarget();
+    vi.stubGlobal('window',scopeWindow);
+    let finishOld:(response:Response)=>void=()=>{throw new Error('Old DELETE not sent')};
+    let finishFresh:(response:Response)=>void=()=>{throw new Error('Fresh DELETE not sent')};
+    let deletes=0;
+    vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      const method=init?.method??'GET';
+      if(method!=='DELETE')throw new Error('No catalog GET for unverified or rejected release');
+      deletes++;
+      if(deletes===1)return new Promise<Response>(resolve=>{finishOld=resolve});
+      if(deletes===2)return new Promise<Response>(resolve=>{finishFresh=resolve});
+      return new Response(JSON.stringify({error:'Invalid key'}),{status:400});
+    }));
+    const service=await client();
+    const old=service.deleteRecurringServiceAsset(key);
+    expect(deletes).toBe(1);
+    scopeWindow.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+    const fresh=service.deleteRecurringServiceAsset(key);
+    expect(deletes).toBe(2);
+    finishOld(new Response('{}',{status:503}));
+    await expect(old).rejects.toThrow('δεν επιβεβαιώθηκε');
+    await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('ήδη σε εξέλιξη');
+    expect(deletes).toBe(2);
+    finishFresh(new Response(JSON.stringify({error:'Invalid key'}),{status:400}));
+    await expect(fresh).rejects.toThrow('Invalid key');
+    await expect(service.deleteRecurringServiceAsset(key)).rejects.toThrow('Invalid key');
+    expect(deletes).toBe(3);
+  });
+
   it('serializes same-key release before any response, but permits retry after definite 400',async()=>{
     const methods:string[]=[];
     let finish:(response:Response)=>void=()=>{throw new Error('Missing first release')};
