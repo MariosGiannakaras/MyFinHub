@@ -839,6 +839,11 @@ async function main(){
     const other=devices.body.devices.find((item:any)=>item.current===false);
     assert(other?.sessionId,'Secondary device session was not discoverable.');
 
+    // Preserve the revoked AAL2 bearer for a later real provider-binding
+    // negative with an otherwise valid, unrelated owner browser cookie.
+    const revokedDeviceBearer=secondary.snapshot().get('rheomiq_access');
+    assert(typeof revokedDeviceBearer==='string'&&revokedDeviceBearer.length>40,
+      'Revoked device bearer fixture was unavailable before revocation.');
     const revokeOthers=await primary.request('/api/auth/devices',{method:'POST',body:{action:'revoke-others'}});
     expect(revokeOthers,200);
     assert(revokeOthers.body?.count===1,'Revoke-others did not retain only the current device.');
@@ -1220,6 +1225,24 @@ async function main(){
     assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
     const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];
     assert(Array.isArray(providerBindings)&&providerBindings.length===2&&providerBindings.every(row=>row?.variant==='universal'&&row?.asset_key===providerAssetKey)&&new Set(providerBindings.map(row=>row?.asset_role)).size===2,'Provider reusable logo/wordmark bindings were not persisted.');
+    console.log('[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback');
+    // The revoked bearer must take precedence over the still-valid primary
+    // owner's HttpOnly cookies. A rejected native request cannot borrow cookie
+    // authorization, clear that browser session, or mutate a real bound slot.
+    const rejectedBinding=await primary.request(
+      '/api/account-metadata?resource=financial-provider-asset-binding',{
+        method:'PUT',headers:{authorization:'Bearer '+revokedDeviceBearer},
+        body:{providerId:'real-browser-provider',role:'logo',variant:'universal',assetKey:null},
+      });
+    expect(rejectedBinding,401,'DEVICE_ACCESS_REVOKED','provider-binding-revoked-bearer');
+    const afterRevokedBinding=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',
+      local.serviceRole) as Array<{asset_role?:string;variant?:string;asset_key?:string}>;
+    assert(Array.isArray(afterRevokedBinding)&&afterRevokedBinding.length===providerBindings.length&&
+      providerBindings.every(row=>afterRevokedBinding.some(after=>
+        after.asset_role===row.asset_role&&after.variant===row.variant&&after.asset_key===row.asset_key)),
+      'Revoked bearer unexpectedly cleared a persisted provider image binding.');
+    expect(await primary.request('/api/auth/session'),200,undefined,'provider-binding-valid-cookie-preserved');
     console.log('[real-stack] stage provider-direct-rpc-path-provenance');
     const providerPath=String(providerAssets[0].storage_path);
     const registerProvider=async(assetKey:string,mimeType:string,storagePath:string)=>directRequest(
