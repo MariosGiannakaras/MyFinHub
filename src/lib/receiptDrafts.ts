@@ -36,13 +36,16 @@ export type ReceiptProposal = {
   confidence?: ReceiptFieldConfidence;
 };
 
-type ReceiptDraftStatus = 'pending' | 'ready' | 'error' | 'posted';
+type ReceiptDraftStatus = 'pending' | 'ready' | 'error' | 'posting' | 'posted';
+type UnpostedReceiptStatus = Extract<ReceiptDraftStatus,'pending'|'ready'|'error'>;
 
 export type ReceiptDraft = {
   id: string;
   capturedAt: string;
   updatedAt: string;
   status: ReceiptDraftStatus;
+  /** Original local-only state, for proven precommit rejection recovery. */
+  postingPreviousStatus?: UnpostedReceiptStatus;
   image: Blob;
   mimeType: 'image/jpeg' | 'image/png';
   bytes: number;
@@ -201,6 +204,7 @@ export async function saveReceiptProposal(id: string, proposal: ReceiptProposal)
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
     if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Επιτρέπεται μόνο η τοπική διαγραφή.');
+    if (draft.status === 'posting') throw new Error('Η κατάσταση αυτής της απόδειξης χρειάζεται έλεγχο πριν από νέα καταχώριση.');
     const next: ReceiptDraft = {
       ...draft,
       status: 'ready',
@@ -217,7 +221,7 @@ export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft[
   return withStore('readwrite', async (store) => {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) return null;
-    if (draft.status === 'posted') return draft;
+    if (draft.status === 'posted' || draft.status === 'posting') return draft;
     const next: ReceiptDraft = {
       ...draft,
       status: 'error',
@@ -243,6 +247,31 @@ export async function assertReceiptDraftUnposted(id: string): Promise<void> {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή. Επίλεξε άλλη απόδειξη.');
     if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Μην καταχωρίσεις ξανά την ίδια απόδειξη.');
+    if (draft.status === 'posting') throw new Error('Η οικονομική καταχώριση αυτής της απόδειξης δεν έχει επιβεβαιωθεί. Μην την καταχωρίσεις ξανά πριν ελέγξεις τις κινήσεις.');
+  });
+}
+
+/** A readonly preflight is not a cross-tab lock. Acquire an IndexedDB
+ * readwrite claim before finance dispatch. Never auto-expire ambiguous writes.
+ */
+export async function reserveReceiptDraftForPosting(id:string):Promise<void>{
+  await withStore('readwrite',async store=>{
+    const draft=await requestResult(store.get(id) as LocalRequest<ReceiptDraft|undefined>);
+    if(!draft)throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή. Επίλεξε άλλη απόδειξη.');
+    if(draft.status==='posted')throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Μην καταχωρίσεις ξανά την ίδια απόδειξη.');
+    if(draft.status==='posting')throw new Error('Η οικονομική καταχώριση αυτής της απόδειξης δεν έχει επιβεβαιωθεί. Μην την καταχωρίσεις ξανά πριν ελέγξεις τις κινήσεις.');
+    store.put({...draft,status:'posting',postingPreviousStatus:draft.status,updatedAt:new Date().toISOString()});
+  });
+}
+
+/** Release only for a proven 409 precommit REVISION_CONFLICT. Never unlock
+ * after missing/5xx/postcommit acknowledgement or application restart.
+ */
+export async function releaseReceiptDraftPosting(id:string):Promise<void>{
+  await withStore('readwrite',async store=>{
+    const draft=await requestResult(store.get(id) as LocalRequest<ReceiptDraft|undefined>);
+    if(!draft||draft.status!=='posting')return;
+    store.put({...draft,status:draft.postingPreviousStatus??'pending',postingPreviousStatus:undefined,updatedAt:new Date().toISOString()});
   });
 }
 
@@ -251,7 +280,7 @@ export async function markReceiptDraftPosted(id: string): Promise<void> {
     const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     if (!draft) return; // Another tab has already removed the local image.
     if (draft.status === 'posted') return;
-    store.put({...draft,status:'posted',updatedAt:new Date().toISOString()});
+    store.put({...draft,status:'posted',postingPreviousStatus:undefined,updatedAt:new Date().toISOString()});
   });
 }
 

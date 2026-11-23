@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   assertReceiptDraftUnposted,
+  reserveReceiptDraftForPosting,
+  releaseReceiptDraftPosting,
   createReceiptDraft,
   deleteReceiptDraft,
   listReceiptDrafts,
@@ -154,6 +156,30 @@ describe('local receipts: real persistence functions with serialized IndexedDB t
     await markReceiptDraftPosted('committed'); // idempotent local marker
     await deleteReceiptDraft('committed');
     expect(await listReceiptDrafts()).toEqual([]);
+  });
+
+  it('atomically excludes concurrent tabs from posting one local receipt',async()=>{
+    vi.stubGlobal('indexedDB',localIndexedDb([existing('parallel',1)]));
+    const both=await Promise.allSettled([reserveReceiptDraftForPosting('parallel'),reserveReceiptDraftForPosting('parallel')]);
+    expect(both.filter(x=>x.status==='fulfilled')).toHaveLength(1);
+    expect(both.filter(x=>x.status==='rejected')).toHaveLength(1);
+    expect(await listReceiptDrafts()).toMatchObject([{id:'parallel',status:'posting',postingPreviousStatus:'pending'}]);
+    await expect(assertReceiptDraftUnposted('parallel')).rejects.toThrow('δεν έχει επιβεβαιωθεί');
+    await expect(saveReceiptProposal('parallel',{merchant:'duplicate'})).rejects.toThrow('χρειάζεται έλεγχο');
+    await expect(markReceiptDraftError('parallel')).resolves.toMatchObject({status:'posting'});
+    await expect(reserveReceiptDraftForPosting('parallel')).rejects.toThrow('δεν έχει επιβεβαιωθεί');
+  });
+  it('releases only a definite precommit rejected draft, never downgrades a posted one',async()=>{
+    vi.stubGlobal('indexedDB',localIndexedDb([existing('definite',1)]));
+    await saveReceiptProposal('definite',{merchant:'reviewed'});
+    await reserveReceiptDraftForPosting('definite');
+    await releaseReceiptDraftPosting('definite');
+    expect(await listReceiptDrafts()).toMatchObject([{id:'definite',status:'ready'}]);
+    await reserveReceiptDraftForPosting('definite');
+    await markReceiptDraftPosted('definite');
+    await releaseReceiptDraftPosting('definite');
+    expect(await listReceiptDrafts()).toMatchObject([{id:'definite',status:'posted'}]);
+    await expect(reserveReceiptDraftForPosting('definite')).rejects.toThrow('ήδη καταχωριστεί');
   });
 
 });

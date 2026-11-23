@@ -1,7 +1,8 @@
 import { ReceiptText } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { assertReceiptDraftUnposted, deleteReceiptDraft, markReceiptDraftPosted, type ReceiptProposal } from '../lib/receiptDrafts';
+import { assertReceiptDraftUnposted, reserveReceiptDraftForPosting, releaseReceiptDraftPosting, deleteReceiptDraft, markReceiptDraftPosted, type ReceiptProposal } from '../lib/receiptDrafts';
+import { financeWriteDefinitelyRejected } from '../lib/financeWriteOutcome';
 import { receiptSplitParts } from '../lib/receiptItemReview';
 import { saveFinanceThenCleanupReceipt } from '../lib/receiptPostSave';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
@@ -96,16 +97,27 @@ export function ReceiptAwareQuickAdd({
 
   const verifyReceiptBeforeFinance=async()=>{
     if(receiptDraftId)await assertReceiptDraftUnposted(receiptDraftId);
+    if(receiptDraftId)await reserveReceiptDraftForPosting(receiptDraftId);
   };
   const completeWithReceipt = async (saveFinance:()=>Promise<void>) => {
     const handledId=receiptDraftId;
     // The finance save is acknowledged first. A later local IndexedDB failure
     // must not cause QuickAdd to report a false finance error or post twice.
-    await saveFinanceThenCleanupReceipt(
-      saveFinance,
-      handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null,
-      ()=>{if(handledId)onReceiptCleanupFailure?.(handledId)},
-    );
+    try{
+      await saveFinanceThenCleanupReceipt(
+        saveFinance,
+        handledId?async()=>{await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)}:null,
+        ()=>{if(handledId)onReceiptCleanupFailure?.(handledId)},
+      );
+    }catch(reason){
+      // Only the canonical writer's definite 409 precommit rejection
+      // permits local retry. A lost or postcommit receipt retains the claim.
+      if(handledId&&financeWriteDefinitelyRejected(reason)){
+        try{await releaseReceiptDraftPosting(handledId)}
+        catch{/* An unavailable local store keeps the claim fail-closed. */}
+      }
+      throw reason;
+    }
     if(handledId){
       setReceiptDraftId(null);
       setReceiptProposal(null);

@@ -19,9 +19,13 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(owner).toContain('setPending(current=>current.filter(id=>!completed.includes(id)))');
     expect(handoff).toContain('await markReceiptDraftPosted(handledId);await deleteReceiptDraft(handledId)');
     expect(handoff).toContain('if(receiptDraftId)await assertReceiptDraftUnposted(receiptDraftId)');
+    expect(handoff).toContain('if(receiptDraftId)await reserveReceiptDraftForPosting(receiptDraftId)');
+    expect(handoff).toContain('if(handledId&&financeWriteDefinitelyRejected(reason))');
+    expect(handoff).toContain('await releaseReceiptDraftPosting(handledId)');
     expect(handoff).toContain('onBeforeFinanceWrite={verifyReceiptBeforeFinance}');
     const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
     expect(quick).toContain('await onBeforeFinanceWrite?.();');
+    expect(quick.split('await onBeforeFinanceWrite?.();').length-1).toBe(2);
     expect(quick.indexOf('await onBeforeFinanceWrite?.();'))
       .toBeLessThan(quick.indexOf('financeDispatched=true;'));
     expect(handoff).not.toContain('if(handledId)await assertReceiptDraftUnposted(handledId)');
@@ -29,9 +33,12 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(drafts).toContain("export async function assertReceiptDraftUnposted(id: string)");
     expect(drafts).toContain("await withStore('readonly'");
     expect(drafts).toContain("draft.status === 'posted'");
+    expect(drafts).toContain("status:'posting',postingPreviousStatus:draft.status");
+    expect(drafts).toContain("if(draft.status==='posting')throw new Error");
     expect(owner).toContain("rows.filter(row=>row.status==='posted')");
     expect(inbox).toContain("selected.status==='posted' ? <div className");
-    expect(inbox).toContain("selected.status!=='posted'?<Button");
+    expect(inbox).toContain("selected.status!=='posted'&&selected.status!=='posting'?<Button");
+    expect(inbox).toContain("selected.status==='posting' ? <div className=\"receipt-proposal\" role=\"alert\"");
     expect(inbox).toContain('Ήδη καταχωρισμένη · μόνο διαγραφή');
     expect(owner).not.toContain('addEvent(');
     expect(owner).not.toContain('onCreate(');

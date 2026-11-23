@@ -709,6 +709,27 @@
       "guards": [
         "tests/real-stack-browser-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-037",
+      "title": "Read-only receipt status preflight permits concurrent cross-tab finance posting",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Two tabs could both see pending/ready in readonly IndexedDB preflight, then each dispatch a separate finance write before the local receipt was marked posted.",
+      "prevention": "Acquire an atomic IndexedDB readwrite posting claim after input and linked-fee validation but before finance dispatch; retain unknown/crashed posting across reload; restore only on proven precommit finance conflict, preserve posted-before-local-delete and surface posting as non-repostable.",
+      "paths": [
+        "src/lib/receiptDrafts.ts",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "src/components/QuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/receipt-draft-concurrency.test.ts",
+        "tests/649-receipt-post-save.test.ts"
+      ]
     }
   ]
 }

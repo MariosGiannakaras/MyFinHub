@@ -302,7 +302,6 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       // Validation that occurs before finance dispatch stays an ordinary
       // actionable error. In particular, a stale cross-tab local receipt
       // must not set the 'write may already have committed' guard.
-      await onBeforeFinanceWrite?.();
       const oldFee=kind==='transfer'&&initial?.kind==='transfer'?linkedFeeFor(data,initial.id):null;
       if(kind==='transfer'&&(feeAmount.trim()||oldFee)){
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');
@@ -310,9 +309,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         if(feeValue===null||feeValue<0)throw new Error('Η προμήθεια πρέπει να είναι μη αρνητικό ποσό σε λεπτά του ευρώ.');
         const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:feeCategory});
+        await onBeforeFinanceWrite?.();
         financeDispatched=true;
         await onCreateLinkedTransfer(event,fee);
       }else{
+        await onBeforeFinanceWrite?.();
         financeDispatched=true;
         await onCreate(event);
       }
