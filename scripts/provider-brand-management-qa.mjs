@@ -36,7 +36,7 @@ async function waitForChromiumCdp(){
   }
   throw new Error(`Provider Chromium CDP bootstrap failed: no reachable loopback DevToolsActivePort (Chrome exit: ${child.exitCode??'running'}); ${chromiumDiagnostics}`);
 }
-class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
+class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id){this.onEvent?.(message);return}const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Provider branding QA assertion failed: ${message}`)};
 let c=null;
 try{
@@ -44,6 +44,19 @@ try{
   const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('visual','1');
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
+  // Synthetic artwork keeps the same canonical Storage-key URL shape as
+  // production without accessing the owner's real Storage or external media.
+  const qaSvg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60"><rect width="120" height="60" rx="12" fill="#1d4ed8"/><text x="14" y="38" font-size="23" fill="white">QA</text></svg>').toString('base64');
+  c.onEvent=message=>{
+    if(message.method!=='Fetch.requestPaused')return;
+    const requestId=message.params.requestId;
+    const pathname=new URL(message.params.request.url).pathname;
+    if(/^\/storage\/v1\/object\/public\/financial-provider-assets\/providers\/(?:piraeus|qa-bank|qa-stale)\/(?:piraeus|qa-bank|qa-stale)-asset-[a-f0-9]{12}\.svg$/.test(pathname)){
+      void c.send('Fetch.fulfillRequest',{requestId,responseCode:200,
+        responseHeaders:[{name:'content-type',value:'image/svg+xml'}],body:qaSvg});
+    }else void c.send('Fetch.continueRequest',{requestId});
+  };
+  await c.send('Fetch.enable',{patterns:[{urlPattern:'*/storage/v1/object/public/financial-provider-assets/providers/*',requestStage:'Request'}]});
   const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
   const press=async(key,code,vk)=>{await c.send('Input.dispatchKeyEvent',{type:'rawKeyDown',key,code,windowsVirtualKeyCode:vk});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk})};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
@@ -69,6 +82,7 @@ try{
       const assetUrl=provider.assets?.find(asset=>asset.role==='wordmark'&&asset.variant==='light'&&asset.url!==provider.logoUrl)?.url;
       if(!assetUrl)return false;
       const assetKey='piraeus-asset-123456abcdef';
+      const uploadedAssetUrl=location.origin+'/storage/v1/object/public/financial-provider-assets/providers/piraeus/'+assetKey+'.svg';
       control.__myfinhubProviderReplaceOriginalFetch=original;
       globalThis.fetch=async function(input,init){
         const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -82,7 +96,7 @@ try{
           }}),{status:200,headers:{'content-type':'application/json'}});
         }
         if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
-          const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:assetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,updatedAt:'2026-10-03T00:00:00.000Z'};
+          const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:uploadedAssetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,updatedAt:'2026-10-03T00:00:00.000Z'};
           provider.assets=[...(provider.assets||[]).filter(item=>item.assetKey!==assetKey),asset];
           return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
         }
@@ -91,8 +105,8 @@ try{
           const role=body.role,variant=body.variant,bindingKey=body.assetKey;
           provider.bindings=[...(provider.bindings||[]).filter(item=>!(item.role===role&&item.variant===variant))];
           if(bindingKey)provider.bindings.push({role,variant,assetKey:bindingKey});
-          if(role==='logo'&&variant==='universal'){provider.logoAssetKey=bindingKey||null;provider.logoUrl=bindingKey===assetKey?assetUrl:null}
-          if(role==='wordmark'&&variant==='universal'){provider.wordmarkAssetKey=bindingKey||null;provider.wordmarkUrl=bindingKey===assetKey?assetUrl:null}
+          if(role==='logo'&&variant==='universal'){provider.logoAssetKey=bindingKey||null;provider.logoUrl=bindingKey===assetKey?uploadedAssetUrl:null}
+          if(role==='wordmark'&&variant==='universal'){provider.wordmarkAssetKey=bindingKey||null;provider.wordmarkUrl=bindingKey===assetKey?uploadedAssetUrl:null}
           return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
         }
         return original(input,init);
@@ -258,7 +272,7 @@ try{
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
         provider.uploads+=1;
-        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:'https://assets.example/qa-new-provider.svg',fileName:'qa-new-provider.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0};
+        const asset={assetKey:provider.assetKey,role:'logo',variant:'universal',url:location.origin+'/storage/v1/object/public/financial-provider-assets/providers/qa-bank/'+provider.assetKey+'.svg',fileName:'qa-new-provider.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0};
         const catalog=(await import('/src/lib/financialProviderClient.ts')).getFinancialProviderSnapshot().providers;
         const row=catalog.find(item=>item.id==='qa-bank');
         if(!row)throw new Error('QA provider metadata missing before asset upload');
@@ -378,7 +392,7 @@ try{
         state.uploads++;
         // The upstream write might have committed, but its HTTP-200 body
         // does not identify the binary. Retrying could generate a second key.
-        return new Response(JSON.stringify({asset:{assetKey:'unexpected-key'}}),{status:200,headers:{'content-type':'application/json'}});
+        return new Response(JSON.stringify({asset:{assetKey:'qa-unverified-asset-aabbccddeeff',role:'logo',variant:'universal',fileName:'qa-unverified.svg',mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,url:location.origin+'/storage/v1/object/public/financial-provider-assets/providers/other-provider/qa-unverified-asset-aabbccddeeff.svg'}}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
         state.bindings++;return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
@@ -441,7 +455,7 @@ try{
         return new Response(JSON.stringify({asset:{
           assetKey:'qa-stale-asset-112233aabbcc',role:'logo',variant:'universal',fileName:'qa-stale.svg',
           mimeType:init?.body?.type||'image/svg+xml',sizeBytes:init?.body?.size??0,
-          url:'https://assets.example/qa-stale.svg',
+          url:location.origin+'/storage/v1/object/public/financial-provider-assets/providers/qa-stale/qa-stale-asset-112233aabbcc.svg',
         }}),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){

@@ -153,8 +153,10 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     const expected={
       assetKey:primaryKey,role:'logo' as const,variant:'light' as const,
       fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+      url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-receipt-bank/qa-receipt-bank-asset-aaaaaaaaaaaa.png?v=2026-11-23',
     };
-    const other={...expected,assetKey:otherKey,fileName:'other.png',sizeBytes:3};
+    const other={...expected,assetKey:otherKey,fileName:'other.png',sizeBytes:3,
+      url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-receipt-bank/qa-receipt-bank-asset-bbbbbbbbbbbb.png?v=2026-11-23'};
     const catalog={
       loaded:true,loading:false,error:null,providers:[{
         id:input.id,displayName:input.displayName,shortName:input.shortName,
@@ -676,13 +678,40 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     expect(operations[0]).toContain('PUT /api/account-metadata?resource=financial-provider-assets');
   });
 
+  it.each([
+    ['other-provider-directory',(url:string)=>url.replace('/providers/qa-brand/','/providers/other-bank/')],
+    ['different-asset-key',(url:string)=>url.replace('qa-brand-asset-123456abcdef','qa-brand-asset-ffffffffffff')],
+    ['other-storage-bucket',(url:string)=>url.replace('/financial-provider-assets/','/recurring-service-assets/')],
+    ['wrong-mime-extension',(url:string)=>url.replace('.png?','.svg?')],
+    ['unrelated-legacy-image',(_url:string)=>'https://assets.example/legacy-unrelated.png'],
+    ['nested-path',(url:string)=>url.replace('/providers/qa-brand/','/providers/qa-brand/nested/')],
+  ] as const)('rejects a forged HTTP-200 provider upload URL for %s without binding or replay',async(_label,change)=>{
+    const calls:string[]=[];
+    const valid='https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-brand/qa-brand-asset-123456abcdef.png?v=2026-11-23';
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push((init?.method??'GET')+' '+String(input));
+      return new Response(JSON.stringify({asset:{
+        assetKey:'qa-brand-asset-123456abcdef',role:'logo',variant:'universal',
+        fileName:'logo.png',mimeType:'image/png',sizeBytes:2,url:change(valid),
+      }}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset}=await import(clientPath);
+    await expect(uploadFinancialProviderAsset({
+      providerId:'qa-brand',role:'logo',variant:'universal',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false,
+    })).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'asset'});
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain('PUT /api/account-metadata?resource=financial-provider-assets');
+  });
+
   it('accepts a matching asset receipt with one binary upload',async()=>{
     const operations:string[]=[];
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       operations.push((init?.method||'GET')+' '+String(input));
       return new Response(JSON.stringify({asset:{
         assetKey:'qa-brand-asset-123456abcdef',role:'logo',variant:'universal',
-        fileName:'logo.png',mimeType:'image/png',sizeBytes:2,url:'https://assets.example/brand.png',
+        fileName:'logo.png',mimeType:'image/png',sizeBytes:2,url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-brand/qa-brand-asset-123456abcdef.png?v=2026-11-23',
       }}),{status:200,headers:{'content-type':'application/json'}});
     }));
     const clientPath:string='../src/lib/financialProviderClient.js';
@@ -735,7 +764,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     };
     const assetKey='qa-checked-asset-aabbccddeeff';
     const asset={
-      assetKey,role:'logo',variant:'universal',url:'https://assets.example/checked.svg',
+      assetKey,role:'logo',variant:'universal',url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-checked/qa-checked-asset-aabbccddeeff.svg?v=2026-11-23',
       fileName:'checked.svg',mimeType:'image/svg+xml',sizeBytes:51,
     };
     const provider={
@@ -772,6 +801,13 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
     }
     expect(providerCatalogMatchesWrite(snapshot(provider),input,slots,[assetKey],[])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot({...provider,assets:[{...asset,mimeType:'image/png'}]}),input,slots,[assetKey],[registeredBinary])).toBe(false);
+    for(const wrongUrl of [
+      asset.url.replace('/providers/qa-checked/','/providers/other-bank/'),
+      asset.url.replace(assetKey,'qa-checked-asset-ffffffffffff'),
+      asset.url.replace('/financial-provider-assets/','/recurring-service-assets/'),
+      asset.url.replace('.svg?','.png?'),
+      'https://assets.example/legacy-unrelated.svg',
+    ])expect(providerCatalogMatchesWrite(snapshot({...provider,assets:[{...asset,url:wrongUrl}]}),input,slots,[assetKey],[registeredBinary])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot({...provider,displayName:'Stale Provider Name'}),input,slots,[assetKey])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot({...provider,sortOrder:1}),input,slots,[assetKey])).toBe(false);
     expect(providerCatalogMatchesWrite(snapshot(null),input,slots,[assetKey])).toBe(false);

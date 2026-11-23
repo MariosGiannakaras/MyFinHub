@@ -618,6 +618,25 @@
         "tests/649-provider-catalog-readback.test.ts",
         "tests/649-recurring-finance-asset-partial-commit.test.ts"
       ]
+    },
+    {
+      "id": "FP-032",
+      "title": "New provider asset receipts must prove the exact generated-key Storage URL",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The browser provider upload accepted an HTTP-200 asset with matching provider-generated key, role, variant, MIME, filename and byte count but any otherwise allowed HTTPS URL. Its full catalog readback validated those metadata fields yet never checked that the returned URL belonged to the generated key's immutable Storage object, allowing a false-green save or broken/foreign image.",
+      "prevention": "Require the server-defined public financial-provider-assets/providers/{provider}/{assetKey}.{MIME-extension} path for newly generated upload receipts and for those exact uploaded keys in the complete catalog. Keep curated legacy provider artwork on its prior compatible URL contract. Use a forged correct-key/wrong-path negative at the actual provider editor, independent unit negatives, and synthetic same-origin Storage-image CDP fixtures rather than weakening a validator to accommodate stale QA URLs.",
+      "paths": [
+        "src/lib/financialProviderClient.ts",
+        "scripts/provider-brand-management-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-provider-storage-path-provenance.test.ts"
+      ]
     }
   ]
 }

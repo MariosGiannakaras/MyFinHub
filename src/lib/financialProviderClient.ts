@@ -154,6 +154,20 @@ export class UnverifiedFinancialProviderWrite extends Error{
   }
 }
 
+// Server-generated assets use a canonical immutable owner directory, key and
+// extension. Do not require this layout for curated legacy provider artwork.
+const PROVIDER_ASSET_EXTENSION:Record<string,string>={
+  'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/svg+xml':'svg',
+};
+function providerUploadedAssetUrlMatches(url:string,providerId:string,assetKey:string,mimeType:string){
+  const extension=PROVIDER_ASSET_EXTENSION[mimeType];
+  if(!extension||!providerAssetUrlAllowed(url))return false;
+  try{
+    return new URL(url).pathname===
+      `/storage/v1/object/public/financial-provider-assets/providers/${providerId}/${assetKey}.${extension}`;
+  }catch{return false}
+}
+
 function confirmedUploadedAsset(value:unknown,input:{
   providerId:string;role:FinancialProviderAssetRole;variant:string;file:File;
 }):FinancialProviderAsset|null{
@@ -165,7 +179,8 @@ function confirmedUploadedAsset(value:unknown,input:{
     asset.role!==input.role||asset.variant!==input.variant||
     asset.fileName!==input.file.name||asset.mimeType!==input.file.type||
     asset.sizeBytes!==input.file.size||
-    typeof asset.url!=='string'||!providerAssetUrlAllowed(asset.url))return null;
+    typeof asset.url!=='string'||
+    !providerUploadedAssetUrlMatches(asset.url,input.providerId,key,input.file.type))return null;
   return value as FinancialProviderAsset;
 }
 
@@ -240,7 +255,8 @@ export function providerCatalogMatchesWrite(
       const actual=provider.assets?.find(asset=>asset.assetKey===expected.assetKey);
       return !actual||actual.role!==expected.role||actual.variant!==expected.variant||
         actual.fileName!==expected.fileName||actual.mimeType!==expected.mimeType||
-        actual.sizeBytes!==expected.sizeBytes;
+        actual.sizeBytes!==expected.sizeBytes||
+        !providerUploadedAssetUrlMatches(actual.url,input.id,expected.assetKey,expected.mimeType);
     }))return false;
   }
   return slots.every(slot=>{
