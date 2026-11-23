@@ -5,6 +5,71 @@ beforeEach(()=>vi.resetModules());
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('#649 I19.04 provider catalog read-back recovery',()=>{
+  it.each(['network-loss','408','429','503','malformed-200'] as const)(
+    'quarantines a provider binary %s outcome across editor retry without allocating a second key',async scenario=>{
+      const sent:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method||'GET');
+        sent.push(method+' '+String(input));
+        if(method!=='PUT')throw new Error('Unexpected provider image request');
+        if(sent.length===1){
+          if(scenario==='network-loss')throw new TypeError('Provider Storage response lost after POST');
+          if(scenario==='malformed-200')return new Response('{"asset":{}}',{status:200});
+          return new Response(JSON.stringify({error:'Potentially committed'}),{status:Number(scenario)});
+        }
+        return new Response(JSON.stringify({error:'Definite invalid binary'}),{status:400});
+      }));
+      const clientPath:string='../src/lib/financialProviderClient.js';
+      const {uploadFinancialProviderAsset}=await import(clientPath);
+      const input={providerId:'qa-unknown-binary',role:'logo' as const,variant:'light',
+        file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false};
+      await expect(uploadFinancialProviderAsset(input)).rejects.toMatchObject({
+        name:'UnverifiedFinancialProviderWrite',operation:'asset',
+      });
+      // A new File object, changed bytes or a re-opened editor cannot make
+      // the second *same slot* upload safe while the first outcome is unknown.
+      await expect(uploadFinancialProviderAsset({
+        ...input,file:new File([new Uint8Array([3,4])],'replacement.png',{type:'image/png'}),
+      })).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'asset'});
+      expect(sent).toHaveLength(1);
+      // Independent role/variant is not blocked by a possibly committed key.
+      await expect(uploadFinancialProviderAsset({...input,variant:'dark'}))
+        .rejects.not.toMatchObject({name:'UnverifiedFinancialProviderWrite'});
+      expect(sent).toHaveLength(2);
+    }
+  );
+
+  it('clears uncertain provider upload quarantine only on a new auth scope; definite 400 remains retryable',async()=>{
+    const authWindow=new EventTarget();
+    vi.stubGlobal('window',authWindow);
+    let sent=0;
+    vi.stubGlobal('fetch',vi.fn(async()=>{
+      sent++;
+      return new Response(JSON.stringify({error:sent===1?'Maybe committed':'Invalid binary'}),{
+        status:sent===1?503:400,
+      });
+    }));
+    const clientPath:string='../src/lib/financialProviderClient.js';
+    const {uploadFinancialProviderAsset}=await import(clientPath);
+    const input={providerId:'qa-provider-reauth',role:'logo' as const,variant:'universal',
+      file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false};
+    await expect(uploadFinancialProviderAsset(input)).rejects.toMatchObject({
+      name:'UnverifiedFinancialProviderWrite',operation:'asset',
+    });
+    await expect(uploadFinancialProviderAsset(input)).rejects.toMatchObject({
+      name:'UnverifiedFinancialProviderWrite',operation:'asset',
+    });
+    expect(sent).toBe(1);
+    authWindow.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
+    await expect(uploadFinancialProviderAsset(input))
+      .rejects.not.toMatchObject({name:'UnverifiedFinancialProviderWrite'});
+    expect(sent).toBe(2);
+    // A proved precommit rejection must not retain the quarantine.
+    await expect(uploadFinancialProviderAsset(input))
+      .rejects.not.toMatchObject({name:'UnverifiedFinancialProviderWrite'});
+    expect(sent).toBe(3);
+  });
+
 
   it('serializes same-slot provider binary uploads and permits independent slots',async()=>{
     const operations:string[]=[];
