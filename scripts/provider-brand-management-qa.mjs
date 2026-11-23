@@ -403,10 +403,12 @@ try{
   }`);
   await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
   await waitFor("function(){const warning=document.querySelector('.provider-editor-warning');const save=document.querySelector('.provider-editor-footer button:last-child');return !!warning&&(warning.textContent||'').includes('αβέβαιη')&&save?.disabled}",'unverified binary receipt warning prevents blind repeat');
-  const unknown=await c.call("function(){const mock=globalThis.__qaUnverifiedAsset,warning=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),bounds=warning?.getBoundingClientRect(),button=save?.getBoundingClientRect();return {creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,disabled:save?.disabled,editorOpen:!!document.querySelector('.provider-editor-modal'),warningRole:warning?.getAttribute('role'),visible:!!(bounds&&button&&bounds.top>=0&&bounds.bottom<=button.top&&button.bottom<=innerHeight),success:!!document.querySelector('.provider-management-message')}}");
+  const unknown=await c.call("function(){const mock=globalThis.__qaUnverifiedAsset,warning=document.querySelector('.provider-editor-warning'),save=document.querySelector('.provider-editor-footer button:last-child'),bounds=warning?.getBoundingClientRect(),button=save?.getBoundingClientRect();return {creates:mock?.creates,uploads:mock?.uploads,bindings:mock?.bindings,disabled:save?.disabled,editorOpen:!!document.querySelector('.provider-editor-modal'),warningRole:warning?.getAttribute('role'),warningText:warning?.textContent||'',visible:!!(bounds&&button&&bounds.top>=0&&bounds.bottom<=button.top&&button.bottom<=innerHeight),success:!!document.querySelector('.provider-management-message')}}");
   assert(unknown.creates===1&&unknown.uploads===1&&unknown.bindings===0&&unknown.disabled&&unknown.editorOpen&&!unknown.success,
     'an ambiguous HTTP-200 upload is neither all-green nor eligible for automatic replay');
   assert(unknown.warningRole==='alert'&&unknown.visible,'the warning remains accessible and visibly above disabled actions');
+  assert(unknown.warningText.includes('ίδια θέση')&&unknown.warningText.includes('τρέχουσα συνεδρία'),
+    'unverified provider upload warning identifies the same-session slot quarantine instead of implying an immediate reopen can safely reupload');
   await shot('provider-create-unverified-asset-warning-desktop');
   await c.call("function(){document.querySelector('.provider-editor-footer button:last-child')?.click();return true}");
   const afterDisabled=await c.call("function(){const p=globalThis.__qaUnverifiedAsset;return {creates:p.creates,uploads:p.uploads,bindings:p.bindings}}");
