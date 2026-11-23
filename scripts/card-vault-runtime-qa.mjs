@@ -194,13 +194,13 @@ try{
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'&&Boolean(globalThis.__myfinhubQaCardVault)}",'fresh Cards owner fixture for stale auth read');
   const installed=await c.call(`function(){
     const original=globalThis.fetch.bind(globalThis);
-    const state={reads:0,finish:null,original};
+    const state={reads:0,pending:[],released:0,original};
     globalThis.__qaVaultOldAuth=state;
     globalThis.fetch=async(input,init)=>{
       const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
       if(new URL(raw,location.href).pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){
         state.reads++;
-        return new Promise(resolve=>{state.finish=resolve});
+        return new Promise(resolve=>{state.pending.push(resolve)});
       }
       return original(input,init);
     };
@@ -208,21 +208,28 @@ try{
   }`);
   assert(installed,'synthetic stale vault auth boundary fixture installed');
   await clickAria('Επεξεργασία κάρτας QA Debit');
-  const preflight=await c.call("function(){const q=globalThis.__qaVaultOldAuth;const editor=document.querySelector('.app-card-details-inline');return {reads:q?.reads||0,waiting:typeof q?.finish==='function',editor:Boolean(editor),loading:Boolean(editor?.querySelector('textarea:disabled')),alert:Boolean(editor?.querySelector('[role=alert]'))}}");
+  const preflight=await c.call("function(){const q=globalThis.__qaVaultOldAuth;const editor=document.querySelector('.app-card-details-inline');return {reads:q?.reads||0,pending:q?.pending?.length||0,editor:Boolean(editor),loading:Boolean(editor?.querySelector('textarea:disabled')),alert:Boolean(editor?.querySelector('[role=alert]'))}}");
   console.log('Card Vault stale-auth preflight (no secrets):',JSON.stringify(preflight));
-  await waitFor("function(){return globalThis.__qaVaultOldAuth?.reads===1&&typeof globalThis.__qaVaultOldAuth.finish==='function'&&!!document.querySelector('.app-card-details-inline textarea:disabled')}",'stale vault read genuinely pending before reauth');
+  await waitFor("function(){return globalThis.__qaVaultOldAuth?.reads>=1&&globalThis.__qaVaultOldAuth.pending.length===globalThis.__qaVaultOldAuth.reads&&!!document.querySelector('.app-card-details-inline textarea:disabled')}",'stale vault read genuinely pending before reauth');
   assert(await c.call(`function(){
     // The old owner read can complete after a newer browser login/MFA.
     // This is a synthetic browser auth event, never a production credential.
+    const state=globalThis.__qaVaultOldAuth;
+    // React StrictMode can replay the mounted editor effect. Every request
+    // issued before the auth boundary must finish as an old-session response.
+    const pending=state.pending.slice();
+    if(!pending.length||pending.length!==state.reads)return false;
     window.dispatchEvent(new Event('myfinhub:auth-scope-reset'));
-    globalThis.__qaVaultOldAuth.finish(new Response(JSON.stringify({
+    for(const resolve of pending)resolve(new Response(JSON.stringify({
       pan:'4111111111111111',expiry:'12/30',cvv:'123',
     }),{status:200,headers:{'content-type':'application/json'}}));
+    state.released=pending.length;
+    state.pending.length=0;
     return true;
   }`),'stale read callback completed after auth scope retirement');
   await waitFor("function(){const editor=document.querySelector('.app-card-details-inline'),alert=editor?.querySelector('[role=alert]'),pan=editor?.querySelector('textarea[aria-label=\"Αριθμός κάρτας\"]'),cvv=editor?.querySelector('input[aria-label=\"CVV κάρτας\"]');return !!editor&&!!alert&&alert.classList.contains('sr-only')&&(alert.textContent||'').includes('σύνδεση άλλαξε')&&pan?.value===''&&cvv?.value===''&&!pan.disabled}",'stale vault read is discarded, empty secure fields stay visible, error announced to screen readers');
-  const staleResult=await c.call("function(){const q=globalThis.__qaVaultOldAuth;return {reads:q?.reads,error:document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'',pan:document.querySelector('.app-card-details-inline textarea[aria-label=\"Αριθμός κάρτας\"]')?.value||'',cvv:document.querySelector('.app-card-details-inline input[aria-label=\"CVV κάρτας\"]')?.value||''}}");
-  assert(staleResult.reads===1&&staleResult.error.includes('σύνδεση άλλαξε')&&!staleResult.pan&&!staleResult.cvv,'real Chromium discarded stale vault secrets without a second POST');
+  const staleResult=await c.call("function(){const q=globalThis.__qaVaultOldAuth;return {reads:q?.reads,released:q?.released,pending:q?.pending?.length,error:document.querySelector('.app-card-details-inline [role=alert]')?.textContent||'',pan:document.querySelector('.app-card-details-inline textarea[aria-label=\"Αριθμός κάρτας\"]')?.value||'',cvv:document.querySelector('.app-card-details-inline input[aria-label=\"CVV κάρτας\"]')?.value||''}}");
+  assert(staleResult.reads>=1&&staleResult.released===staleResult.reads&&staleResult.pending===0&&staleResult.error.includes('σύνδεση άλλαξε')&&!staleResult.pan&&!staleResult.cvv,'real Chromium discarded every pending old-session Card Vault read without rendering secrets');
   await screenshot('card-vault-stale-auth-scope-read-desktop');
   await c.call("function(){globalThis.fetch=globalThis.__qaVaultOldAuth.original;delete globalThis.__qaVaultOldAuth;return true}");
   console.log('Card Vault runtime QA passed: receipt provenance, no replay, old-auth secret isolation, and desktop/mobile warning.');
