@@ -171,7 +171,7 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
       const operations:string[]=[];
       vi.stubGlobal('fetch',vi.fn(async(request:RequestInfo|URL,init?:RequestInit)=>{
         operations.push(String(init?.method??'GET')+' '+String(request));
-        if(retired)scopeWindow.dispatchEvent(new Event('myfinhub:auth-expired'));
+        if(retired)scopeWindow.dispatchEvent(new Event('rheomiq:auth-expired'));
         throw new TypeError('Synthetic lost binding response');
       }));
       const clientPath:string='../src/lib/financialProviderClient.js';

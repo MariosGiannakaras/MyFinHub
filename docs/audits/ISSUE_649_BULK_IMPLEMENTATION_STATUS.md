@@ -1,3 +1,13 @@
+## 2026-11-23 — #649 I19.04 provider binding scope-reset test event repair (candidate)
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. The test-only candidate on exact `e911c2f502418cdd53c36d1b7e58f139db25eed5` [CI #45085981127](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45085981127) completed **FAILURE**, not accepted: `validate` failed `npm run check` at `tests/649-provider-catalog-readback.test.ts:184` ("retired auth=true" binding network-loss case; 1 failed / 2354 passed, 339 other suites passed). CodeQL **SUCCESS**; Unified gate **FAILURE** as designed. Root cause is **test fixture only**, not an established runtime defect: the synthetic event used `myfinhub:auth-expired`, whereas the existing `authScopedCache.ts` listens to `rheomiq:auth-expired` along with `rheomiq:mfa-required`, `myfinhub:auth-completed` and `myfinhub:auth-scope-reset`. The unregistered test event cannot retire the epoch, so the binding retains its intentional same-session `ApiError NETWORK_ERROR` rather than crossing to `UnverifiedFinancialProviderWrite('binding')`.
+
+**Narrow correction:** Change only that one test event name to the registered `rheomiq:auth-expired`, preserving the same negative coverage and all accepted runtime/auth contracts. No production source, security, data, UI, finance, Storage, SQL, QA harness or Android modifications. Source acceptance **PENDING new exact-head CI** (`validate`, CodeQL, Unified). Do not infer successful tests, Windows/WebKit/Lighthouse/rendered/Real Stack on this head until observed. No CI policy weakening and no repetition of previously accepted isolated DB gates.
+
+**Next:** Read exact correction-head CI and repair only actual failures before continuing another verified #649 P0/P1 boundary. PR #654 remains Draft → `develop`, no merge, hosted mutation, restore or release.
+
+---
+
 ## 2026-11-23 — #649 provider auth-scope catalog/transport negative regression candidate
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact-head [CI #45079519482](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45079519482) on `508ec16cf3c9dd04c275169bc3d8339a353df346` completed **SUCCESS** with `validate`, CodeQL and Unified; the source-level I19.04/I22.02 provider cross-auth-scope receipt protection is **accepted**. Draft-only Real Stack, focused rendered, Windows, WebKit and Lighthouse were **skipped**, not passed.
