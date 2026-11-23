@@ -25,8 +25,11 @@ const cleanLaunchWorkflow=readFileSync(new URL('../.github/workflows/desktop-cle
 
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
-    const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*lazy\(\(\)\s*=>\s*import\('\.\/pages\//g)];
+    // Named exports can use either direct React.lazy or the shared typed
+    // lazy adapter. Both retain a literal, statically split dynamic import.
+    const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*(?:lazy|namedLazy)\(\(\)\s*=>\s*import\('\.\/pages\//g)];
     expect(lazyPages.length).toBeGreaterThanOrEqual(12);
+    expect(app).toContain('function namedLazy<Module extends object, Name extends keyof Module>');
     expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
     expect(app).not.toContain("from 'recharts'");
     expect(reports).toContain("from 'recharts'");
