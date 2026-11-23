@@ -78,6 +78,14 @@ try{
           globalThis.__recurringAssetDeletes+=1;
           const key=new URL(url,location.origin).searchParams.get('assetKey');
           registered=registered.filter(asset=>asset.assetKey!==key);
+          if(new URLSearchParams(location.search).has('recurring-release-unverified')){
+            // Simulate a release RPC that deactivated its row, followed by
+            // failed Storage deletion. An active-only empty GET is not purge
+            // proof, and a second DELETE must never be issued blindly.
+            return new Response(JSON.stringify({error:'Storage purge unavailable'}),{
+              status:503,headers:{'content-type':'application/json'},
+            });
+          }
           return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}});
         }
       }
@@ -97,7 +105,7 @@ try{
     }
     throw new Error('Timed out waiting for '+label);
   };
-  const navigate=async(width=1440,height=1100,failSave=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure',failSave===true?'1':failSave);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
+  const navigate=async(width=1440,height=1100,failSave=false,releaseUnverified=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure',failSave===true?'1':failSave);if(releaseUnverified)url.searchParams.set('recurring-release-unverified','1');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(evidenceDir+'/'+name+'.png',Buffer.from(result.data,'base64'))};
   const clickAria=async label=>{const clicked=await c.call("function(label){const node=[...document.querySelectorAll('button,[role=button],summary')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]);assert(clicked,'missing control '+label)};
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,'missing clickable '+text)};
@@ -173,6 +181,24 @@ try{
   assert((await state()).writes===1,
     'Blocked editor retried an unverified logo and generated another Storage key.');
   await shot('recurring-service-brand-finance-receipt-unverified');
+
+  console.log('Recurring service-brand QA: an ambiguous asset release after a committed finance save never retries');
+  for(const [width,height,label] of [[1440,1100,'desktop'],[375,812,'mobile']]){
+    await navigate(width,height,false,true);
+    await clickAria('Επεξεργασία QA Streaming');await setLogoFile();
+    await clickText('.editor-actions button','Αποθήκευση');
+    await waitFor("function(){return !document.querySelector('.recurring-editor-dialog')&&Boolean(document.querySelector('.recurring-approved-page>.action-status'))}",'recurring release uncertainty warning');
+    current=await state();
+    assert(current.writes===1&&current.deletes===1&&current.brandedKey==='service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',
+      'Finance save remains committed, new logo retained and only one old asset release attempted: '+label);
+    const notice=await c.call("function(){const el=document.querySelector('.recurring-approved-page>.action-status');if(!el)return {visible:false,text:'',overflow:999};const box=el.getBoundingClientRect();return {visible:box.top>=0&&box.bottom<=innerHeight&&box.width>0,text:el.textContent||'',overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}}");
+    assert(notice.visible&&notice.overflow<=1&&notice.text.includes('προηγούμενο λογότυπο'),
+      'A visible, contained cleanup warning must distinguish committed finance from uncertain Storage: '+label);
+    const blocked=await c.call("async function(){const mod=await import('/src/lib/recurringServiceAssetClient.ts');try{await mod.deleteRecurringServiceAsset('service-asset-aaaaaaaaaaaaaaaaaaaaaaaa');return 'unexpected success'}catch(error){return String(error?.message||error)}}");
+    assert(blocked.includes('δεν επιβεβαιώθηκε')&&(await state()).deletes===1,
+      'The same-key uncertain release must not send a second DELETE: '+label);
+    await shot('recurring-service-brand-release-unverified-'+label);
+  }
 
   console.log('Recurring service-brand QA: dark and mobile containment');
   await navigate();await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");

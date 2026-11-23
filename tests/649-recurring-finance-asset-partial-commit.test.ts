@@ -28,6 +28,9 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     expect(page).toContain('disabled={editBusy||financeReviewRequired}');
     expect(app).toContain('financeState={finance}');
     expect(qa).toContain('recurring-service-brand-finance-receipt-unverified');
+    expect(qa).toContain('recurring-service-brand-release-unverified-desktop');
+    expect(qa).toContain('recurring-service-brand-release-unverified-mobile');
+    expect(qa).toContain("blocked.includes('δεν επιβεβαιώθηκε')&&(await state()).deletes===1");
     expect(qa).toContain('current.writes===1&&current.deletes===0');
     expect(qa).toContain('uncertain.disabled&&uncertain.error.includes');
     expect(qa).toContain('same-turn recurring Save cannot launch two Storage PUTs');

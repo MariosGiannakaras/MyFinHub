@@ -1,5 +1,14 @@
 # MyFinHub — full application correction roadmap (#649, consolidated)
 
+## 2026-11-23 — FP-033 actual Chromium recurring release uncertainty (new focused QA candidate)
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Previous exact source head [`108dabc`](https://github.com/MariosGiannakaras/MyFinHub/commit/108dabc84e8c5511ca13ca33034f13258cbe7ee6) has confirmed [CI #45125282962](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45125282962) **SUCCESS** for `validate`, JS/TS CodeQL and Unified. The corrected FP-033 source and old-auth in-flight negative tests are accepted at source level; this does **not** yet prove the changed user-visible release warning.
+
+A bounded addition to the **existing** `scripts/recurring-service-brand-qa.mjs` emulates the real partial outcome: server release RPC deactivates old image, Storage purge fails with 503, active-only catalog could misleadingly exclude it. Run actual Chromium in desktop 1440×1100 and mobile 375×812; verify the finance Save remains committed, new artwork remains bound, exactly one old-image DELETE occurs, a visible/contained warning identifies uncertain Storage, and a direct same-key follow-up attempt is blocked with no replay. Captures two named evidence PNGs and keeps existing positive/rejected-finance/ambiguity scenarios. Add a narrow QA source guard; no product/SQL/RLS/Android/production mutation. New exact-head source/CodeQL/Unified and **one** focused recurring-service-brand Chromium run plus screenshot inspection **PENDING**. Keep #654 Draft and full Ready suite deferred.
+
+---
+
+
 ## 2026-11-23 — FP-033 self-review: active-only catalog cannot certify Storage purge
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Before candidate acceptance, checked the actual server `deleteRecurringServiceAsset`: its first release RPC may mark the row inactive and a subsequent Storage deletion may fail with 503; `readRecurringServiceAssets` filters `active=eq.true`. Therefore, after ambiguous DELETE, an empty public GET **cannot** certify Storage deletion or exact-row purge. Corrected the candidate to fail closed and block repeat same-key DELETE on transport/408/429/5xx or invalid HTTP-200 receipt, without claiming success from an active-only catalog. Only explicit server `{ok:true}` (issued after verified Storage DELETE and purge) proceeds to the existing fresh catalog absence proof. Four ambiguous-negative tests now assert no GET and no replay, with same-key concurrency and definite 400 retry coverage. FP-033 registry prevention corrected. No server/RLS changes, DB/Storage writes or finance mutation. Source/CodeQL/Unified **PENDING new exact head**.
