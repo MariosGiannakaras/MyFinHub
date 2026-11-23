@@ -1,5 +1,13 @@
 # MyFinHub — full application correction roadmap (#649, consolidated)
 
+## 2026-11-23 — FP-032 exact generated provider Storage URL completed at bounded source/browser level
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Source head `1be4ae4868b17b54dd12b09d7c05c50f69d187c4` passed [CI #45097196181](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45097196181) `validate`/CodeQL/Unified plus actual [focused Chromium #45097348469](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45097348469) provider-management and receipt-local OCR. Directly reviewed 53 PNG artifact #14783369818 in contact sheet and important full-size mobile wrong-path refusal and desktop dark positive brand asset. The browser client now requires server-generated provider Storage path exactness for **newly uploaded keys**, in both 200 receipt and fresh catalog readback, but preserves curated legacy artwork and all existing server/RLS/security boundaries. The two historical CI failures were test-only fixtures/TypeScript return annotation and fixed before final PASS. All focused QA opt-ins OFF. FP-032 prevention registry and newest detailed status own evidence.
+
+**Next:** final ordinary CI for this docs-only checkpoint and then genuinely incomplete original P0/P1/operational gating. No bot PR merge, main promotion, Android, hosted writes or full Ready acceptance. Final Windows/WebKit/Lighthouse/complete visual and owner approval still pending.
+
+---
+
 ## 2026-11-23 — FP-032 provider newly-uploaded binary URL exact provenance
 
 **Original 6/23 · 104/132 counters unchanged.** Source-server review found a specific original I19.04 false-green gap: the provider client checked generated key, file MIME, bytes and slot but accepted unrelated HTTPS URLs in HTTP-200 upload receipts and otherwise matching catalog GET. The generated-key contract is already enforced in server/SQL: `financial-provider-assets/providers/<provider>/<generatedKey>.<MIME-extension>`. The bounded source candidate checks the canonical public Storage **pathname** at both receipt and postwrite catalog for **only freshly uploaded keys**, retaining all curated legacy image URLs, same-owner AAL2/RLS, no duplicate binary replay, per-slot binding and previous readback behavior. Update existing unit and provider-branding real browser QA (one valid canonical fixture, one correct-key/foreign-path HTTP 200 denial) without new QA duplicate. FP-032 guards in `quality/defect-patterns.json`; current status has exact next acceptance and one-shot opt-in. CI and rendered review **PENDING** on the new head. No Android, production database or rollout scope.
