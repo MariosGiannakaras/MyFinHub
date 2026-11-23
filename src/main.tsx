@@ -7,7 +7,8 @@ import './styles.css';
 initializeTheme();
 
 async function bootstrap(){
-  if(typeof window!=='undefined'&&(window as unknown as {myFinHubDesktop?:unknown}).myFinHubDesktop){
+  const desktopBridge=typeof window==='undefined'?undefined:(window as unknown as {myFinHubDesktop?:unknown}).myFinHubDesktop;
+  if(desktopBridge){
     document.documentElement.dataset.myfinhubDesktop='true';
     await import('./styles/desktop-titlebar.css');
   }

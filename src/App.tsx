@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
@@ -43,23 +43,31 @@ import type {
   ScheduledTransaction,
 } from './types';
 
+function namedLazy<Module extends object, Name extends keyof Module>(
+  load:()=>Promise<Module>, name:Name,
+){
+  return lazy(()=>load().then(module=>({
+    default:module[name] as Extract<Module[Name],ComponentType<any>>,
+  })));
+}
+
 const PersistenceNotice = lazy(() => import('./components/PersistenceNotice').then((module) => ({ default: module.PersistenceNotice })));
-const ReceiptCleanupNotice = lazy(() => import('./components/ReceiptCleanupNotice').then((module) => ({ default: module.ReceiptCleanupNotice })));
-const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
-const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
+const ReceiptCleanupNotice = namedLazy(() => import('./components/ReceiptCleanupNotice'), 'ReceiptCleanupNotice');
+const CommandPalette = namedLazy(() => import('./components/CommandPalette'), 'CommandPalette');
+const ContextualQuickAdd = namedLazy(() => import('./components/ContextualQuickAdd'), 'ContextualQuickAdd');
 const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
-const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
-const SavingsPage = lazy(() => import('./pages/SavingsPage').then((module) => ({ default: module.SavingsPage })));
-const CardsPage = lazy(() => import('./pages/CardsPage').then((module) => ({ default: module.CardsPage })));
-const CreditCardPage = lazy(() => import('./pages/CreditCardPage').then((module) => ({ default: module.CreditCardPage })));
-const LoansPage = lazy(() => import('./pages/LoansPage').then((module) => ({ default: module.LoansPage })));
-const RecurringPage = lazy(() => import('./pages/RecurringPage').then((module) => ({ default: module.RecurringPage })));
-const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({ default: module.LendingPage })));
-const PlanningPage = lazy(() => import('./pages/PlanningPage').then((module) => ({ default: module.PlanningPage })));
-const AttentionPage = lazy(() => import('./pages/AttentionPage').then((module) => ({ default: module.AttentionPage })));
+const DashboardPage = namedLazy(() => import('./pages/DashboardPage'), 'DashboardPage');
+const TransactionsPage = namedLazy(() => import('./pages/TransactionsPage'), 'TransactionsPage');
+const SavingsPage = namedLazy(() => import('./pages/SavingsPage'), 'SavingsPage');
+const CardsPage = namedLazy(() => import('./pages/CardsPage'), 'CardsPage');
+const CreditCardPage = namedLazy(() => import('./pages/CreditCardPage'), 'CreditCardPage');
+const LoansPage = namedLazy(() => import('./pages/LoansPage'), 'LoansPage');
+const RecurringPage = namedLazy(() => import('./pages/RecurringPage'), 'RecurringPage');
+const LendingPage = namedLazy(() => import('./pages/LendingPage'), 'LendingPage');
+const PlanningPage = namedLazy(() => import('./pages/PlanningPage'), 'PlanningPage');
+const AttentionPage = namedLazy(() => import('./pages/AttentionPage'), 'AttentionPage');
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const SettingsPage = namedLazy(() => import('./pages/SettingsPage'), 'SettingsPage');
 
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 

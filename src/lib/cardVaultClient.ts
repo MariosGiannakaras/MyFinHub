@@ -1,13 +1,15 @@
-import { notifyAuthExpired, authScopeEpoch } from './authExpiry.js';
+import { notifyAuthExpired } from './authExpiry.js';
 import { ApiError, apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { readLocalCvv } from './localCvvVault.js';
+import { watchAuthScope } from './authScopedCache.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
 
 // Never show old-owner PAN/CVV or claim a previous-session write succeeded
 // after the cookie/MFA/device authentication scope has changed.
+const authEpoch=watchAuthScope(()=>{});
 function staleVaultScope():CardVaultClientError{
   return new CardVaultClientError(409,'CARD_VAULT_AUTH_SCOPE_CHANGED',
     'Η συνεδρία άλλαξε κατά την ενέργεια ασφαλών στοιχείων.');
@@ -38,10 +40,10 @@ async function requireVaultWriteReceipt<T>(
   action:()=>Promise<T>,
   confirmed:(receipt:T)=>boolean,
 ):Promise<T>{
-  const epoch=authScopeEpoch();
+  const epoch=authEpoch();
   try{
     const receipt=await action();
-    if(epoch!==authScopeEpoch()||!confirmed(receipt))throw new UnverifiedCardVaultWrite(operation);
+    if(epoch!==authEpoch()||!confirmed(receipt))throw new UnverifiedCardVaultWrite(operation);
     return receipt;
   }catch(reason){
     if(reason instanceof UnverifiedCardVaultWrite)throw reason;
@@ -53,7 +55,7 @@ async function requireVaultWriteReceipt<T>(
 }
 
 async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknown>):Promise<T>{
-  const epoch=authScopeEpoch();
+  const epoch=authEpoch();
   let response:Response;
   try{
     response=await apiRequest('/api/card-secrets',{
@@ -65,13 +67,13 @@ async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknow
   }catch(error){
     // The old request may have reached the server. Never carry its transport
     // error into a new session as proof of a current-owner outcome.
-    if(epoch!==authScopeEpoch())throw staleVaultScope();
+    if(epoch!==authEpoch())throw staleVaultScope();
     throw error;
   }
   const payload=await response.json().catch(()=>({})) as ErrorPayload&T;
   // Check after the body resolves and BEFORE notifyAuthExpired: a delayed
   // old-device 401 must not expire a newer valid owner session.
-  if(epoch!==authScopeEpoch())throw staleVaultScope();
+  if(epoch!==authEpoch())throw staleVaultScope();
   if(!response.ok){
     const code=payload.code||'CARD_VAULT_ERROR';
     notifyAuthExpired(response.status,code);
@@ -81,7 +83,7 @@ async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknow
 }
 
 export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
-  const epoch=authScopeEpoch();
+  const epoch=authEpoch();
   let missing=false;
   let payload:{pan:string|null;expiry:string|null;cvv:string|null}={pan:null,expiry:null,cvv:null};
   try{payload=await request<typeof payload>('POST',{cardId})}
@@ -103,7 +105,7 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
   }
   // Includes an async legacy IndexedDB CVV fallback: an old response must
   // not leak PAN/CVV after logout, new MFA or another owner auth boundary.
-  if(epoch!==authScopeEpoch())throw staleVaultScope();
+  if(epoch!==authEpoch())throw staleVaultScope();
   if(missing)throw new CardVaultClientError(404,'CARD_SECRET_NOT_FOUND','Δεν υπάρχουν αποθηκευμένα στοιχεία για αυτή την κάρτα.');
   return secret;
 }

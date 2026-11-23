@@ -10,6 +10,3 @@ export function watchAuthScope(onReset:()=>void){
   resets.add(onReset);
   return ()=>epoch;
 }
-
-// Read-only epoch provenance does not register another per-client listener.
-export const authScopeEpoch=()=>epoch;

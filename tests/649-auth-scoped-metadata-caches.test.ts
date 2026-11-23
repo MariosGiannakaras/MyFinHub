@@ -75,12 +75,10 @@ describe('#649 I22.02 owner-scoped metadata caches and stale-read provenance',()
     const watch=readFileSync(new URL('../src/lib/authScopedCache.ts',import.meta.url),'utf8');
     expect(hook).toContain("window.dispatchEvent(new Event('myfinhub:auth-scope-reset'))");
     expect(hook).toContain("window.dispatchEvent(new Event('myfinhub:auth-completed'))");
-    const expiry=readFileSync(new URL('../src/lib/authExpiry.ts',import.meta.url),'utf8');
-    for(const name of ['rheomiq:auth-expired','rheomiq:mfa-required',
-      'myfinhub:auth-completed','myfinhub:auth-scope-reset'])
-      expect(watch).toContain(name);
-    expect(expiry).toContain("export { authScopeEpoch } from './authScopedCache.js'");
-    expect(watch).toContain('export const authScopeEpoch=()=>epoch;');
+    for(const name of [
+      'rheomiq:auth-expired','rheomiq:mfa-required',
+      'myfinhub:auth-completed','myfinhub:auth-scope-reset',
+    ])expect(watch).toContain(name);
     const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
     expect(workflow).toContain('<!-- run-649-recurring-asset-qa -->');
     expect(workflow).toContain("'recurring-service-brand'");
