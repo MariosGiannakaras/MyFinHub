@@ -97,6 +97,9 @@ describe('top-edge save feedback ownership',()=>{
     expect(vault).toContain("payload=await request<typeof payload>('POST'");
     expect(read('src/lib/accountMetadataClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
     expect(read('src/lib/financialProviderClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
-    expect(read('src/lib/recurringServiceAssetClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
+    const recurring=read('src/lib/recurringServiceAssetClient.ts');
+    // Upload and release both remain tracked while their synchronous locks
+    // require awaiting the tracked write in a try/finally.
+    expect(recurring.match(/return await trackDatabaseWrite\\(async\\(\\)=>\\{/g)).toHaveLength(2);
   });
 });

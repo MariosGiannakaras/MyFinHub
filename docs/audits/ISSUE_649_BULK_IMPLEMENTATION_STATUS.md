@@ -1,3 +1,9 @@
+## 2026-11-23 — FP-033 focused source-contract correction
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. New candidate `b9fb43a` [CI #45100454349](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45100454349) revealed one existing `tests/save-progress-source.test.ts` source literal requiring `return trackDatabaseWrite(async()=>{` while both upload and release now correctly need `return await trackDatabaseWrite(async()=>{` for pre-dispatch and async-finally lock integrity. All other reported Vitest checks passed; the CI job did **not** finish the whole validation matrix. This follow-up updates **only** that assertion to require exactly two independently tracked and awaited recurring asset writes. No production/auth/domain behavior changed; exact new-head CI remains PENDING, no Ready acceptance or merge.
+
+---
+
 ## 2026-11-23 — FP-033 recurring asset release ambiguous DELETE (source candidate)
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. On the existing consolidated Draft #654 → develop, the I19.04 recurring browser release client previously retried as a normal failure after network-loss/408/429/5xx DELETE even though its owner-scoped server release could have committed. This candidate uses per-key synchronous release ownership, a fresh read-only catalog absence check after ambiguous or acknowledged responses, fail-closed same-key retry lock when readback is inconclusive, and retired-auth-epoch protection. Definite 400 keeps its original retry contract; finance revision, Storage/RLS policy, other provider assets and Android are unchanged. Existing test file adds four ambiguous statuses × both definitive absent/retained catalog cases plus duplicate-delete concurrency. FP-033 records the regression class.
