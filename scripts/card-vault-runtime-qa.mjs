@@ -187,6 +187,11 @@ try{
   console.log('Card Vault runtime QA: stale owner auth-scope read cannot paint previously returned PAN/CVV');
   await pressEscape();
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'close unverified vault editor before stale scope proof');
+  // Start an independent owner-session read from a fresh QA fixture. The
+  // preceding malformed receipt case intentionally leaves uncertain editor
+  // state; it must not determine whether this separate auth proof reaches POST.
+  await c.send('Page.navigate',{url:url.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'&&Boolean(globalThis.__myfinhubQaCardVault)}",'fresh Cards owner fixture for stale auth read');
   const installed=await c.call(`function(){
     const original=globalThis.fetch.bind(globalThis);
     const state={reads:0,finish:null,original};
@@ -203,6 +208,8 @@ try{
   }`);
   assert(installed,'synthetic stale vault auth boundary fixture installed');
   await clickAria('Επεξεργασία κάρτας QA Debit');
+  const preflight=await c.call("function(){const q=globalThis.__qaVaultOldAuth;const editor=document.querySelector('.app-card-details-inline');return {reads:q?.reads||0,waiting:typeof q?.finish==='function',editor:Boolean(editor),loading:Boolean(editor?.querySelector('textarea:disabled')),alert:Boolean(editor?.querySelector('[role=alert]'))}}");
+  console.log('Card Vault stale-auth preflight (no secrets):',JSON.stringify(preflight));
   await waitFor("function(){return globalThis.__qaVaultOldAuth?.reads===1&&typeof globalThis.__qaVaultOldAuth.finish==='function'&&!!document.querySelector('.app-card-details-inline textarea:disabled')}",'stale vault read genuinely pending before reauth');
   assert(await c.call(`function(){
     // The old owner read can complete after a newer browser login/MFA.

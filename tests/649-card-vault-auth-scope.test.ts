@@ -146,6 +146,8 @@ describe('#649 I22.02 Card Vault auth scope and stale receipt isolation',()=>{
   it('guards the actual Chromium stale-owner read and screenshot evidence',()=>{
     const qa=readFileSync('scripts/card-vault-runtime-qa.mjs','utf8');
     expect(qa).toContain('Card Vault runtime QA: stale owner auth-scope read');
+    expect(qa).toContain("'fresh Cards owner fixture for stale auth read'");
+    expect(qa).toContain('Card Vault stale-auth preflight (no secrets):');
     expect(qa).toContain("window.dispatchEvent(new Event('myfinhub:auth-scope-reset'))");
     expect(qa).toContain("await screenshot('card-vault-stale-auth-scope-read-desktop')");
     expect(qa).toContain("error announced to screen readers");
