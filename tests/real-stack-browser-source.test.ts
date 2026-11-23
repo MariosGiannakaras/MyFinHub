@@ -14,6 +14,18 @@ describe('actual-browser real-stack source contract',()=>{
     })).not.toThrow();
   });
 
+  it('waits for painted Recurring collection rows before capturing real-stack evidence',()=>{
+    const settled=source.indexOf("'recurring screenshot content entrance visually settled'");
+    const picture=source.indexOf("await shot('recurring-domain-persisted')");
+    expect(settled).toBeGreaterThan(0);
+    expect(picture).toBeGreaterThan(settled);
+    expect(source).toContain("root.getAnimations({subtree:true})");
+    expect(source).toContain("anim.animationName==='rh-bank-in'||anim.animationName==='rh-backdrop-in'");
+    expect(source).toContain("items.length>=3&&!running");
+    expect(source).toContain("items.every(node=>Number(getComputedStyle(node).opacity)>=.995)");
+    expect(source).toContain("'recurring screenshot content entrance visually settled'");
+    expect(source).not.toContain("await sleep(600);await shot('recurring-domain-persisted')");
+  });
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain('/json/new?about:blank');

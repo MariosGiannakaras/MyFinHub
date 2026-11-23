@@ -673,6 +673,24 @@
       "guards": [
         "tests/recurring-service-assets.test.ts"
       ]
+    },
+    {
+      "id": "FP-035",
+      "title": "Rendered recurring evidence must wait for shared collection entrance completion",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "The actual-browser real-stack screenshot was taken as soon as finance DOM data appeared. The Recurring summary grid, active table and paused list use 170–190ms shared staggered CSS entrance with child delays, so CDP could capture low-opacity content before animation completion.",
+      "prevention": "Before the Recurring persisted-state screenshot, wait for the genuinely visible grid/list/table rows to have no running rh-bank-in/rh-backdrop-in animation and computed opacity >=0.995. Keep production animation and finance state unchanged; reject screenshot evidence with transient invisible rows. Assert helper placement and gate in real-stack browser source tests.",
+      "paths": [
+        "scripts/real-stack-browser-e2e.ts",
+        "tests/real-stack-browser-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/real-stack-browser-source.test.ts"
+      ]
     }
   ]
 }

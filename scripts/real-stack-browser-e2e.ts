@@ -369,6 +369,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'recurring reload after pause');
     const openInactive=await c.call<boolean>("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!(root instanceof HTMLDetailsElement))return false;root.open=true;return true}");assert(openInactive,'Inactive recurring history is unavailable.');
     await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
+    // A data-complete Recurring route can still be mid-frame in the shared
+    // staggered collection entrance. Screenshots must prove painted content,
+    // not the transient 0-opacity start of a valid normal-motion animation.
+    await waitFor("function(){const root=document.querySelector('.recurring-approved-page');if(!(root instanceof HTMLElement))return false;const items=[...root.querySelectorAll('[data-content-entrance=grid] > *,[data-content-entrance=list] > *,[data-content-entrance=table] > tr')].filter(node=>node.getClientRects().length>0);const running=root.getAnimations({subtree:true}).some(anim=>anim.playState==='running'&&(anim.animationName==='rh-bank-in'||anim.animationName==='rh-backdrop-in'));return items.length>=3&&!running&&items.every(node=>Number(getComputedStyle(node).opacity)>=.995)}",'recurring screenshot content entrance visually settled');
     await shot('recurring-domain-persisted');
 
     console.log('[real-browser] stage recurring-pay-edit-linked-reload');
