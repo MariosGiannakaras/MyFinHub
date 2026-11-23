@@ -58,6 +58,11 @@ describe('#649 receipt post-save second-store boundary',()=>{
     expect(qa).toContain('receipt-local-posted-no-repost-after-reload');
     expect(qa).toContain('receipt-stale-prefill-cross-tab-preflight-denied');
     expect(qa).toContain('receipt-deleted-prefill-cross-tab-preflight-denied');
+    expect(qa).toContain('receipt-posting-unverified-desktop');
+    expect(qa).toContain('receipt-posting-unverified-mobile');
+    expect(qa).toContain('desktop posting warning bounded and only local delete enabled');
+    expect(qa).toContain('mobile posting warning accessible without clipping or re-post controls');
+    expect(qa).toContain('posting claim reload did not dispatch finance');
     expect(qa).toContain('another-tab synthetic receipt deletion committed before stale Quick Entry submit');
     expect(qa).toContain('another-tab deleted receipt cannot trigger any finance write');
     expect(qa).toContain('deleted receipt error fully opaque before screenshot');

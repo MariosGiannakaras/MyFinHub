@@ -638,6 +638,31 @@ try {
   assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===0,
     'fresh QA remount has no synthetic finance write after deleted draft');
 
+  console.log('Receipt OCR QA: unresolved posting claim survives reload and cannot re-post');
+  assert(await c.call("async function(){\n  return await new Promise((resolve,reject)=>{\n    const open=indexedDB.open('myfinhub-local-receipts-v1',1);\n    open.onsuccess=()=>{\n      const db=open.result,tx=db.transaction('receipts','readwrite');\n      const now=new Date().toISOString();\n      const raw=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLfnwAAAABJRU5ErkJggg=='),char=>char.charCodeAt(0));\n      const image=new Blob([raw],{type:'image/png'});\n      tx.objectStore('receipts').put({id:'qa-posting-handoff',capturedAt:now,updatedAt:now,status:'posting',postingPreviousStatus:'ready',image,mimeType:'image/png',bytes:image.size,width:1,height:1,proposal:{merchant:'QA POSTING UNCERTAIN',date:'2026-08-22',total:12.34,currency:'EUR'}});\n      tx.oncomplete=()=>{db.close();resolve(true)};\n      tx.onerror=()=>{db.close();reject(tx.error)};\n    };\n    open.onerror=()=>reject(open.error);\n  });\n}"),'synthetic local receipt posting claim persisted');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'posting claim after reload');
+  assert((await receiptCount())===1,'posting local receipt survived reload');
+  await c.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await openReceiptInbox();
+  await waitFor("function(){return (document.querySelector('.receipt-draft-open')?.textContent||'').includes('Αβέβαιη καταχώριση')}",'posting claim displayed without false posted success');
+  await waitFor("function(){const n=document.querySelector('.receipt-review-pane .receipt-proposal[role=alert]');return Boolean(n&&(n.textContent||'').includes('δεν έχει επιβεβαιωθεί'))}",'posting claim visible review warning');
+  await c.call("function(){document.querySelector('.receipt-review-pane .receipt-proposal[role=alert]')?.scrollIntoView({block:'center',behavior:'instant'})}");
+  await sleep(320);
+  const desktopPosting=await c.call("function(){\n  const alert=document.querySelector('.receipt-review-pane .receipt-proposal[role=alert]');\n  const actions=[...document.querySelectorAll('.receipt-review-actions button')];\n  if(!(alert instanceof HTMLElement))return null;\n  const box=alert.getBoundingClientRect();\n  return {text:alert.textContent||'',opaque:Number(getComputedStyle(alert).opacity)>=.995,\n    contained:box.left>=-1&&box.right<=innerWidth+1&&box.top>=-1&&box.bottom<=innerHeight+1,\n    deleteOnly:actions.length===1&&(actions[0].textContent||'').includes('Διαγραφή')};\n}");
+  assert(desktopPosting?.contained&&desktopPosting.opaque&&desktopPosting.deleteOnly&&desktopPosting.text.includes('Έλεγξε τις οικονομικές κινήσεις'),'desktop posting warning bounded and only local delete enabled');
+  await screenshot('receipt-posting-unverified-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await c.call("function(){document.querySelector('.receipt-review-pane .receipt-proposal[role=alert]')?.scrollIntoView({block:'center',behavior:'instant'})}");
+  await sleep(320);
+  const mobilePosting=await c.call("function(){\n  const alert=document.querySelector('.receipt-review-pane .receipt-proposal[role=alert]');\n  const actions=[...document.querySelectorAll('.receipt-review-actions button')];\n  if(!(alert instanceof HTMLElement))return null;\n  const box=alert.getBoundingClientRect();\n  return {text:alert.textContent||'',opaque:Number(getComputedStyle(alert).opacity)>=.995,\n    contained:box.left>=-1&&box.right<=innerWidth+1&&box.top>=-1&&box.bottom<=innerHeight+1,\n    deleteOnly:actions.length===1&&(actions[0].textContent||'').includes('Διαγραφή')};\n}");
+  assert(mobilePosting?.contained&&mobilePosting.opaque&&mobilePosting.deleteOnly,'mobile posting warning accessible without clipping or re-post controls');
+  await screenshot('receipt-posting-unverified-mobile');
+  assert((await c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}"))===0,'posting claim reload did not dispatch finance');
+  assert(await c.call("async function(){\n  return await new Promise((resolve,reject)=>{\n    const open=indexedDB.open('myfinhub-local-receipts-v1',1);\n    open.onsuccess=()=>{\n      const db=open.result,tx=db.transaction('receipts','readwrite');\n      tx.objectStore('receipts').delete('qa-posting-handoff');\n      tx.oncomplete=()=>{db.close();resolve(true)};\n      tx.onerror=()=>{db.close();reject(tx.error)};\n    };\n    open.onerror=()=>reject(open.error);\n  });\n}"),'QA-only posting fixture locally removed');
+  await c.send('Page.reload',{ignoreCache:true});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'posting QA fixture cleanup reload');
+  assert((await receiptCount())===0,'posting fixture cleaned without a finance mutation');
   console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   const mobileQuickOpened=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=\"mobile\"]');button?.click();return Boolean(button)}");
