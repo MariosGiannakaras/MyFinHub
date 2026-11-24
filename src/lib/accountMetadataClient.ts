@@ -73,6 +73,8 @@ export async function refreshAccountMetadata(force=false){
   if(QA_MODE)return publish({loaded:true,loading:false,records:snapshot.loaded?snapshot.records:{...QA_RECORDS},error:null});
   const epoch=authEpoch();
   publish({...snapshot,loading:true,error:null});
+  // A synchronous subscriber can retire this scope before dispatch.
+  if(epoch!==authEpoch())return snapshot;
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});

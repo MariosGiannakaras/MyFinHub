@@ -62,6 +62,64 @@ describe('#649 consolidated finance/metadata session and artwork recovery',()=>{
     expect((await fresh).providers[0]?.displayName).toBe('New');
     expect(calls).toEqual(['GET','GET']);
   });
+  it.each(['iban','provider','recurring'] as const)('does not dispatch a retired %s catalog GET from a synchronous loading subscriber',async kind=>{
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push(String(init?.method??'GET'));
+      return response(kind==='iban'?{records:[]}:kind==='provider'?{providers:[{id:'qa-bank',displayName:'Fresh',shortName:'Fresh',providerKind:'bank',sortOrder:1,assets:[],bindings:[]}]}:{assets:[]});
+    }));
+    const iban=await import('../src/lib/accountMetadataClient.js');
+    const provider=await import('../src/lib/financialProviderClient.js');
+    const recurring=await import('../src/lib/recurringServiceAssetClient.js');
+    const refresh=kind==='iban'?iban.refreshAccountMetadata:kind==='provider'?provider.refreshFinancialProviders:recurring.refreshRecurringServiceAssets;
+    const get=kind==='iban'?iban.getAccountMetadataSnapshot:kind==='provider'?provider.getFinancialProviderSnapshot:recurring.getRecurringServiceAssetSnapshot;
+    const subscribe=kind==='iban'?iban.subscribeAccountMetadata:kind==='provider'?provider.subscribeFinancialProviders:recurring.subscribeRecurringServiceAssets;
+    let retired=false;
+    const stop=subscribe(()=>{if(!retired&&get().loading){retired=true;boundary()}});
+    try{await refresh(true)}finally{stop()}
+    expect(retired).toBe(true);
+    expect(calls).toEqual([]);
+    expect(get().loaded).toBe(false);
+    expect((await refresh(true)).error).toBeNull();
+    expect(calls).toEqual(['GET']);
+  });
+  it.each(['upload','release'] as const)('requires recurring %s readback after an older GET, but never starts a new-scope GET from retired work',async kind=>{
+    const client=await import('../src/lib/recurringServiceAssetClient.js');
+    const key='service-asset-'+'a'.repeat(24);
+    const asset={assetKey:key,recurringId:'qa-recurring',fileName:'logo.png',mimeType:'image/png',sizeBytes:2,
+      updatedAt:'2026-11-24T00:00:00Z',url:'https://example.test/storage/v1/object/public/recurring-service-assets/services/'+key+'.png'};
+    for(const retire of [false,true]){
+      boundary();
+      const older=deferred<Response>(),writeBody=deferred<unknown>(),entered=deferred<void>();
+      const calls:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method??'GET');calls.push(method);
+        if(calls.length===1)return older.promise;
+        if(calls.length===2){
+          const receipt=response({});
+          vi.spyOn(receipt,'json').mockImplementation(async()=>{entered.resolve();return writeBody.promise});
+          return receipt;
+        }
+        if(method==='GET'&&!retire)return response({assets:kind==='upload'?[asset]:[]});
+        throw new Error('Retired work must not issue another GET or write');
+      }));
+      const old=client.refreshRecurringServiceAssets(true);
+      const action=kind==='upload'?client.uploadRecurringServiceAsset({recurringId:'qa-recurring',file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'})}):client.deleteRecurringServiceAsset(key);
+      const settled=action.then(value=>({value}),error=>({error}));
+      await entered.promise;
+      writeBody.resolve(kind==='upload'?{asset}:{ok:true});
+      // Allow the write receipt and pending-catalog continuation to settle.
+      await new Promise(resolve=>setTimeout(resolve,0));
+      if(retire)boundary();
+      older.resolve(response({assets:kind==='upload'?[]:[asset]}));
+      await old;
+      const result=await settled;
+      expect(calls).toEqual(retire?['GET',kind==='upload'?'PUT':'DELETE']:['GET',kind==='upload'?'PUT':'DELETE','GET']);
+      if(retire)expect(result).toHaveProperty('error');
+      else if(kind==='upload')expect(result).toMatchObject({value:asset});
+      else expect(result).toEqual({value:undefined});
+    }
+  });
   it.each(['provider','recurring-upload','recurring-release'] as const)('excludes a competing %s tab and retains uncertainty until auth retirement (simulated Web Lock manager)',async kind=>{
     Object.defineProperty(window,'isSecureContext',{value:true});
     const held=new Set<string>();

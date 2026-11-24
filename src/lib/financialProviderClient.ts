@@ -124,6 +124,8 @@ export async function refreshFinancialProviders(force=false){
   }
   if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null});
   publish({...snapshot,loading:true,error:null});
+  // A synchronous subscriber can retire this scope before dispatch.
+  if(epoch!==authEpoch())return snapshot;
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});

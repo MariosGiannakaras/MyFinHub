@@ -796,14 +796,16 @@
       "category": "security-auth",
       "severity": "high",
       "rootCause": "saveAccountMetadata captured its auth epoch only after awaiting refreshAccountMetadata. A previous owner/session save waiting on a slow cold GET could be resumed after logout/reauth by a newer scope's freshly loaded catalog; the old call would then use the new owner revision and issue a PUT under the newer cookie.",
-      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged. Extend provenance to finance FIFO/reload/cursor/import/backup and provider/recurring multi-stage editors; ignore retired shared activity completions, and fence delayed JSON receipts before stale auth/PIN events. No stale operation may dispatch a next stage using a new cookie.",
+      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged. Extend provenance to finance FIFO/reload/cursor/import/backup and provider/recurring multi-stage editors; ignore retired shared activity completions, and fence delayed JSON receipts before stale auth/PIN events. No stale operation may dispatch a next stage using a new cookie. Recheck scope after synchronous loading-state subscribers in all three metadata catalogs; recurring upload/release must use an epoch-bound forced readback so waiting for a pre-write GET cannot dispatch a read with newer credentials.",
       "paths": [
         "src/lib/accountMetadataClient.ts",
         "src/lib/databaseSaveActivity.ts",
         "src/lib/api.ts",
         "src/hooks/useFinance.ts",
         "src/components/FinancialProviderManagementSettings.tsx",
-        "src/pages/RecurringPage.tsx"
+        "src/pages/RecurringPage.tsx",
+        "src/lib/recurringServiceAssetClient.ts",
+        "src/lib/financialProviderClient.ts"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"

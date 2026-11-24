@@ -91,9 +91,16 @@ async function json(response:Response){return response.json().catch(()=>null) as
 
 export async function refreshRecurringServiceAssets(force=false){
   if(snapshot.loaded&&!force)return snapshot;
-  if(pending)return pending;
   const epoch=authEpoch();
+  if(pending){
+    if(!force)return pending;
+    await pending;
+    if(epoch!==authEpoch())return snapshot;
+    if(pending)return pending;
+  }
   publish({...snapshot,loading:true,error:null});
+  // A synchronous subscriber can retire this scope before dispatch.
+  if(epoch!==authEpoch())return snapshot;
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata?resource=recurring-service-assets',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
@@ -156,7 +163,6 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   // Confirm one fresh registered catalog GET before returning a key that the
   // caller will attach to the canonical finance state. Never replay the PUT.
   try{
-    if(pending)await pending;
     const confirmed=await refreshRecurringServiceAssets(true);
     const registered=confirmed.assets.find(row=>row.assetKey===asset.assetKey);
     if(epoch!==authEpoch()||confirmed.error||!registered||registered.recurringId!==asset.recurringId||
@@ -209,7 +215,6 @@ export async function deleteRecurringServiceAsset(assetKey:string){
       // release RPC may have deactivated a row before Storage failed).
       // On confirmed OK we still require a fresh catalog absence check.
       try{
-        if(pending)await pending;
         const confirmed=await refreshRecurringServiceAssets(true);
         if(epoch!==authEpoch()||confirmed.error||confirmed.assets.some(asset=>asset.assetKey===assetKey))
           return unverifiedRelease(assetKey,epoch);

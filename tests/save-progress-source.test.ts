@@ -6,7 +6,9 @@ describe('top-edge save feedback ownership',()=>{
   it('uses durable finance queue receipts and guards against queued-race false saved states',()=>{
     const finance=read('src/hooks/useFinance.ts');
     expect(finance).toContain("setCurrentSaveState('saving')");
-    expect(finance).toContain("if(coordinator.hasWork())return;");
+    const settled=finance.slice(finance.indexOf('void idle.then(()=>{'),finance.indexOf('return receipt;'));
+    expect(settled).toContain('if(scope!==authScopeEpoch()||coordinator.hasWork())return;');
+    expect(settled.indexOf('if(scope!==authScopeEpoch()||coordinator.hasWork())return;')).toBeLessThan(settled.indexOf('setSavePending(false)'));
     expect(finance).toContain('setSavePending(false)');
     expect(finance).toContain('setSaveReceiptCount(count=>count+1)');
     expect(finance).toContain('historyMatchesRevision(res.history,res.revision)');
@@ -98,8 +100,21 @@ describe('top-edge save feedback ownership',()=>{
     expect(read('src/lib/accountMetadataClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
     expect(read('src/lib/financialProviderClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
     const recurring=read('src/lib/recurringServiceAssetClient.ts');
-    // Upload and release both remain tracked while their synchronous locks
-    // require awaiting the tracked write in a try/finally.
-    expect(recurring.split('return await trackDatabaseWrite(async()=>{').length-1).toBe(2);
+    // Both operations still await tracked server receipts within their
+    // per-target browser + in-memory locks. Guard the actual operation
+    // boundaries, not the old directly-awaited call spelling.
+    const upload=recurring.slice(recurring.indexOf('export async function uploadRecurringServiceAsset'),recurring.indexOf('export async function deleteRecurringServiceAsset'));
+    const release=recurring.slice(recurring.indexOf('export async function deleteRecurringServiceAsset'),recurring.indexOf('export function recurringServiceAssetByKey'));
+    for(const [source,lock,requestMethod,guard] of [
+      [upload,"return await withArtworkMutationLock('recurring-upload:", "method:'PUT'",'inFlightUploads.delete(input.recurringId)'],
+      [release,"return await withArtworkMutationLock('recurring-release:", "method:'DELETE'",'inFlightReleases.delete(assetKey)'],
+    ]){
+      expect(source).toContain(lock);
+      expect(source.split('()=>trackDatabaseWrite(async()=>{').length-1).toBe(1);
+      expect(source.indexOf(lock)).toBeLessThan(source.indexOf('()=>trackDatabaseWrite(async()=>{'));
+      expect(source.indexOf('()=>trackDatabaseWrite(async()=>{')).toBeLessThan(source.indexOf(requestMethod));
+      expect(source).toContain('if(epoch===authEpoch())'+guard);
+      expect(source.indexOf('}finally{')).toBeGreaterThan(source.indexOf(requestMethod));
+    }
   });
 });
