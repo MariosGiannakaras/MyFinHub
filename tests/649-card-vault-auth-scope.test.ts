@@ -120,7 +120,7 @@ describe('#649 I22.02 Card Vault auth scope and stale receipt isolation',()=>{
       await expect(stale).rejects.toMatchObject({
         name:'UnverifiedCardVaultWrite',operation:method==='PUT'?'save':'delete',
       });
-      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:initial});
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:initial});
       // No implicit retry of the old request; this new request is explicitly
       // initiated after the real auth scope changes.
       await expect(action()).resolves.toBeDefined();

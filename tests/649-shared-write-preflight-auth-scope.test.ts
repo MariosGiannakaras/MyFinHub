@@ -57,7 +57,7 @@ describe('#649 FP-041 shared save-activity pre-dispatch authentication provenanc
       await expect(run()).rejects.toThrow('Η συνεδρία άλλαξε πριν σταλεί');
     }finally{unsubscribe()}
     expect(sent).toEqual([]);
-    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:before});
+    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:before});
 
     // No stale quarantine or lock can prevent a genuinely new action.
     await expect(run()).rejects.toThrow();
@@ -78,7 +78,7 @@ describe('#649 FP-041 shared save-activity pre-dispatch authentication provenanc
         await expect(trackDatabaseWrite(work)).rejects.toThrow('Η συνεδρία άλλαξε πριν σταλεί');
       }finally{unsubscribe()}
       expect(work).not.toHaveBeenCalled();
-      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:0});
+      expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:0});
       await expect(trackDatabaseWrite(work)).resolves.toBe(42);
       expect(work).toHaveBeenCalledTimes(1);
       expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:1});

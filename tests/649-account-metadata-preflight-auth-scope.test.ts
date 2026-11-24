@@ -53,7 +53,7 @@ describe('#649 FP-041 IBAN save cannot cross a newer owner auth scope during cat
     expect(expireEvents).toBe(expiryCountAfterBoundary);
     expect(client.getAccountMetadataSnapshot().records[accountId]).toMatchObject(record(8));
     expect(getDatabaseSaveSnapshot()).toMatchObject({
-      pending:0,failed:true,completion:previousCompletion,
+      pending:0,failed:false,completion:previousCompletion,
     });
     expect(client.accountMetadataWriteNeedsReview(accountId)).toBe(false);
 
@@ -109,6 +109,6 @@ describe('#649 FP-041 IBAN save cannot cross a newer owner auth scope during cat
         .rejects.toThrow('Η συνεδρία άλλαξε πριν σταλεί');
     }finally{unsubscribe()}
     expect(calls).toEqual(['GET']);
-    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:true,completion:0});
+    expect(getDatabaseSaveSnapshot()).toMatchObject({pending:0,failed:false,completion:0});
   });
 });

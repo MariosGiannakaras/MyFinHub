@@ -4,6 +4,7 @@ import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 import { providerAssetUrlAllowed } from './providerAssetUrl';
 import { watchAuthScope } from './authScopedCache.js';
+import { withArtworkMutationLock } from './artworkMutationLock.js';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
@@ -113,9 +114,15 @@ async function json(response:Response){return response.json().catch(()=>null) as
 
 export async function refreshFinancialProviders(force=false){
   if(snapshot.loaded&&!force)return snapshot;
-  if(pending)return pending;
-  if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null});
   const epoch=authEpoch();
+  if(pending){
+    if(!force)return pending;
+    await pending;
+    if(epoch!==authEpoch())return snapshot;
+    // Post-write readback must not reuse a GET started before the write.
+    if(pending)return pending;
+  }
+  if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null});
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
@@ -145,7 +152,7 @@ export async function refreshFinancialProviders(force=false){
 
 
 export class FinancialProviderAssetUploadInProgress extends Error{
-  constructor(){super('Η μεταφόρτωση εικόνας για αυτή τη θέση βρίσκεται ήδη σε εξέλιξη.');this.name='FinancialProviderAssetUploadInProgress'}
+  constructor(){super('Η μεταφόρτωση εικόνας για αυτή τη θέση εκκρεμεί ή δεν έχει επιβεβαιωθεί.');this.name='FinancialProviderAssetUploadInProgress'}
 }
 
 export class UnverifiedFinancialProviderWrite extends Error{
@@ -347,7 +354,8 @@ export async function uploadFinancialProviderAsset(input:{
   if(inFlightAssetUploads.has(uploadSlot))throw new FinancialProviderAssetUploadInProgress();
   inFlightAssetUploads.add(uploadSlot);
   try{
-  return await trackDatabaseWrite(async()=>{
+  return await withArtworkMutationLock('provider:'+uploadSlot,requestEpoch,
+    ()=>new FinancialProviderAssetUploadInProgress(),()=>uncertainAssetUploads.has(uploadSlot),()=>trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({
     resource:'financial-provider-assets',
     providerId:input.providerId,
@@ -387,7 +395,7 @@ export async function uploadFinancialProviderAsset(input:{
     if(requestEpoch!==authEpoch())return unverifiedAssetUpload(uploadSlot,requestEpoch);
   }
   return asset;
-  });
+  }));
   }finally{
     // A retired request must never clear a new auth scope's slot.
     if(requestEpoch===authEpoch())inFlightAssetUploads.delete(uploadSlot);

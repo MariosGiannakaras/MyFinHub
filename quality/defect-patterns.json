@@ -756,17 +756,20 @@
       "category": "domain-data",
       "severity": "high",
       "rootCause": "The client guarded concurrent provider binary PUTs only while a single request was in flight. After network loss, HTTP 408/429/5xx or a malformed HTTP 200 registration receipt, finally cleared the slot guard; reopening the provider editor allowed another non-idempotent upload of an independent freshly generated key even when the first Storage/DB write may have committed.",
-      "prevention": "Quarantine the exact provider/role/variant slot for the originating authentication scope after any ambiguous binary upload. Reject new same-slot PUTs even with changed File objects; do not affect independent slots, proved precommit 400/403 rejections or a genuinely new auth scope. Ignore old-scope late outcomes. Explain the hold and safe manual catalog review in the existing provider warning, and cover the desktop/mobile screenshot states.",
+      "prevention": "Quarantine the exact provider/role/variant slot for the originating authentication scope after any ambiguous binary upload. Reject new same-slot PUTs even with changed File objects; do not affect independent slots, proved precommit 400/403 rejections or a genuinely new auth scope. Ignore old-scope late outcomes. Explain the hold and safe manual catalog review in the existing provider warning, and cover the desktop/mobile screenshot states. Use same-origin nonblocking Web Locks for provider/recurring binary upload and recurring release when supported; retain the lock on ambiguous outcomes until the initiating live auth scope retires. Unsupported browsers keep existing local guards. Never persist private slot data or claim durable recovery after full browser teardown.",
       "paths": [
         "src/lib/financialProviderClient.ts",
         "src/components/FinancialProviderManagementSettings.tsx",
-        "scripts/provider-brand-management-qa.mjs"
+        "scripts/provider-brand-management-qa.mjs",
+        "src/lib/artworkMutationLock.ts",
+        "src/lib/artworkWebLock.ts"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
-        "tests/649-provider-catalog-readback.test.ts"
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-bulk-auth-artwork-recovery.test.ts"
       ]
     },
     {
@@ -793,17 +796,22 @@
       "category": "security-auth",
       "severity": "high",
       "rootCause": "saveAccountMetadata captured its auth epoch only after awaiting refreshAccountMetadata. A previous owner/session save waiting on a slow cold GET could be resumed after logout/reauth by a newer scope's freshly loaded catalog; the old call would then use the new owner revision and issue a PUT under the newer cookie.",
-      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged.",
+      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged. Extend provenance to finance FIFO/reload/cursor/import/backup and provider/recurring multi-stage editors; ignore retired shared activity completions, and fence delayed JSON receipts before stale auth/PIN events. No stale operation may dispatch a next stage using a new cookie.",
       "paths": [
         "src/lib/accountMetadataClient.ts",
-        "src/lib/databaseSaveActivity.ts"
+        "src/lib/databaseSaveActivity.ts",
+        "src/lib/api.ts",
+        "src/hooks/useFinance.ts",
+        "src/components/FinancialProviderManagementSettings.tsx",
+        "src/pages/RecurringPage.tsx"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
         "tests/649-account-metadata-preflight-auth-scope.test.ts",
-        "tests/649-shared-write-preflight-auth-scope.test.ts"
+        "tests/649-shared-write-preflight-auth-scope.test.ts",
+        "tests/649-bulk-auth-artwork-recovery.test.ts"
       ]
     }
   ]

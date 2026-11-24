@@ -1,6 +1,7 @@
 import type { FinanceData } from '../types.js';
 import { mutableSavePayload } from './persistencePayload.js';
 import { notifyAuthExpired } from './authExpiry.js';
+import { authScopeEpoch } from './authScopedCache.js';
 import { getAppUnlockToken, clearAppUnlockToken } from './appUnlockToken.js';
 
 interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
@@ -56,9 +57,9 @@ export class ApiError extends Error {
   }
 }
 
-// HTTP transport loss or 5xx does not prove a database write never committed.
+// Transport loss, timeout, rate limit or 5xx does not prove a write never committed.
 export function importOutcomeMayBeCommitted(error:unknown):boolean {
-  return error instanceof ApiError&&(error.status===0||error.status>=500);
+  return error instanceof ApiError&&(error.status===0||error.status===408||error.status===429||error.status>=500);
 }
 
 /** A lost backup RPC response is uncertain, not proof of rollback. */
@@ -66,8 +67,12 @@ export function backupOutcomeMayBeCommitted(error:unknown):boolean {
   return importOutcomeMayBeCommitted(error);
 }
 
+const responseScopes=new WeakMap<Response,number>();
 async function json<T>(response: Response): Promise<T> {
+  const scope=responseScopes.get(response);
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
+  // Check after body settlement, before data or auth/PIN events escape.
+  if(scope!==authScopeEpoch())throw new ApiError('Η συνεδρία άλλαξε κατά την επαλήθευση της απόκρισης.',0,'AUTH_SCOPE_CHANGED');
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
     notifyAuthExpired(response.status, details.code);
@@ -80,6 +85,7 @@ async function json<T>(response: Response): Promise<T> {
 export const API_REQUEST_TIMEOUT_MS = 30_000;
 
 export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS) {
+  const scope=authScopeEpoch();
   const controller = new AbortController();
   const callerSignal = init.signal;
   let timedOut = false;
@@ -102,12 +108,14 @@ export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {
         headers.set('x-myfinhub-app-unlock',token);
       }
     }
-    return await fetch(input, {
+    const response=await fetch(input, {
       credentials: 'same-origin',
       ...init,
       headers,
       signal: controller.signal,
     });
+    responseScopes.set(response,scope);
+    return response;
   } catch (error) {
     if (timedOut) throw new ApiError('Η σύνδεση με το MyFinHub άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_TIMEOUT');
     if (callerSignal?.aborted) throw new ApiError('Το αίτημα ακυρώθηκε.', 0, 'REQUEST_ABORTED');

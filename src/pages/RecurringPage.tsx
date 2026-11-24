@@ -25,6 +25,7 @@ import { activeRecurringItems, inactiveRecurringItems, recurringAccountChoice, r
 import { recurringCadenceLabel } from '../lib/recurringCadence';
 import { deleteRecurringServiceAsset, uploadRecurringServiceAsset, type RecurringServiceAsset } from '../lib/recurringServiceAssetClient';
 import { recurringFinanceWriteDefinitelyRejected } from '../lib/recurringFinanceAssetOutcome';
+import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, RecurringItem, RecurringStatus } from '../types';
@@ -111,33 +112,41 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
     const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
     const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
     if(error){setEditError(error);return}
+    const scope=authScopeEpoch();
     editSaveInFlight.current=true;
     setEditBusy(true);setEditError('');
     let uploaded:RecurringServiceAsset|null=null;
     let persisted=false;
     const oldKey=base.logoAssetKey;
     try{
+      assertCurrentAuthScope(scope);
       let logoAssetKey=editLogoRemoved?undefined:oldKey;
       if(editLogoFile){
         uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile});
+        assertCurrentAuthScope(scope);
         logoAssetKey=uploaded.assetKey;
       }
       const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined};
       // The editor must not close or report success until this exact finance
       // mutation is persisted with its matching revision and history cursor.
+      assertCurrentAuthScope(scope);
       await onUpsertDurably(normalized);
       persisted=true;
+      assertCurrentAuthScope(scope);
       let cleanupWarning='';
       const oldKeyStillShared=Boolean(oldKey&&[...active,...inactive].some(item=>item.id!==base.id&&item.logoAssetKey===oldKey));
       if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared){
         try{await deleteRecurringServiceAsset(oldKey)}
         catch{cleanupWarning=' Το προηγούμενο λογότυπο δεν ήταν δυνατό να αποδεσμευτεί· η οικονομική αλλαγή έχει αποθηκευτεί.'}
       }
+      if(scope!==authScopeEpoch())return;
       releaseEdit();
       // True server-acknowledged top progress is the sole routine save feedback.
       // Only preserve action status when a logo cleanup issue needs attention.
       setMessage(cleanupWarning.trim());
     }catch(reason){
+      // A retired editor must not dispatch compensating deletion with a newer cookie.
+      if(scope!==authScopeEpoch())return;
       let cleanupWarning='';
       if(uploaded&&!persisted){
         if(recurringFinanceWriteDefinitelyRejected(reason)){
@@ -150,6 +159,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
           cleanupWarning=' Η οικονομική εγγραφή ίσως αποθηκεύτηκε. Η εικόνα διατηρήθηκε για ασφάλεια· ανανέωσε την εφαρμογή και έλεγξε την εγγραφή πριν συνεχίσεις.';
         }
       }
+      if(scope!==authScopeEpoch())return;
       setEditError(userErrorMessage(reason,'Η αποθήκευση του παγίου δεν επιβεβαιώθηκε. Επαναφόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.')+cleanupWarning);
     }finally{editSaveInFlight.current=false;setEditBusy(false)}
   };

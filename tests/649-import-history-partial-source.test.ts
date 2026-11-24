@@ -80,6 +80,8 @@ describe('#649 I18.04 import receipt with unverified history',()=>{
     expect(importOutcomeMayBeCommitted(new ApiError('timeout',0,'NETWORK_TIMEOUT'))).toBe(true);
     expect(importOutcomeMayBeCommitted(new ApiError('unavailable',503,'DATA_UNAVAILABLE'))).toBe(true);
     expect(importOutcomeMayBeCommitted(new ApiError('gateway timeout',504,'DATA_TIMEOUT'))).toBe(true);
+    expect(importOutcomeMayBeCommitted(new ApiError('timeout',408,'UPSTREAM_TIMEOUT'))).toBe(true);
+    expect(importOutcomeMayBeCommitted(new ApiError('rate limited',429,'RATE_LIMITED'))).toBe(true);
     expect(importOutcomeMayBeCommitted(new ApiError('revision conflict',409,'REVISION_CONFLICT'))).toBe(false);
     expect(importOutcomeMayBeCommitted(new ApiError('invalid payload',400,'INVALID_DATA'))).toBe(false);
   });

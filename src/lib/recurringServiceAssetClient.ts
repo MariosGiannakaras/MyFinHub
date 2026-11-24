@@ -2,6 +2,7 @@ import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { publicAssetUrlAllowed } from './providerAssetUrl.js';
 import { watchAuthScope } from './authScopedCache.js';
+import { withArtworkMutationLock } from './artworkMutationLock.js';
 
 export interface RecurringServiceAsset{
   assetKey:string;
@@ -33,7 +34,7 @@ export class UnverifiedRecurringServiceAssetWrite extends Error {
   constructor(){super(UNVERIFIED_UPLOAD);this.name='UnverifiedRecurringServiceAssetWrite'}
 }
 export class RecurringServiceUploadInProgress extends Error {
-  constructor(){super('Η μεταφόρτωση εικόνας για αυτό το πάγιο βρίσκεται ήδη σε εξέλιξη.');this.name='RecurringServiceUploadInProgress'}
+  constructor(){super('Η μεταφόρτωση εικόνας για αυτό το πάγιο εκκρεμεί ή δεν έχει επιβεβαιωθεί.');this.name='RecurringServiceUploadInProgress'}
 }
 // A lost binary-upload response may follow a committed server-generated key.
 // Do not blindly replay for this recurring item within the same auth scope.
@@ -122,7 +123,8 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   if(inFlightUploads.has(input.recurringId))throw new RecurringServiceUploadInProgress();
   inFlightUploads.add(input.recurringId);
   try{
-  return await trackDatabaseWrite(async()=>{
+  return await withArtworkMutationLock('recurring-upload:'+input.recurringId,epoch,
+    ()=>new RecurringServiceUploadInProgress(),()=>uncertainUploads.has(input.recurringId),()=>trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:input.recurringId,fileName:input.file.name});
   let response:Response;
   try{
@@ -165,7 +167,7 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   }catch{
     return unverifiedUpload(input.recurringId,epoch);
   }
-  });
+  }));
   }finally{
     // Old-session completions cannot release a new session's in-flight slot.
     if(epoch===authEpoch())inFlightUploads.delete(input.recurringId);
@@ -180,7 +182,9 @@ export async function deleteRecurringServiceAsset(assetKey:string){
     throw new Error('Η αποδέσμευση της εικόνας βρίσκεται ήδη σε εξέλιξη.');
   inFlightReleases.add(assetKey);
   try{
-    return await trackDatabaseWrite(async()=>{
+    return await withArtworkMutationLock('recurring-release:'+assetKey,epoch,
+      ()=>new Error('Η αποδέσμευση της εικόνας εκκρεμεί ή δεν έχει επιβεβαιωθεί.'),
+      ()=>uncertainReleases.has(assetKey),()=>trackDatabaseWrite(async()=>{
       const params=new URLSearchParams({resource:'recurring-service-assets',assetKey});
       let response:Response|null=null;
       try{
@@ -213,7 +217,7 @@ export async function deleteRecurringServiceAsset(assetKey:string){
       }catch{
         return unverifiedRelease(assetKey,epoch);
       }
-    });
+    }));
   }finally{
     // Retired-session completions must never unlock a new session's request.
     if(epoch===authEpoch())inFlightReleases.delete(assetKey);

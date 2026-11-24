@@ -56,6 +56,8 @@ describe('#649 I18.04 uncertain backup RPC receipt',()=>{
     expect(lost).toBeInstanceOf(ApiError);
     expect(lost).toMatchObject({status:0,code:'NETWORK_ERROR'});
     expect(backupOutcomeMayBeCommitted(lost)).toBe(true);
+    expect(backupOutcomeMayBeCommitted(new ApiError('timeout',408,'UPSTREAM_TIMEOUT'))).toBe(true);
+    expect(backupOutcomeMayBeCommitted(new ApiError('rate limited',429,'RATE_LIMITED'))).toBe(true);
     expect(backupOutcomeMayBeCommitted(new ApiError('not authorized',403,'FORBIDDEN'))).toBe(false);
     expect(backupOutcomeMayBeCommitted(new Error('local validation'))).toBe(false);
   });

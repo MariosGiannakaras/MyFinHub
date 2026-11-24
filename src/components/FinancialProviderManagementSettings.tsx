@@ -3,6 +3,7 @@ import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react'
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { markDatabaseSaveUnverified } from '../lib/databaseSaveActivity';
+import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
 import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
@@ -248,9 +249,11 @@ export function FinancialProviderManagementSettings(){
       setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
     }
+    const scope=authScopeEpoch();
     mutationInFlight.current=true;setBusy(true);setEditorError('');setEditorWarning('');
     let metadataCommitted=false;
     try{
+      assertCurrentAuthScope(scope);
       const payload:FinancialProviderWriteInput={
         id:editor.id,displayName:editor.displayName.trim(),shortName:editor.shortName.trim(),providerKind:editor.providerKind,
         countryCode:editor.countryCode.trim().toUpperCase()||null,sortOrder:editor.sortOrder,
@@ -258,6 +261,7 @@ export function FinancialProviderManagementSettings(){
       if(!providerMetadataMatchesInput(editor.acknowledgedMetadata,payload)){
         if(editor.source==='new')await saveFinancialProvider(payload,false);
         else await updateFinancialProvider(payload,false);
+        assertCurrentAuthScope(scope);
         // Save the confirmed receipt before independently fallible asset writes.
         // An acknowledged new provider must not be created twice on retry.
         setEditor(current=>current?.id===editor.id?{
@@ -272,9 +276,11 @@ export function FinancialProviderManagementSettings(){
         if(!referencedPending.has(pending.ref))continue;
         if(pending.uploadedKey){uploaded.set(pending.ref,pending.uploadedKey);continue}
         const origin=SLOT_BY_ID.get(pending.originSlot)!;
+        assertCurrentAuthScope(scope);
         const asset=await uploadFinancialProviderAsset({
           providerId:editor.id,role:origin.role,variant:origin.variant,file:pending.file,makePrimary:false,refreshCatalog:false,
         });
+        assertCurrentAuthScope(scope);
         uploaded.set(pending.ref,asset.assetKey);
         // Keep acknowledged uploads in React state so a failed later binding
         // can be retried without sending the already persisted binary again.
@@ -288,7 +294,9 @@ export function FinancialProviderManagementSettings(){
         const finalKey=ref?.startsWith('pending:')?(uploaded.get(ref)??editor.pendingAssets.find(item=>item.ref===ref)?.uploadedKey??null):ref;
         const original=editor.originalAssignments[slot.id];
         if(finalKey!==original){
+          assertCurrentAuthScope(scope);
           await setFinancialProviderAssetBinding({providerId:editor.id,role:slot.role,variant:slot.variant,assetKey:finalKey,refreshCatalog:false});
+          assertCurrentAuthScope(scope);
           // Commit the per-slot acknowledgement to the retry snapshot. If a
           // subsequent slot fails, the already written slot must not repeat.
           setEditor(current=>current?.id===editor.id?{
@@ -296,7 +304,9 @@ export function FinancialProviderManagementSettings(){
           }:current);
         }
       }
+      assertCurrentAuthScope(scope);
       const reloaded=await refreshFinancialProviders(true);
+      assertCurrentAuthScope(scope);
       // A syntactically valid HTTP-200 catalog can still be stale. Match all
       // metadata and nine intended slots against its actual durable readback.
       const intendedSlots=SLOTS.map(slot=>{
@@ -328,6 +338,7 @@ export function FinancialProviderManagementSettings(){
       setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
       releaseEditor();
     }catch(error){
+      if(scope!==authScopeEpoch())return;
       if(error instanceof UnverifiedFinancialProviderWrite){
         // An ambiguous metadata/asset/binding response is not a confirmed rollback.
         // Re-read once without replaying any of the independently committed writes.
@@ -335,6 +346,7 @@ export function FinancialProviderManagementSettings(){
         if(editor.source==='new'&&metadataCommitted)
           setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
         const readback=await refreshFinancialProviders(true);
+        if(scope!==authScopeEpoch())return;
         setEditorWarning(error.operation==='metadata'
           ?(readback.error
             ?'Η αποθήκευση στοιχείων παρόχου έχει αβέβαιο αποτέλεσμα και η λίστα δεν επιβεβαιώθηκε. Μην επαναλάβεις την εγγραφή πριν ελέγξεις τη διαρκή κατάσταση.'
