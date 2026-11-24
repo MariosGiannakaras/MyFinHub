@@ -651,10 +651,26 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     // The previous History screenshot intentionally retains the open dialog.
     // A hard reload closes it without writing or fabricating client state.
     await c.send('Page.reload',{ignoreCache:true});
-    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'real app after history reload');
+    await c.send('Page.bringToFront');
+    await waitFor("function(){const route=document.querySelector('#main-workspace')?.firstElementChild;return route instanceof HTMLElement&&Boolean(route.querySelector('h1'))&&Number(getComputedStyle(route).opacity)>=.995&&!document.querySelector('[aria-modal=true]')}",'real app after history reload and settled route');
+    // Observe actual focus transitions without moving focus or reading field values.
+    await c.call("function(){const trace=[];globalThis.__routeFocusTrace=trace;document.addEventListener('focusin',event=>{const node=event.target;if(!(node instanceof HTMLElement))return;trace.push({tag:node.tagName,id:node.id,commandInput:node.hasAttribute('data-command-input'),accountRow:node.matches('.account-management-row'),inModal:Boolean(node.closest('[aria-modal=true]'))});if(trace.length>24)trace.shift()})}");
     const selectAccountCommand=async(title:string,id:string)=>{
-      await clickAria('Αναζήτηση και εντολές');
-      await waitFor("function(){const input=document.querySelector('[data-command-input=true]');return input instanceof HTMLInputElement&&document.activeElement===input}",'actual command palette autofocus');
+      console.log('[real-browser] account command '+id);
+      // Use real pointer activation on the actual topbar control, not an
+      // artificial .click() that skips the browser's launcher focus behavior.
+      const point=await c!.call<{x:number;y:number}|null>("function(){const button=document.querySelector('.topbar button[aria-label=\"Αναζήτηση και εντολές\"]');if(!(button instanceof HTMLButtonElement)||button.disabled)return null;const rect=button.getBoundingClientRect();const x=rect.left+rect.width/2,y=rect.top+rect.height/2;return rect.width>0&&rect.height>0&&button.contains(document.elementFromPoint(x,y))?{x,y}:null}");
+      assert(point,'Actual command launcher is not visible and pointer-reachable.');
+      await c!.send('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
+      await c!.send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
+      try{
+        await waitFor("function(){const input=document.querySelector('[data-command-input=true]');return input instanceof HTMLInputElement&&document.activeElement===input}",'actual command palette autofocus '+id);
+      }catch(error){
+        const diagnostic=await c!.call("function(){const input=document.querySelector('[data-command-input=true]'),active=document.activeElement,modal=document.querySelector('.command-palette');return {hash:location.hash,documentFocused:document.hasFocus(),palette:Boolean(modal),inputPresent:Boolean(input),inputRects:input?.getClientRects().length??0,activeTag:active?.tagName,activeId:active?.id,activeInModal:Boolean(active?.closest('[aria-modal=true]')),focusTrace:globalThis.__routeFocusTrace||[]}}");
+        console.error('[real-browser] command autofocus diagnostic',JSON.stringify({id,diagnostic,runtimeExceptionCount:runtimeErrors.length}));
+        await shot('app-command-autofocus-failure-'+id);
+        throw error;
+      }
       await c!.call("function(){const input=document.querySelector('[data-command-input=true]');if(input instanceof HTMLInputElement)input.select()}");
       await c!.send('Input.insertText',{text:title});
       await waitFor("function(title){return [...document.querySelectorAll('#command-results [role=option]')].some(row=>(row.querySelector('.command-result-copy b')?.textContent||'').trim()==='Διαχείριση · '+title)}",'exact actual account command',[title]);

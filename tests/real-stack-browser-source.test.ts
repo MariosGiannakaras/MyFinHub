@@ -55,6 +55,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(stage.match(/await selectAccountCommand\('Imported QA Cash','qa-cash'\)/g)).toHaveLength(2);
     expect(stage).toContain("await selectAccountCommand('Synthetic QA Bank Account','qa-bank-account')");
     expect(stage).toContain("row.dataset.accountId===id");
+    expect(stage).toContain("Input.dispatchMouseEvent");
+    expect(stage).toContain("document.activeElement===input");
+    expect(stage).toContain("command autofocus diagnostic");
+    expect(stage).toContain("await shot('app-command-autofocus-failure-'+id)");
+    expect(stage).not.toContain("input.focus(");
     expect(stage).toContain("document.activeElement===heading");
     expect(stage).toContain("!document.querySelector('.app-shell')");
     expect(stage).toContain("await shot('app-not-found-desktop')");
