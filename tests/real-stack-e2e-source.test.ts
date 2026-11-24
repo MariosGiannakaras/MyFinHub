@@ -138,6 +138,19 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(ownerHttp).toContain('JSON.stringify(afterHistory.body)===JSON.stringify(beforeHistory.body)');
     expect(ownerHttp).toContain('JSON.stringify(await snapshotEffects())===JSON.stringify(beforeDb)');
     expect(ownerHttp).toContain("'owner-aal2-cookie-preserved'");
+    expect(directRpc).toContain("await options.proveAssetHttpDenial('owner-aal1',aal1Token,httpFixture)");
+    expect(directRpc).toContain("await options.proveAssetHttpDenial('nonowner-aal2',nonownerAal2,httpFixture)");
+    expect(directRpc.indexOf("await options.proveAssetHttpDenial('revoked-aal2',aal2Token,httpFixture)")).toBeGreaterThan(directRpc.indexOf('const revokedDevice='));
+    expect(directRpc).toContain('await storageBytesUnchanged(recurringStorage)&&await storageBytesUnchanged(registeredAssetStorage)');
+    const assetHttp=script.slice(script.indexOf('proveAssetHttpDenial:async(identity,accessToken,assetFixture)'),script.indexOf('const afterDirectDevices='));
+    for(const label of ['iban-read','iban-clear','provider-catalog-read','provider-create','provider-update','provider-unbind','provider-upload','recurring-catalog-read','recurring-release','recurring-upload','vault-read','vault-write','vault-delete'])
+      expect(assetHttp).toContain(label);
+    expect(assetHttp).toContain("identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED'");
+    expect(assetHttp).toContain('JSON.stringify([...primary.snapshot()])===cookies');
+    expect(assetHttp).toContain('JSON.stringify(await snapshotRows())===JSON.stringify(rowsBefore)');
+    expect(assetHttp).toContain('JSON.stringify(await readCatalogs())===JSON.stringify(before)');
+    expect(assetHttp).toContain('JSON.stringify(vaultAfter.body)===JSON.stringify(vaultBefore.body)');
+    expect(assetHttp).toContain("'asset-http-cookie-preserved'");
     expect(script).toContain("[real-stack] stage revoked-bearer-finance-mutation-history-backup-import");
     const revokedStage=script.slice(script.indexOf("stage revoked-bearer-finance-mutation-history-backup-import"),script.indexOf("stage revoked-bearer-finance-vault-no-cookie-fallback"));
     for(const label of ['revoked-bearer-finance-put','revoked-bearer-history-read','revoked-bearer-history-redo','revoked-bearer-backup','revoked-bearer-import'])

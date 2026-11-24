@@ -9,6 +9,7 @@ type Options={
   totpCodeForSecret:(secret:string,previous?:string)=>Promise<string>;
   data:FinanceData;revision:string;generation:string;
   proveHttpDenial:(identity:'owner-aal1'|'nonowner-aal2',accessToken:string)=>Promise<void>;
+  proveAssetHttpDenial:(identity:'owner-aal1'|'nonowner-aal2'|'revoked-aal2',accessToken:string,fixture:{accountId:string;providerId:string;providerAssetKey:string;recurringAssetKey:string})=>Promise<void>;
 };
 type Response={status:number;body:any};
 function assert(condition:unknown,message:string):asserts condition{
@@ -517,6 +518,12 @@ export async function runDirectReceivableRpcProof(options:Options){
       await assertDeniedBindingMutations(label,token,protectedProviderId,registeredAssetKey);
     }
 
+    const httpFixture={accountId:privateAccountId,providerId:protectedProviderId,providerAssetKey:registeredAssetKey,recurringAssetKey};
+    await options.proveAssetHttpDenial('owner-aal1',aal1Token,httpFixture);
+    await options.proveAssetHttpDenial('nonowner-aal2',nonownerAal2,httpFixture);
+    assert(await storageBytesUnchanged(recurringStorage)&&await storageBytesUnchanged(registeredAssetStorage),
+      'HTTP owner/AAL2 negatives changed real registered artwork bytes.');
+
     // A legitimate owner+AAL2 token can bypass the invoker RPC and write
     // binding rows directly. The database must independently enforce that
     // a bound asset belongs to the SAME provider, not merely exists.
@@ -744,6 +751,9 @@ export async function runDirectReceivableRpcProof(options:Options){
     'Revoked owner AAL2 retained provider binding SELECT visibility.');
   await assertDeniedBindingMutations('revoked owner AAL2',aal2Token,protectedProviderId,registeredAssetKey);
   await assertDeniedStorage('revoked owner AAL2',aal2Token);
+  await options.proveAssetHttpDenial('revoked-aal2',aal2Token,httpFixture);
+  assert(await storageBytesUnchanged(recurringStorage)&&await storageBytesUnchanged(registeredAssetStorage),
+    'HTTP revoked-device negatives changed real registered artwork bytes.');
   // The JWT still parses after device revocation. Every previously tested
   // direct metadata/asset RPC must now deny the same revoked AAL2 identity.
   // No request is replayed and any write would abort the disposable proof.

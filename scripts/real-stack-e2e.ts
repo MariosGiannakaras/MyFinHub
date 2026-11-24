@@ -344,6 +344,19 @@ async function main(){
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    console.log('[real-stack] stage card-vault-write');
+    const vaultSaved=await primary.request('/api/card-secrets',{
+      method:'PUT',
+      body:{cardId:TEST_CARD_ID,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV},
+    });
+    expect(vaultSaved,200,undefined,'card-vault-write');
+    assert(vaultSaved.body?.last4==='4242','Card vault write did not return the synthetic last4.');
+
+    console.log('[real-stack] stage card-vault-read');
+    const vaultRead=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
+    expect(vaultRead,200,undefined,'card-vault-read');
+    assert(vaultRead.body?.pan===TEST_PAN&&vaultRead.body?.expiry===TEST_EXPIRY&&vaultRead.body?.cvv===TEST_CVV,'Card vault round-trip did not preserve the synthetic secret.');
+
     console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
     const directRpcSessions=await runDirectReceivableRpcProof({
       apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
@@ -409,6 +422,82 @@ async function main(){
           'Unauthorized bearer changed database state, backup or audit rows: '+identity);
         expect(await primary.request('/api/auth/session'),200,undefined,'owner-aal2-cookie-preserved');
         console.log('[real-stack] PASS finance-http-owner-aal2-denial '+identity);
+      },
+      proveAssetHttpDenial:async(identity,accessToken,assetFixture)=>{
+        console.log('[real-stack] stage metadata-vault-http-owner-aal2-denial '+identity);
+        const metadataPath='/api/account-metadata';
+        const providerPath=metadataPath+'?resource=financial-providers';
+        const recurringPath=metadataPath+'?resource=recurring-service-assets';
+        const vaultPath='/api/card-secrets';
+        const readVault=()=>primary.request(vaultPath,{method:'POST',body:{cardId:TEST_CARD_ID}});
+        const readCatalogs=async()=>{
+          const results=await Promise.all([primary.request(metadataPath),primary.request(providerPath),primary.request(recurringPath)]);
+          for(const result of results)expect(result,200,undefined,'asset-http-positive-catalog');
+          return {metadata:results[0].body,providers:results[1].body,recurring:results[2].body};
+        };
+        const before=await readCatalogs();
+        const record=before.metadata?.records?.find((row:any)=>row.accountId===assetFixture.accountId);
+        const provider=before.providers?.providers?.find((row:any)=>row.id===assetFixture.providerId);
+        const recurring=before.recurring?.assets?.find((row:any)=>row.assetKey===assetFixture.recurringAssetKey);
+        assert(record?.iban&&record.revision===1&&provider?.assets?.some((row:any)=>row.assetKey===assetFixture.providerAssetKey)&&
+          provider.bindings?.some((row:any)=>row.role==='card-mark'&&row.variant==='dark'&&row.assetKey===assetFixture.providerAssetKey)&&recurring?.recurringId,
+          'HTTP metadata negatives require populated, versioned owner fixtures and real artwork bindings.');
+        const vaultBefore=await readVault();
+        expect(vaultBefore,200,undefined,'asset-http-positive-vault');
+        assert(vaultBefore.body?.pan===TEST_PAN&&vaultBefore.body?.expiry===TEST_EXPIRY&&vaultBefore.body?.cvv===TEST_CVV,
+          'HTTP Card Vault negatives require a real readable encrypted fixture.');
+        const snapshotRows=async()=>({
+          metadata:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_account_metadata?select=*&order=account_id.asc',local.serviceRole),
+          providers:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_providers?select=*&order=id.asc',local.serviceRole),
+          artwork:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?select=*&order=asset_key.asc',local.serviceRole),
+          bindings:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?select=*&order=provider_id.asc,asset_role.asc,variant.asc',local.serviceRole),
+          recurring:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_recurring_service_assets?select=*&order=asset_key.asc',local.serviceRole),
+          vault:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_card_secrets?select=*&card_id=eq.'+TEST_CARD_ID,local.serviceRole),
+          providerObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/'+assetFixture.providerId),
+          recurringObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets'),
+        });
+        const rowsBefore=await snapshotRows();
+        assert(Array.isArray(rowsBefore.vault)&&rowsBefore.vault.length===1,'HTTP Card Vault proof missing encrypted database row.');
+        const headers={authorization:'Bearer '+accessToken};
+        const cookies=JSON.stringify([...primary.snapshot()]);
+        const reject=(result:ApiResult,label:string)=>{
+          expect(result,identity==='owner-aal1'?403:401,
+            identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED',identity+'-'+label);
+          assert(JSON.stringify([...primary.snapshot()])===cookies,
+            'Unauthorized metadata bearer changed independent owner cookies: '+identity+'-'+label);
+        };
+        const providerWrite={id:provider.id,displayName:'Unauthorized metadata edit',shortName:provider.shortName,
+          providerKind:provider.providerKind,countryCode:provider.countryCode,sortOrder:provider.sortOrder};
+        for(const [path,options,label] of [
+          [metadataPath,{headers},'iban-read'],
+          [metadataPath,{method:'PUT',headers:{...headers,'if-match':String(record.revision)},body:{accountId:record.accountId,iban:null}},'iban-clear'],
+          [providerPath,{headers},'provider-catalog-read'],
+          [providerPath,{method:'POST',headers,body:{...providerWrite,id:'qa-denied-http-provider'}},'provider-create'],
+          [providerPath,{method:'PATCH',headers,body:providerWrite},'provider-update'],
+          [metadataPath+'?resource=financial-provider-asset-binding',{method:'PUT',headers,body:{providerId:provider.id,role:'card-mark',variant:'dark',assetKey:null}},'provider-unbind'],
+          [recurringPath,{headers},'recurring-catalog-read'],
+          [recurringPath+'&assetKey='+encodeURIComponent(assetFixture.recurringAssetKey),{method:'DELETE',headers},'recurring-release'],
+          [vaultPath,{method:'POST',headers,body:{cardId:TEST_CARD_ID}},'vault-read'],
+          [vaultPath,{method:'PUT',headers,body:{cardId:TEST_CARD_ID,cvv:'321'}},'vault-write'],
+          [vaultPath,{method:'DELETE',headers,body:{cardId:TEST_CARD_ID}},'vault-delete'],
+        ] as const)reject(await primary.request(path,options),label);
+        const binaryHeaders={...headers,'content-type':'image/svg+xml'};
+        reject(await primary.requestBinary(metadataPath+'?'+new URLSearchParams({
+          resource:'financial-provider-assets',providerId:provider.id,role:'logo',variant:'universal',primary:'0',fileName:'denied.svg',
+        }),{method:'PUT',headers:binaryHeaders,body:guardedAsset}),'provider-upload');
+        reject(await primary.requestBinary(recurringPath+'&'+new URLSearchParams({
+          recurringId:recurring.recurringId,fileName:'denied.svg',
+        }),{method:'PUT',headers:binaryHeaders,body:guardedAsset}),'recurring-upload');
+        assert(JSON.stringify(await readCatalogs())===JSON.stringify(before),
+          'Unauthorized HTTP request changed owner-visible metadata catalog: '+identity);
+        const vaultAfter=await readVault();
+        expect(vaultAfter,200,undefined,'asset-http-vault-preserved');
+        assert(JSON.stringify(vaultAfter.body)===JSON.stringify(vaultBefore.body),
+          'Unauthorized HTTP request changed readable Card Vault fixture: '+identity);
+        assert(JSON.stringify(await snapshotRows())===JSON.stringify(rowsBefore),
+          'Unauthorized HTTP request changed metadata, encrypted vault rows or Storage object inventory: '+identity);
+        expect(await primary.request('/api/auth/session'),200,undefined,'asset-http-cookie-preserved');
+        console.log('[real-stack] PASS metadata-vault-http-owner-aal2-denial '+identity);
       },
     });
     // The direct proof uses a separate synthetic Auth session. Retire only its
@@ -491,19 +580,6 @@ async function main(){
     assert(redone.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Redo did not restore the saved finance state.');
     assert((redone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id&&event.receivableDelta===-2.5),
       'Finance Redo did not restore the exact noncash writeoff.');
-
-    console.log('[real-stack] stage card-vault-write');
-    const vaultSaved=await primary.request('/api/card-secrets',{
-      method:'PUT',
-      body:{cardId:TEST_CARD_ID,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV},
-    });
-    expect(vaultSaved,200,undefined,'card-vault-write');
-    assert(vaultSaved.body?.last4==='4242','Card vault write did not return the synthetic last4.');
-
-    console.log('[real-stack] stage card-vault-read');
-    const vaultRead=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
-    expect(vaultRead,200,undefined,'card-vault-read');
-    assert(vaultRead.body?.pan===TEST_PAN&&vaultRead.body?.expiry===TEST_EXPIRY&&vaultRead.body?.cvv===TEST_CVV,'Card vault round-trip did not preserve the synthetic secret.');
 
     console.log('[real-stack] stage backup');
     const backup=await primary.request('/api/backup',{method:'POST',body:{}});
