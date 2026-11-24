@@ -142,12 +142,27 @@ export async function ensureDeviceSessionAccess(req: any, accessToken: string, u
   const lastSeen = Date.parse(existing.last_seen_at || '');
   const metadataChanged = existing.platform !== metadata.platform || existing.device_label !== metadata.device_label || existing.app_version !== metadata.app_version || existing.system_name !== metadata.system_name || existing.browser_name !== metadata.browser_name || existing.device_type !== metadata.device_type;
   if (metadataChanged || !Number.isFinite(lastSeen) || Date.now() - lastSeen >= TOUCH_INTERVAL_MS) {
-    const updated = await rest<DeviceSessionRecord[]>(`${rowPath(sessionId)}&user_id=eq.${encodeURIComponent(userId)}`, accessToken, {
-      method: 'PATCH',
-      headers: { prefer: 'return=representation' },
-      body: JSON.stringify({ ...metadata, last_seen_at: now }),
-    });
-    return updated[0] ?? existing;
+    // Two concurrent AAL2 requests can start in order but arrive at PostgreSQL
+    // in reverse order. Keep the DB monotonicity trigger unchanged; predicate
+    // the write so the older timestamp cannot reach that trigger or overwrite
+    // metadata from a newer touch. Never touch a revoked device.
+    const updated = await rest<DeviceSessionRecord[]>(
+      `${rowPath(sessionId)}&user_id=eq.${encodeURIComponent(userId)}&revoked_at=is.null&last_seen_at=lte.${encodeURIComponent(now)}`,
+      accessToken, {
+        method: 'PATCH',
+        headers: { prefer: 'return=representation' },
+        body: JSON.stringify({ ...metadata, last_seen_at: now }),
+      },
+    );
+    if (updated[0]) return updated[0];
+    // A zero-row PATCH may mean a newer concurrent touch OR a concurrent
+    // revocation/removal. Do not trust the original, potentially stale GET.
+    // Reread under the same owner AAL2 JWT/RLS boundary and fail closed.
+    const current = (await rest<DeviceSessionRecord[]>(rowPath(sessionId), accessToken))[0];
+    if (!current || current.user_id !== userId || current.revoked_at) {
+      throw new ApiError(401, 'DEVICE_ACCESS_REVOKED', 'Η πρόσβαση αυτής της συσκευής έχει αφαιρεθεί.');
+    }
+    return current;
   }
   return existing;
 }
