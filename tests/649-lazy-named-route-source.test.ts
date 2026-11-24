@@ -9,12 +9,12 @@ describe('#649 lazy route name provenance and eager bundle regression',()=>{
     for(const name of [
       'DashboardPage','TransactionsPage','SavingsPage','CardsPage',
       'CreditCardPage','LoansPage','RecurringPage','LendingPage',
-      'PlanningPage','AttentionPage','SettingsPage',
+      'PlanningPage','AttentionPage','SettingsPage','ReportsPage','NotFoundPage',
     ])expect(app).toContain(`namedLazy(() => import('./pages/${name}'), '${name}')`);
-    for(const name of ['ReceiptCleanupNotice','CommandPalette','ContextualQuickAdd'])
+    for(const name of ['ReceiptCleanupNotice','CommandPalette','ContextualQuickAdd','PersistenceNotice','ConfirmDialog'])
       expect(app).toContain(`namedLazy(() => import('./components/${name}'), '${name}')`);
-    for(const name of ['PersistenceNotice','ConfirmDialog','ReportsPage','NotFoundPage'])
-      expect(app).toContain(`const ${name} = lazy(() => import(`);
+    expect(app.match(/\blazy\(/g)).toHaveLength(1);
+    expect(app).toContain('const nextFocusKey=(key:number)=>key+1;');
     expect(app).not.toContain("import { DashboardPage } from './pages/DashboardPage'");
   });
 });

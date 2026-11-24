@@ -30,7 +30,7 @@ describe('release-readiness source contracts',()=>{
     const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*(?:lazy|namedLazy)\(\(\)\s*=>\s*import\('\.\/pages\//g)];
     expect(lazyPages.length).toBeGreaterThanOrEqual(12);
     expect(app).toContain('function namedLazy<Module extends object, Name extends keyof Module>');
-    expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
+    expect(app).toContain("const ReportsPage = namedLazy(() => import('./pages/ReportsPage')");
     expect(app).not.toContain("from 'recharts'");
     expect(reports).toContain("from 'recharts'");
     expect(dashboardCharts).toContain('ResponsiveContainer');

@@ -10,7 +10,7 @@ describe('Command Palette source-to-selected-ledger reachability (DV-FB02/03)',(
   it('selects exact credit card search hits, including repeated choices on the same route',()=>{
     expect(search).toContain("type:'credit_card_focus';cardId:string");
     expect(search).toContain("type:'credit_card_focus',cardId:card.id");
-    expect(app).toContain("setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit')");
+    expect(app).toContain("setCommandCardId(action.cardId);setCommandCardKey(nextFocusKey);navigate('credit')");
     expect(qa).toContain("setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);setPage('credit')");
     expect(app).toContain('commandCardId={commandCardId} commandCardKey={commandCardKey}');
     expect(qa).toContain('commandCardId={commandCardId} commandCardKey={commandCardKey}');

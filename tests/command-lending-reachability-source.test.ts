@@ -14,7 +14,7 @@ describe('Command Palette exact Lending person reachability',()=>{
    for(const source of [app,qa]){
      expect(source).toContain("if(action.type==='lending_person_focus')");
      expect(source).toContain('setCommandLendingPerson(action.person)');
-     expect(source).toContain('setCommandLendingKey(key=>key+1)');
+     expect(source).toContain(source===app?'setCommandLendingKey(nextFocusKey)':'setCommandLendingKey(key=>key+1)');
      expect(source).toContain('commandPerson={commandLendingPerson}');
      expect(source).toContain('commandPersonKey={commandLendingKey}');
    }

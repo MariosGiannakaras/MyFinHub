@@ -129,7 +129,7 @@ describe('shared primitive adoption',()=>{
 
   it('keeps conflict recovery behind an on-demand app-owned confirmation and the existing reload path',()=>{
     expectNoNativeDialog(app);
-    expect(app).toContain("const ConfirmDialog = lazy(() => import('./components/ConfirmDialog')");
+    expect(app).toContain("const ConfirmDialog = namedLazy(() => import('./components/ConfirmDialog')");
     expect(app).toContain('{recoverOpen ? <Suspense fallback={null}><ConfirmDialog open');
     expect(app).toContain("finance.saveState === 'error' || finance.saveState === 'conflict'");
     expect(app).toContain('const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()}');

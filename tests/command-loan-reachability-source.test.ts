@@ -12,7 +12,7 @@ describe('Command Palette exact Loan navigation',()=>{
     for(const source of [app,qa]){
       expect(source).toContain("if(action.type==='loan_focus')");
       expect(source).toContain('setCommandLoanId(action.loanId)');
-      expect(source).toContain('setCommandLoanKey(key=>key+1)');
+      expect(source).toContain(source===app?'setCommandLoanKey(nextFocusKey)':'setCommandLoanKey(key=>key+1)');
       expect(source).toContain('commandLoanId={commandLoanId}');
       expect(source).toContain('commandLoanKey={commandLoanKey}');
     }
