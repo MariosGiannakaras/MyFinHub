@@ -351,6 +351,65 @@ async function main(){
       totpCode:()=>nextTotp(secret,correct),
       totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode),
       data:initial.body.data,revision:initialRevision,generation:initialGeneration,
+      proveHttpDenial:async(identity,accessToken)=>{
+        console.log('[real-stack] stage finance-http-owner-aal2-denial '+identity);
+        // Both genuine non-authorized identities accompany an independently
+        // valid owner cookie. The owner AAL1 token must fail MFA; a nonowner
+        // AAL2 device is invisible to the owner-only device registry and
+        // cannot register through its RLS boundary.
+        const beforeData=await primary.request('/api/data');
+        const beforeHistory=await primary.request('/api/history');
+        expect(beforeData,200,undefined,'owner-aal2-before-data');
+        expect(beforeHistory,200,undefined,'owner-aal2-before-history');
+        const revision=String(beforeData.body?.revision||'');
+        const generation=String(beforeHistory.body?.generation||'');
+        assert(/^\d+$/.test(revision)&&/^\d+$/.test(generation)&&
+          String(beforeHistory.body?.financeRevision)===revision,
+          'HTTP owner/AAL2 proof requires a current finance revision and history generation.');
+        const snapshotEffects=async()=>({
+          backups:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1',local.serviceRole),
+          audit:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1',local.serviceRole),
+          state:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,updated_at',local.serviceRole),
+        });
+        const beforeDb=await snapshotEffects();
+        const state=structuredClone(beforeData.body.data.state);
+        state.settings={...state.settings,accountNames:{...state.settings.accountNames,
+          'qa-cash':'Unauthorized identity must not save'}};
+        const updatedAt=new Date().toISOString();
+        const importData={...beforeData.body.data,state,updatedAt};
+        validateCompleteFinanceData(importData);
+        assert(JSON.stringify(state)!==JSON.stringify(beforeData.body.data.state),
+          'HTTP owner/AAL2 proof requires a non-noop finance mutation.');
+        const headers={authorization:'Bearer '+accessToken,
+          'if-match':revision,'x-rheomiq-history-generation':generation};
+        const cookies=JSON.stringify([...primary.snapshot()]);
+        for(const [path,options,label] of [
+          ['/api/data',{headers},'data-get'],
+          ['/api/data',{method:'PUT',headers,body:{state,updatedAt,historyLabel:'Unauthorized identity'}},'data-put'],
+          ['/api/history',{headers},'history-get'],
+          ['/api/backup',{method:'POST',headers,body:{}},'backup-post'],
+          ['/api/import',{method:'POST',headers:{...headers,'x-rheomiq-confirm-import':'replace'},body:importData},'import-post'],
+        ] as const){
+          const denied=await primary.request(path,options);
+          expect(denied,identity==='owner-aal1'?403:401,
+            identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED',identity+'-'+label);
+          assert(JSON.stringify([...primary.snapshot()])===cookies,
+            'Unauthorized bearer changed independent owner cookies: '+identity+'-'+label);
+        }
+        const afterData=await primary.request('/api/data');
+        const afterHistory=await primary.request('/api/history');
+        expect(afterData,200,undefined,'owner-aal2-after-data');
+        expect(afterHistory,200,undefined,'owner-aal2-after-history');
+        assert(afterData.body?.revision===beforeData.body?.revision&&
+          JSON.stringify(afterData.body?.data)===JSON.stringify(beforeData.body?.data),
+          'Unauthorized bearer changed canonical finance or revision: '+identity);
+        assert(JSON.stringify(afterHistory.body)===JSON.stringify(beforeHistory.body),
+          'Unauthorized bearer changed canonical history: '+identity);
+        assert(JSON.stringify(await snapshotEffects())===JSON.stringify(beforeDb),
+          'Unauthorized bearer changed database state, backup or audit rows: '+identity);
+        expect(await primary.request('/api/auth/session'),200,undefined,'owner-aal2-cookie-preserved');
+        console.log('[real-stack] PASS finance-http-owner-aal2-denial '+identity);
+      },
     });
     // The direct proof uses a separate synthetic Auth session. Retire only its
     // session IDs through the existing owner+AAL2 API so the subsequent

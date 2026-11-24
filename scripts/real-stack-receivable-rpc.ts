@@ -8,6 +8,7 @@ type Options={
   totpCode:()=>Promise<string>;
   totpCodeForSecret:(secret:string,previous?:string)=>Promise<string>;
   data:FinanceData;revision:string;generation:string;
+  proveHttpDenial:(identity:'owner-aal1'|'nonowner-aal2',accessToken:string)=>Promise<void>;
 };
 type Response={status:number;body:any};
 function assert(condition:unknown,message:string):asserts condition{
@@ -47,6 +48,8 @@ export async function runDirectReceivableRpcProof(options:Options){
     assert(row.status===201||row.status===200,'Local direct RPC test device registration failed.');
   };
   await register(aal1Claims.session_id!);
+  // Prove the API boundary before upgrading the genuine owner password session.
+  await options.proveHttpDenial('owner-aal1',aal1Token);
 
   const rpc=async(method:string,accessToken:string,payload:unknown)=>{
     return postJson(apiUrl+'/rest/v1/rpc/'+method,{
@@ -139,6 +142,7 @@ export async function runDirectReceivableRpcProof(options:Options){
   assert(nonownerClaims.sub===nonownerUserId&&nonownerClaims.aal==='aal2',
     'Local nonowner token is not genuine AAL2.');
   await register(nonownerClaims.session_id!,nonownerUserId);
+  await options.proveHttpDenial('nonowner-aal2',nonownerAal2);
   for(const method of ['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']){
     const denied=await rpc(method,nonownerAal2,
       method==='rheomiq_save_mutable_state_history'?mutable(overpay):{});
