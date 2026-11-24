@@ -321,29 +321,66 @@ async function main(){
     assert(String(imported.body?.revision||'')==='1','Initial local import did not create revision 1.');
 
     console.log('[real-stack] stage data-read');
-    const initial=await primary.request('/api/data');
-    expect(initial,200,undefined,'data-read');
-    assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    const importRead=await primary.request('/api/data');
+    expect(importRead,200,undefined,'data-read');
+    assert(importRead.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
     // Distinct from the browser's early preview denial: the real API must
     // still reject malformed payloads on its own, with finance untouched.
     console.log('[real-stack] stage invalid-import-authoritative-validation');
     const invalidApiImport=await primary.request('/api/import',{
       method:'POST',
-      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(initial.body?.revision||'')},
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(importRead.body?.revision||'')},
       body:{app:'RheomIQ',schemaVersion:3},
     });
     expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation');
     const afterInvalidApiImport=await primary.request('/api/data');
     expect(afterInvalidApiImport,200,undefined,'invalid-import-finance-unchanged');
-    assert(afterInvalidApiImport.body?.revision===initial.body?.revision
-      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(initial.body?.data),
+    assert(afterInvalidApiImport.body?.revision===importRead.body?.revision
+      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(importRead.body?.data),
       'Authoritatively rejected import mutated confirmed finance.');
+    // Create a real reachable Redo before capturing the immutable direct-RPC
+    // baseline. Do not advance revision/generation inside a denial callback.
+    console.log('[real-stack] stage owner-aal2-history-redo-fixture');
+    const importedHistory=await primary.request('/api/history');
+    expect(importedHistory,200,undefined,'owner-aal2-fixture-before-history');
+    const fixtureRevision=String(importRead.body?.revision||'');
+    const fixtureGeneration=String(importedHistory.body?.generation||'');
+    assert(/^\d+$/.test(fixtureRevision)&&/^\d+$/.test(fixtureGeneration)&&
+      String(importedHistory.body?.financeRevision)===fixtureRevision,
+      'History fixture requires matching current revision and generation.');
+    const fixtureState=structuredClone(importRead.body.data.state);
+    fixtureState.settings={...fixtureState.settings,accountNames:{...fixtureState.settings.accountNames,
+      'qa-cash':'Synthetic reachable history probe'}};
+    assert(JSON.stringify(fixtureState)!==JSON.stringify(importRead.body.data.state),
+      'History fixture requires a non-noop owner save.');
+    validateCompleteFinanceData({...importRead.body.data,state:fixtureState});
+    const fixtureSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':fixtureRevision,'x-rheomiq-history-generation':fixtureGeneration},
+      body:{state:fixtureState,updatedAt:new Date().toISOString(),historyLabel:'Synthetic reachable history probe'},
+    });
+    expect(fixtureSave,200,undefined,'owner-aal2-fixture-save');
+    assert(Number(fixtureSave.body?.revision)>Number(fixtureRevision),
+      'History fixture save did not advance revision.');
+    const fixtureUndo=await primary.request('/api/history',{
+      method:'POST',headers:{'if-match':String(fixtureSave.body?.revision||''),
+        'x-rheomiq-history-generation':String(fixtureSave.body?.history?.generation||'')},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(fixtureUndo,200,undefined,'owner-aal2-fixture-undo');
+    const initial=await primary.request('/api/data');
+    expect(initial,200,undefined,'owner-aal2-fixture-restored-data');
+    assert(Number(initial.body?.revision)>Number(fixtureSave.body?.revision)&&
+      JSON.stringify(initial.body?.data?.state)===JSON.stringify(importRead.body?.data?.state),
+      'History fixture Undo did not restore original canonical finance state.');
     const initialRevision=String(initial.body?.revision||'');
     console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
-    assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration)&&
+      String(history.body?.financeRevision)===initialRevision&&history.body?.canRedo===true,
+      'Direct RPC baseline requires current revision/generation and reachable Redo.');
+    console.log('[real-stack] PASS owner-aal2-history-redo-fixture');
     console.log('[real-stack] stage card-vault-write');
     const vaultSaved=await primary.request('/api/card-secrets',{
       method:'PUT',
@@ -377,8 +414,8 @@ async function main(){
         const revision=String(beforeData.body?.revision||'');
         const generation=String(beforeHistory.body?.generation||'');
         assert(/^\d+$/.test(revision)&&/^\d+$/.test(generation)&&
-          String(beforeHistory.body?.financeRevision)===revision,
-          'HTTP owner/AAL2 proof requires a current finance revision and history generation.');
+          String(beforeHistory.body?.financeRevision)===revision&&beforeHistory.body?.canRedo===true,
+          'HTTP owner/AAL2 proof requires a current finance revision, history generation and reachable Redo.');
         const snapshotEffects=async()=>({
           backups:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1',local.serviceRole),
           audit:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1',local.serviceRole),
@@ -400,6 +437,7 @@ async function main(){
           ['/api/data',{headers},'data-get'],
           ['/api/data',{method:'PUT',headers,body:{state,updatedAt,historyLabel:'Unauthorized identity'}},'data-put'],
           ['/api/history',{headers},'history-get'],
+          ['/api/history',{method:'POST',headers,body:{action:'redo',updatedAt}},'history-redo'],
           ['/api/backup',{method:'POST',headers,body:{}},'backup-post'],
           ['/api/import',{method:'POST',headers:{...headers,'x-rheomiq-confirm-import':'replace'},body:importData},'import-post'],
         ] as const){

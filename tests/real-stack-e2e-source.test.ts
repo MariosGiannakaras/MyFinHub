@@ -129,7 +129,16 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(directRpc.indexOf("await options.proveHttpDenial('owner-aal1',aal1Token)")).toBeLessThan(directRpc.indexOf('const challenge='));
     expect(directRpc.indexOf("await options.proveHttpDenial('nonowner-aal2',nonownerAal2)")).toBeGreaterThan(directRpc.indexOf('await register(nonownerClaims.session_id!,nonownerUserId)'));
     const ownerHttp=script.slice(script.indexOf('proveHttpDenial:async(identity,accessToken)'),script.indexOf('const afterDirectDevices='));
-    for(const label of ['data-get','data-put','history-get','backup-post','import-post'])
+    const historyFixture=script.slice(script.indexOf("stage owner-aal2-history-redo-fixture"),script.indexOf("const directRpcSessions="));
+    expect(historyFixture).toContain("validateCompleteFinanceData({...importRead.body.data,state:fixtureState})");
+    expect(historyFixture).toContain("owner-aal2-fixture-save");
+    expect(historyFixture).toContain("owner-aal2-fixture-undo");
+    expect(historyFixture).toContain("JSON.stringify(initial.body?.data?.state)===JSON.stringify(importRead.body?.data?.state)");
+    expect(historyFixture.indexOf("const initialRevision=")).toBeGreaterThan(historyFixture.indexOf("const fixtureUndo="));
+    expect(historyFixture).toContain("history.body?.canRedo===true");
+    expect(ownerHttp).toContain("beforeHistory.body?.canRedo===true");
+    expect(ownerHttp).toContain("method:'POST',headers,body:{action:'redo',updatedAt}");
+    for(const label of ['data-get','data-put','history-get','history-redo','backup-post','import-post'])
       expect(ownerHttp).toContain(label);
     expect(ownerHttp).toContain("identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED'");
     expect(ownerHttp).toContain('validateCompleteFinanceData(importData)');
