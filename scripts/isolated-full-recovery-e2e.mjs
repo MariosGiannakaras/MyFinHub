@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -43,6 +43,11 @@ const bucket='myfinhub-ci-recovery-'+process.pid;
 const sourceBucket='myfinhub-ci-source-'+process.pid;
 let scratchCreated=false,bucketCreated=false,cleanedBucket=false;
 let sourceBucketCreated=false,sourceBucketCleaned=false;
+const orphanFixtures=[
+  {bucket:'financial-provider-assets',name:'providers/qa-recovery-orphan/qa-recovery-orphan-asset-'+randomUUID().replace(/-/g,'').slice(0,12)+'.svg'},
+  {bucket:'recurring-service-assets',name:'services/service-asset-'+randomUUID().replace(/-/g,'').slice(0,24)+'.svg'},
+];
+const createdOrphans=[];
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const assert=(condition,message)=>{if(!condition)throw new Error(message)};
 function docker(args,options={}){
@@ -70,6 +75,20 @@ function fingerprints(database){
       "E'\\n' order by t."+orderBy+"::text),'')) from "+table+' t;';
     return sql(database,statement,readRole);
   });
+}
+function artworkInventory(database){
+  const readRole=database===scratch?scratchRestoreRole:'postgres';
+  const report=JSON.parse(sql(database,readFileSync('scripts/recovery-fixtures/artwork-storage-inventory.sql','utf8'),readRole));
+  assert(Array.isArray(report?.entries)&&Number.isSafeInteger(report.incompleteProviderPointers),
+    'Read-only artwork inventory did not return its complete metadata report.');
+  return report;
+}
+async function cleanupOrphanFixtures(){
+  while(createdOrphans.length){
+    const item=createdOrphans[0];
+    await storageRequest('/object/'+objectKey(item.bucket,item.name),{method:'DELETE'});
+    createdOrphans.shift();
+  }
 }
 function storageHeaders(extra={}){return {apikey:key,authorization:'Bearer '+key,...extra}}
 function objectKey(bucketName,name){
@@ -100,6 +119,28 @@ try{
   // Give the isolated exercise at least one real binary to capture/restore,
   // even when the preceding API smoke has deleted its temporary asset.
   const pristine=fingerprints('postgres');
+  const pristineArtwork=artworkInventory('postgres');
+  const orphanSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='#345'/></svg>",'utf8');
+  // These are new unique synthetic objects in the disposable CI stack only.
+  // No arbitrary inventory entry is ever used as a deletion target.
+  for(const item of orphanFixtures){
+    assert(!pristineArtwork.entries.some(row=>row.bucket===item.bucket&&row.name===item.name),
+      'Synthetic orphan fixture unexpectedly overlaps the existing inventory.');
+    await storageRequest('/object/'+objectKey(item.bucket,item.name),{
+      method:'POST',headers:{'content-type':'image/svg+xml','x-upsert':'false'},body:orphanSvg,
+    });
+    createdOrphans.push(item);
+  }
+  const sourceArtwork=artworkInventory('postgres');
+  for(const item of orphanFixtures){
+    const matching=sourceArtwork.entries.filter(row=>row.bucket===item.bucket&&row.name===item.name);
+    assert(matching.length===1&&matching[0].classification==='storage-only-unregistered'&&
+      matching[0].object_count===1&&matching[0].registry_count===0,
+      'Read-only artwork inventory did not classify an actual unregistered synthetic object.');
+  }
+  assert(JSON.stringify(sourceArtwork.entries.filter(row=>!orphanFixtures.some(item=>item.bucket===row.bucket&&item.name===row.name)))===
+    JSON.stringify(pristineArtwork.entries)&&sourceArtwork.incompleteProviderPointers===pristineArtwork.incompleteProviderPointers,
+    'Orphan inventory fixture changed unrelated artwork metadata.');
   await storageRequest('/bucket',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({id:sourceBucket,name:sourceBucket,public:false})});
   sourceBucketCreated=true;
@@ -158,6 +199,9 @@ try{
   assert(sql(scratch,"select to_regnamespace('public') is not null;")==='t',
     'Scratch restore requires an empty public schema from the database template.');
   db(['pg_restore','-U',scratchRestoreRole,'-d',scratch,'--exit-on-error','--no-owner','--no-privileges',archiveRestore]);
+  const restoredArtwork=artworkInventory(scratch);
+  assert(JSON.stringify(restoredArtwork)===JSON.stringify(sourceArtwork),
+    'Independent restored artwork metadata inventory differs from the source checkpoint.');
   const restored=fingerprints(scratch);
   assert(JSON.stringify(restored)===JSON.stringify(source),
     'Independent PostgreSQL restore differs in finance, backup, audit, auth, Storage metadata or migration rows.');
@@ -182,11 +226,17 @@ try{
   }
   await cleanupBucket();
   await cleanupSourceBucket();
+  await cleanupOrphanFixtures();
+  assert(JSON.stringify(artworkInventory('postgres'))===JSON.stringify(pristineArtwork),
+    'Synthetic orphan cleanup changed the original artwork metadata inventory.');
+  console.log('[isolated-recovery] PASS read-only artwork orphan inventory on source and restored checkpoint; synthetic fixtures only');
   assert(cleanedBucket&&sourceBucketCleaned,'An isolated Storage fixture namespace was not cleaned up.');
   assert(JSON.stringify(fingerprints('postgres'))===JSON.stringify(pristine),
     'Local source finance/Storage metadata changed after removing temporary recovery fixtures.');
   console.log('[isolated-recovery] PASS custom PostgreSQL dump transferred/restored into separate scratch DB, RLS and all selected state hashes equal, Storage bytes replayed with SHA-256 and original source unchanged');
 }finally{
+  try{await cleanupOrphanFixtures()}
+  catch{console.warn('[isolated-recovery] synthetic orphan fixture cleanup failed; disposable local project will be discarded');}
   await cleanupBucket();
   await cleanupSourceBucket();
   if(scratchCreated){

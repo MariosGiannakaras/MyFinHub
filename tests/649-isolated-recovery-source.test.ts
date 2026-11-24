@@ -60,6 +60,27 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(script).toContain("await cleanupBucket()");
     expect(script).toContain("rmSync(tmp,{recursive:true,force:true");
   });
+  it('classifies actual unregistered objects without authorizing deletion of inventory rows',()=>{
+    const inventory=read('scripts/recovery-fixtures/artwork-storage-inventory.sql');
+    expect(inventory).toContain('begin transaction isolation level repeatable read read only');
+    expect(inventory).toContain('set local row_security = off');
+    expect(inventory).toContain('public.rheomiq_financial_provider_assets');
+    expect(inventory).toContain('public.rheomiq_recurring_service_assets');
+    expect(inventory).toContain('from storage.objects');
+    expect(inventory).toContain('full outer join registry_counts');
+    expect(inventory).toContain('count(*) filter (where active is true)');
+    for(const classification of ['ambiguous-identity','storage-only-unregistered','registry-only-missing-object','registered-inactive','registered-active'])
+      expect(inventory).toContain("'"+classification+"'");
+    expect(inventory).not.toMatch(/(?:insert into|update\s+storage\.|delete from|truncate|create function|alter table|grant execute)/i);
+    expect(script).toContain('const pristineArtwork=artworkInventory(\'postgres\')');
+    expect(script).toContain('createdOrphans.push(item)');
+    expect(script).toContain("matching[0].classification==='storage-only-unregistered'");
+    expect(script).toContain('JSON.stringify(restoredArtwork)===JSON.stringify(sourceArtwork)');
+    expect(script).toContain('const item=createdOrphans[0]');
+    expect(script).toContain("JSON.stringify(artworkInventory('postgres'))===JSON.stringify(pristineArtwork)");
+    expect(script).toContain('PASS read-only artwork orphan inventory');
+    expect(doc).toContain('not deletion authorization');
+  });
   it('is gated only by the existing disposable local Supabase CI workflow; distinguishes this proof from release authorization',()=>{
     expect(packageJson.scripts?.['qa:isolated-recovery']).toBe('node scripts/isolated-full-recovery-e2e.mjs');
     expect(flow).toContain('MYFINHUB_ISOLATED_RECOVERY:');
