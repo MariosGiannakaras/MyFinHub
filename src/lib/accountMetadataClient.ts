@@ -3,7 +3,7 @@ import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { assertValidIban, isValidIban } from './iban.js';
 import { notifyAuthExpired } from './authExpiry.js';
 import { userErrorMessage } from './userMessage.js';
-import { watchAuthScope } from './authScopedCache.js';
+import { watchAuthScope, assertCurrentAuthScope } from './authScopedCache.js';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
@@ -114,7 +114,7 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
   // awaiting a cold-catalog GET or notifying shared save-progress listeners.
   const epoch=authEpoch();
   return trackDatabaseWrite(async()=>{
-  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν σταλεί η ενημέρωση IBAN.');
+  assertCurrentAuthScope(epoch);
   if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();
   // A failed/incomplete GET is not evidence that an account has no metadata
   // and can be written at revision zero. Reconcile by read-only GET first;
@@ -126,7 +126,7 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
   }
   // An old GET can settle with the newer owner's snapshot after auth reset.
   // Never use that new-session revision to issue an old-session IBAN PUT.
-  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν σταλεί η ενημέρωση IBAN.');
+  assertCurrentAuthScope(epoch);
   const current=snapshot.records[accountId];
   let response:Response;
   try{

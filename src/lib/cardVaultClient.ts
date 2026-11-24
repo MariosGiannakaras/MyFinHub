@@ -2,14 +2,13 @@ import { notifyAuthExpired } from './authExpiry.js';
 import { ApiError, apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { readLocalCvv } from './localCvvVault.js';
-import { watchAuthScope } from './authScopedCache.js';
+import { authScopeEpoch as authEpoch } from './authScopedCache.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
 
 // Never show old-owner PAN/CVV or claim a previous-session write succeeded
 // after the cookie/MFA/device authentication scope has changed.
-const authEpoch=watchAuthScope(()=>{});
 function staleVaultScope():CardVaultClientError{
   return new CardVaultClientError(409,'CARD_VAULT_AUTH_SCOPE_CHANGED',
     'Η συνεδρία άλλαξε κατά την ενέργεια ασφαλών στοιχείων.');

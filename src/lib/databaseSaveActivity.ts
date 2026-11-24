@@ -3,8 +3,7 @@
  * A request is successful only after its domain client has parsed/accepted the
  * server response. No progress percentage or timer is used for persistence.
  */
-import { watchAuthScope } from './authScopedCache.js';
-const authEpoch=watchAuthScope(()=>{});
+import { authScopeEpoch as authEpoch, assertCurrentAuthScope } from './authScopedCache.js';
 
 export type DatabaseSaveSnapshot = Readonly<{pending:number;failed:boolean;completion:number}>;
 let current:DatabaseSaveSnapshot={pending:0,failed:false,completion:0};
@@ -22,7 +21,7 @@ export async function trackDatabaseWrite<T>(work:()=>Promise<T>):Promise<T>{
   try{
     // A synchronous progress subscriber can retire the initiating auth scope.
     // Abort before the callback can dispatch using a newer session's cookie.
-    if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν σταλεί η ενημέρωση.');
+    assertCurrentAuthScope(epoch);
     const result=await work();
     const pending=current.pending-1;
     publish({pending,failed:current.failed,completion:pending===0&&!current.failed?current.completion+1:current.completion});
