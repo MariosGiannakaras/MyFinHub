@@ -130,6 +130,67 @@ describe('connected device access',()=>{
     try{await ensureDeviceSessionAccess({headers:{}},access,'owner-1');throw new Error('expected revoked access to fail')}catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('DEVICE_ACCESS_REVOKED')}
   });
 
+  it('skips an out-of-order device touch without rejecting finance reads or moving last_seen_at backwards',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    const sessionId='123e4567-e89b-42d3-a456-426614174000';
+    const access=token({session_id:sessionId,aal:'aal2'});
+    const original={session_id:sessionId,user_id:'owner-1',platform:'android',device_label:'S24',app_version:'1.0.0-rc20',first_seen_at:'2026-11-23T10:00:00.000Z',last_seen_at:'2026-11-23T10:00:00.000Z',revoked_at:null};
+    const concurrent={...original,last_seen_at:'2099-01-01T00:00:00.000Z',device_label:'S24 refreshed'};
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([original]),{status:200}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([concurrent]),{status:200}));
+    vi.stubGlobal('fetch',fetcher);
+
+    await expect(ensureDeviceSessionAccess({headers:{'x-myfinhub-client-platform':'android','x-myfinhub-device-name':'S24'}},access,'owner-1')).resolves.toEqual(concurrent);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    const [url,options]=fetcher.mock.calls[1] as [string,RequestInit];
+    expect(options.method).toBe('PATCH');
+    const patch=new URL(url);
+    expect(patch.searchParams.get('session_id')).toBe(`eq.${sessionId}`);
+    expect(patch.searchParams.get('user_id')).toBe('eq.owner-1');
+    expect(patch.searchParams.get('revoked_at')).toBe('is.null');
+    const body=JSON.parse(String(options.body)) as {last_seen_at:string};
+    expect(patch.searchParams.get('last_seen_at')).toBe(`lte.${body.last_seen_at}`);
+    expect(Date.parse(body.last_seen_at)).toBeLessThan(Date.parse(concurrent.last_seen_at));
+    expect((fetcher.mock.calls[2]?.[1] as RequestInit).method).toBeUndefined();
+  });
+
+  it('rejects a device revoked or removed after the first read when the timestamp-guarded PATCH matches nothing',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    const sessionId='123e4567-e89b-42d3-a456-426614174000';
+    const access=token({session_id:sessionId,aal:'aal2'});
+    const initial={session_id:sessionId,user_id:'owner-1',platform:'android',device_label:'S24',app_version:'1.0.0-rc20',first_seen_at:'2026-11-23T10:00:00.000Z',last_seen_at:'2026-11-23T10:00:00.000Z',revoked_at:null};
+    for(const current of [{...initial,revoked_at:'2026-11-24T00:00:00.000Z'},null,{...initial,user_id:'other-user'}]){
+      const fetcher=vi.fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify([initial]),{status:200}))
+        .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200}))
+        .mockResolvedValueOnce(new Response(JSON.stringify(current?[current]:[]),{status:200}));
+      vi.stubGlobal('fetch',fetcher);
+      await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1'))
+        .rejects.toMatchObject({status:401,code:'DEVICE_ACCESS_REVOKED'});
+      expect(fetcher).toHaveBeenCalledTimes(3);
+    }
+  });
+
+  it('updates active device metadata through a monotonic guarded PATCH and does not perform a redundant GET',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    const sessionId='123e4567-e89b-42d3-a456-426614174000';
+    const access=token({session_id:sessionId,aal:'aal2'});
+    const initial={session_id:sessionId,user_id:'owner-1',platform:'android',device_label:'S24',app_version:'rc20',first_seen_at:'2026-11-23T10:00:00.000Z',last_seen_at:'2026-11-23T10:00:00.000Z',revoked_at:null};
+    const updated={...initial,last_seen_at:'2026-11-24T08:00:00.000Z'};
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([initial]),{status:200}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([updated]),{status:200}));
+    vi.stubGlobal('fetch',fetcher);
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toEqual(updated);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect((fetcher.mock.calls[1]?.[1] as RequestInit).method).toBe('PATCH');
+  });
+
   it('keeps the registry owner/AAL2 scoped and folds active device access into finance RLS',()=>{
     const migration=read('supabase/migrations/20260904083000_add_device_session_registry.sql');
     expect(migration).toContain('create table if not exists public.myfinhub_device_sessions');

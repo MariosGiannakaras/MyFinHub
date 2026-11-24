@@ -815,6 +815,26 @@
         "tests/649-shared-write-preflight-auth-scope.test.ts",
         "tests/649-bulk-auth-artwork-recovery.test.ts"
       ]
+    },
+    {
+      "id": "FP-042",
+      "title": "Concurrent device-session touches must preserve monotonic last_seen_at and current authorization",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "Concurrent authenticated API requests can reach the device-session PATCH out of timestamp order; the older request violates the database monotonicity trigger or can overwrite newer metadata. A zero-row guarded PATCH may instead indicate concurrent revocation or removal.",
+      "prevention": "Predicate the timestamp touch atomically on the current owner, session, active row and last_seen_at <= candidate. If no row is returned, reread with the same authenticated token and RLS; require an existing matching owner and non-revoked row, fail closed otherwise. Keep the database monotonicity trigger and owner/AAL2/device checks unchanged. Cover reversed arrival, normal touch and concurrent revocation/removal/owner mismatch.",
+      "paths": [
+        "server/deviceSessionRegistry.ts",
+        "tests/device-access.test.ts",
+        "supabase/migrations/**"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/662",
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/663"
+      ],
+      "guards": [
+        "tests/device-access.test.ts"
+      ]
     }
   ]
 }
