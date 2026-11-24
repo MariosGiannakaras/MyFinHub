@@ -124,6 +124,18 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
     expect(script).toContain("[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback");
+    expect(script).toContain("[real-stack] stage revoked-bearer-finance-mutation-history-backup-import");
+    const revokedStage=script.slice(script.indexOf("stage revoked-bearer-finance-mutation-history-backup-import"),script.indexOf("stage revoked-bearer-finance-vault-no-cookie-fallback"));
+    for(const label of ['revoked-bearer-finance-put','revoked-bearer-history-read','revoked-bearer-history-redo','revoked-bearer-backup','revoked-bearer-import'])
+      expect(revokedStage).toContain(label);
+    expect(revokedStage).toContain("canRedo===true");
+    expect(revokedStage).toContain("validateCompleteFinanceData(rejectedImport)");
+    expect(revokedStage).toContain("expect(rejected,401,'DEVICE_ACCESS_REVOKED',label)");
+    expect(revokedStage).toContain("JSON.stringify([...primary.snapshot()])===rejectedCookieSnapshot");
+    expect(revokedStage).toContain("JSON.stringify(rejectedAfterData.body?.data)===JSON.stringify(rejectedBeforeData.body?.data)");
+    expect(revokedStage).toContain("JSON.stringify(rejectedAfterHistory.body)===JSON.stringify(rejectedBeforeHistory.body)");
+    expect(revokedStage).toContain("JSON.stringify(await snapshotRejectedSideEffects())===JSON.stringify(rejectedBeforeDb)");
+    expect(revokedStage).toContain("'revoked-mutation-valid-cookie-preserved'");
     expect(script).toContain("[real-stack] stage revoked-bearer-finance-vault-no-cookie-fallback");
     expect(script).toContain("'revoked-bearer-finance-read'");
     expect(script).toContain("'revoked-bearer-card-vault-delete'");

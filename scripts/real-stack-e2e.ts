@@ -860,6 +860,59 @@ async function main(){
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
 
+    console.log('[real-stack] stage revoked-bearer-finance-mutation-history-backup-import');
+    // Use current valid revision/generation and a real reachable Redo, so a
+    // fallback to the unrelated live cookie would actually authorize writes.
+    const rejectedBeforeData=await primary.request('/api/data');
+    const rejectedBeforeHistory=await primary.request('/api/history');
+    expect(rejectedBeforeData,200,undefined,'revoked-mutation-before-data');
+    expect(rejectedBeforeHistory,200,undefined,'revoked-mutation-before-history');
+    assert(rejectedBeforeHistory.body?.canRedo===true,'Revoked history proof requires a reachable Redo.');
+    const rejectedRevision=String(rejectedBeforeData.body?.revision||'');
+    const rejectedGeneration=String(rejectedBeforeHistory.body?.generation||'');
+    assert(/^\d+$/.test(rejectedRevision)&&/^\d+$/.test(rejectedGeneration)&&
+      String(rejectedBeforeHistory.body?.financeRevision)===rejectedRevision,
+      'Revoked mutation proof requires matching current revision and history generation.');
+    const snapshotRejectedSideEffects=async()=>({
+      backups:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1',local.serviceRole),
+      audit:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1',local.serviceRole),
+      state:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,updated_at',local.serviceRole),
+    });
+    const rejectedBeforeDb=await snapshotRejectedSideEffects();
+    const rejectedWriteState=structuredClone(rejectedBeforeData.body.data.state);
+    rejectedWriteState.settings={...rejectedWriteState.settings,
+      accountNames:{...rejectedWriteState.settings.accountNames,'qa-cash':'Revoked device must not save'}};
+    const rejectedUpdatedAt=new Date().toISOString();
+    const rejectedImport={...rejectedBeforeData.body.data,state:rejectedWriteState,updatedAt:rejectedUpdatedAt};
+    validateCompleteFinanceData(rejectedImport);
+    const rejectedHeaders={authorization:'Bearer '+revokedDeviceBearer,
+      'if-match':rejectedRevision,'x-rheomiq-history-generation':rejectedGeneration};
+    const rejectedCookieSnapshot=JSON.stringify([...primary.snapshot()]);
+    for(const [path,options,label] of [
+      ['/api/data',{method:'PUT',headers:rejectedHeaders,body:{state:rejectedWriteState,updatedAt:rejectedUpdatedAt,historyLabel:'Revoked device write'}},'revoked-bearer-finance-put'],
+      ['/api/history',{headers:rejectedHeaders},'revoked-bearer-history-read'],
+      ['/api/history',{method:'POST',headers:rejectedHeaders,body:{action:'redo',updatedAt:rejectedUpdatedAt}},'revoked-bearer-history-redo'],
+      ['/api/backup',{method:'POST',headers:rejectedHeaders,body:{}},'revoked-bearer-backup'],
+      ['/api/import',{method:'POST',headers:{...rejectedHeaders,'x-rheomiq-confirm-import':'replace'},body:rejectedImport},'revoked-bearer-import'],
+    ] as const){
+      const rejected=await primary.request(path,options);
+      expect(rejected,401,'DEVICE_ACCESS_REVOKED',label);
+      assert(JSON.stringify([...primary.snapshot()])===rejectedCookieSnapshot,
+        'Rejected bearer changed unrelated owner cookies: '+label);
+    }
+    const rejectedAfterData=await primary.request('/api/data');
+    const rejectedAfterHistory=await primary.request('/api/history');
+    expect(rejectedAfterData,200,undefined,'revoked-mutation-after-data');
+    expect(rejectedAfterHistory,200,undefined,'revoked-mutation-after-history');
+    assert(rejectedAfterData.body?.revision===rejectedBeforeData.body?.revision&&
+      JSON.stringify(rejectedAfterData.body?.data)===JSON.stringify(rejectedBeforeData.body?.data),
+      'Revoked bearer changed canonical finance data or revision.');
+    assert(JSON.stringify(rejectedAfterHistory.body)===JSON.stringify(rejectedBeforeHistory.body),
+      'Revoked bearer changed durable history or cursor.');
+    assert(JSON.stringify(await snapshotRejectedSideEffects())===JSON.stringify(rejectedBeforeDb),
+      'Revoked bearer changed database revision, backup or audit rows.');
+    expect(await primary.request('/api/auth/session'),200,undefined,'revoked-mutation-valid-cookie-preserved');
+
     console.log('[real-stack] stage revoked-bearer-finance-vault-no-cookie-fallback');
     // A revoked native token is authoritative even when a separate, active
     // owner browser session accompanies the request as an ambient cookie.
