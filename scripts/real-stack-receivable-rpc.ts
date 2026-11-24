@@ -68,6 +68,56 @@ export async function runDirectReceivableRpcProof(options:Options){
     p_state:state,p_expected_revision:Number(revision),p_expected_history_generation:Number(generation),
     p_updated_at:new Date().toISOString(),p_history_label:'Synthetic direct RPC receivable denial',
   });
+  // All RPCs receive valid current revisions and a non-noop canonical state;
+  // the main harness established reachable Redo before capturing this baseline.
+  const deniedState=structuredClone(data.state);
+  deniedState.settings={...deniedState.settings,accountNames:{...deniedState.settings.accountNames,
+    'qa-cash':'Unauthorized direct RPC must not save'}};
+  assert(JSON.stringify(deniedState)!==JSON.stringify(data.state),'Direct RPC denial requires non-noop state.');
+  const deniedData={...data,state:deniedState,updatedAt:new Date().toISOString()};
+  const protectedFinanceCalls=[
+    {method:'rheomiq_read_state',params:{}},
+    {method:'rheomiq_read_history',params:{}},
+    {method:'rheomiq_save_mutable_state_history',params:mutable(deniedState)},
+    {method:'rheomiq_save_state',params:{p_data:deniedData,p_expected_revision:Number(revision)}},
+    {method:'rheomiq_move_history',params:{p_direction:'redo',p_expected_revision:Number(revision),
+      p_expected_history_generation:Number(generation),p_updated_at:deniedData.updatedAt}},
+    {method:'rheomiq_create_backup',params:{p_reason:'manual'}},
+    {method:'rheomiq_import_state_checked',params:{p_data:deniedData,p_expected_revision:Number(revision)}},
+    {method:'rheomiq_import_state',params:{p_data:deniedData}},
+  ];
+  const financeEffects=async()=>{
+    const paths=[
+      'rheomiq_app_state?id=eq.primary&select=revision,updated_at',
+      'rheomiq_history_cursor?select=*&order=owner_user_id.asc',
+      'rheomiq_backups?select=id,reason,revision&order=id.asc',
+      'rheomiq_audit_log?select=id&order=id.asc',
+    ];
+    return Promise.all(paths.map(async path=>{
+      const response=await fetch(apiUrl+'/rest/v1/'+path,{
+        headers:{apikey:serviceRole,authorization:'Bearer '+serviceRole,accept:'application/json'},
+      });
+      const rows=await response.json().catch(()=>null);
+      assert(response.status===200&&Array.isArray(rows),'Synthetic direct finance effect read-back failed.');
+      return rows;
+    }));
+  };
+  const assertDeniedFinanceRpcs=async(identity:string,token:string)=>{
+    console.log('[real-stack] stage direct-finance-rpc-owner-aal2-denial '+identity);
+    const before=await financeEffects();
+    assert(before[0].length===1&&String(before[0][0]?.revision)===revision&&
+      before[1].length===1&&String(before[1][0]?.generation)===generation,
+      'Direct finance denial requires the original current revision and history generation.');
+    for(const entry of protectedFinanceCalls){
+      const denied=await rpc(entry.method,token,entry.params);
+      assert(denied.status===403&&denied.body?.code==='42501',
+        'Direct '+entry.method+' unexpectedly accepted '+identity+' or failed for an unrelated reason.');
+    }
+    assert(JSON.stringify(await financeEffects())===JSON.stringify(before),
+      'Unauthorized direct finance RPC changed revision, history cursor, backup or audit rows: '+identity);
+    console.log('[real-stack] PASS direct-finance-rpc-owner-aal2-denial '+identity);
+  };
+  await assertDeniedFinanceRpcs('owner-aal1',aal1Token);
   const overpay=proposed([...(data.state.events??[]),payment('2026-10-04',10.01,'Synthetic overpayment')]);
   const aal1Denied=await rpc('rheomiq_save_mutable_state_history',aal1Token,mutable(overpay));
   assert([401,403].includes(aal1Denied.status),'PostgREST direct mutable RPC unexpectedly accepted AAL1.');
@@ -144,12 +194,7 @@ export async function runDirectReceivableRpcProof(options:Options){
     'Local nonowner token is not genuine AAL2.');
   await register(nonownerClaims.session_id!,nonownerUserId);
   await options.proveHttpDenial('nonowner-aal2',nonownerAal2);
-  for(const method of ['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']){
-    const denied=await rpc(method,nonownerAal2,
-      method==='rheomiq_save_mutable_state_history'?mutable(overpay):{});
-    assert(denied.status===403&&String(denied.body?.code)==='42501',
-      'Local nonowner AAL2 with active device crossed the direct '+method+' owner RPC boundary.');
-  }
+  await assertDeniedFinanceRpcs('nonowner-aal2',nonownerAal2);
 
   // Genuine local GoTrue JWTs, not forged claims. Invoker RPCs must
   // reject AAL1 and nonowner AAL2 before any Storage or metadata write.
@@ -720,11 +765,7 @@ export async function runDirectReceivableRpcProof(options:Options){
     revokedRows[0]?.session_id===aal2Claims.session_id&&revokedRows[0]?.user_id===userId&&
     !!revokedRows[0]?.revoked_at,
     'Synthetic owner AAL2 device revocation was not committed exactly once.');
-  for(const method of ['rheomiq_read_state','rheomiq_read_history']){
-    const denied=await rpc(method,aal2Token,{});
-    assert(denied.status===403&&String(denied.body?.code)==='42501',
-      'Revoked owner AAL2 device retained direct '+method+' access.');
-  }
+  await assertDeniedFinanceRpcs('revoked-aal2',aal2Token);
   const deniedWrite=await rpc('rheomiq_upsert_account_metadata',aal2Token,{
     p_account_id:'qa-direct-rpc-revoked-iban',p_iban:privateIban,p_expected_revision:0,
   });

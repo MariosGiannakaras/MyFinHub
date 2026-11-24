@@ -538,6 +538,15 @@ async function main(){
         console.log('[real-stack] PASS metadata-vault-http-owner-aal2-denial '+identity);
       },
     });
+    const directFinanceAfter=await primary.request('/api/data');
+    const directHistoryAfter=await primary.request('/api/history');
+    expect(directFinanceAfter,200,undefined,'direct-finance-rpc-owner-readback');
+    expect(directHistoryAfter,200,undefined,'direct-history-rpc-owner-readback');
+    assert(directFinanceAfter.body?.revision===initial.body?.revision&&
+      JSON.stringify(directFinanceAfter.body?.data)===JSON.stringify(initial.body?.data)&&
+      JSON.stringify(directHistoryAfter.body)===JSON.stringify(history.body),
+      'Direct RPC authorization proof changed owner-visible finance or durable history.');
+    console.log('[real-stack] PASS direct-finance-rpc-independent-owner-readback');
     // The direct proof uses a separate synthetic Auth session. Retire only its
     // session IDs through the existing owner+AAL2 API so the subsequent
     // two-device lifecycle test retains its original strict count.

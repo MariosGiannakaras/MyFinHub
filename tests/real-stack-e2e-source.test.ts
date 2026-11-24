@@ -125,6 +125,19 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
     expect(script).toContain("[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback");
     const directRpc=read('scripts/real-stack-receivable-rpc.ts');
+    const directFinance=directRpc.slice(directRpc.indexOf('const protectedFinanceCalls='),directRpc.indexOf('const overpay='));
+    for(const method of ['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history','rheomiq_save_state','rheomiq_move_history','rheomiq_create_backup','rheomiq_import_state_checked','rheomiq_import_state'])
+      expect(directFinance).toContain(method);
+    expect(directFinance).toContain("p_direction:'redo',p_expected_revision:Number(revision)");
+    expect(directFinance).toContain("p_expected_history_generation:Number(generation)");
+    expect(directFinance).toContain("denied.status===403&&denied.body?.code==='42501'");
+    expect(directFinance).toContain("JSON.stringify(await financeEffects())===JSON.stringify(before)");
+    expect(directRpc.indexOf("await assertDeniedFinanceRpcs('owner-aal1',aal1Token)")).toBeLessThan(directRpc.indexOf('const challenge='));
+    expect(directRpc.indexOf("await assertDeniedFinanceRpcs('nonowner-aal2',nonownerAal2)")).toBeGreaterThan(directRpc.indexOf('await register(nonownerClaims.session_id!,nonownerUserId)'));
+    expect(directRpc.indexOf("await assertDeniedFinanceRpcs('revoked-aal2',aal2Token)")).toBeGreaterThan(directRpc.indexOf('const revokedDevice='));
+    expect(script).toContain("JSON.stringify(directFinanceAfter.body?.data)===JSON.stringify(initial.body?.data)");
+    expect(script).toContain("JSON.stringify(directHistoryAfter.body)===JSON.stringify(history.body)");
+    expect(script).toContain("[real-stack] PASS direct-finance-rpc-independent-owner-readback");
     expect(directRpc.indexOf("await options.proveHttpDenial('owner-aal1',aal1Token)")).toBeGreaterThan(directRpc.indexOf('await register(aal1Claims.session_id!)'));
     expect(directRpc.indexOf("await options.proveHttpDenial('owner-aal1',aal1Token)")).toBeLessThan(directRpc.indexOf('const challenge='));
     expect(directRpc.indexOf("await options.proveHttpDenial('nonowner-aal2',nonownerAal2)")).toBeGreaterThan(directRpc.indexOf('await register(nonownerClaims.session_id!,nonownerUserId)'));
