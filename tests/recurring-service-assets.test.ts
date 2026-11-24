@@ -230,13 +230,14 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===1)return new Response('{}',{status:200});
       if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_RECURRING_SERVICE_ASSET'}),{status:400});
       if(calls.length===3)return new Response('[]',{status:200});
-      if(calls.length===4)return new Response('{}',{status:200});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:200});
       throw new Error('Only verified unregistered asset may be cleaned up');
     }));
     await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
       .rejects.toMatchObject({status:400,code:'INVALID_RECURRING_SERVICE_ASSET'});
-    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','DELETE']);
-    expect(calls[3].url).toBe(calls[0].url);
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','POST','DELETE','POST']);
+    expect(calls[4].url).toBe(calls[0].url);
   });
 
   it('stops recurring cleanup after two failures and preserves a truthful pending-recovery error',async()=>{
@@ -248,14 +249,15 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===1)return new Response('{}',{status:200});
       if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_RECURRING_SERVICE_ASSET'}),{status:400});
       if(calls.length===3)return new Response('[]',{status:200});
-      if(calls.length===4||calls.length===5)return new Response('{}',{status:503});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE'&&calls.filter(c=>c.method==='DELETE').length<=2)return new Response('{}',{status:503});
       throw new Error('No third destructive cleanup attempt');
     }));
     await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
       .rejects.toMatchObject({status:503,code:'RECURRING_SERVICE_ASSET_CLEANUP_PENDING'});
-    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
-    expect(calls[3].url).toBe(calls[0].url);
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE']);
     expect(calls[4].url).toBe(calls[0].url);
+    expect(calls[6].url).toBe(calls[0].url);
   });
 
   it.each([

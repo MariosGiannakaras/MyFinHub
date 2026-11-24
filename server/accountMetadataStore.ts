@@ -122,6 +122,16 @@ async function request(path:string,init:RequestInit,accessToken:string){
   return payload;
 }
 
+// An empty RLS-protected registry read is not absence evidence if the
+// originating owner session lost its AAL2/device authorization. Recheck before
+// each compensating DELETE and after its acknowledgement; never substitute a
+// privileged key or a new session for the original access token.
+async function currentArtworkCleanupOwner(accessToken:string):Promise<boolean>{
+  try{
+    return await request('rpc/rheomiq_is_owner_aal2',{method:'POST',body:'{}'},accessToken)===true;
+  }catch{return false}
+}
+
 function mapRow(value:unknown):AccountMetadataRow{
   const row=value as Partial<StoredRow>;
   if(!row||typeof row.account_id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(row.account_id)||
@@ -624,12 +634,16 @@ export async function uploadFinancialProviderAsset(input:{
     // permit deleting this new, server-generated object. Never purge old keys.
     let cleaned=false;
     for(let attempt=1;attempt<=2;attempt++){
+      if(!await currentArtworkCleanupOwner(accessToken))break;
       try{
         const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
           method:'DELETE',
           headers:{apikey:apiKey,authorization},
         },'DATA');
-        if(cleanup.ok||cleanup.status===404){cleaned=true;break}
+        if(cleanup.ok||cleanup.status===404){
+          cleaned=await currentArtworkCleanupOwner(accessToken);
+          break;
+        }
         console.error('[RheomIQ provider asset cleanup]',{assetKey,status:cleanup.status,attempt});
       }catch{
         console.error('[RheomIQ provider asset cleanup]',{assetKey,status:'request-failed',attempt});
@@ -799,12 +813,16 @@ export async function uploadRecurringServiceAsset(input:{
     }
     let cleaned=false;
     for(let attempt=1;attempt<=2;attempt++){
+      if(!await currentArtworkCleanupOwner(accessToken))break;
       try{
         const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
           method:'DELETE',
           headers:{apikey:apiKey,authorization},
         },'DATA');
-        if(cleanup.ok||cleanup.status===404){cleaned=true;break}
+        if(cleanup.ok||cleanup.status===404){
+          cleaned=await currentArtworkCleanupOwner(accessToken);
+          break;
+        }
         console.error('[RheomIQ recurring service asset cleanup]',{assetKey,status:cleanup.status,attempt});
       }catch{
         console.error('[RheomIQ recurring service asset cleanup]',{assetKey,status:'request-failed',attempt});

@@ -661,17 +661,19 @@
       "title": "RLS-hidden recurring asset purge row cannot count as confirmed deletion",
       "category": "security-auth",
       "severity": "high",
-      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup.",
-      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization.",
+      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup. The sibling provider and recurring upload compensation paths also treated an empty exact-key read as absence without checking that the same session retained owner+AAL2 visibility; a masked Storage 404 could be mistaken for confirmed cleanup.",
+      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization. For definite registration rejection compensation, require fresh original-token owner+AAL2 before each bounded DELETE and after an acknowledged 200/404; never delete on failed/malformed owner proof or return the definite rejection as clean when authorization disappears. Both asset types preserve ambiguous-registration no-delete behavior.",
       "paths": [
         "server/accountMetadataStore.ts",
-        "tests/recurring-service-assets.test.ts"
+        "tests/recurring-service-assets.test.ts",
+        "tests/provider-brand-management.test.ts"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
-        "tests/recurring-service-assets.test.ts"
+        "tests/recurring-service-assets.test.ts",
+        "tests/provider-brand-management.test.ts"
       ]
     },
     {

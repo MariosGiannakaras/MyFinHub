@@ -8,7 +8,7 @@ import {
   parseProviderAssetUpload,
   validateProviderAssetContent,
 } from '../server/accountMetadataHandler.js';
-import { uploadFinancialProviderAsset } from '../server/accountMetadataStore.js';
+import { uploadFinancialProviderAsset, uploadRecurringServiceAsset } from '../server/accountMetadataStore.js';
 import { cardBrandSurfaceTone } from '../src/lib/cardDesigns.js';
 import { providerBrandUrl } from '../src/lib/providerBrandAssets.js';
 import type { FinancialProvider } from '../src/lib/financialProviders.js';
@@ -450,7 +450,8 @@ describe('provider branding management',()=>{
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===4)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected provider asset request');
     });
     vi.stubGlobal('fetch',fetchMock);
@@ -460,15 +461,17 @@ describe('provider branding management',()=>{
       content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
     },'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
 
-    expect(calls).toHaveLength(4);
+    expect(calls).toHaveLength(6);
     expect(calls[0]).toMatchObject({method:'POST'});
     expect(calls[0].url).toContain('/storage/v1/object/financial-provider-assets/providers/demo-bank/');
     expect(calls[1]).toMatchObject({method:'POST'});
     expect(calls[1].url).toContain('/rest/v1/rpc/rheomiq_register_financial_provider_asset');
     expect(calls[2]).toMatchObject({method:'GET'});
     expect(calls[2].url).toContain('/rheomiq_financial_provider_assets?select=');
-    expect(calls[3]).toMatchObject({method:'DELETE'});
-    expect(calls[3].url).toBe(calls[0].url);
+    expect(calls[3].url).toContain('/rpc/rheomiq_is_owner_aal2');
+    expect(calls[4]).toMatchObject({method:'DELETE'});
+    expect(calls[4].url).toBe(calls[0].url);
+    expect(calls[5].url).toContain('/rpc/rheomiq_is_owner_aal2');
   });
 
 
@@ -608,20 +611,64 @@ describe('provider branding management',()=>{
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===4)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
-      if(calls.length===5)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:calls.filter(c=>c.method==='DELETE').length===1?503:200});
       throw new Error('unexpected third cleanup attempt');
     });
     vi.stubGlobal('fetch',fetchMock);
     const log=vi.spyOn(console,'error').mockImplementation(()=>{});
     try{
       await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
-      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
-      expect(calls[3].url).toBe(calls[0].url);
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE','POST']);
       expect(calls[4].url).toBe(calls[0].url);
+      expect(calls[6].url).toBe(calls[0].url);
     }finally{log.mockRestore()}
   });
 
+
+  it.each(['provider','recurring'] as const)('fails closed on RLS-hidden %s registration absence and lost cleanup authorization',async kind=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const content=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const registration=kind==='provider'?'INVALID_PROVIDER_ASSET':'INVALID_RECURRING_SERVICE_ASSET';
+    const code=kind==='provider'?'PROVIDER_ASSET_CLEANUP_PENDING':'RECURRING_SERVICE_ASSET_CLEANUP_PENDING';
+    const upload=()=>kind==='provider'
+      ?uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,content},'access-token')
+      :uploadRecurringServiceAsset({recurringId:'service-one',mimeType:'image/png',fileName:'logo.png',content},'access-token');
+    for(const scenario of ['revoked-before','malformed-before','unavailable-before','revoked-before-retry','revoked-after-200','revoked-after-404'] as const){
+      const calls:Array<{url:string;method:string}>=[];
+      let probes=0;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=String(init?.method||'GET');
+        calls.push({url,method});
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer access-token');
+        if(calls.length===1)return new Response('{}',{status:200});
+        if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:registration}),{status:400});
+        if(calls.length===3)return new Response('[]',{status:200});
+        if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+          probes++;
+          if(scenario==='malformed-before')return new Response('"true"',{status:200});
+          if(scenario==='unavailable-before')return new Response('{}',{status:503});
+          return new Response(scenario==='revoked-before'||probes>1?'false':'true',{status:200});
+        }
+        if(method==='DELETE'){
+          expect(url).toBe(calls[0].url);
+          return new Response('{}',{status:scenario==='revoked-before-retry'?503:scenario==='revoked-after-404'?404:200});
+        }
+        throw new Error('Unexpected compensation operation');
+      }));
+      const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+      try{
+        await expect(upload()).rejects.toMatchObject({status:503,code});
+        const attemptedDelete=scenario==='revoked-before-retry'||scenario.startsWith('revoked-after-');
+        expect(calls.map(c=>c.method)).toEqual(attemptedDelete
+          ?['POST','POST','GET','POST','DELETE','POST']:['POST','POST','GET','POST']);
+        expect(calls[3].url).toContain('/rpc/rheomiq_is_owner_aal2');
+        if(attemptedDelete)expect(calls[5].url).toContain('/rpc/rheomiq_is_owner_aal2');
+      }finally{log.mockRestore();vi.unstubAllGlobals()}
+    }
+  });
 
   it('stops after two failed cleanup attempts and reports the unregistered object as pending recovery',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
@@ -632,7 +679,8 @@ describe('provider branding management',()=>{
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length<=5)return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE'&&calls.filter(c=>c.method==='DELETE').length<=2)return new Response('{}',{status:503});
       throw new Error('unexpected unbounded or unrelated Storage cleanup');
     });
     vi.stubGlobal('fetch',fetchMock);
@@ -643,9 +691,9 @@ describe('provider branding management',()=>{
         fileName:'logo.png',makePrimary:false,
         content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
       },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_CLEANUP_PENDING'});
-      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','DELETE','DELETE']);
-      expect(calls[3].url).toBe(calls[0].url);
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE']);
       expect(calls[4].url).toBe(calls[0].url);
+      expect(calls[6].url).toBe(calls[0].url);
       expect(log).toHaveBeenCalledWith('[RheomIQ provider asset cleanup]',expect.objectContaining({status:503,attempt:2}));
     }finally{log.mockRestore()}
   });
