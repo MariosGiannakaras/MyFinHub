@@ -419,6 +419,49 @@ try{
   await shot('provider-create-unverified-asset-warning-mobile');
   await clickText('.provider-editor-footer button','Ακύρωση');
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'close unverified provider without a second write');
+  // Real same-origin tab, native Chromium LockManager and actual provider
+  // client. The ambiguous receipt above holds the target even after the
+  // editor closes; an independent slot must remain available.
+  const secondTarget=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json());
+  const second=new Cdp(secondTarget.webSocketDebuggerUrl);
+  try{
+    await second.open();await second.send('Page.enable');await second.send('Runtime.enable');
+    const navigation=await second.send('Page.navigate',{url:url.href});
+    assert(!navigation.errorText,'second same-origin tab navigated');
+    let ready=false;
+    for(let i=0;i<120;i++){
+      if(await second.call("function(expected){return location.origin===expected&&document.readyState!=='loading'&&Boolean(navigator.locks)}",[url.origin])){ready=true;break}
+      await sleep(100);
+    }
+    assert(ready,'second same-origin tab has native Web Locks');
+    const observed=await second.call(`async function(){
+      const client=await import('/src/lib/financialProviderClient.ts');
+      const original=globalThis.fetch;
+      let uploads=0;
+      globalThis.fetch=async function(input,init){
+        const request=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url,location.href);
+        if(request.pathname==='/api/account-metadata'&&request.searchParams.get('resource')==='financial-provider-assets'&&init?.method==='PUT'){
+          uploads++;return new Response(JSON.stringify({error:'Synthetic precommit rejection'}),{status:400});
+        }
+        return original(input,init);
+      };
+      try{
+        const input={providerId:'qa-unverified',role:'logo',variant:'universal',file:new File(['synthetic'],'other-tab.svg',{type:'image/svg+xml'}),refreshCatalog:false};
+        const same=await client.uploadFinancialProviderAsset(input).then(()=>null,error=>error.name);
+        const sameUploads=uploads;
+        const independent=await client.uploadFinancialProviderAsset({...input,variant:'dark'}).then(()=>null,error=>error.name);
+        return {same,sameUploads,independent,uploads};
+      }finally{globalThis.fetch=original}
+    }`);
+    assert(observed.same==='FinancialProviderAssetUploadInProgress'&&observed.sameUploads===0,
+      'native Web Locks prevent same-target PUT in a separate tab after ambiguous receipt and editor close');
+    assert(observed.independent==='Error'&&observed.uploads===1,
+      'independent slot dispatches once and receives its definite rejection');
+    console.log('PASS native cross-tab artwork lock retained after ambiguous receipt and editor close; independent slot available');
+  }finally{
+    second.close();
+    await fetch(`http://127.0.0.1:${port}/json/close/${secondTarget.id}`).catch(()=>{});
+  }
   await c.call("function(){globalThis.fetch=globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__myfinhubUnverifiedOriginalFetch;delete globalThis.__qaUnverifiedAsset;return true}");
 
 

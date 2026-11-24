@@ -104,6 +104,11 @@ async function request(path:string,init:RequestInit,accessToken:string){
   },'DATA');
   const payload=await response.json().catch(()=>null) as unknown;
   if(!response.ok){
+    // Transport/gateway uncertainty dominates any embedded SQLSTATE or
+    // message. A timeout, rate limit or 5xx cannot prove a rejected write
+    // (and must never authorize compensation or a fresh-key retry).
+    if(response.status===408||response.status===429||response.status>=500)
+      throw new ApiError(503,'ACCOUNT_METADATA_UNAVAILABLE','Account metadata is temporarily unavailable. Try again.');
     const marker=payload&&typeof payload==='object'?`${(payload as any).code??''} ${(payload as any).message??''}`:'';
     if(response.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
     if(response.status===403||/42501|FORBIDDEN/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
@@ -116,7 +121,6 @@ async function request(path:string,init:RequestInit,accessToken:string){
     if(/22023|INVALID_PROVIDER_ASSET_BINDING|INVALID_PROVIDER_ASSET|INVALID_PROVIDER_ID|INVALID_ACCOUNT_ID|INVALID_IBAN/i.test(marker)){
       throw new ApiError(400,/INVALID_IBAN/i.test(marker)?'INVALID_IBAN':/PROVIDER/i.test(marker)?'INVALID_PROVIDER_DATA':'INVALID_ACCOUNT_ID','Invalid metadata.');
     }
-    if(response.status>=500)throw new ApiError(503,'ACCOUNT_METADATA_UNAVAILABLE','Account metadata is temporarily unavailable. Try again.');
     throw new ApiError(502,'ACCOUNT_METADATA_STORAGE_ERROR','Account metadata request failed.',false);
   }
   return payload;

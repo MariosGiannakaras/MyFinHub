@@ -123,6 +123,12 @@ describe('#649 consolidated finance/metadata session and artwork recovery',()=>{
     expect(provider).toContain('const reloaded=await refreshFinancialProviders(true);\n      assertCurrentAuthScope(scope);');
     expect(recurring).toContain('await onUpsertDurably(normalized);\n      persisted=true;\n      assertCurrentAuthScope(scope);');
     expect(recurring).toContain('if(scope!==authScopeEpoch())return;\n      let cleanupWarning');
+    const browser=readFileSync('scripts/provider-brand-management-qa.mjs','utf8');
+    expect(browser).toContain('const second=new Cdp(secondTarget.webSocketDebuggerUrl)');
+    expect(browser).toContain("await import('/src/lib/financialProviderClient.ts')");
+    expect(browser).toContain("observed.same==='FinancialProviderAssetUploadInProgress'&&observed.sameUploads===0");
+    expect(browser).toContain("observed.independent==='Error'&&observed.uploads===1");
+    expect(browser).toContain('PASS native cross-tab artwork lock retained after ambiguous receipt and editor close');
     const locks=readFileSync('src/lib/artworkWebLock.ts','utf8')+readFileSync('src/lib/artworkMutationLock.ts','utf8');
     expect(locks).not.toMatch(/localStorage|sessionStorage|indexedDB/);
   });

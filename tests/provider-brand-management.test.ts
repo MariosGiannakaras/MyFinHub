@@ -670,6 +670,37 @@ describe('provider branding management',()=>{
     }
   });
 
+  it.each(['provider','recurring'] as const)('does not trust embedded SQLSTATE in ambiguous %s registration HTTP failures',async kind=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const content=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const code=kind==='provider'?'PROVIDER_ASSET_REGISTRATION_UNVERIFIED':'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED';
+    const registration=kind==='provider'?'INVALID_PROVIDER_ASSET':'INVALID_RECURRING_SERVICE_ASSET';
+    const upload=()=>kind==='provider'
+      ?uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content},'access-token')
+      :uploadRecurringServiceAsset({recurringId:'service-one',mimeType:'image/png',fileName:'logo.png',content},'access-token');
+    for(const status of [408,429,500,503,504]){
+      for(const payload of [{code:'22023',message:registration},{code:'42501',message:'FORBIDDEN'},{code:'23505',message:'ASSET_KEY_CONFLICT'}]){
+        const calls:Array<{url:string;method:string}>=[];
+        vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+          const url=String(input),method=String(init?.method||'GET');
+          calls.push({url,method});
+          expect(new Headers(init?.headers).get('authorization')).toBe('Bearer access-token');
+          if(calls.length===1)return new Response('{}',{status:200});
+          if(calls.length===2)return new Response(JSON.stringify(payload),{status});
+          if(calls.length===3)return new Response('[]',{status:200});
+          throw new Error('Ambiguous registration must not authorize cleanup or retry');
+        }));
+        const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+        try{
+          await expect(upload()).rejects.toMatchObject({status:503,code});
+          expect(calls.map(c=>c.method)).toEqual(['POST','POST','GET']);
+          expect(calls[2].url).toContain('asset_key=eq.');
+        }finally{log.mockRestore();vi.unstubAllGlobals()}
+      }
+    }
+  });
+
   it('stops after two failed cleanup attempts and reports the unregistered object as pending recovery',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';

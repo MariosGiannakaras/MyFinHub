@@ -1,8 +1,8 @@
-import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders';
+import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders.js';
 import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
-import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
-import { providerAssetUrlAllowed } from './providerAssetUrl';
+import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders.js';
+import { providerAssetUrlAllowed } from './providerAssetUrl.js';
 import { watchAuthScope } from './authScopedCache.js';
 import { withArtworkMutationLock } from './artworkMutationLock.js';
 
