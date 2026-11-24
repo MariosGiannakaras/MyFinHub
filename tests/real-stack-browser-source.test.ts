@@ -45,6 +45,24 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source.slice(drill,picture)).not.toContain('await sleep(');
   });
 
+  it('proves actual App lazy not-found and repeated command focus without changing finance revision',()=>{
+    const start=source.indexOf("stage app-route-focus-and-not-found");
+    const end=source.indexOf("Read-only route/focus proof changed canonical finance revision.");
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const stage=source.slice(start,end);
+    expect(stage).toContain("await selectAccountCommand('Imported QA Cash','qa-cash')");
+    expect(stage.match(/await selectAccountCommand\('Imported QA Cash','qa-cash'\)/g)).toHaveLength(2);
+    expect(stage).toContain("await selectAccountCommand('Synthetic QA Bank Account','qa-bank-account')");
+    expect(stage).toContain("row.dataset.accountId===id");
+    expect(stage).toContain("document.activeElement===heading");
+    expect(stage).toContain("!document.querySelector('.app-shell')");
+    expect(stage).toContain("await shot('app-not-found-desktop')");
+    expect(stage).toContain("await shot('app-not-found-mobile')");
+    expect(stage).toContain("await clickText('.not-found-actions button','Dashboard')");
+    expect(stage).toContain("await currentRevision()===routeRevision");
+  });
+
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain('/json/new?about:blank');

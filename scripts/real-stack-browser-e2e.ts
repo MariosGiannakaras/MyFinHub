@@ -643,6 +643,40 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){const dialog=document.querySelector('.change-history-dialog'),backdrop=dialog?.closest('.command-backdrop');if(!(dialog instanceof HTMLElement)||!(backdrop instanceof HTMLElement))return false;const animations=backdrop.getAnimations({subtree:true}).filter(item=>item.playState==='running');return animations.length===0&&Number(getComputedStyle(dialog).opacity)>=.995&&Number(getComputedStyle(backdrop).opacity)>=.995}",'history dialog visually settled after import');
     await shot('data-management-import-history-persisted');
 
+    // Exercise actual App.tsx lazy adapters and same-route focus tokens, not
+    // the independent synthetic /qa.html route owner. No finance mutation.
+    console.log('[real-browser] stage app-route-focus-and-not-found');
+    const routeRevision=await currentRevision();
+    assert(routeRevision,'Missing finance revision before read-only navigation proof.');
+    // The previous History screenshot intentionally retains the open dialog.
+    // A hard reload closes it without writing or fabricating client state.
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'real app after history reload');
+    const selectAccountCommand=async(title:string,id:string)=>{
+      await clickAria('Αναζήτηση και εντολές');
+      await waitFor("function(){const input=document.querySelector('[data-command-input=true]');return input instanceof HTMLInputElement&&document.activeElement===input}",'actual command palette autofocus');
+      await c!.call("function(){const input=document.querySelector('[data-command-input=true]');if(input instanceof HTMLInputElement)input.select()}");
+      await c!.send('Input.insertText',{text:title});
+      await waitFor("function(title){return [...document.querySelectorAll('#command-results [role=option]')].some(row=>(row.querySelector('.command-result-copy b')?.textContent||'').trim()==='Διαχείριση · '+title)}",'exact actual account command',[title]);
+      const selected=await c!.call<boolean>("function(title){const row=[...document.querySelectorAll('#command-results [role=option]')].find(node=>(node.querySelector('.command-result-copy b')?.textContent||'').trim()==='Διαχείριση · '+title);if(!(row instanceof HTMLButtonElement))return false;row.click();return true}",[title]);
+      assert(selected,'Could not activate exact account management command.');
+      await waitFor("function(id){const row=document.activeElement;const route=document.querySelector('#main-workspace')?.firstElementChild;return location.hash==='#/settings/accounts'&&!document.querySelector('.command-palette')&&row instanceof HTMLElement&&row.matches('.account-management-row')&&row.dataset.accountId===id&&row.getClientRects().length>0&&route instanceof HTMLElement&&Number(getComputedStyle(route).opacity)>=.995}",'actual same-route account focus '+id,[id]);
+    };
+    await selectAccountCommand('Imported QA Cash','qa-cash');
+    await selectAccountCommand('Synthetic QA Bank Account','qa-bank-account');
+    await selectAccountCommand('Imported QA Cash','qa-cash');
+    await shot('app-command-account-same-route-focus');
+    await c.call("function(){location.hash='#/qa-nonexistent-route'}");
+    await waitFor("function(){const heading=document.querySelector('#not-found-title');return heading instanceof HTMLElement&&document.activeElement===heading&&!document.querySelector('.app-shell')&&!document.querySelector('#main-workspace')}",'actual lazy not-found privacy and heading focus');
+    await shot('app-not-found-desktop');
+    await c.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await waitFor("function(){const root=document.querySelector('.not-found-screen');return innerWidth===390&&root instanceof HTMLElement&&root.getClientRects().length>0&&document.documentElement.scrollWidth<=innerWidth+1}",'actual mobile not-found containment');
+    await shot('app-not-found-mobile');
+    await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+    await clickText('.not-found-actions button','Dashboard');
+    await waitFor("function(){return location.hash==='#/dashboard'&&Boolean(document.querySelector('#main-workspace h1')?.textContent?.includes('λογαριασμοί'))&&!document.querySelector('.not-found-screen')}",'actual lazy not-found return to Dashboard');
+    assert(await currentRevision()===routeRevision,'Read-only route/focus proof changed canonical finance revision.');
+
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
     console.log('[real-browser] PASS actual browser auth + modern/legacy/quick-intents/credit/savings/loans/lending/recurring/planning/attention/budgets/rules/cards/taxonomy/icons/providers/accounts/data-management persistence across hard reload');
