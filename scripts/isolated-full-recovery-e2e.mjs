@@ -60,6 +60,8 @@ function sql(database,statement,user='postgres'){
 const fingerprintTables=[
   ['public.rheomiq_app_state','id'],
   ['public.rheomiq_backups','id'],
+  ['public.rheomiq_history_points','id'],
+  ['public.rheomiq_history_cursor','owner_user_id'],
   ['public.rheomiq_audit_log','id'],
   ['auth.users','id'],
   ['storage.buckets','id'],
@@ -79,7 +81,8 @@ function fingerprints(database){
 function artworkInventory(database){
   const readRole=database===scratch?scratchRestoreRole:'postgres';
   const report=JSON.parse(sql(database,readFileSync('scripts/recovery-fixtures/artwork-storage-inventory.sql','utf8'),readRole));
-  assert(Array.isArray(report?.entries)&&Number.isSafeInteger(report.incompleteProviderPointers),
+  assert(Array.isArray(report?.entries)&&Array.isArray(report.recurringReferences)&&
+    Array.isArray(report.providerReferences)&&Number.isSafeInteger(report.incompleteProviderPointers),
     'Read-only artwork inventory did not return its complete metadata report.');
   return report;
 }
@@ -120,6 +123,19 @@ try{
   // even when the preceding API smoke has deleted its temporary asset.
   const pristine=fingerprints('postgres');
   const pristineArtwork=artworkInventory('postgres');
+  // Real Stack has committed and then removed these two synthetic logo keys
+  // via the actual finance/history and Storage paths. Do not manufacture or
+  // alter historical rows just to make this diagnostic assertion pass.
+  const expectedHistoricalKeys=(process.env.MYFINHUB_QA_RELEASED_ARTWORK_KEYS||'').split(',').filter(Boolean);
+  assert(expectedHistoricalKeys.length===2&&new Set(expectedHistoricalKeys).size===2&&
+    expectedHistoricalKeys.every(key=>/^service-asset-[a-f0-9]{24}$/.test(key)),
+    'Missing exact released synthetic recurring artwork fixture identities.');
+  for(const key of expectedHistoricalKeys){
+    const match=pristineArtwork.recurringReferences.find(row=>row.asset_key===key);
+    assert(match?.history_reference===true&&match.current_reference===false&&
+      match.registry_count===0&&match.active_registry_count===0&&match.object_count===0,
+      'Historical recurring artwork reference missing from read-only recovery inventory.');
+  }
   const orphanSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='#345'/></svg>",'utf8');
   // These are new unique synthetic objects in the disposable CI stack only.
   // No arbitrary inventory entry is ever used as a deletion target.
@@ -139,7 +155,9 @@ try{
       'Read-only artwork inventory did not classify an actual unregistered synthetic object.');
   }
   assert(JSON.stringify(sourceArtwork.entries.filter(row=>!orphanFixtures.some(item=>item.bucket===row.bucket&&item.name===row.name)))===
-    JSON.stringify(pristineArtwork.entries)&&sourceArtwork.incompleteProviderPointers===pristineArtwork.incompleteProviderPointers,
+    JSON.stringify(pristineArtwork.entries)&&sourceArtwork.incompleteProviderPointers===pristineArtwork.incompleteProviderPointers&&
+    JSON.stringify(sourceArtwork.recurringReferences)===JSON.stringify(pristineArtwork.recurringReferences)&&
+    JSON.stringify(sourceArtwork.providerReferences)===JSON.stringify(pristineArtwork.providerReferences),
     'Orphan inventory fixture changed unrelated artwork metadata.');
   await storageRequest('/bucket',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({id:sourceBucket,name:sourceBucket,public:false})});
@@ -230,6 +248,7 @@ try{
   assert(JSON.stringify(artworkInventory('postgres'))===JSON.stringify(pristineArtwork),
     'Synthetic orphan cleanup changed the original artwork metadata inventory.');
   console.log('[isolated-recovery] PASS read-only artwork orphan inventory on source and restored checkpoint; synthetic fixtures only');
+  console.log('[isolated-recovery] PASS retained history artwork references without registry or object; no finance history changes');
   assert(cleanedBucket&&sourceBucketCleaned,'An isolated Storage fixture namespace was not cleaned up.');
   assert(JSON.stringify(fingerprints('postgres'))===JSON.stringify(pristine),
     'Local source finance/Storage metadata changed after removing temporary recovery fixtures.');

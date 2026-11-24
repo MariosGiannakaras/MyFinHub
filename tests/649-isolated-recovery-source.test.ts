@@ -68,6 +68,21 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(inventory).toContain('public.rheomiq_recurring_service_assets');
     expect(inventory).toContain('from storage.objects');
     expect(inventory).toContain('full outer join registry_counts');
+    expect(inventory).toContain('from public.rheomiq_history_points');
+    expect(inventory).toContain('from public.rheomiq_backups');
+    expect(inventory).toContain('from private.rheomiq_recurring');
+    expect(inventory).toContain('from public.rheomiq_financial_provider_asset_bindings');
+    expect(inventory).toContain('from recurring_reference_counts refs');
+    expect(inventory).toContain('$.recurringOverrides.*.logoAssetKey');
+    expect(inventory).toContain('$.recurringCustom[*].logoAssetKey');
+    expect(inventory).toContain('$.recurring[*].logoAssetKey');
+    expect(inventory).toContain("'recurringReferences'");
+    expect(inventory).toContain("'providerReferences'");
+    expect(script).toContain('MYFINHUB_QA_RELEASED_ARTWORK_KEYS');
+    expect(script).toContain('match?.history_reference===true&&match.current_reference===false');
+    expect(script).toContain('match.registry_count===0&&match.active_registry_count===0&&match.object_count===0');
+    expect(script).toContain('PASS retained history artwork references without registry or object');
+    expect(read('scripts/real-stack-e2e.ts')).toContain("MYFINHUB_QA_RELEASED_ARTWORK_KEYS:[serviceAssetKey,replacementKey].join(',')");
     expect(inventory).toContain('count(*) filter (where active is true)');
     for(const classification of ['ambiguous-identity','storage-only-unregistered','registry-only-missing-object','registered-inactive','registered-active'])
       expect(inventory).toContain("'"+classification+"'");

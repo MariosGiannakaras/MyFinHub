@@ -1475,7 +1475,8 @@ async function main(){
       assert(process.env.CI==='true','Full recovery rehearsal may run only in isolated CI.');
       console.log('[real-stack] stage isolated-postgresql-storage-restore-before-browser');
       execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs'],{
-        stdio:'inherit',env:process.env,timeout:120_000,
+        stdio:'inherit',env:{...process.env,
+          MYFINHUB_QA_RELEASED_ARTWORK_KEYS:[serviceAssetKey,replacementKey].join(',')},timeout:120_000,
       });
     }
     console.log('[real-stack] stage actual-browser-ui');
