@@ -31,13 +31,22 @@ describe('#649 I22.05 actual local Supabase owner+AAL2 direct PostgREST test',()
     expect(direct).toContain("removed.length===1");
     expect(direct).toContain("nonownerUserId!==userId");
     expect(direct).toContain("await register(nonownerClaims.session_id!,nonownerUserId)");
-    expect(direct).toContain("['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history']");
+    const financeMatrix=direct.slice(direct.indexOf('const protectedFinanceCalls='),direct.indexOf('const overpay='));
+    for(const method of ['rheomiq_read_state','rheomiq_read_history','rheomiq_save_mutable_state_history','rheomiq_save_state','rheomiq_move_history','rheomiq_create_backup','rheomiq_import_state_checked','rheomiq_import_state'])
+      expect(financeMatrix).toContain("method:'"+method+"'");
+    expect(financeMatrix).toContain("const denied=await rpc(entry.method,token,entry.params)");
+    expect(financeMatrix).toContain("denied.status===403&&denied.body?.code==='42501'");
+    expect(financeMatrix).toContain("JSON.stringify(await financeEffects())===JSON.stringify(before)");
+    expect(direct.indexOf("await assertDeniedFinanceRpcs('owner-aal1',aal1Token)")).toBeGreaterThan(direct.indexOf('await register(aal1Claims.session_id!)'));
+    expect(direct.indexOf("await assertDeniedFinanceRpcs('owner-aal1',aal1Token)")).toBeLessThan(direct.indexOf('const challenge='));
+    expect(direct.indexOf("await assertDeniedFinanceRpcs('nonowner-aal2',nonownerAal2)")).toBeGreaterThan(direct.indexOf('await register(nonownerClaims.session_id!,nonownerUserId)'));
     expect(direct).toContain("denied.status===403&&String(denied.body?.code)==='42501'");
     expect(real).toContain("totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode)");
     expect(direct).toContain("JSON.stringify(after.body)===JSON.stringify(before.body)");
     expect(direct).toContain("new URLSearchParams({session_id:'eq.'+aal2Claims.session_id!,user_id:'eq.'+userId,revoked_at:'is.null'})");
     expect(direct).toContain("revokedRows.length===1");
-    expect(direct).toContain("for(const method of ['rheomiq_read_state','rheomiq_read_history'])");
+    expect(direct).toContain("await assertDeniedFinanceRpcs('revoked-aal2',aal2Token)");
+    expect(direct.indexOf("await assertDeniedFinanceRpcs('revoked-aal2',aal2Token)")).toBeGreaterThan(direct.indexOf('const revokedDevice='));
     expect(direct).toContain("deniedWrite.status===403&&String(deniedWrite.body?.code)==='42501'");
     expect(direct).toContain("revokedRead.body.length===0");
     expect(direct.indexOf("const revokedRead=await selectMetadata(aal2Token)")).toBeLessThan(
