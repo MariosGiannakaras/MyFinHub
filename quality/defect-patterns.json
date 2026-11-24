@@ -787,19 +787,21 @@
     },
     {
       "id": "FP-041",
-      "title": "Older IBAN save can use newer owner metadata after delayed catalog refresh and dispatch a new-session PUT",
+      "title": "Retired write intent can dispatch under a newer authentication scope during preflight or shared progress notification",
       "category": "security-auth",
       "severity": "high",
       "rootCause": "saveAccountMetadata captured its auth epoch only after awaiting refreshAccountMetadata. A previous owner/session save waiting on a slow cold GET could be resumed after logout/reauth by a newer scope's freshly loaded catalog; the old call would then use the new owner revision and issue a PUT under the newer cookie.",
-      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged.",
+      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged.",
       "paths": [
-        "src/lib/accountMetadataClient.ts"
+        "src/lib/accountMetadataClient.ts",
+        "src/lib/databaseSaveActivity.ts"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
-        "tests/649-account-metadata-preflight-auth-scope.test.ts"
+        "tests/649-account-metadata-preflight-auth-scope.test.ts",
+        "tests/649-shared-write-preflight-auth-scope.test.ts"
       ]
     }
   ]
