@@ -110,7 +110,11 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     }
     return record;
   }
+  // Bind this call to the owner session that initiated the save, BEFORE
+  // awaiting a cold-catalog GET or notifying shared save-progress listeners.
+  const epoch=authEpoch();
   return trackDatabaseWrite(async()=>{
+  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν σταλεί η ενημέρωση IBAN.');
   if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();
   // A failed/incomplete GET is not evidence that an account has no metadata
   // and can be written at revision zero. Reconcile by read-only GET first;
@@ -120,8 +124,10 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     if(!recovered.loaded||recovered.error)
       throw new Error('Η τρέχουσα έκδοση IBAN δεν έχει επιβεβαιωθεί. Φόρτωσε ξανά τα στοιχεία πριν από αποθήκευση.');
   }
+  // An old GET can settle with the newer owner's snapshot after auth reset.
+  // Never use that new-session revision to issue an old-session IBAN PUT.
+  if(epoch!==authEpoch())throw new Error('Η συνεδρία άλλαξε πριν σταλεί η ενημέρωση IBAN.');
   const current=snapshot.records[accountId];
-  const epoch=authEpoch();
   let response:Response;
   try{
     response=await apiRequest('/api/account-metadata',{
