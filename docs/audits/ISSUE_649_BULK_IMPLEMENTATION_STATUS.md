@@ -1,3 +1,13 @@
+## 2026-11-25 — Fresh reservation dispatch guard (internal staged protocol)
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact `1c9cfb2` [CI #45588932624](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45588932624) SUCCESS: validate (346 test files), CodeQL, Unified, hard bundle budgets (main JS 526.5/528 KiB raw), positive reservation/terminal-key and all three authorization-denial PostgreSQL smoke markers, final PIN/RLS/recovery PASS. Expensive opt-ins skipped.
+
+**I19.04/I22.02:** both internal binary upload store entry points now support a staged explicit intent ID. Fresh plain INSERT with exact 201 singleton representation (including generated path, fresh key, independent UUID, target, bytes SHA-256 and metadata) and same-token owner+AAL2 checks before/after is required before Storage POST. No upsert, GET fallback, replay, or new-key retry on ambiguous/conflicting/malformed reservation. Twenty focused cases cover both domains and exact request order; existing HTTP handlers do not enable this option, native contract unchanged. Successful internal registration leaves reservation pending: acknowledgement, browser integration, legacy concurrency coordination and safe handling of unresolved definite/ambiguous outcomes remain incomplete. No new hosted migration/data/Storage writes. Source reviewed, local executable checkout unavailable; candidate ordinary CI pending.
+
+**Next safe action:** verify this exact-head CI; implement explicit receipt/catalog acknowledgement with exact reservation identity and guarded terminal transition, including ambiguous PATCH readback without replay and same-token auth; do not expose arbitrary abandonment or dispatch on recovered reservations. Then integrate HTTP/browser lifecycle coherently, address legacy native concurrency and pending failure resolution before activating, consolidate two-tab/restart/isolated Real Stack/rendered and protected Ready gates. Draft #654 remains integration owner; no Android, merge or release.
+
+---
+
 ## 2026-11-25 — Read-only durable artwork recovery API candidate
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact `1f8fdee` [CI #45586514832](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45586514832) SUCCESS: validate job 139109389964 directly confirms 2,455/2,455 tests, 345 files, build/hard budgets (main JS 526.5/528 KiB raw), positive reservation/terminal-key PostgreSQL smoke, all three authorization denial markers and final PIN/RLS/recovery PASS. CodeQL and Unified PASS; CSS soft warning remains; expensive opt-ins skipped. Main `db2c0a6`, develop `e05fb3f`, Draft #654.

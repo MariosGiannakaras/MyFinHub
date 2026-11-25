@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {readPendingArtworkUploadIntent} from '../server/accountMetadataStore.js';
+import {readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
 import {parseArtworkIntentTarget} from '../server/accountMetadataHandler.js';
 
 const bytes=Buffer.from([137,80,78,71,13,10,26,10]);
@@ -98,6 +98,73 @@ describe('#649 read-only durable artwork intent recovery',()=>{
         if(['duplicate','bad-intent'].includes(scenario))expect(calls).toEqual(['owner','intent']);
         if(['wrong-key','wrong-owner-target','wrong-path'].includes(scenario))expect(calls).not.toContain('bytes');
         if(scenario==='revoked-after'||scenario==='malformed-auth-after')expect(calls.at(-1)).toBe('owner');
+      }
+    });
+  }
+});
+
+describe('#649 fresh durable artwork reservation dispatch guard',()=>{
+  for(const target of [provider,recurring]){
+    it.each(['fresh','conflict','timeout','malformed','wrong-intent','wrong-key','wrong-hash','not-created','revoked-before','revoked-after'] as const)(
+      target.kind+' reservation: %s',async scenario=>{
+      vi.stubEnv('SUPABASE_URL','https://example.supabase.co');
+      vi.stubEnv('SUPABASE_PUBLISHABLE_KEY','test-public-key');
+      const calls:string[]=[];
+      let ownerReads=0;
+      let key='',path='';
+      const bucket=target.kind==='provider'?'financial-provider-assets':'recurring-service-assets';
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=new URL(String(input));
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer owner-jwt');
+        expect(init?.method).toBe('POST');
+        if(url.pathname.endsWith('/rpc/rheomiq_is_owner_aal2')){
+          calls.push('owner');ownerReads++;
+          return json(scenario!=='revoked-before'&&!(ownerReads===2&&scenario==='revoked-after'));
+        }
+        if(url.pathname.endsWith('/rheomiq_artwork_upload_intents')){
+          calls.push('reserve');
+          expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
+          expect(url.searchParams.has('on_conflict')).toBe(false);
+          const row=JSON.parse(String(init?.body));
+          expect(row).toMatchObject({intent_id:intentId,kind:target.kind,target_id:target.targetId,
+            role:target.role,variant:target.variant,make_primary:false,file_name:'logo.png',
+            mime_type:'image/png',size_bytes:bytes.length,sha256});
+          key=row.asset_key;
+          expect(key).toMatch(target.kind==='provider'?/^qa-bank-asset-[a-f0-9]{12}$/:/^service-asset-[a-f0-9]{24}$/);
+          path=(target.kind==='provider'?'providers/qa-bank/':'services/')+key+'.png';
+          if(scenario==='conflict')return new Response(JSON.stringify({code:'23505'}),{status:409});
+          if(scenario==='timeout')return new Response(JSON.stringify({code:'23505'}),{status:504});
+          const receipt={...row,storage_path:path,disposition:'pending',created_at:now,resolved_at:null};
+          if(scenario==='wrong-intent')receipt.intent_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+          if(scenario==='wrong-key')receipt.asset_key=target.kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
+          if(scenario==='wrong-hash')receipt.sha256='0'.repeat(64);
+          return new Response(JSON.stringify(scenario==='malformed'?[]:[receipt]),{
+            status:scenario==='not-created'?200:201,headers:{'content-type':'application/json'},
+          });
+        }
+        if(url.pathname.startsWith('/storage/v1/object/')){
+          calls.push('storage');
+          expect(url.pathname).toBe('/storage/v1/object/'+bucket+'/'+path);
+          expect(Buffer.from(init?.body as Uint8Array)).toEqual(bytes);
+          return json({ok:true});
+        }
+        calls.push('register');
+        expect(url.pathname).toBe('/rest/v1/rpc/'+(target.kind==='provider'?'rheomiq_register_financial_provider_asset':'rheomiq_register_recurring_service_asset'));
+        expect(JSON.parse(String(init?.body))).toMatchObject({p_asset_key:key,p_storage_path:path});
+        return json([{asset_key:key,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
+          storage_bucket:bucket,storage_path:path,updated_at:now,active:true,
+          ...(target.kind==='provider'?{provider_id:target.targetId,asset_role:target.role,variant:target.variant}:{recurring_id:target.targetId})}]);
+      }));
+      const input={intentId,fileName:'logo.png',mimeType:'image/png',content:bytes};
+      const result=target.kind==='provider'?
+        uploadFinancialProviderAsset({...input,providerId:target.targetId,role:target.role,variant:target.variant,makePrimary:false},'owner-jwt'):
+        uploadRecurringServiceAsset({...input,recurringId:target.targetId},'owner-jwt');
+      if(scenario==='fresh'){
+        await expect(result).resolves.toMatchObject({fileName:'logo.png',sizeBytes:bytes.length});
+        expect(calls).toEqual(['owner','reserve','owner','storage','register']);
+      }else{
+        await expect(result).rejects.toMatchObject({code:'ARTWORK_UPLOAD_INTENT_UNVERIFIED'});
+        expect(calls).toEqual(scenario==='revoked-before'?['owner']:scenario==='revoked-after'?['owner','reserve','owner']:['owner','reserve']);
       }
     });
   }

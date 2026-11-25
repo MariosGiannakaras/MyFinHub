@@ -96,7 +96,7 @@ function config(accessToken:string){
   return {url,apiKey,authorization:`Bearer ${accessToken}`};
 }
 
-async function request(path:string,init:RequestInit,accessToken:string){
+async function request(path:string,init:RequestInit,accessToken:string,expectedStatus?:number){
   const {url,apiKey,authorization}=config(accessToken);
   const response=await fetchUpstream(`${url}/rest/v1/${path}`,{
     ...init,
@@ -123,6 +123,7 @@ async function request(path:string,init:RequestInit,accessToken:string){
     }
     throw new ApiError(502,'ACCOUNT_METADATA_STORAGE_ERROR','Account metadata request failed.',false);
   }
+  if(expectedStatus!==undefined&&response.status!==expectedStatus)throw artworkRecoveryUnverified();
   return payload;
 }
 
@@ -569,6 +570,37 @@ function artworkIntentQuery(target:ArtworkIntentTarget){
   }).toString();
 }
 
+// Only a fresh INSERT with an exact 201 representation authorizes the next
+// Storage POST. A previously committed or uncertain reservation is recovery
+// evidence, never dispatch permission. No upsert, retry or GET fallback.
+async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
+  intentId:string;assetKey:string;fileName:string;mimeType:string;makePrimary:boolean;
+  storagePath:string;content:Buffer;
+},accessToken:string){
+  if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(input.intentId))
+    throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Invalid artwork upload intent.');
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const sha256=createHash('sha256').update(input.content).digest('hex');
+  try{
+    const rows=await request('rheomiq_artwork_upload_intents?select='+ARTWORK_INTENT_FIELDS,{
+      method:'POST',headers:{prefer:'return=representation'},
+      body:JSON.stringify({intent_id:input.intentId,kind:target.kind,target_id:target.targetId,
+        role:target.role,variant:target.variant,make_primary:input.makePrimary,asset_key:input.assetKey,
+        file_name:input.fileName,mime_type:input.mimeType,size_bytes:input.content.byteLength,sha256}),
+    },accessToken,201);
+    if(!Array.isArray(rows)||rows.length!==1)throw artworkRecoveryUnverified();
+    const receipt=parsePendingArtworkIntent(rows[0],target);
+    if(receipt.intentId!==input.intentId||receipt.assetKey!==input.assetKey||receipt.fileName!==input.fileName||
+      receipt.mimeType!==input.mimeType||receipt.makePrimary!==input.makePrimary||receipt.storagePath!==input.storagePath||
+      receipt.sizeBytes!==input.content.byteLength||receipt.sha256!==sha256)throw artworkRecoveryUnverified();
+  }catch{
+    // Even a conflict or malformed success may refer to a committed pending
+    // reservation. Do not retry with a fresh ID or read it back to upload.
+    throw artworkRecoveryUnverified();
+  }
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+}
+
 // Read-only restart recovery. A pending reservation is not evidence that a
 // write committed. Never register, bind, acknowledge, abandon or upload here.
 // In particular an unverified result cannot authorize a replacement upload.
@@ -627,6 +659,9 @@ export async function uploadFinancialProviderAsset(input:{
   fileName:string;
   makePrimary:boolean;
   content:unknown;
+  // Internal staged protocol; HTTP handlers must not enable this until the
+  // complete acknowledgement and recovery client lifecycle is available.
+  intentId?:string;
 },accessToken:string){
   const content=copyBoundedBinaryValue(input.content,MAX_PROVIDER_ASSET_BYTES);
   const extension=PROVIDER_ASSET_EXTENSION[input.mimeType];
@@ -635,6 +670,8 @@ export async function uploadFinancialProviderAsset(input:{
   const assetKey=`${input.providerId}-asset-${suffix}`;
   const storageFileName=`${assetKey}.${extension}`;
   const storagePath=`providers/${input.providerId}/${storageFileName}`;
+  if(input.intentId!==undefined)await reserveArtworkUploadIntent({kind:'provider',targetId:input.providerId,role:input.role,variant:input.variant},
+    {intentId:input.intentId,assetKey,fileName:input.fileName,mimeType:input.mimeType,makePrimary:input.makePrimary,storagePath,content},accessToken);
   const {url,apiKey,authorization}=config(accessToken);
   const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
   let upload:Response|null=null;
@@ -820,6 +857,8 @@ export async function uploadRecurringServiceAsset(input:{
   mimeType:string;
   fileName:string;
   content:unknown;
+  // Internal staged protocol, not yet accepted from HTTP requests.
+  intentId?:string;
 },accessToken:string):Promise<RecurringServiceAssetRow>{
   const content=copyBoundedBinaryValue(input.content,MAX_RECURRING_SERVICE_ASSET_BYTES);
   const extension=PROVIDER_ASSET_EXTENSION[input.mimeType];
@@ -827,6 +866,8 @@ export async function uploadRecurringServiceAsset(input:{
   const suffix=randomUUID().replace(/-/g,'').slice(0,24);
   const assetKey=`service-asset-${suffix}`;
   const storagePath=`services/${assetKey}.${extension}`;
+  if(input.intentId!==undefined)await reserveArtworkUploadIntent({kind:'recurring',targetId:input.recurringId,role:'',variant:''},
+    {intentId:input.intentId,assetKey,fileName:input.fileName,mimeType:input.mimeType,makePrimary:false,storagePath,content},accessToken);
   const {url,apiKey,authorization}=config(accessToken);
   const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
   let upload:Response|null=null;
