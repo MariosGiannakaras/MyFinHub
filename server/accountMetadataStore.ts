@@ -601,22 +601,9 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
 }
 
-// Read-only restart recovery. A pending reservation is not evidence that a
-// write committed. Never register, bind, acknowledge, abandon or upload here.
-// In particular an unverified result cannot authorize a replacement upload.
-export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,accessToken:string){
-  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
-  const path=artworkIntentQuery(target);
-  const load=async()=>{
-    const rows=await request(path,{method:'GET',cache:'no-store'},accessToken);
-    if(!Array.isArray(rows)||rows.length>1)throw artworkRecoveryUnverified();
-    return rows.length?parsePendingArtworkIntent(rows[0],target):null;
-  };
-  const intent=await load();
-  if(!intent){
-    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
-    return {intent:null};
-  }
+// Shared read-only proof. The caller must still verify journal identity and
+// original session after these independent registry and Storage reads.
+async function verifyArtworkIntentAsset(target:ArtworkIntentTarget,intent:ReturnType<typeof parsePendingArtworkIntent>,accessToken:string){
   const {url,apiKey,authorization}=config(accessToken);
   const bucket=target.kind==='provider'?PROVIDER_ASSET_BUCKET:RECURRING_SERVICE_ASSET_BUCKET;
   const table=target.kind==='provider'?'rheomiq_financial_provider_assets':'rheomiq_recurring_service_assets';
@@ -639,6 +626,26 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
       asset='provider_id' in row?{...common,role:row.asset_role as FinancialProviderAssetRow['role'],variant:row.variant}:{...common,recurringId:row.recurring_id};
     }
   }
+  return asset;
+}
+
+// Read-only restart recovery. A pending reservation is not evidence that a
+// write committed. Never register, bind, acknowledge, abandon or upload here.
+// In particular an unverified result cannot authorize a replacement upload.
+export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,accessToken:string){
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const path=artworkIntentQuery(target);
+  const load=async()=>{
+    const rows=await request(path,{method:'GET',cache:'no-store'},accessToken);
+    if(!Array.isArray(rows)||rows.length>1)throw artworkRecoveryUnverified();
+    return rows.length?parsePendingArtworkIntent(rows[0],target):null;
+  };
+  const intent=await load();
+  if(!intent){
+    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+    return {intent:null};
+  }
+  const asset=await verifyArtworkIntentAsset(target,intent,accessToken);
   // Detect a concurrent disposition change and require the original session
   // after all protected/public readbacks, including a missing registry row.
   const current=await load();
@@ -649,6 +656,72 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
   return {intent:{intentId:intent.intentId,assetKey:intent.assetKey,kind:target.kind,targetId:target.targetId,
     role:target.role,variant:target.variant,makePrimary:intent.makePrimary,fileName:intent.fileName,
     mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,asset}};
+}
+
+// Terminal state is a journal receipt only. Validate its immutable identity
+// with the same parser as a pending row, without representing it as an asset
+// receipt, provider binding or finance revision.
+function parseArtworkIntentState(value:unknown,target:ArtworkIntentTarget){
+  if(!value||typeof value!=='object'||Array.isArray(value))throw artworkRecoveryUnverified();
+  const row=value as Record<string,unknown>;
+  const disposition=row.disposition;
+  if(disposition!=='pending'&&disposition!=='acknowledged'&&disposition!=='abandoned')throw artworkRecoveryUnverified();
+  if(disposition==='pending'?row.resolved_at!==null:
+    typeof row.resolved_at!=='string'||!Number.isFinite(Date.parse(row.resolved_at)))throw artworkRecoveryUnverified();
+  return {identity:parsePendingArtworkIntent({...row,disposition:'pending',resolved_at:null},target),
+    disposition,resolvedAt:row.resolved_at};
+}
+
+// Staged explicit acknowledgement, not yet exposed at HTTP ingress. A client
+// must have reviewed the receipt/catalog and supply both original identities.
+// A journal acknowledgement is NOT proof that the asset is still present or
+// bound, and never authorizes a finance save or replay of binary registration.
+export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,expected:{
+  intentId:string;assetKey:string;
+},accessToken:string){
+  const prefix=target.kind==='provider'?target.targetId+'-asset-':'service-asset-';
+  if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(expected.intentId)||
+    !expected.assetKey.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(expected.assetKey.slice(prefix.length)))
+    throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Invalid artwork upload intent.');
+  const eq=(value:string)=>'eq.'+JSON.stringify(value);
+  const filters={kind:eq(target.kind),target_id:eq(target.targetId),role:eq(target.role),variant:eq(target.variant),
+    intent_id:eq(expected.intentId),asset_key:eq(expected.assetKey)};
+  const table='rheomiq_artwork_upload_intents?';
+  const readPath=table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,limit:'2'}).toString();
+  const load=async()=>{
+    const rows=await request(readPath,{method:'GET',cache:'no-store'},accessToken);
+    if(!Array.isArray(rows)||rows.length!==1)throw artworkRecoveryUnverified();
+    const state=parseArtworkIntentState(rows[0],target);
+    if(state.identity.intentId!==expected.intentId||state.identity.assetKey!==expected.assetKey)throw artworkRecoveryUnverified();
+    return state;
+  };
+  const sameIdentity=(a:ReturnType<typeof parseArtworkIntentState>,b:ReturnType<typeof parseArtworkIntentState>)=>
+    JSON.stringify(a.identity)===JSON.stringify(b.identity);
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const original=await load();
+  if(original.disposition==='abandoned')throw artworkRecoveryUnverified();
+  if(original.disposition==='acknowledged'){
+    // Explicit retry after a lost HTTP response: read the exact terminal
+    // identity, never PATCH it again. No claim of current binary availability.
+    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+    return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'acknowledged' as const};
+  }
+  if(!await verifyArtworkIntentAsset(target,original.identity,accessToken))throw artworkRecoveryUnverified();
+  const before=await load();
+  if(!sameIdentity(original,before)||before.disposition!=='pending'||
+    !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  // Compare-and-transition only this exact pending identity. Never close a
+  // successor intent in the same slot. A lost PATCH receipt is resolved
+  // solely by exact authoritative GET; do not replay or infer from HTTP 200.
+  try{
+    await request(table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,disposition:'eq.pending'}).toString(),{
+      method:'PATCH',headers:{prefer:'return=representation'},body:JSON.stringify({disposition:'acknowledged'}),
+    },accessToken);
+  }catch{ /* The terminal readback, not the transport status, decides. */ }
+  const after=await load();
+  if(!sameIdentity(original,after)||after.disposition!=='acknowledged'||
+    !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'acknowledged' as const};
 }
 
 export async function uploadFinancialProviderAsset(input:{

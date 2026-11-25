@@ -1,3 +1,13 @@
+## 2026-11-25 — Exact durable artwork acknowledgement (internal staged protocol)
+
+**Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact `03ece53` [CI #45595016681](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45595016681) SUCCESS: direct validate logs 2,510/2,510 tests in 346 files, CodeQL, Unified, hard budgets (main JS 526.5/528 KiB raw), positive reservation/terminal-key and all three authorization-denial PostgreSQL smoke markers, final PIN/RLS/recovery PASS. Expensive opt-ins skipped.
+
+**I19.04/I22.02:** staged explicit acknowledgement requires exact intent UUID/key/target; shares the existing active registry and bounded Storage byte/hash proof, compares the unchanged pending identity and checks original-token owner+AAL2 before a conditional pending-only PATCH. Always read back the exact terminal identity after PATCH (including ambiguous or malformed response), then verify original authorization. No retry of PATCH, no successor-slot mutation, no arbitrary abandonment, no binary replay, no binding/finance success. Already acknowledged retry reads terminal journal only. Forty-four new focused cases across both domains, FP-039 and recovery runbook extended. HTTP ingress remains intentionally unchanged. Local checkout unavailable; source review only, ordinary exact-head CI pending.
+
+**Next safe action:** verify exact candidate CI. Before enabling HTTP/client integration, resolve concurrency of legacy uploads with pending reservations and safe non-committed/ambiguous disposition. In particular a journal's authenticated direct terminal disposition is not proof of quiescence, nor does a pending-only uniqueness index constrain legacy uploads; do not pretend this staged protocol prevents all bypasses. Preserve native compatibility, do not expose arbitrary abandonment or allow a recovered reservation to authorize dispatch. Then coordinate exact receipt/catalog acknowledgement and browser auth epoch/recovery, actual two-tab/restart/Real Stack/rendered and protected Ready gates. Draft #654 remains owner. No hosted changes, Android, merge or release.
+
+---
+
 ## 2026-11-25 — Fresh reservation dispatch guard (internal staged protocol)
 
 **Implementations 6/23 completed · Sub-implementations 104/132 completed**, unchanged. Exact `1c9cfb2` [CI #45588932624](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45588932624) SUCCESS: validate (346 test files), CodeQL, Unified, hard bundle budgets (main JS 526.5/528 KiB raw), positive reservation/terminal-key and all three authorization-denial PostgreSQL smoke markers, final PIN/RLS/recovery PASS. Expensive opt-ins skipped.

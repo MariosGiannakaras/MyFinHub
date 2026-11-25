@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
+import {acknowledgeArtworkUploadIntent,readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
 import {parseArtworkIntentTarget} from '../server/accountMetadataHandler.js';
 
 const bytes=Buffer.from([137,80,78,71,13,10,26,10]);
@@ -165,6 +165,103 @@ describe('#649 fresh durable artwork reservation dispatch guard',()=>{
       }else{
         await expect(result).rejects.toMatchObject({code:'ARTWORK_UPLOAD_INTENT_UNVERIFIED'});
         expect(calls).toEqual(scenario==='revoked-before'?['owner']:scenario==='revoked-after'?['owner','reserve','owner']:['owner','reserve']);
+      }
+    });
+  }
+});
+
+describe('#649 exact durable artwork acknowledgement',()=>{
+  for(const target of [provider,recurring]){
+    it.each(['fresh','lost-committed','malformed-committed','lost-pending','false-success','already-acknowledged',
+      'abandoned','missing','duplicate','wrong-id','wrong-key','no-registry','wrong-bytes','changed-before',
+      'closed-before','revoked-before','revoked-prepatch','revoked-after','abandoned-after','changed-after',
+      'missing-after','malformed-terminal'] as const)(target.kind+' acknowledgement: %s',async scenario=>{
+      vi.stubEnv('SUPABASE_URL','https://example.supabase.co');
+      vi.stubEnv('SUPABASE_PUBLISHABLE_KEY','test-public-key');
+      const assetKey=target.kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
+      const bucket=target.kind==='provider'?'financial-provider-assets':'recurring-service-assets';
+      const storagePath=(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png';
+      const original={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
+        make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
+        sha256,storage_path:storagePath,disposition:'pending',created_at:now,resolved_at:null as string|null};
+      const terminal={...original,disposition:'acknowledged',resolved_at:now};
+      const registry={asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
+        storage_bucket:bucket,storage_path:storagePath,updated_at:now,active:true,
+        ...(target.kind==='provider'?{provider_id:target.targetId,asset_role:target.role,variant:target.variant}:{recurring_id:target.targetId})};
+      const calls:string[]=[];
+      let reads=0,owners=0,patched=false;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=new URL(String(input)),method=init?.method??'GET';
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer owner-jwt');
+        if(url.pathname.endsWith('/rpc/rheomiq_is_owner_aal2')){
+          expect(method).toBe('POST');calls.push('owner');owners++;
+          return json(!(scenario==='revoked-before'||scenario==='revoked-prepatch'&&owners===2||scenario==='revoked-after'&&owners===3));
+        }
+        if(url.pathname.endsWith('/rheomiq_artwork_upload_intents')){
+          for(const [key,value] of Object.entries({kind:target.kind,target_id:target.targetId,role:target.role,
+            variant:target.variant,intent_id:intentId,asset_key:assetKey}))
+            expect(url.searchParams.get(key)).toBe('eq.'+JSON.stringify(value));
+          if(method==='PATCH'){
+            calls.push('patch');
+            expect(patched).toBe(false);patched=true;
+            expect(url.searchParams.get('disposition')).toBe('eq.pending');
+            expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
+            expect(JSON.parse(String(init?.body))).toEqual({disposition:'acknowledged'});
+            if(scenario==='lost-committed'||scenario==='lost-pending')return new Response(null,{status:504});
+            return json(scenario==='malformed-committed'?{unexpected:true}:[terminal]);
+          }
+          expect(method).toBe('GET');calls.push('intent');reads++;
+          expect(url.searchParams.get('limit')).toBe('2');
+          if(patched){
+            if(scenario==='lost-pending'||scenario==='false-success')return json([original]);
+            if(scenario==='abandoned-after')return json([{...terminal,disposition:'abandoned'}]);
+            if(scenario==='changed-after')return json([{...terminal,sha256:'0'.repeat(64)}]);
+            if(scenario==='missing-after')return json([]);
+            if(scenario==='malformed-terminal')return json([{...terminal,resolved_at:null}]);
+            return json([terminal]);
+          }
+          if(scenario==='already-acknowledged')return json([terminal]);
+          if(scenario==='abandoned')return json([{...terminal,disposition:'abandoned'}]);
+          if(scenario==='missing')return json([]);
+          if(scenario==='duplicate')return json([original,original]);
+          if(scenario==='wrong-id')return json([{...original,intent_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}]);
+          if(scenario==='wrong-key'){
+            const key=assetKey.slice(0,-1)+'2';
+            return json([{...original,asset_key:key,storage_path:storagePath.replace(assetKey,key)}]);
+          }
+          if(reads===2&&scenario==='changed-before')return json([{...original,sha256:'0'.repeat(64)}]);
+          if(reads===2&&scenario==='closed-before')return json([{...terminal,disposition:'abandoned'}]);
+          return json([original]);
+        }
+        expect(method).toBe('GET');
+        if(url.pathname.includes('/rest/v1/rheomiq_')){
+          calls.push('registry');expect(url.searchParams.get('asset_key')).toBe('eq.'+assetKey);
+          return json(scenario==='no-registry'?[]:[registry]);
+        }
+        calls.push('bytes');
+        expect(url.pathname).toBe('/storage/v1/object/public/'+bucket+'/'+storagePath);
+        return new Response(scenario==='wrong-bytes'?new Uint8Array(bytes.length):new Uint8Array(bytes));
+      }));
+      const result=acknowledgeArtworkUploadIntent(target,{intentId,assetKey},'owner-jwt');
+      if(['fresh','lost-committed','malformed-committed','already-acknowledged'].includes(scenario)){
+        await expect(result).resolves.toEqual({intentId,assetKey,disposition:'acknowledged'});
+        expect(calls).toEqual(scenario==='already-acknowledged'?['owner','intent','owner']:
+          ['owner','intent','registry','bytes','intent','owner','patch','intent','owner']);
+      }else{
+        await expect(result).rejects.toThrow();
+        if(['lost-pending','false-success','revoked-after','abandoned-after','changed-after','missing-after','malformed-terminal'].includes(scenario)){
+          expect(calls.filter(x=>x==='patch')).toHaveLength(1);
+          expect(calls.slice(0,8)).toEqual(['owner','intent','registry','bytes','intent','owner','patch','intent']);
+          expect(calls.at(-1)).toBe(scenario==='revoked-after'?'owner':'intent');
+        }else{
+          expect(calls).not.toContain('patch');
+          if(scenario==='revoked-before')expect(calls).toEqual(['owner']);
+          if(['abandoned','missing','duplicate','wrong-id','wrong-key'].includes(scenario))expect(calls).toEqual(['owner','intent']);
+          if(scenario==='no-registry')expect(calls).toEqual(['owner','intent','registry']);
+          if(scenario==='wrong-bytes')expect(calls).toEqual(['owner','intent','registry','bytes']);
+          if(['changed-before','closed-before'].includes(scenario))expect(calls).toEqual(['owner','intent','registry','bytes','intent']);
+          if(scenario==='revoked-prepatch')expect(calls).toEqual(['owner','intent','registry','bytes','intent','owner']);
+        }
       }
     });
   }
