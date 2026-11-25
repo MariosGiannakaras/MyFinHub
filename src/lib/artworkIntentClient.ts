@@ -25,7 +25,7 @@ export async function readArtworkIntent(target:ArtworkIntentTarget,scope=authSco
   const response=await apiRequest(endpoint(target),{method:'GET',credentials:'same-origin',cache:'no-store'});
   const payload=await response.json().catch(()=>null);
   assertCurrentAuthScope(scope);
-  if(!response.ok||!payload||typeof payload!=='object'||!Object.hasOwn(payload,'intent'))throw unverified();
+  if(!response.ok||!payload||typeof payload!=='object'||Array.isArray(payload)||!Object.hasOwn(payload,'intent'))throw unverified();
   if(payload.intent===null)return null;
   const row=payload.intent as Record<string,unknown>;
   if(!row||typeof row!=='object'||Array.isArray(row)||!validIdentity(target,row)||
@@ -33,7 +33,7 @@ export async function readArtworkIntent(target:ArtworkIntentTarget,scope=authSco
     row.role!==(target.kind==='provider'?target.role:'')||row.variant!==(target.kind==='provider'?target.variant:'')||
     typeof row.fileName!=='string'||typeof row.dispatchClaimed!=='boolean'||typeof row.registrationRecorded!=='boolean'||
     row.registrationRecorded&&!row.dispatchClaimed||
-    row.asset!==null&&(!row.registrationRecorded||!row.asset||typeof row.asset!=='object'||
+    row.asset!==null&&(!row.registrationRecorded||!row.asset||typeof row.asset!=='object'||Array.isArray(row.asset)||
       (row.asset as Record<string,unknown>).assetKey!==row.assetKey))throw unverified();
   return {intentId:row.intentId as string,assetKey:row.assetKey as string,fileName:row.fileName,
     dispatchClaimed:row.dispatchClaimed,registrationRecorded:row.registrationRecorded,verifiedAsset:row.asset!==null};

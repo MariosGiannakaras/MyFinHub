@@ -20,7 +20,10 @@ describe('Recurring service-brand integration contracts',()=>{
   });
 
   it('supports add, replace and remove with stable logoAssetKey only',()=>{
-    expect(page).toContain("logoAssetKey=editLogoRemoved?undefined:oldKey");
+    expect(page).toContain("logoAssetKey=editLogoRemoved?undefined:recoveredLogoKey??oldKey");
+    expect(page).toContain('setRecoveredLogoKey(null)');
+    expect(page).toContain('catalog.assets.some(asset=>asset.assetKey===assetKey&&asset.recurringId===edit.id)');
+    expect(page).toContain('setRecoveredLogoKey(assetKey)');
     expect(page).toContain('logoAssetKey=uploaded.assetKey');
     expect(page).toContain('const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined}');
     expect(page).toContain("const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true)");

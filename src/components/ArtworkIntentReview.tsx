@@ -8,11 +8,12 @@ import type { ArtworkIntentTarget, PendingArtworkIntent } from '../lib/artworkIn
 export default function ArtworkIntentReview({target,disabled,prepareRecovered}:{target:ArtworkIntentTarget;disabled?:boolean;
   prepareRecovered:(assetKey:string,scope:number)=>Promise<()=>void>}){
   const [pending,setPending]=useState<PendingArtworkIntent|null>(null);
+  const pendingScope=useRef(-1);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
   const latch=useRef(false);
   const mounted=useRef(true);
-  useEffect(()=>{mounted.current=true;const unsubscribe=subscribeAuthScopeReset(()=>{setPending(null);setMessage('')});
+  useEffect(()=>{mounted.current=true;const unsubscribe=subscribeAuthScopeReset(()=>{pendingScope.current=-1;setPending(null);setMessage('')});
     return()=>{mounted.current=false;unsubscribe()}},[]);
   const run=async(action?:'acknowledge'|'cancel'|'retire')=>{
     if(disabled||latch.current)return;
@@ -23,6 +24,7 @@ export default function ArtworkIntentReview({target,disabled,prepareRecovered}:{
       assertCurrentAuthScope(scope);
       if(!mounted.current)return;
       if(action&&pending){
+        if(pendingScope.current!==scope)return;
         const identity={intentId:pending.intentId,assetKey:pending.assetKey};
         const apply=action==='acknowledge'?await prepareRecovered(identity.assetKey,scope):null;
         assertCurrentAuthScope(scope);
@@ -30,13 +32,14 @@ export default function ArtworkIntentReview({target,disabled,prepareRecovered}:{
         await trackDatabaseWrite(()=>api.resolveArtworkIntent(target,identity,action,scope));
         assertCurrentAuthScope(scope);
         if(!mounted.current)return;
-        setPending(null);
+        pendingScope.current=-1;setPending(null);
         if(apply)apply();
         else setMessage('Η κράτηση έκλεισε χωρίς διαγραφή αρχείων. Αν η παλιά συνεδρία κρατά ακόμη τη θέση, επανασυνδέσου πριν επιλέξεις νέο αρχείο.');
       }else{
+        pendingScope.current=-1;setPending(null);
         const result=await api.readArtworkIntent(target,scope);
         if(!mounted.current||scope!==authScopeEpoch())return;
-        setPending(result);
+        pendingScope.current=scope;setPending(result);
         if(!result)setMessage('Δεν βρέθηκε εκκρεμής μεταφόρτωση για αυτή τη θέση.');
       }
     }catch{

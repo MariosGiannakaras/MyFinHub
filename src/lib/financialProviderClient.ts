@@ -394,15 +394,21 @@ export async function uploadFinancialProviderAsset(input:{
   // Never replay a new-key Storage upload while the outcome is uncertain.
   const asset=confirmedUploadedAsset(payload?.asset,input);
   if(!asset)return unverifiedAssetUpload(uploadSlot,requestEpoch);
-  if(input.refreshCatalog!==false){
-    await refreshFinancialProviders(true);
+  // New-protocol acknowledgement releases the durable slot. Require an
+  // independent current catalog match even when the editor defers its final
+  // aggregate metadata/binding readback. Older deployed APIs omit the echo.
+  const journaled=payload?.intentId!==undefined;
+  if(journaled&&(!intentId||payload.intentId!==intentId))return unverifiedAssetUpload(uploadSlot,requestEpoch);
+  if(input.refreshCatalog!==false||journaled){
+    const catalog=await refreshFinancialProviders(true);
     if(requestEpoch!==authEpoch())return unverifiedAssetUpload(uploadSlot,requestEpoch);
+    if(journaled){
+      const registered=catalog.providers.find(provider=>provider.id===input.providerId)?.assets?.find(row=>row.assetKey===asset.assetKey);
+      if(!catalog.loaded||catalog.error||!confirmedUploadedAsset(registered,input)||registered?.url!==asset.url)
+        return unverifiedAssetUpload(uploadSlot,requestEpoch);
+    }
   }
-  // The additive receipt negotiates the new server protocol. Older deployed
-  // backends return only asset; a missing echo on a new server leaves its
-  // reservation pending, never authorizes another dispatch.
-  if(payload?.intentId!==undefined){
-    if(!intentId||payload.intentId!==intentId)return unverifiedAssetUpload(uploadSlot,requestEpoch);
+  if(journaled&&intentId){
     try{
       const {resolveArtworkIntent}=await import('./artworkIntentClient.js');
       await resolveArtworkIntent({kind:'provider',targetId:input.providerId,role:input.role,variant:input.variant},

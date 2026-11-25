@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
@@ -1123,16 +1123,45 @@ async function main(){
     const serviceId='real-stack-service-brand-a';
     const serviceSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='#345'/></svg>",'utf8');
     const initialServiceObjects=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
-    const uploadService=async(fileName:string)=>{
-      const uploaded=await primary.requestBinary('/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName}),{
+    const uploadService=async(fileName:string,explicitIntent?:string)=>{
+      const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName});
+      if(explicitIntent)params.set('intentId',explicitIntent);
+      const uploaded=await primary.requestBinary('/api/account-metadata?'+params,{
         method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
       });
       expect(uploaded,200,undefined,'recurring-service-asset-upload');
       const key=String(uploaded.body?.asset?.assetKey||'');
       assert(/^service-asset-[a-f0-9]{24}$/.test(key),'Recurring service upload returned a non-canonical asset key.');
+      if(explicitIntent)assert(uploaded.body?.intentId===explicitIntent,'Explicit upload lost its intent identity.');
+      else assert(uploaded.body?.intentId===undefined,'Legacy upload changed its wire response.');
       return key;
     };
-    const serviceAssetKey=await uploadService('original.svg');
+    const explicitServiceIntent=randomUUID();
+    const serviceAssetKey=await uploadService('original.svg',explicitServiceIntent);
+    const pendingServicePath='/api/account-metadata?'+new URLSearchParams({resource:'artwork-upload-intents',kind:'recurring',targetId:serviceId});
+    // A second independently authenticated owner session observes the durable
+    // pending receipt, not browser-local state; legacy requests share its slot.
+    const pendingService=await restored.request(pendingServicePath);
+    expect(pendingService,200,undefined,'artwork-intent-independent-owner-readback');
+    assert(pendingService.body?.intent?.intentId===explicitServiceIntent&&
+      pendingService.body.intent.assetKey===serviceAssetKey&&pendingService.body.intent.registrationRecorded===true&&
+      pendingService.body.intent.asset?.assetKey===serviceAssetKey,
+      'Durable pending artwork receipt did not verify the exact registry and binary.');
+    const legacyConflict=await restored.requestBinary('/api/account-metadata?'+new URLSearchParams({
+      resource:'recurring-service-assets',recurringId:serviceId,fileName:'duplicate.svg'}),{
+      method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
+    });
+    expect(legacyConflict,503,'ARTWORK_UPLOAD_INTENT_UNVERIFIED','artwork-intent-legacy-same-target-denial');
+    const identity={intentId:explicitServiceIntent,assetKey:serviceAssetKey,action:'acknowledge'};
+    expect(await restored.request(pendingServicePath,{method:'PATCH',body:identity}),200,undefined,'artwork-intent-independent-owner-acknowledgement');
+    const ackRetry=await primary.request(pendingServicePath,{method:'PATCH',body:identity});
+    expect(ackRetry,200,undefined,'artwork-intent-exact-terminal-retry');
+    assert(ackRetry.body?.intentId===explicitServiceIntent&&ackRetry.body?.assetKey===serviceAssetKey&&ackRetry.body?.disposition==='acknowledged',
+      'Exact terminal acknowledgement retry did not preserve journal identity.');
+    const noPending=await primary.request(pendingServicePath);
+    expect(noPending,200,undefined,'artwork-intent-no-pending-after-ack');
+    assert(noPending.body?.intent===null,'Acknowledged reservation still blocked its slot.');
+    console.log('[real-stack] PASS durable artwork pending receipt across active owner sessions, legacy exclusion and exact terminal acknowledgement');
     console.log('[real-stack] stage recurring-service-direct-rpc-path-provenance');
     // Test actual local AAL2 PostgREST, bypassing the trusted API parser,
     // so the database alone must reject cross-key and wrong-MIME metadata.
@@ -1469,6 +1498,21 @@ async function main(){
     assert(storageAfterFailure.length===0,'Failed provider asset registration left an orphan Storage object.');
     const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
     assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
+    const failedIntentPath='/api/account-metadata?'+new URLSearchParams({resource:'artwork-upload-intents',
+      kind:'provider',targetId:missingProviderId,role:'logo',variant:'universal'});
+    const failedIntent=await primary.request(failedIntentPath);
+    expect(failedIntent,200,undefined,'failed-provider-durable-intent');
+    assert(failedIntent.body?.intent?.dispatchClaimed===true&&failedIntent.body.intent.registrationRecorded===false&&
+      failedIntent.body.intent.asset===null,'Definite provider failure did not retain its unresolved exact key.');
+    const retiredIdentity={intentId:failedIntent.body.intent.intentId,assetKey:failedIntent.body.intent.assetKey,action:'retire'};
+    const retired=await primary.request(failedIntentPath,{method:'PATCH',body:retiredIdentity});
+    expect(retired,200,undefined,'failed-provider-explicit-retirement');
+    assert(retired.body?.disposition==='retired'&&retired.body?.assetKey===retiredIdentity.assetKey,
+      'Exact retirement did not close the never-registered claimed key.');
+    const retiredReadback=await primary.request(failedIntentPath);
+    expect(retiredReadback,200,undefined,'failed-provider-retired-slot-readback');
+    assert(retiredReadback.body?.intent===null,'Retirement did not release the failed provider slot.');
+    console.log('[real-stack] PASS claimed failed provider retirement without additional Storage deletion or registry mutation');
 
     // Establish the isolated recovery result before a potentially stalled UI runner.
     if(process.env.MYFINHUB_ISOLATED_RECOVERY==='1'){
@@ -1508,6 +1552,10 @@ async function main(){
     const providerAssets=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.real-browser-provider&active=eq.true&select=asset_key,storage_bucket,storage_path,size_bytes,mime_type',local.serviceRole) as any[];
     assert(Array.isArray(providerAssets)&&providerAssets.length===1,'Real browser provider asset metadata was not persisted exactly once.');
     const providerAssetKey=String(providerAssets[0]?.asset_key||'');
+    const providerIntents=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?target_id=eq.real-browser-provider&select=asset_key,disposition,registration_recorded',local.serviceRole) as any[];
+    assert(Array.isArray(providerIntents)&&providerIntents.length===1&&providerIntents[0]?.asset_key===providerAssetKey&&
+      providerIntents[0]?.disposition==='acknowledged'&&providerIntents[0]?.registration_recorded===true,
+      'Actual browser provider upload did not complete its durable journal acknowledgement.');
     assert(providerRows[0]?.logo_asset_key===providerAssetKey&&providerRows[0]?.wordmark_asset_key===providerAssetKey,'Provider primary logo/wordmark do not reference the uploaded asset.');
     assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
     const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];

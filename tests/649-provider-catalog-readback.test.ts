@@ -1057,3 +1057,41 @@ describe('#649 I19.04 provider catalog read-back recovery',()=>{
 
 
 });
+
+describe('#649 explicit provider upload journal integration',()=>{
+  it.each(['matched','missing','wrong-bytes','wrong-echo','unavailable'] as const)(
+    'releases a new-protocol reservation only after exact catalog evidence: %s',async scenario=>{
+      const key='qa-journal-bank-asset-aabbccddeeff';
+      const asset={assetKey:key,role:'logo',variant:'universal',fileName:'logo.png',mimeType:'image/png',
+        sizeBytes:2,url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-journal-bank/'+key+'.png'};
+      const provider={id:'qa-journal-bank',displayName:'Journal Bank',shortName:'Journal',kind:'bank',
+        countryCode:'GR',sortOrder:1,logoAssetKey:null,wordmarkAssetKey:null,logoUrl:null,wordmarkUrl:null,
+        assets:scenario==='missing'?[]:[scenario==='wrong-bytes'?{...asset,sizeBytes:3}:asset],bindings:[]};
+      let intentId='';
+      const operations:string[]=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const method=String(init?.method??'GET');
+        operations.push(method);
+        if(method==='PUT'){
+          intentId=new URL(String(input),'https://app.example').searchParams.get('intentId')??'';
+          expect(intentId).toMatch(/^[a-f0-9-]{36}$/);
+          return Response.json({asset,intentId:scenario==='wrong-echo'?'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa':intentId});
+        }
+        if(method==='GET')return scenario==='unavailable'?Response.json({error:'unavailable'},{status:503}):Response.json({providers:[provider]});
+        expect(method).toBe('PATCH');
+        expect(JSON.parse(String(init?.body))).toEqual({intentId,assetKey:key,action:'acknowledge'});
+        return Response.json({intentId,assetKey:key,disposition:'acknowledged'});
+      }));
+      const modulePath:string='../src/lib/financialProviderClient.js';
+      const {uploadFinancialProviderAsset}=await import(modulePath);
+      const result=uploadFinancialProviderAsset({providerId:provider.id,role:'logo',variant:'universal',
+        file:new File([new Uint8Array([1,2])],'logo.png',{type:'image/png'}),refreshCatalog:false});
+      if(scenario==='matched'){
+        await expect(result).resolves.toMatchObject({assetKey:key});
+        expect(operations).toEqual(['PUT','GET','PATCH']);
+      }else{
+        await expect(result).rejects.toMatchObject({name:'UnverifiedFinancialProviderWrite',operation:'asset'});
+        expect(operations).toEqual(scenario==='wrong-echo'?['PUT']:['PUT','GET']);
+      }
+    });
+});
