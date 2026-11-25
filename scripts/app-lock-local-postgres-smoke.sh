@@ -88,7 +88,7 @@ SELECT set_config('request.jwt.claims',jsonb_build_object(
  ))::text,false);
 \i scripts/recovery-fixtures/artwork-upload-intent-owner.sql
 
-DO $
+DO $$
 DECLARE
  result jsonb;
  receipt text;
@@ -190,7 +190,7 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'AAL1 read the protected provider catalog';
  END IF;
-END $;
+END $$;
 \i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
 
@@ -249,7 +249,7 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'Non-owner AAL2 read protected provider catalog records';
  END IF;
-END $;
+END $$;
 \i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
 
@@ -282,10 +282,10 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'Revoked owner AAL2 read protected provider catalog records';
  END IF;
-END $;
+END $$;
 \i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
-DO $
+DO $$
 BEGIN
   IF has_table_privilege('anon','public.rheomiq_artwork_upload_intents','SELECT')
     OR has_any_column_privilege('anon','public.rheomiq_artwork_upload_intents','INSERT')
@@ -300,7 +300,7 @@ BEGIN
     OR (SELECT count(*) FROM public.rheomiq_artwork_upload_intents WHERE disposition='pending')<>2 THEN
     RAISE EXCEPTION 'Denied artwork intent operations changed durable inventory';
   END IF;
-END $;
+END $$;
 ROLLBACK;
 \echo Local PostgreSQL PIN/RLS/recovery smoke: PASS
 SQL

@@ -89,6 +89,12 @@ describe('production migration ledger source contract',()=>{
     const owner=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-owner.sql','utf8');
     const denied=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-denied.sql','utf8');
     expect(releasePending).toContain('20261125090000_add_artwork_upload_intents.sql');
+    // A literal replacement string can collapse a paired SQL dollar quote.
+    // Check the surrounding smoke driver as well as the included SQL files.
+    for(const source of [sql,smoke,owner,denied]){
+      expect(source.split('\n').filter(line=>/\b(?:do|as)\s+[$](?![$])(?:\s|$)|^\s*(?:end\s+)?[$];\s*$/i.test(line))).toEqual([]);
+      expect((source.match(/[$][$]/g)??[]).length%2).toBe(0);
+    }
     expect(sql).toContain('asset_key text not null unique');
     expect(sql).toContain("where disposition='pending'");
     expect(sql).toContain('on public.rheomiq_artwork_upload_intents(owner_user_id,kind,target_id,role,variant)');
