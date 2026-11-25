@@ -684,17 +684,15 @@ function parseArtworkIntentState(value:unknown,target:ArtworkIntentTarget){
   if(disposition!=='pending'&&disposition!=='acknowledged'&&disposition!=='abandoned')throw artworkRecoveryUnverified();
   if(disposition==='pending'?row.resolved_at!==null:
     typeof row.resolved_at!=='string'||!Number.isFinite(Date.parse(row.resolved_at)))throw artworkRecoveryUnverified();
-  return {identity:parsePendingArtworkIntent({...row,disposition:'pending',resolved_at:null},target),
-    disposition,resolvedAt:row.resolved_at};
+  const identity=parsePendingArtworkIntent({...row,disposition:'pending',resolved_at:null},target);
+  if(disposition==='acknowledged'&&!identity.dispatchClaimed||disposition==='abandoned'&&identity.dispatchClaimed)
+    throw artworkRecoveryUnverified();
+  return {identity,disposition,resolvedAt:row.resolved_at};
 }
 
-// Staged explicit acknowledgement, not yet exposed at HTTP ingress. A client
-// must have reviewed the receipt/catalog and supply both original identities.
-// A journal acknowledgement is NOT proof that the asset is still present or
-// bound, and never authorizes a finance save or replay of binary registration.
-export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,expected:{
-  intentId:string;assetKey:string;
-},accessToken:string){
+type ArtworkIntentIdentity={intentId:string;assetKey:string};
+
+function exactArtworkIntentAccess(target:ArtworkIntentTarget,expected:ArtworkIntentIdentity,accessToken:string){
   const prefix=target.kind==='provider'?target.targetId+'-asset-':'service-asset-';
   if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(expected.intentId)||
     !expected.assetKey.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(expected.assetKey.slice(prefix.length)))
@@ -713,6 +711,25 @@ export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,
   };
   const sameIdentity=(a:ReturnType<typeof parseArtworkIntentState>,b:ReturnType<typeof parseArtworkIntentState>)=>
     JSON.stringify(a.identity)===JSON.stringify(b.identity);
+  const transition=async(disposition:'acknowledged'|'abandoned')=>{
+    // Both terminal transitions are conditional on the exact pending row
+    // and its monotonic dispatch fence. No PATCH replay or successor mutation.
+    try{
+      await request(table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,disposition:'eq.pending',
+        dispatch_claimed:disposition==='acknowledged'?'eq.true':'eq.false'}).toString(),{
+        method:'PATCH',headers:{prefer:'return=representation'},body:JSON.stringify({disposition}),
+      },accessToken);
+    }catch{ /* The exact terminal readback, not the transport, decides. */ }
+  };
+  return {load,sameIdentity,transition};
+}
+
+// Staged explicit acknowledgement, not yet exposed at HTTP ingress. A client
+// must have reviewed the receipt/catalog and supply both original identities.
+// A journal acknowledgement is NOT proof that the asset is still present or
+// bound, and never authorizes a finance save or replay of binary registration.
+export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,expected:ArtworkIntentIdentity,accessToken:string){
+  const {load,sameIdentity,transition}=exactArtworkIntentAccess(target,expected,accessToken);
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   const original=await load();
   if(original.disposition==='abandoned'||!original.identity.dispatchClaimed)throw artworkRecoveryUnverified();
@@ -726,18 +743,33 @@ export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,
   const before=await load();
   if(!sameIdentity(original,before)||before.disposition!=='pending'||
     !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
-  // Compare-and-transition only this exact pending identity. Never close a
-  // successor intent in the same slot. A lost PATCH receipt is resolved
-  // solely by exact authoritative GET; do not replay or infer from HTTP 200.
-  try{
-    await request(table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,disposition:'eq.pending'}).toString(),{
-      method:'PATCH',headers:{prefer:'return=representation'},body:JSON.stringify({disposition:'acknowledged'}),
-    },accessToken);
-  }catch{ /* The terminal readback, not the transport status, decides. */ }
+  await transition('acknowledged');
   const after=await load();
   if(!sameIdentity(original,after)||after.disposition!=='acknowledged'||
     !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'acknowledged' as const};
+}
+
+// Only an explicit cancellation of the exact never-claimed reservation can
+// release its slot. A racing dispatch claim and this transition serialize in
+// PostgreSQL; absence of bytes/registry or elapsed time is not quiescence.
+// Never touch Storage, registry, binding or finance data from this operation.
+export async function abandonUndispatchedArtworkUploadIntent(target:ArtworkIntentTarget,expected:ArtworkIntentIdentity,accessToken:string){
+  const {load,sameIdentity,transition}=exactArtworkIntentAccess(target,expected,accessToken);
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const original=await load();
+  if(original.identity.dispatchClaimed||original.disposition==='acknowledged')throw artworkRecoveryUnverified();
+  if(original.disposition==='abandoned'){
+    // Explicit retry of the same terminal identity is read-only.
+    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+    return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'abandoned' as const};
+  }
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  await transition('abandoned');
+  const after=await load();
+  if(!sameIdentity(original,after)||after.disposition!=='abandoned'||
+    !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'abandoned' as const};
 }
 
 export async function uploadFinancialProviderAsset(input:{

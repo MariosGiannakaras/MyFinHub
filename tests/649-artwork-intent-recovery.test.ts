@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {acknowledgeArtworkUploadIntent,readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
+import {abandonUndispatchedArtworkUploadIntent,acknowledgeArtworkUploadIntent,readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
 import {parseArtworkIntentTarget} from '../server/accountMetadataHandler.js';
 
 const bytes=Buffer.from([137,80,78,71,13,10,26,10]);
@@ -225,6 +225,7 @@ describe('#649 exact durable artwork acknowledgement',()=>{
             calls.push('patch');
             expect(patched).toBe(false);patched=true;
             expect(url.searchParams.get('disposition')).toBe('eq.pending');
+            expect(url.searchParams.get('dispatch_claimed')).toBe('eq.true');
             expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
             expect(JSON.parse(String(init?.body))).toEqual({disposition:'acknowledged'});
             if(scenario==='lost-committed'||scenario==='lost-pending')return new Response(null,{status:504});
@@ -286,4 +287,96 @@ describe('#649 exact durable artwork acknowledgement',()=>{
       }
     });
   }
+});
+
+describe('#649 explicit never-dispatched artwork cancellation',()=>{
+  for(const target of [provider,recurring]){
+    it.each(['fresh','lost-committed','malformed-committed','already-abandoned','claimed-before','acknowledged-before',
+      'invalid-terminal-before','missing-before','duplicate-before','wrong-id','wrong-key','wrong-target',
+      'revoked-before','revoked-prepatch','revoked-after','claim-won-race','lost-pending','false-success',
+      'changed-after','missing-after','duplicate-after','invalid-terminal-after','wrong-disposition-after'] as const)(
+      target.kind+' cancellation: %s',async scenario=>{
+      vi.stubEnv('SUPABASE_URL','https://example.supabase.co');
+      vi.stubEnv('SUPABASE_PUBLISHABLE_KEY','test-public-key');
+      const assetKey=target.kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
+      const storagePath=(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png';
+      const original={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
+        make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
+        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:false,created_at:now,resolved_at:null as string|null};
+      const terminal={...original,disposition:'abandoned',resolved_at:now};
+      const calls:string[]=[];
+      let owners=0,patched=false;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=new URL(String(input)),method=init?.method??'GET';
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer owner-jwt');
+        if(url.pathname.endsWith('/rpc/rheomiq_is_owner_aal2')){
+          expect(method).toBe('POST');calls.push('owner');owners++;
+          return json(!(scenario==='revoked-before'||scenario==='revoked-prepatch'&&owners===2||scenario==='revoked-after'&&owners===3));
+        }
+        // No Storage, catalog, registration, binding or finance requests.
+        expect(url.pathname).toBe('/rest/v1/rheomiq_artwork_upload_intents');
+        for(const [key,value] of Object.entries({kind:target.kind,target_id:target.targetId,role:target.role,
+          variant:target.variant,intent_id:intentId,asset_key:assetKey}))
+          expect(url.searchParams.get(key)).toBe('eq.'+JSON.stringify(value));
+        if(method==='PATCH'){
+          calls.push('patch');expect(patched).toBe(false);patched=true;
+          expect(url.searchParams.get('disposition')).toBe('eq.pending');
+          expect(url.searchParams.get('dispatch_claimed')).toBe('eq.false');
+          expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
+          expect(JSON.parse(String(init?.body))).toEqual({disposition:'abandoned'});
+          if(scenario==='lost-committed'||scenario==='lost-pending')return new Response(null,{status:504});
+          if(scenario==='claim-won-race')return json([]);
+          return json(scenario==='malformed-committed'?{unexpected:true}:[terminal]);
+        }
+        expect(method).toBe('GET');calls.push('intent');
+        expect(init?.cache).toBe('no-store');
+        expect(url.searchParams.get('limit')).toBe('2');
+        if(patched){
+          if(scenario==='claim-won-race')return json([{...original,dispatch_claimed:true}]);
+          if(scenario==='lost-pending'||scenario==='false-success')return json([original]);
+          if(scenario==='changed-after')return json([{...terminal,sha256:'0'.repeat(64)}]);
+          if(scenario==='missing-after')return json([]);
+          if(scenario==='duplicate-after')return json([terminal,terminal]);
+          if(scenario==='invalid-terminal-after')return json([{...terminal,dispatch_claimed:true}]);
+          if(scenario==='wrong-disposition-after')return json([{...terminal,disposition:'acknowledged',dispatch_claimed:true}]);
+          return json([terminal]);
+        }
+        if(scenario==='already-abandoned')return json([terminal]);
+        if(scenario==='claimed-before')return json([{...original,dispatch_claimed:true}]);
+        if(scenario==='acknowledged-before')return json([{...terminal,disposition:'acknowledged',dispatch_claimed:true}]);
+        if(scenario==='invalid-terminal-before')return json([{...terminal,dispatch_claimed:true}]);
+        if(scenario==='missing-before')return json([]);
+        if(scenario==='duplicate-before')return json([original,original]);
+        if(scenario==='wrong-id')return json([{...original,intent_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}]);
+        if(scenario==='wrong-key'){
+          const key=assetKey.slice(0,-1)+'2';
+          return json([{...original,asset_key:key,storage_path:storagePath.replace(assetKey,key)}]);
+        }
+        if(scenario==='wrong-target')return json([{...original,target_id:'different-target'}]);
+        return json([original]);
+      }));
+      const result=abandonUndispatchedArtworkUploadIntent(target,{intentId,assetKey},'owner-jwt');
+      if(['fresh','lost-committed','malformed-committed','already-abandoned'].includes(scenario)){
+        await expect(result).resolves.toEqual({intentId,assetKey,disposition:'abandoned'});
+        expect(calls).toEqual(scenario==='already-abandoned'?['owner','intent','owner']:
+          ['owner','intent','owner','patch','intent','owner']);
+      }else{
+        await expect(result).rejects.toMatchObject({code:'ARTWORK_UPLOAD_INTENT_UNVERIFIED'});
+        if(['claim-won-race','lost-pending','false-success','changed-after','missing-after','duplicate-after',
+          'invalid-terminal-after','wrong-disposition-after','revoked-after'].includes(scenario)){
+          expect(calls).toEqual(scenario==='revoked-after'?['owner','intent','owner','patch','intent','owner']:
+            ['owner','intent','owner','patch','intent']);
+        }else{
+          expect(calls).toEqual(scenario==='revoked-before'?['owner']:scenario==='revoked-prepatch'?['owner','intent','owner']:['owner','intent']);
+        }
+      }
+    });
+  }
+  it('rejects malformed identity before any upstream request',async()=>{
+    const fetch=vi.fn();
+    vi.stubGlobal('fetch',fetch);
+    await expect(abandonUndispatchedArtworkUploadIntent(provider,{intentId:'not-a-uuid',assetKey:'qa-bank-asset-000000000001'},'owner-jwt')).rejects.toMatchObject({code:'INVALID_ARTWORK_UPLOAD_INTENT'});
+    await expect(abandonUndispatchedArtworkUploadIntent(provider,{intentId,assetKey:'other-bank-asset-000000000001'},'owner-jwt')).rejects.toMatchObject({code:'INVALID_ARTWORK_UPLOAD_INTENT'});
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
