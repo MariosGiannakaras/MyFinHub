@@ -9,7 +9,7 @@ const intentId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
 const now='2026-11-25T09:00:00Z';
 const provider={kind:'provider',targetId:'qa-bank',role:'logo',variant:'light'} as const;
 // Deliberately include PostgREST reserved grammar characters in a legal ID.
-const recurring={kind:'recurring',targetId:'service,(test)"\\id',role:'',variant:''} as const;
+const recurring={kind:'recurring',targetId:'service,&x=1(test)"\\id',role:'',variant:''} as const;
 const json=(value:unknown)=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
 afterEach(()=>{vi.unstubAllGlobals();vi.unstubAllEnvs()});
 
@@ -57,9 +57,9 @@ describe('#649 read-only durable artwork intent recovery',()=>{
         expect(method).toBe('GET');
         if(url.pathname.endsWith('/rheomiq_artwork_upload_intents')){
           calls.push('intent');intentReads++;
-          expect(url.searchParams.get('target_id')).toBe('eq.'+JSON.stringify(target.targetId));
-          expect(url.searchParams.get('role')).toBe('eq.'+JSON.stringify(target.role));
-          expect(url.searchParams.get('variant')).toBe('eq.'+JSON.stringify(target.variant));
+          expect(url.searchParams.get('target_id')).toBe('eq.'+target.targetId);
+          expect(url.searchParams.get('role')).toBe('eq.'+target.role);
+          expect(url.searchParams.get('variant')).toBe('eq.'+target.variant);
           expect(url.searchParams.get('limit')).toBe('2');
           if(scenario==='no-intent'||scenario==='closed-during-read'&&intentReads===2)return json([]);
           if(scenario==='duplicate')return json([intent,intent]);
@@ -130,8 +130,8 @@ describe('#649 fresh durable artwork reservation dispatch guard',()=>{
           expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
           if(init?.method==='PATCH'){
             calls.push('claim');
-            expect(url.searchParams.get('intent_id')).toBe('eq.'+JSON.stringify(intentId));
-            expect(url.searchParams.get('asset_key')).toBe('eq.'+JSON.stringify(key));
+            expect(url.searchParams.get('intent_id')).toBe('eq.'+intentId);
+            expect(url.searchParams.get('asset_key')).toBe('eq.'+key);
             expect(url.searchParams.get('disposition')).toBe('eq.pending');
             expect(url.searchParams.get('dispatch_claimed')).toBe('eq.false');
             expect(JSON.parse(String(init.body))).toEqual({dispatch_claimed:true});
@@ -220,7 +220,7 @@ describe('#649 exact durable artwork acknowledgement',()=>{
         if(url.pathname.endsWith('/rheomiq_artwork_upload_intents')){
           for(const [key,value] of Object.entries({kind:target.kind,target_id:target.targetId,role:target.role,
             variant:target.variant,intent_id:intentId,asset_key:assetKey}))
-            expect(url.searchParams.get(key)).toBe('eq.'+JSON.stringify(value));
+            expect(url.searchParams.get(key)).toBe('eq.'+value);
           if(method==='PATCH'){
             calls.push('patch');
             expect(patched).toBe(false);patched=true;
@@ -318,7 +318,7 @@ describe('#649 explicit never-dispatched artwork cancellation',()=>{
         expect(url.pathname).toBe('/rest/v1/rheomiq_artwork_upload_intents');
         for(const [key,value] of Object.entries({kind:target.kind,target_id:target.targetId,role:target.role,
           variant:target.variant,intent_id:intentId,asset_key:assetKey}))
-          expect(url.searchParams.get(key)).toBe('eq.'+JSON.stringify(value));
+          expect(url.searchParams.get(key)).toBe('eq.'+value);
         if(method==='PATCH'){
           calls.push('patch');expect(patched).toBe(false);patched=true;
           expect(url.searchParams.get('disposition')).toBe('eq.pending');

@@ -561,13 +561,16 @@ function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
     sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at,dispatchClaimed:row.dispatch_claimed,registrationRecorded:row.registration_recorded};
 }
 
-// PostgREST values containing reserved grammar characters must be quoted
-// before URL encoding. Recurring IDs are not restricted to URL-safe tokens.
+// Top-level PostgREST equality takes the entire literal operand (v16.4
+// pSingleVal = many anyChar). Quotes are significant, NOT delimiters here.
+// URLSearchParams encodes the whole parameter once, including punctuation,
+// quotes, ampersands and backslashes in arbitrary recurring IDs. Never use
+// logical-group/list syntax or interpolate the raw value into the URL.
+const artworkIntentEq=(value:string)=>'eq.'+value;
 function artworkIntentQuery(target:ArtworkIntentTarget){
-  const eq=(value:string)=>'eq.'+JSON.stringify(value);
   return 'rheomiq_artwork_upload_intents?'+new URLSearchParams({
-    select:ARTWORK_INTENT_FIELDS,kind:eq(target.kind),target_id:eq(target.targetId),
-    role:eq(target.role),variant:eq(target.variant),disposition:'eq.pending',limit:'2',
+    select:ARTWORK_INTENT_FIELDS,kind:artworkIntentEq(target.kind),target_id:artworkIntentEq(target.targetId),
+    role:artworkIntentEq(target.role),variant:artworkIntentEq(target.variant),disposition:'eq.pending',limit:'2',
   }).toString();
 }
 
@@ -603,10 +606,9 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   // This compare-and-transition races safely with pre-dispatch abandonment.
   // A lost or malformed claim receipt must NEVER authorize Storage dispatch.
-  const eq=(value:string)=>'eq.'+JSON.stringify(value);
   const path='rheomiq_artwork_upload_intents?'+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,
-    kind:eq(target.kind),target_id:eq(target.targetId),role:eq(target.role),variant:eq(target.variant),
-    intent_id:eq(input.intentId),asset_key:eq(input.assetKey),disposition:'eq.pending',dispatch_claimed:'eq.false'}).toString();
+    kind:artworkIntentEq(target.kind),target_id:artworkIntentEq(target.targetId),role:artworkIntentEq(target.role),variant:artworkIntentEq(target.variant),
+    intent_id:artworkIntentEq(input.intentId),asset_key:artworkIntentEq(input.assetKey),disposition:'eq.pending',dispatch_claimed:'eq.false'}).toString();
   try{
     const rows=await request(path,{method:'PATCH',headers:{prefer:'return=representation'},
       body:JSON.stringify({dispatch_claimed:true})},accessToken,200);
@@ -700,9 +702,8 @@ function exactArtworkIntentAccess(target:ArtworkIntentTarget,expected:ArtworkInt
   if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(expected.intentId)||
     !expected.assetKey.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(expected.assetKey.slice(prefix.length)))
     throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Invalid artwork upload intent.');
-  const eq=(value:string)=>'eq.'+JSON.stringify(value);
-  const filters={kind:eq(target.kind),target_id:eq(target.targetId),role:eq(target.role),variant:eq(target.variant),
-    intent_id:eq(expected.intentId),asset_key:eq(expected.assetKey)};
+  const filters={kind:artworkIntentEq(target.kind),target_id:artworkIntentEq(target.targetId),role:artworkIntentEq(target.role),variant:artworkIntentEq(target.variant),
+    intent_id:artworkIntentEq(expected.intentId),asset_key:artworkIntentEq(expected.assetKey)};
   const table='rheomiq_artwork_upload_intents?';
   const readPath=table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,limit:'2'}).toString();
   const load=async()=>{
