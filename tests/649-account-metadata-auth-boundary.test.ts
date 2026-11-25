@@ -10,6 +10,7 @@ const metadata=vi.hoisted(()=>({
   writeAccountMetadata:vi.fn(),
   readFinancialProviders:vi.fn(),
   readRecurringServiceAssets:vi.fn(),
+  readPendingArtworkUploadIntent:vi.fn(),
   writeFinancialProvider:vi.fn(),
   updateFinancialProvider:vi.fn(),
   uploadFinancialProviderAsset:vi.fn(),
@@ -37,6 +38,7 @@ const operations=[
   {label:'recurring asset PUT',method:'PUT',resource:'recurring-service-assets'},
   {label:'recurring asset DELETE',method:'DELETE',resource:'recurring-service-assets'},
   {label:'provider binding PUT',method:'PUT',resource:'financial-provider-asset-binding'},
+  {label:'artwork intent GET',method:'GET',resource:'artwork-upload-intents'},
 ] as const;
 type Operation=(typeof operations)[number];
 const writes=operations.filter(op=>op.method!=='GET');
@@ -75,7 +77,7 @@ function request(op:Operation,options:{
   return {
     method:op.method,
     url:'/api/account-metadata',
-    query:op.resource?{resource:op.resource}:{},
+    query:op.resource==='artwork-upload-intents'?{resource:op.resource,kind:'recurring',targetId:'qa-service'}:op.resource?{resource:op.resource}:{},
     headers,
     body:{accountId:'account-one',iban},
   };
@@ -83,7 +85,7 @@ function request(op:Operation,options:{
 function storeSpies(){
   return [
     metadata.readAccountMetadata,metadata.writeAccountMetadata,
-    metadata.readFinancialProviders,metadata.readRecurringServiceAssets,
+    metadata.readFinancialProviders,metadata.readRecurringServiceAssets,metadata.readPendingArtworkUploadIntent,
     metadata.writeFinancialProvider,metadata.updateFinancialProvider,
     metadata.uploadFinancialProviderAsset,metadata.uploadRecurringServiceAsset,
     metadata.deleteRecurringServiceAsset,metadata.setFinancialProviderAssetBinding,
@@ -104,6 +106,7 @@ describe('#649 I22.02 account metadata/provider/Storage endpoint owner+AAL2 boun
     metadata.readAccountMetadata.mockResolvedValue(records);
     metadata.readFinancialProviders.mockResolvedValue([{id:'owner-bank'}]);
     metadata.readRecurringServiceAssets.mockResolvedValue([]);
+    metadata.readPendingArtworkUploadIntent.mockResolvedValue({intent:null});
     metadata.writeAccountMetadata.mockResolvedValue(records[0]);
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input);
@@ -208,6 +211,22 @@ describe('#649 I22.02 account metadata/provider/Storage endpoint owner+AAL2 boun
     expect(JSON.parse(res.body)).toMatchObject({code:'APP_LOCK_REQUIRED'});
     expect(owner.isOwner).not.toHaveBeenCalled();
     assertNoMetadataAccess();
+  });
+
+  it('permits authorized recovery GET and forwards only the active session; denies mutation resource',async()=>{
+    const op=operations[operations.length-1];
+    const req=request(op);
+    const res=resRecorder();
+    await handleAccountMetadataRequest(req,res);
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({intent:null});
+    expect(res.headers.get('cache-control')).toContain('no-store');
+    expect(metadata.readPendingArtworkUploadIntent).toHaveBeenCalledWith(
+      {kind:'recurring',targetId:'qa-service',role:'',variant:''},tokenWithAal('aal2'));
+    const denied=resRecorder();
+    await handleAccountMetadataRequest({...req,method:'PUT'},denied);
+    expect(denied.statusCode).toBe(400);
+    expect(metadata.readPendingArtworkUploadIntent).toHaveBeenCalledTimes(1);
   });
 
   it('permits owner AAL2 bearer read and revisioned write without browser Origin while forwarding only the owner token',async()=>{

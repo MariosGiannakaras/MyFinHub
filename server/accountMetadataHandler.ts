@@ -1,7 +1,7 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson, strictQueryValue } from './http.js';
 import { isOwner } from './storage.js';
-import { MAX_PROVIDER_ASSET_BYTES, MAX_RECURRING_SERVICE_ASSET_BYTES, deleteRecurringServiceAsset, readAccountMetadata, readFinancialProviders, readRecurringServiceAssets, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, uploadRecurringServiceAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
+import { MAX_PROVIDER_ASSET_BYTES, MAX_RECURRING_SERVICE_ASSET_BYTES, deleteRecurringServiceAsset, readAccountMetadata, readFinancialProviders, readRecurringServiceAssets, readPendingArtworkUploadIntent, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, uploadRecurringServiceAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
@@ -121,6 +121,22 @@ export function parseAccountMetadataWrite(value:unknown){
   try{return {accountId,iban:assertValidIban(body.iban as string|null|undefined)}}catch{throw new ApiError(400,'INVALID_IBAN','Το IBAN δεν είναι έγκυρο.');}
 }
 
+export function parseArtworkIntentTarget(req:any){
+  const kind=strictQueryValue(req,'kind');
+  const targetId=strictQueryValue(req,'targetId');
+  const role=strictQueryValue(req,'role');
+  const variant=strictQueryValue(req,'variant');
+  if(kind==='provider'&&/^[a-z][a-z0-9-]{0,63}$/.test(targetId)&&
+    ['logo','wordmark','card-mark'].includes(role)&&/^[a-z][a-z0-9-]{0,63}$/.test(variant))
+    return {kind,targetId,role:role as 'logo'|'wordmark'|'card-mark',variant} as const;
+  // Recurring queries do not accept provider slot parameters, including
+  // malformed repeated query values silently normalized by strictQueryValue.
+  if(kind==='recurring'&&targetId&&targetId.length<=200&&!/[\u0000-\u001f\u007f]/.test(targetId)&&
+    req.query.role===undefined&&req.query.variant===undefined)
+    return {kind,targetId,role:'',variant:''} as const;
+  throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT_TARGET','Μη έγκυρη αναφορά μεταφόρτωσης εικόνας.');
+}
+
 export async function handleAccountMetadataRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
@@ -132,6 +148,7 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     if(method==='GET'){
       if(resource==='financial-providers')return sendJson(res,200,{providers:await readFinancialProviders(session.accessToken)});
       if(resource==='recurring-service-assets')return sendJson(res,200,{assets:await readRecurringServiceAssets(session.accessToken)});
+      if(resource==='artwork-upload-intents')return sendJson(res,200,await readPendingArtworkUploadIntent(parseArtworkIntentTarget(req),session.accessToken));
       if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
       return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
     }

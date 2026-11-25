@@ -485,8 +485,10 @@ const RECURRING_SERVICE_ASSET_BUCKET='recurring-service-assets';
 async function confirmedAmbiguousArtworkUpload(
   url:string,apiKey:string,authorization:string,
   bucket:'financial-provider-assets'|'recurring-service-assets',
-  encodedPath:string,expectedContent:Buffer,
+  encodedPath:string,expectedContent:Buffer|{sizeBytes:number;sha256:string},
 ):Promise<boolean>{
+  const expectedSize=Buffer.isBuffer(expectedContent)?expectedContent.byteLength:expectedContent.sizeBytes;
+  const expectedHash=Buffer.isBuffer(expectedContent)?createHash('sha256').update(expectedContent).digest('hex'):expectedContent.sha256;
   const controller=new AbortController();
   // The timeout includes the response body, not just the GET headers.
   const timer=setTimeout(()=>controller.abort(),12_000);
@@ -497,7 +499,7 @@ async function confirmedAmbiguousArtworkUpload(
     });
     if(!response.ok||!response.body)return false;
     const length=response.headers.get('content-length');
-    if(length!==null&&(!/^\d+$/.test(length)||Number(length)!==expectedContent.byteLength))
+    if(length!==null&&(!/^\d+$/.test(length)||Number(length)!==expectedSize))
       return false;
     const reader=response.body.getReader();
     const actualHash=createHash('sha256');
@@ -507,15 +509,14 @@ async function confirmedAmbiguousArtworkUpload(
         const next=await reader.read();
         if(next.done){complete=true;break}
         size+=next.value.byteLength;
-        if(size>expectedContent.byteLength)return false;
+        if(size>expectedSize)return false;
         actualHash.update(next.value);
       }
     }finally{
       if(!complete)await reader.cancel().catch(()=>{});
       reader.releaseLock();
     }
-    return size===expectedContent.byteLength&&
-      actualHash.digest('hex')===createHash('sha256').update(expectedContent).digest('hex');
+    return size===expectedSize&&actualHash.digest('hex')===expectedHash;
   }catch{
     // A 404, unreadable object, truncated body, transport error or timeout
     // is an UNKNOWN upload outcome. Never delete or register on that basis.
@@ -524,6 +525,98 @@ async function confirmedAmbiguousArtworkUpload(
     clearTimeout(timer);
     controller.abort();
   }
+}
+
+type ArtworkIntentTarget=
+  |{kind:'provider';targetId:string;role:'logo'|'wordmark'|'card-mark';variant:string}
+  |{kind:'recurring';targetId:string;role:'';variant:''};
+
+const ARTWORK_INTENT_FIELDS='intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256,storage_path,disposition,created_at,resolved_at';
+
+function artworkRecoveryUnverified(){
+  return new ApiError(503,'ARTWORK_UPLOAD_INTENT_UNVERIFIED','Δεν επιβεβαιώθηκε η κατάσταση μεταφόρτωσης. Έλεγξε ξανά πριν από νέα μεταφόρτωση.');
+}
+
+function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
+  if(!value||typeof value!=='object'||Array.isArray(value))throw artworkRecoveryUnverified();
+  const row=value as Record<string,unknown>;
+  const key=row.asset_key;
+  const mime=row.mime_type;
+  const extension=typeof mime==='string'?PROVIDER_ASSET_EXTENSION[mime]:undefined;
+  if(row.kind!==target.kind||row.target_id!==target.targetId||row.role!==target.role||row.variant!==target.variant||
+    typeof row.intent_id!=='string'||! /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(row.intent_id)||
+    typeof key!=='string'||!extension||typeof row.file_name!=='string'||!row.file_name||row.file_name.length>160||
+    /[\u0000-\u001f\u007f]/.test(row.file_name)||typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||
+    row.size_bytes<1||row.size_bytes>MAX_PROVIDER_ASSET_BYTES||typeof row.sha256!=='string'||! /^[a-f0-9]{64}$/.test(row.sha256)||
+    typeof row.make_primary!=='boolean'||row.disposition!=='pending'||row.resolved_at!==null||
+    typeof row.created_at!=='string'||!Number.isFinite(Date.parse(row.created_at)))throw artworkRecoveryUnverified();
+  const prefix=target.kind==='provider'?target.targetId+'-asset-':'service-asset-';
+  const suffix=key.slice(prefix.length);
+  const path=(target.kind==='provider'?'providers/'+target.targetId+'/':'services/')+key+'.'+extension;
+  if(!key.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(suffix)||
+    row.storage_path!==path||(row.make_primary&&(target.kind==='recurring'||target.role==='card-mark')))throw artworkRecoveryUnverified();
+  return {intentId:row.intent_id,assetKey:key,fileName:row.file_name,mimeType:mime as string,
+    sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at};
+}
+
+// PostgREST values containing reserved grammar characters must be quoted
+// before URL encoding. Recurring IDs are not restricted to URL-safe tokens.
+function artworkIntentQuery(target:ArtworkIntentTarget){
+  const eq=(value:string)=>'eq.'+JSON.stringify(value);
+  return 'rheomiq_artwork_upload_intents?'+new URLSearchParams({
+    select:ARTWORK_INTENT_FIELDS,kind:eq(target.kind),target_id:eq(target.targetId),
+    role:eq(target.role),variant:eq(target.variant),disposition:'eq.pending',limit:'2',
+  }).toString();
+}
+
+// Read-only restart recovery. A pending reservation is not evidence that a
+// write committed. Never register, bind, acknowledge, abandon or upload here.
+// In particular an unverified result cannot authorize a replacement upload.
+export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,accessToken:string){
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const path=artworkIntentQuery(target);
+  const load=async()=>{
+    const rows=await request(path,{method:'GET',cache:'no-store'},accessToken);
+    if(!Array.isArray(rows)||rows.length>1)throw artworkRecoveryUnverified();
+    return rows.length?parsePendingArtworkIntent(rows[0],target):null;
+  };
+  const intent=await load();
+  if(!intent){
+    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+    return {intent:null};
+  }
+  const {url,apiKey,authorization}=config(accessToken);
+  const bucket=target.kind==='provider'?PROVIDER_ASSET_BUCKET:RECURRING_SERVICE_ASSET_BUCKET;
+  const table=target.kind==='provider'?'rheomiq_financial_provider_assets':'rheomiq_recurring_service_assets';
+  const fields=target.kind==='provider'?'provider_id,asset_role,variant':'recurring_id';
+  const records=await request(table+'?select=asset_key,'+fields+',file_name,mime_type,storage_bucket,storage_path,size_bytes,updated_at,active&asset_key=eq.'+
+    encodeURIComponent(intent.assetKey)+'&limit=2',{method:'GET',cache:'no-store'},accessToken);
+  if(!Array.isArray(records)||records.length>1)throw artworkRecoveryUnverified();
+  let asset:FinancialProviderAssetRow|RecurringServiceAssetRow|null=null;
+  if(records.length){
+    const row=target.kind==='provider'?mapFinancialProviderAssetRow(records[0]):mapRecurringServiceAssetRow(records[0]);
+    if(row.asset_key!==intent.assetKey||row.file_name!==intent.fileName||row.mime_type!==intent.mimeType||
+      row.size_bytes!==intent.sizeBytes||row.storage_bucket!==bucket||row.storage_path!==intent.storagePath||
+      ('provider_id' in row?(target.kind!=='provider'||row.provider_id!==target.targetId||
+        row.asset_role!==target.role||row.variant!==target.variant):(target.kind!=='recurring'||row.recurring_id!==target.targetId)))
+      throw artworkRecoveryUnverified();
+    const encodedPath=intent.storagePath.split('/').map(encodeURIComponent).join('/');
+    if(await confirmedAmbiguousArtworkUpload(url,apiKey,authorization,bucket,encodedPath,intent)){
+      const common={assetKey:row.asset_key,url:publicStorageUrl(url,row),fileName:row.file_name,
+        mimeType:row.mime_type,sizeBytes:intent.sizeBytes,updatedAt:row.updated_at};
+      asset='provider_id' in row?{...common,role:row.asset_role,variant:row.variant}:{...common,recurringId:row.recurring_id};
+    }
+  }
+  // Detect a concurrent disposition change and require the original session
+  // after all protected/public readbacks, including a missing registry row.
+  const current=await load();
+  if(!current||JSON.stringify(current)!==JSON.stringify(intent)||!await currentArtworkCleanupOwner(accessToken))
+    throw artworkRecoveryUnverified();
+  // This is registration/binary evidence only, NOT provider binding or a
+  // committed finance revision, and NOT an acknowledgement of the journal.
+  return {intent:{intentId:intent.intentId,assetKey:intent.assetKey,kind:target.kind,targetId:target.targetId,
+    role:target.role,variant:target.variant,makePrimary:intent.makePrimary,fileName:intent.fileName,
+    mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,asset}};
 }
 
 export async function uploadFinancialProviderAsset(input:{
