@@ -421,19 +421,24 @@
       "title": "Command focus must target the visible responsive owner without refocusing on unrelated renders",
       "category": "ui-resilience",
       "severity": "high",
-      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again.",
-      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus.",
+      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again. Actual real browser account management reproduced the same class: a second palette autofocus succeeded then the prior account command re-ran after its accounts array changed, moving focus outside the modal.",
+      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus. Apply the existing one-shot key policy to Account Management, Lending, Loans, Recurring and mobile Planning too, preserving pagination/target reachability and repeated explicit new-key commands. Existing actual-browser account sequence must retain autofocus and exact focus across three consecutive same-route commands.",
       "paths": [
         "src/pages/PlanningPage.tsx",
         "src/components/PlanningApprovedDesktop.tsx",
-        "scripts/command-palette-qa.mjs"
+        "scripts/command-palette-qa.mjs",
+        "src/components/AccountManagementSettings.tsx",
+        "src/pages/LendingPage.tsx",
+        "src/pages/LoansPage.tsx",
+        "src/pages/RecurringPage.tsx"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
       ],
       "guards": [
         "tests/command-palette-source.test.ts",
-        "tests/command-scheduled-reachability-source.test.ts"
+        "tests/command-scheduled-reachability-source.test.ts",
+        "tests/real-stack-browser-source.test.ts"
       ]
     },
     {

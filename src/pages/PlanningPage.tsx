@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
 import { AlertTriangle, ArrowDown, ArrowLeftRight, ArrowUp, CalendarClock, Check, CircleSlash2, Clock3, Pencil, Plus, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
@@ -77,8 +77,9 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
   const pending = pendingScheduled(data);
   const history = scheduledHistory(data);
   const visiblePending=pending.slice(0,scheduledListLimit);
+  const focusedMobileScheduledKey=useRef(0);
   useEffect(()=>{
-    if(!commandScheduledId||!commandScheduledKey)return;
+    if(!commandScheduledId||!commandScheduledKey||focusedMobileScheduledKey.current===commandScheduledKey)return;
     // At desktop widths the old scheduled-panel is display:none; focus the
     // approved desktop table instead (its own component owns that target).
     if(!window.matchMedia('(max-width:1099px)').matches)return;
@@ -86,9 +87,11 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
     if(index<0)return;
     if(index>=scheduledListLimit){setScheduledListLimit(index+1);return}
     const frame=requestAnimationFrame(()=>{
-      const target=[...document.querySelectorAll<HTMLElement>('[data-scheduled-id]')].find(node=>node.dataset.scheduledId===commandScheduledId);
-      target?.scrollIntoView({block:'center',behavior:'auto'});
-      target?.focus({preventScroll:true});
+      const target=[...document.querySelectorAll<HTMLElement>('[data-scheduled-id]')].find(node=>node.dataset.scheduledId===commandScheduledId&&node.getClientRects().length>0);
+      if(!target)return;
+      focusedMobileScheduledKey.current=commandScheduledKey;
+      target.scrollIntoView({block:'center',behavior:'auto'});
+      target.focus({preventScroll:true});
     });
     return()=>cancelAnimationFrame(frame);
   },[commandScheduledId,commandScheduledKey,scheduledListLimit,pending.length]);

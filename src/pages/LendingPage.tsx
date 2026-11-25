@@ -1,5 +1,5 @@
 import { ChevronRight, Eye, EyeOff, HandCoins, Info, Plus, RotateCcw, Search, UserRound, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppInputShell } from '../components/AppInputShell';
@@ -44,14 +44,16 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
     if(!rows.some(row=>row.person===selectedPerson))setSelectedPerson(rows[0]!.person);
   },[rows,selectedPerson]);
 
+  const focusedPersonKey=useRef(0);
+  const personTargetPresent=Boolean(commandPerson&&rows.some(row=>row.person===commandPerson));
   useEffect(()=>{
-    if(!commandPerson||!rows.some(row=>row.person===commandPerson))return;
+    if(!commandPerson||!commandPersonKey||focusedPersonKey.current===commandPersonKey||!personTargetPresent)return;
     setPeopleQuery('');
     setSelectedPerson(commandPerson);
     setHistoryFilter('all');
-  },[commandPerson,commandPersonKey,rows]);
+  },[commandPerson,commandPersonKey,personTargetPresent]);
   useEffect(()=>{
-    if(!commandPerson||selectedPerson!==commandPerson)return;
+    if(!commandPerson||!commandPersonKey||focusedPersonKey.current===commandPersonKey||selectedPerson!==commandPerson)return;
     // Route transitions and closing Command Palette can restore the opener
     // after the first paint. Focus the exact selected person after route layout
     // settles, as for Account Management, without changing its finance state.
@@ -66,8 +68,10 @@ export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,pri
         const mobile=[...document.querySelectorAll<HTMLElement>('.receivable-person-grid > article[tabindex="-1"]')]
           .find(row=>row.querySelector('h3')?.textContent?.trim()===commandPerson&&row.getClientRects().length>0);
         const selected=desktop??mobile;
-        selected?.scrollIntoView({block:'nearest',behavior:'auto'});
-        selected?.focus({preventScroll:true});
+        if(!selected)return;
+        focusedPersonKey.current=commandPersonKey;
+        selected.scrollIntoView({block:'nearest',behavior:'auto'});
+        selected.focus({preventScroll:true});
       });
     });
     return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};

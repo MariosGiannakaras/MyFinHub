@@ -128,20 +128,24 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const mutationInFlight=useRef(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
+  const focusedAccountKey=useRef(0);
+  const accountTargetPresent=Boolean(focusAccountId&&accounts.some(account=>account.id===focusAccountId));
   useEffect(()=>{
-    if(!focusAccountId||!focusKey||!accounts.some(account=>account.id===focusAccountId))return;
+    if(!focusAccountId||!focusKey||focusedAccountKey.current===focusKey||!accountTargetPresent)return;
     let secondFrame=0;
     const frame=requestAnimationFrame(()=>{
       // The app shell focuses the route heading on navigation. Focus the
       // requested account on the following frame, after that generic effect.
       secondFrame=requestAnimationFrame(()=>{
-        const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId);
-        row?.scrollIntoView({block:'center',behavior:'auto'});
-        row?.focus({preventScroll:true});
+        const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId&&node.getClientRects().length>0);
+        if(!row)return;
+        focusedAccountKey.current=focusKey;
+        row.scrollIntoView({block:'center',behavior:'auto'});
+        row.focus({preventScroll:true});
       });
     });
     return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
-  },[focusAccountId,focusKey,accounts]);
+  },[focusAccountId,focusKey,accountTargetPresent]);
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});
   const closeEditor=()=>{if(busy)return;setEditor(null);setEditorError('')};

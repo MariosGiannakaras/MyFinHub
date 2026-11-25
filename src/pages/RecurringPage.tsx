@@ -70,8 +70,9 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const desktopUpcoming=upcoming.slice(0,desktopActiveLimit);
   const recurringGroups=Array.from(new Set(desktopUpcoming.map(row=>row.item.category))).map(category=>({category,rows:desktopUpcoming.filter(row=>row.item.category===category)}));
   const visibleInactive=inactive.slice(0,inactiveLimit);
+  const focusedRecurringKey=useRef(0);
   useEffect(()=>{
-    if(!commandRecurringKey||!commandRecurringId)return;
+    if(!commandRecurringKey||!commandRecurringId||focusedRecurringKey.current===commandRecurringKey)return;
     const activeIndex=upcoming.findIndex(row=>row.item.id===commandRecurringId);
     const inactiveIndex=inactive.findIndex(item=>item.id===commandRecurringId);
     if(activeIndex<0&&inactiveIndex<0)return;
@@ -87,7 +88,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
       }
       const target=[...document.querySelectorAll<HTMLElement>('[data-command-recurring-id]')]
         .find(node=>node.dataset.commandRecurringId===commandRecurringId&&node.getClientRects().length>0);
-      if(target){target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true})}
+      if(target){focusedRecurringKey.current=commandRecurringKey;target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true})}
     });
     return()=>cancelAnimationFrame(frame);
   },[commandRecurringId,commandRecurringKey,desktopActiveLimit,mobileActiveLimit,inactiveLimit]);
