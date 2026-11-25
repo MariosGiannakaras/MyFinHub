@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {abandonUndispatchedArtworkUploadIntent,acknowledgeArtworkUploadIntent,readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
+import {retireUnregisteredArtworkUploadIntent,abandonUndispatchedArtworkUploadIntent,acknowledgeArtworkUploadIntent,readPendingArtworkUploadIntent,uploadFinancialProviderAsset,uploadRecurringServiceAsset} from '../server/accountMetadataStore.js';
 import {parseArtworkIntentTarget} from '../server/accountMetadataHandler.js';
 
 const bytes=Buffer.from([137,80,78,71,13,10,26,10]);
@@ -40,7 +40,7 @@ describe('#649 read-only durable artwork intent recovery',()=>{
       const storagePath=(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png';
       const intent={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
         make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
-        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:true,created_at:now,resolved_at:null};
+        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:true,registration_recorded:true,created_at:now,resolved_at:null};
       const registry={asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
         storage_bucket:bucket,storage_path:storagePath,updated_at:now,active:true,
         ...(target.kind==='provider'?{provider_id:target.targetId,asset_role:target.role,variant:target.variant}:{recurring_id:target.targetId})};
@@ -64,7 +64,7 @@ describe('#649 read-only durable artwork intent recovery',()=>{
           if(scenario==='no-intent'||scenario==='closed-during-read'&&intentReads===2)return json([]);
           if(scenario==='duplicate')return json([intent,intent]);
           if(scenario==='bad-intent')return json([{...intent,sha256:'invalid'}]);
-          if(scenario==='undispatched')return json([{...intent,dispatch_claimed:false}]);
+          if(scenario==='undispatched')return json([{...intent,dispatch_claimed:false,registration_recorded:false}]);
           return json([intent]);
         }
         if(url.pathname.includes('/rest/v1/rheomiq_')){
@@ -151,7 +151,7 @@ describe('#649 fresh durable artwork reservation dispatch guard',()=>{
           path=(target.kind==='provider'?'providers/qa-bank/':'services/')+key+'.png';
           if(scenario==='conflict')return new Response(JSON.stringify({code:'23505'}),{status:409});
           if(scenario==='timeout')return new Response(JSON.stringify({code:'23505'}),{status:504});
-          const receipt={...row,storage_path:path,disposition:'pending',dispatch_claimed:false,created_at:now,resolved_at:null};
+          const receipt={...row,storage_path:path,disposition:'pending',dispatch_claimed:false,registration_recorded:false,created_at:now,resolved_at:null};
           if(scenario==='wrong-intent')receipt.intent_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
           if(scenario==='wrong-key')receipt.asset_key=target.kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
           if(scenario==='wrong-hash')receipt.sha256='0'.repeat(64);
@@ -203,7 +203,7 @@ describe('#649 exact durable artwork acknowledgement',()=>{
       const storagePath=(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png';
       const original={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
         make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
-        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:true,created_at:now,resolved_at:null as string|null};
+        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:true,registration_recorded:true,created_at:now,resolved_at:null as string|null};
       const terminal={...original,disposition:'acknowledged',resolved_at:now};
       const registry={asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
         storage_bucket:bucket,storage_path:storagePath,updated_at:now,active:true,
@@ -226,6 +226,7 @@ describe('#649 exact durable artwork acknowledgement',()=>{
             expect(patched).toBe(false);patched=true;
             expect(url.searchParams.get('disposition')).toBe('eq.pending');
             expect(url.searchParams.get('dispatch_claimed')).toBe('eq.true');
+            expect(url.searchParams.get('registration_recorded')).toBe('eq.true');
             expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
             expect(JSON.parse(String(init?.body))).toEqual({disposition:'acknowledged'});
             if(scenario==='lost-committed'||scenario==='lost-pending')return new Response(null,{status:504});
@@ -242,8 +243,8 @@ describe('#649 exact durable artwork acknowledgement',()=>{
             return json([terminal]);
           }
           if(scenario==='already-acknowledged')return json([terminal]);
-          if(scenario==='abandoned')return json([{...terminal,disposition:'abandoned',dispatch_claimed:false}]);
-          if(scenario==='undispatched')return json([{...original,dispatch_claimed:false}]);
+          if(scenario==='abandoned')return json([{...terminal,disposition:'abandoned',dispatch_claimed:false,registration_recorded:false}]);
+          if(scenario==='undispatched')return json([{...original,dispatch_claimed:false,registration_recorded:false}]);
           if(scenario==='missing')return json([]);
           if(scenario==='duplicate')return json([original,original]);
           if(scenario==='wrong-id')return json([{...original,intent_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}]);
@@ -302,7 +303,7 @@ describe('#649 explicit never-dispatched artwork cancellation',()=>{
       const storagePath=(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png';
       const original={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
         make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,
-        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:false,created_at:now,resolved_at:null as string|null};
+        sha256,storage_path:storagePath,disposition:'pending',dispatch_claimed:false,registration_recorded:false,created_at:now,resolved_at:null as string|null};
       const terminal={...original,disposition:'abandoned',resolved_at:now};
       const calls:string[]=[];
       let owners=0,patched=false;
@@ -322,6 +323,7 @@ describe('#649 explicit never-dispatched artwork cancellation',()=>{
           calls.push('patch');expect(patched).toBe(false);patched=true;
           expect(url.searchParams.get('disposition')).toBe('eq.pending');
           expect(url.searchParams.get('dispatch_claimed')).toBe('eq.false');
+          expect(url.searchParams.get('registration_recorded')).toBe('eq.false');
           expect(new Headers(init?.headers).get('prefer')).toBe('return=representation');
           expect(JSON.parse(String(init?.body))).toEqual({disposition:'abandoned'});
           if(scenario==='lost-committed'||scenario==='lost-pending')return new Response(null,{status:504});
@@ -379,4 +381,40 @@ describe('#649 explicit never-dispatched artwork cancellation',()=>{
     await expect(abandonUndispatchedArtworkUploadIntent(provider,{intentId,assetKey:'other-bank-asset-000000000001'},'owner-jwt')).rejects.toMatchObject({code:'INVALID_ARTWORK_UPLOAD_INTENT'});
     expect(fetch).not.toHaveBeenCalled();
   });
+});
+
+describe('#649 permanent registration fence receipt',()=>{
+  for(const target of [provider,recurring]){
+    it.each(['retired','registration-won','lost-receipt','already-retired'] as const)('checks '+target.kind+' retirement: %s',async scenario=>{
+      vi.stubEnv('SUPABASE_URL','https://example.supabase.co');
+      vi.stubEnv('SUPABASE_PUBLISHABLE_KEY','test-public-key');
+      const assetKey=target.kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
+      const original={intent_id:intentId,kind:target.kind,target_id:target.targetId,role:target.role,variant:target.variant,
+        make_primary:false,asset_key:assetKey,file_name:'logo.png',mime_type:'image/png',size_bytes:bytes.length,sha256,
+        storage_path:(target.kind==='provider'?'providers/qa-bank/':'services/')+assetKey+'.png',
+        disposition:'pending',dispatch_claimed:true,registration_recorded:false,created_at:now,resolved_at:null};
+      const terminal={...original,disposition:'retired',resolved_at:now};
+      let patches=0;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=new URL(String(input));
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer owner-jwt');
+        if(url.pathname.endsWith('/rpc/rheomiq_is_owner_aal2'))return json(true);
+        expect(url.pathname).toBe('/rest/v1/rheomiq_artwork_upload_intents');
+        if(init?.method==='PATCH'){
+          patches++;
+          expect(url.searchParams.get('dispatch_claimed')).toBe('eq.true');
+          expect(url.searchParams.get('registration_recorded')).toBe('eq.false');
+          expect(JSON.parse(String(init.body))).toEqual({disposition:'retired'});
+          return scenario==='lost-receipt'?new Response(null,{status:504}):json([]);
+        }
+        expect(init?.method).toBe('GET');
+        if(scenario==='already-retired'||patches&&scenario!=='registration-won')return json([terminal]);
+        return json([patches?{...original,registration_recorded:true}:original]);
+      }));
+      const result=retireUnregisteredArtworkUploadIntent(target,{intentId,assetKey},'owner-jwt');
+      if(scenario==='registration-won')await expect(result).rejects.toMatchObject({code:'ARTWORK_UPLOAD_INTENT_UNVERIFIED'});
+      else await expect(result).resolves.toEqual({intentId,assetKey,disposition:'retired'});
+      expect(patches).toBe(scenario==='already-retired'?0:1);
+    });
+  }
 });

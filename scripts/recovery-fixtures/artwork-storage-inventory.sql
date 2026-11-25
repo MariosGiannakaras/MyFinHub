@@ -105,6 +105,14 @@ select jsonb_build_object(
   'entries',coalesce((select jsonb_agg(to_jsonb(i) order by i.bucket,i.name) from inventory i),'[]'::jsonb),
   'recurringReferences',coalesce((select jsonb_agg(to_jsonb(i) order by i.asset_key) from recurring_reference_inventory i),'[]'::jsonb),
   'providerReferences',coalesce((select jsonb_agg(to_jsonb(i) order by i.asset_key) from provider_reference_inventory i),'[]'::jsonb),
+  'uploadIntents',coalesce((select jsonb_agg(jsonb_build_object(
+    'intent_id',i.intent_id,'asset_key',i.asset_key,'kind',i.kind,'disposition',i.disposition,
+    'dispatch_claimed',i.dispatch_claimed,'registration_recorded',i.registration_recorded,
+    'storage_path',i.storage_path,'object_count',coalesce(o.object_count,0),
+    'registry_count',coalesce(r.registry_count,0)) order by i.intent_id)
+    from public.rheomiq_artwork_upload_intents i
+    left join objects o on o.bucket=case i.kind when 'provider' then 'financial-provider-assets' else 'recurring-service-assets' end and o.name=i.storage_path
+    left join registry_counts r on r.bucket=case i.kind when 'provider' then 'financial-provider-assets' else 'recurring-service-assets' end and r.name=i.storage_path),'[]'::jsonb),
   'incompleteProviderPointers',(select count(*) from public.rheomiq_financial_provider_assets
     where (storage_bucket is null) <> (storage_path is null))
 )::text;

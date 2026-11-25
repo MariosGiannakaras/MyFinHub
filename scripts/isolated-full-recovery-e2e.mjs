@@ -83,7 +83,7 @@ function artworkInventory(database){
   const readRole=database===scratch?scratchRestoreRole:'postgres';
   const report=JSON.parse(sql(database,readFileSync('scripts/recovery-fixtures/artwork-storage-inventory.sql','utf8'),readRole));
   assert(Array.isArray(report?.entries)&&Array.isArray(report.recurringReferences)&&
-    Array.isArray(report.providerReferences)&&Number.isSafeInteger(report.incompleteProviderPointers),
+    Array.isArray(report.providerReferences)&&Array.isArray(report.uploadIntents)&&Number.isSafeInteger(report.incompleteProviderPointers),
     'Read-only artwork inventory did not return its complete metadata report.');
   return report;
 }
@@ -158,7 +158,8 @@ try{
   assert(JSON.stringify(sourceArtwork.entries.filter(row=>!orphanFixtures.some(item=>item.bucket===row.bucket&&item.name===row.name)))===
     JSON.stringify(pristineArtwork.entries)&&sourceArtwork.incompleteProviderPointers===pristineArtwork.incompleteProviderPointers&&
     JSON.stringify(sourceArtwork.recurringReferences)===JSON.stringify(pristineArtwork.recurringReferences)&&
-    JSON.stringify(sourceArtwork.providerReferences)===JSON.stringify(pristineArtwork.providerReferences),
+    JSON.stringify(sourceArtwork.providerReferences)===JSON.stringify(pristineArtwork.providerReferences)&&
+    JSON.stringify(sourceArtwork.uploadIntents)===JSON.stringify(pristineArtwork.uploadIntents),
     'Orphan inventory fixture changed unrelated artwork metadata.');
   await storageRequest('/bucket',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({id:sourceBucket,name:sourceBucket,public:false})});

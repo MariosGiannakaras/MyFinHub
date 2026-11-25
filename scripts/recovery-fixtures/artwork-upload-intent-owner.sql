@@ -96,6 +96,66 @@ BEGIN
     raise exception 'Claimed artwork without registry or object acknowledged';
   exception when check_violation then null;
   end;
+  -- A claimed missing registration can be retired, but the permanent key
+  -- fence rejects late direct registration, even after a newer intent exists.
+  begin
+    update public.rheomiq_artwork_upload_intents set registration_recorded=true
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
+    raise exception 'Registration marker forged without matching registry';
+  exception when check_violation then null;
+  end;
+  update public.rheomiq_artwork_upload_intents set disposition='retired'
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4' and not registration_recorded;
+  get diagnostics affected=row_count;
+  if affected<>1 then raise exception 'Claimed unregistered recurring retirement failed'; end if;
+  begin
+    insert into public.rheomiq_recurring_service_assets values
+      (auth.uid(),'service-asset-000000000000000000000004','qa-service',true,'logo.png','image/png',8,
+       'recurring-service-assets','services/service-asset-000000000000000000000004.png');
+    raise exception 'Retired recurring registration was accepted';
+  exception when check_violation then null;
+  end;
+  insert into public.rheomiq_artwork_upload_intents
+    (intent_id,kind,target_id,role,variant,asset_key,file_name,mime_type,size_bytes,sha256)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5','provider','qa-bank','logo','universal',
+      'qa-bank-asset-000000000005','logo.png','image/png',8,repeat('a',64));
+  update public.rheomiq_artwork_upload_intents set dispatch_claimed=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5';
+  update public.rheomiq_artwork_upload_intents set disposition='retired'
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5' and not registration_recorded;
+  begin
+    insert into public.rheomiq_financial_provider_assets values
+      ('qa-bank-asset-000000000005',true,'qa-bank','logo','universal','logo.png','image/png',8,
+       'financial-provider-assets','providers/qa-bank/qa-bank-asset-000000000005.png');
+    raise exception 'Retired provider registration was accepted';
+  exception when check_violation then null;
+  end;
+  begin
+    insert into public.rheomiq_financial_provider_assets values
+      ('qa-bank-asset-000000000003',true,'qa-bank','logo','wrong','logo.png','image/png',8,
+       'financial-provider-assets','providers/qa-bank/qa-bank-asset-000000000003.png');
+    raise exception 'Mismatched claimed provider registration accepted';
+  exception when check_violation then null;
+  end;
+  insert into public.rheomiq_financial_provider_assets values
+    ('qa-bank-asset-000000000003',true,'qa-bank','logo','dark','logo.png','image/png',8,
+      'financial-provider-assets','providers/qa-bank/qa-bank-asset-000000000003.png');
+  if not exists(select 1 from public.rheomiq_artwork_upload_intents
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3' and registration_recorded) then
+    raise exception 'Registration marker did not commit with registry';
+  end if;
+  begin
+    update public.rheomiq_artwork_upload_intents set registration_recorded=false
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+    raise exception 'Registration marker reset';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.rheomiq_artwork_upload_intents set disposition='retired'
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+    raise exception 'Registered intent retired';
+  exception when check_violation then null;
+  end;
   update public.rheomiq_artwork_upload_intents set disposition='abandoned'
     where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and disposition='pending' and not dispatch_claimed;
   get diagnostics affected=row_count;
@@ -160,8 +220,8 @@ BEGIN
   update public.rheomiq_artwork_upload_intents set disposition='acknowledged'
     where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3' and disposition='pending';
   get diagnostics affected=row_count;
-  if affected<>1 or (select count(*) from public.rheomiq_artwork_upload_intents)<>4
-    or (select count(*) from public.rheomiq_artwork_upload_intents where disposition='pending')<>2 then
+  if affected<>1 or (select count(*) from public.rheomiq_artwork_upload_intents)<>5
+    or (select count(*) from public.rheomiq_artwork_upload_intents where disposition='pending')<>1 then
     raise exception 'Artwork intent disposition/independent-target inventory mismatch';
   end if;
   perform set_config('request.jwt.claims',original_claims,false);

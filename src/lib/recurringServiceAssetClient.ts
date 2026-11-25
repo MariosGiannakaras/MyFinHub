@@ -133,6 +133,8 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
   return await withArtworkMutationLock('recurring-upload:'+input.recurringId,epoch,
     ()=>new RecurringServiceUploadInProgress(),()=>uncertainUploads.has(input.recurringId),()=>trackDatabaseWrite(async()=>{
   const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:input.recurringId,fileName:input.file.name});
+  const intentId=globalThis.crypto?.randomUUID?.();
+  if(intentId)params.set('intentId',intentId);
   let response:Response;
   try{
     response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
@@ -169,6 +171,11 @@ export async function uploadRecurringServiceAsset(input:{recurringId:string;file
       registered.fileName!==asset.fileName||registered.mimeType!==asset.mimeType||
       registered.sizeBytes!==asset.sizeBytes||registered.url!==asset.url)
       return unverifiedUpload(input.recurringId,epoch);
+    if(payload?.intentId!==undefined){
+      if(!intentId||payload.intentId!==intentId)return unverifiedUpload(input.recurringId,epoch);
+      const {resolveArtworkIntent}=await import('./artworkIntentClient.js');
+      await resolveArtworkIntent({kind:'recurring',targetId:input.recurringId},{intentId,assetKey:asset.assetKey},'acknowledge',epoch);
+    }
     return registered;
   }catch{
     return unverifiedUpload(input.recurringId,epoch);

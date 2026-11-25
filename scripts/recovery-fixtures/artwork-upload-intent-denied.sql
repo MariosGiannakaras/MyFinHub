@@ -21,6 +21,10 @@ BEGIN
     where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2' and not dispatch_claimed;
   get diagnostics affected=row_count;
   if affected<>0 then raise exception 'Unauthorized session claimed artwork dispatch'; end if;
+  update public.rheomiq_artwork_upload_intents set registration_recorded=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
+  get diagnostics affected=row_count;
+  if affected<>0 then raise exception 'Unauthorized session recorded artwork registration'; end if;
   begin
     delete from public.rheomiq_artwork_upload_intents
       where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';

@@ -99,7 +99,10 @@ describe('production migration ledger source contract',()=>{
     expect(sql).toContain("where disposition='pending'");
     expect(sql).toContain('on public.rheomiq_artwork_upload_intents(owner_user_id,kind,target_id,role,variant)');
     expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(4);
-    expect(sql).toContain('grant update (disposition,dispatch_claimed)');
+    expect(sql).toContain('grant update (disposition,dispatch_claimed,registration_recorded)');
+    expect(sql).toContain('ARTWORK_UPLOAD_REGISTRATION_FENCED');
+    expect(sql).toContain('ARTWORK_UPLOAD_RETIREMENT_FORBIDDEN');
+    expect(sql).toContain('where asset_key=new.asset_key for update');
     expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_UNRESOLVED');
     expect(sql).toContain('ARTWORK_UPLOAD_ACK_UNPROVEN');
     expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_INVALID');
@@ -124,9 +127,16 @@ describe('production migration ledger source contract',()=>{
       'Claimed artwork intent abandoned',
       'Claimed artwork without registry or object acknowledged',
       'Abandoned artwork intent claimed',
+      'Registration marker forged without matching registry',
+      'Retired recurring registration was accepted',
+      'Retired provider registration was accepted',
+      'Mismatched claimed provider registration accepted',
+      'Registration marker did not commit with registry',
+      'Registration marker reset',
+      'Registered intent retired',
     ])expect(owner).toContain(marker);
     for(const marker of ['Unauthorized session read artwork intents','Unauthorized session reserved artwork intent',
-      'Unauthorized session closed artwork intent','Unauthorized session claimed artwork dispatch','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
+      'Unauthorized session closed artwork intent','Unauthorized session claimed artwork dispatch','Unauthorized session recorded artwork registration','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
   });
 
   it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{

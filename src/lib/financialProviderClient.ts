@@ -366,6 +366,8 @@ export async function uploadFinancialProviderAsset(input:{
     primary:input.makePrimary?'1':'0',
     fileName:input.file.name,
   });
+  const intentId=globalThis.crypto?.randomUUID?.();
+  if(intentId)params.set('intentId',intentId);
   let response:Response;
   try{
     response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
@@ -395,6 +397,17 @@ export async function uploadFinancialProviderAsset(input:{
   if(input.refreshCatalog!==false){
     await refreshFinancialProviders(true);
     if(requestEpoch!==authEpoch())return unverifiedAssetUpload(uploadSlot,requestEpoch);
+  }
+  // The additive receipt negotiates the new server protocol. Older deployed
+  // backends return only asset; a missing echo on a new server leaves its
+  // reservation pending, never authorizes another dispatch.
+  if(payload?.intentId!==undefined){
+    if(!intentId||payload.intentId!==intentId)return unverifiedAssetUpload(uploadSlot,requestEpoch);
+    try{
+      const {resolveArtworkIntent}=await import('./artworkIntentClient.js');
+      await resolveArtworkIntent({kind:'provider',targetId:input.providerId,role:input.role,variant:input.variant},
+        {intentId,assetKey:asset.assetKey},'acknowledge',requestEpoch);
+    }catch{return unverifiedAssetUpload(uploadSlot,requestEpoch)}
   }
   return asset;
   }));

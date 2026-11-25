@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react';
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useRef, useState, type KeyboardEvent } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { markDatabaseSaveUnverified } from '../lib/databaseSaveActivity';
 import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
@@ -26,6 +26,8 @@ import { IconButton } from './IconButton';
 import './FinancialProviderManagementSettings.css';
 import { userErrorMessage } from '../lib/userMessage';
 import { rovingTabDestination } from '../lib/rovingTabDestination';
+
+const ArtworkIntentReview=lazy(()=>import('./ArtworkIntentReview'));
 
 type SlotVariant='universal'|'light'|'dark';
 type SlotId=
@@ -454,6 +456,15 @@ export function FinancialProviderManagementSettings(){
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>
           <section ref={pickerRef} className="provider-asset-picker" role="dialog" aria-modal="true" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
             <header><div><span>ΕΠΙΛΟΓΗ ΕΙΚΟΝΑΣ</span><h3>{pickerSlot.label}</h3><p>Διάλεξε από τη βιβλιοθήκη ή ανέβασε νέο αρχείο.</p></div><IconButton type="button" aria-label="Κλείσιμο επιλογής εικόνας" onClick={()=>setEditor({...editor,pickerSlot:null})}><X/></IconButton></header>
+            <Suspense fallback={null}><ArtworkIntentReview key={editor.id+':'+pickerSlot.id}
+              target={{kind:'provider',targetId:editor.id,role:pickerSlot.role,variant:pickerSlot.variant}}
+              disabled={busy} prepareRecovered={async(assetKey,scope)=>{
+                const catalog=await refreshFinancialProviders(true);
+                assertCurrentAuthScope(scope);
+                if(catalog.error||!catalog.providers.find(item=>item.id===editor.id)?.assets?.some(asset=>asset.assetKey===assetKey))
+                  throw new Error('Η εικόνα δεν επιβεβαιώθηκε στη βιβλιοθήκη.');
+                return ()=>setEditor(current=>current?.id===editor.id?{...current,assignments:{...current.assignments,[pickerSlot.id]:assetKey},pickerSlot:null}:current);
+              }}/></Suspense>
             <div className="provider-asset-picker-grid">
               <button type="button" data-picker-autofocus="true" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
               {!pickerSlot.required?<button type="button" className={!pickerCurrent?'provider-picker-none selected':'provider-picker-none'} onClick={()=>assign(pickerSlot.id,null)}><span><ImagePlus/></span><b>Χωρίς override</b><small>Χρήση της προεπιλεγμένης εικόνας</small>{!pickerCurrent?<Check className="provider-picker-check"/>:null}</button>:null}

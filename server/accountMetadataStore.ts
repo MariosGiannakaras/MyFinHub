@@ -532,7 +532,7 @@ type ArtworkIntentTarget=
   |{kind:'provider';targetId:string;role:'logo'|'wordmark'|'card-mark';variant:string}
   |{kind:'recurring';targetId:string;role:'';variant:''};
 
-const ARTWORK_INTENT_FIELDS='intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256,storage_path,disposition,dispatch_claimed,created_at,resolved_at';
+const ARTWORK_INTENT_FIELDS='intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256,storage_path,disposition,dispatch_claimed,registration_recorded,created_at,resolved_at';
 
 function artworkRecoveryUnverified(){
   return new ApiError(503,'ARTWORK_UPLOAD_INTENT_UNVERIFIED','Δεν επιβεβαιώθηκε η κατάσταση μεταφόρτωσης. Έλεγξε ξανά πριν από νέα μεταφόρτωση.');
@@ -549,7 +549,8 @@ function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
     typeof key!=='string'||!extension||typeof row.file_name!=='string'||!row.file_name||row.file_name.length>160||
     /[\u0000-\u001f\u007f]/.test(row.file_name)||typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||
     row.size_bytes<1||row.size_bytes>MAX_PROVIDER_ASSET_BYTES||typeof row.sha256!=='string'||! /^[a-f0-9]{64}$/.test(row.sha256)||
-    typeof row.make_primary!=='boolean'||typeof row.dispatch_claimed!=='boolean'||row.disposition!=='pending'||row.resolved_at!==null||
+    typeof row.make_primary!=='boolean'||typeof row.dispatch_claimed!=='boolean'||typeof row.registration_recorded!=='boolean'||
+    row.registration_recorded&&!row.dispatch_claimed||row.disposition!=='pending'||row.resolved_at!==null||
     typeof row.created_at!=='string'||!Number.isFinite(Date.parse(row.created_at)))throw artworkRecoveryUnverified();
   const prefix=target.kind==='provider'?target.targetId+'-asset-':'service-asset-';
   const suffix=key.slice(prefix.length);
@@ -557,7 +558,7 @@ function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
   if(!key.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(suffix)||
     row.storage_path!==path||(row.make_primary&&(target.kind==='recurring'||target.role==='card-mark')))throw artworkRecoveryUnverified();
   return {intentId:row.intent_id,assetKey:key,fileName:row.file_name,mimeType:mime as string,
-    sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at,dispatchClaimed:row.dispatch_claimed};
+    sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at,dispatchClaimed:row.dispatch_claimed,registrationRecorded:row.registration_recorded};
 }
 
 // PostgREST values containing reserved grammar characters must be quoted
@@ -591,7 +592,7 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
     },accessToken,201);
     if(!Array.isArray(rows)||rows.length!==1)throw artworkRecoveryUnverified();
     receipt=parsePendingArtworkIntent(rows[0],target);
-    if(receipt.dispatchClaimed||receipt.intentId!==input.intentId||receipt.assetKey!==input.assetKey||receipt.fileName!==input.fileName||
+    if(receipt.dispatchClaimed||receipt.registrationRecorded||receipt.intentId!==input.intentId||receipt.assetKey!==input.assetKey||receipt.fileName!==input.fileName||
       receipt.mimeType!==input.mimeType||receipt.makePrimary!==input.makePrimary||receipt.storagePath!==input.storagePath||
       receipt.sizeBytes!==input.content.byteLength||receipt.sha256!==sha256)throw artworkRecoveryUnverified();
   }catch{
@@ -661,7 +662,7 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
     if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
     return {intent:null};
   }
-  const asset=intent.dispatchClaimed?await verifyArtworkIntentAsset(target,intent,accessToken):null;
+  const asset=intent.registrationRecorded?await verifyArtworkIntentAsset(target,intent,accessToken):null;
   // Detect a concurrent disposition change and require the original session
   // after all protected/public readbacks, including a missing registry row.
   const current=await load();
@@ -671,7 +672,7 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
   // committed finance revision, and NOT an acknowledgement of the journal.
   return {intent:{intentId:intent.intentId,assetKey:intent.assetKey,kind:target.kind,targetId:target.targetId,
     role:target.role,variant:target.variant,makePrimary:intent.makePrimary,fileName:intent.fileName,
-    mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,dispatchClaimed:intent.dispatchClaimed,asset}};
+    mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,dispatchClaimed:intent.dispatchClaimed,registrationRecorded:intent.registrationRecorded,asset}};
 }
 
 // Terminal state is a journal receipt only. Validate its immutable identity
@@ -681,11 +682,13 @@ function parseArtworkIntentState(value:unknown,target:ArtworkIntentTarget){
   if(!value||typeof value!=='object'||Array.isArray(value))throw artworkRecoveryUnverified();
   const row=value as Record<string,unknown>;
   const disposition=row.disposition;
-  if(disposition!=='pending'&&disposition!=='acknowledged'&&disposition!=='abandoned')throw artworkRecoveryUnverified();
+  if(disposition!=='pending'&&disposition!=='acknowledged'&&disposition!=='abandoned'&&disposition!=='retired')throw artworkRecoveryUnverified();
   if(disposition==='pending'?row.resolved_at!==null:
     typeof row.resolved_at!=='string'||!Number.isFinite(Date.parse(row.resolved_at)))throw artworkRecoveryUnverified();
   const identity=parsePendingArtworkIntent({...row,disposition:'pending',resolved_at:null},target);
-  if(disposition==='acknowledged'&&!identity.dispatchClaimed||disposition==='abandoned'&&identity.dispatchClaimed)
+  if(disposition==='acknowledged'&&!identity.registrationRecorded||
+    disposition==='abandoned'&&(identity.dispatchClaimed||identity.registrationRecorded)||
+    disposition==='retired'&&(!identity.dispatchClaimed||identity.registrationRecorded))
     throw artworkRecoveryUnverified();
   return {identity,disposition,resolvedAt:row.resolved_at};
 }
@@ -711,12 +714,13 @@ function exactArtworkIntentAccess(target:ArtworkIntentTarget,expected:ArtworkInt
   };
   const sameIdentity=(a:ReturnType<typeof parseArtworkIntentState>,b:ReturnType<typeof parseArtworkIntentState>)=>
     JSON.stringify(a.identity)===JSON.stringify(b.identity);
-  const transition=async(disposition:'acknowledged'|'abandoned')=>{
+  const transition=async(disposition:'acknowledged'|'abandoned'|'retired')=>{
     // Both terminal transitions are conditional on the exact pending row
     // and its monotonic dispatch fence. No PATCH replay or successor mutation.
     try{
       await request(table+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,...filters,disposition:'eq.pending',
-        dispatch_claimed:disposition==='acknowledged'?'eq.true':'eq.false'}).toString(),{
+        dispatch_claimed:disposition==='abandoned'?'eq.false':'eq.true',
+        registration_recorded:disposition==='acknowledged'?'eq.true':'eq.false'}).toString(),{
         method:'PATCH',headers:{prefer:'return=representation'},body:JSON.stringify({disposition}),
       },accessToken);
     }catch{ /* The exact terminal readback, not the transport, decides. */ }
@@ -724,7 +728,7 @@ function exactArtworkIntentAccess(target:ArtworkIntentTarget,expected:ArtworkInt
   return {load,sameIdentity,transition};
 }
 
-// Staged explicit acknowledgement, not yet exposed at HTTP ingress. A client
+// Explicit acknowledgement through the bounded HTTP resolution route. A client
 // must have reviewed the receipt/catalog and supply both original identities.
 // A journal acknowledgement is NOT proof that the asset is still present or
 // bound, and never authorizes a finance save or replay of binary registration.
@@ -732,7 +736,7 @@ export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,
   const {load,sameIdentity,transition}=exactArtworkIntentAccess(target,expected,accessToken);
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   const original=await load();
-  if(original.disposition==='abandoned'||!original.identity.dispatchClaimed)throw artworkRecoveryUnverified();
+  if(original.disposition==='abandoned'||original.disposition==='retired'||!original.identity.registrationRecorded)throw artworkRecoveryUnverified();
   if(original.disposition==='acknowledged'){
     // Explicit retry after a lost HTTP response: read the exact terminal
     // identity, never PATCH it again. No claim of current binary availability.
@@ -758,7 +762,7 @@ export async function abandonUndispatchedArtworkUploadIntent(target:ArtworkInten
   const {load,sameIdentity,transition}=exactArtworkIntentAccess(target,expected,accessToken);
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   const original=await load();
-  if(original.identity.dispatchClaimed||original.disposition==='acknowledged')throw artworkRecoveryUnverified();
+  if(original.identity.dispatchClaimed||original.identity.registrationRecorded||original.disposition==='acknowledged'||original.disposition==='retired')throw artworkRecoveryUnverified();
   if(original.disposition==='abandoned'){
     // Explicit retry of the same terminal identity is read-only.
     if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
@@ -772,6 +776,28 @@ export async function abandonUndispatchedArtworkUploadIntent(target:ArtworkInten
   return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'abandoned' as const};
 }
 
+// Explicitly retire a claimed key that has never committed a registry insert.
+// Registration and this transition serialize in PostgreSQL; a late Storage
+// object may remain, but the retired key cannot acquire a registry/binding.
+// Never delete bytes or claim external Storage quiescence.
+export async function retireUnregisteredArtworkUploadIntent(target:ArtworkIntentTarget,expected:ArtworkIntentIdentity,accessToken:string){
+  const {load,sameIdentity,transition}=exactArtworkIntentAccess(target,expected,accessToken);
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  const original=await load();
+  if(!original.identity.dispatchClaimed||original.identity.registrationRecorded||
+    original.disposition==='acknowledged'||original.disposition==='abandoned')throw artworkRecoveryUnverified();
+  if(original.disposition==='retired'){
+    if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+    return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'retired' as const};
+  }
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  await transition('retired');
+  const after=await load();
+  if(!sameIdentity(original,after)||after.disposition!=='retired'||
+    !await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  return {intentId:expected.intentId,assetKey:expected.assetKey,disposition:'retired' as const};
+}
+
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
   role:'logo'|'wordmark'|'card-mark';
@@ -780,8 +806,7 @@ export async function uploadFinancialProviderAsset(input:{
   fileName:string;
   makePrimary:boolean;
   content:unknown;
-  // Internal staged protocol; HTTP handlers must not enable this until the
-  // complete acknowledgement and recovery client lifecycle is available.
+  // Explicit/new or server-generated legacy HTTP upload intent.
   intentId?:string;
 },accessToken:string){
   const content=copyBoundedBinaryValue(input.content,MAX_PROVIDER_ASSET_BYTES);
@@ -978,7 +1003,7 @@ export async function uploadRecurringServiceAsset(input:{
   mimeType:string;
   fileName:string;
   content:unknown;
-  // Internal staged protocol, not yet accepted from HTTP requests.
+  // Explicit/new or server-generated legacy HTTP upload intent.
   intentId?:string;
 },accessToken:string):Promise<RecurringServiceAssetRow>{
   const content=copyBoundedBinaryValue(input.content,MAX_RECURRING_SERVICE_ASSET_BYTES);

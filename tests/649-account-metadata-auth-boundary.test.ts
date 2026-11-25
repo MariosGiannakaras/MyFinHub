@@ -11,6 +11,9 @@ const metadata=vi.hoisted(()=>({
   readFinancialProviders:vi.fn(),
   readRecurringServiceAssets:vi.fn(),
   readPendingArtworkUploadIntent:vi.fn(),
+  abandonUndispatchedArtworkUploadIntent:vi.fn(),
+  acknowledgeArtworkUploadIntent:vi.fn(),
+  retireUnregisteredArtworkUploadIntent:vi.fn(),
   writeFinancialProvider:vi.fn(),
   updateFinancialProvider:vi.fn(),
   uploadFinancialProviderAsset:vi.fn(),
@@ -39,6 +42,7 @@ const operations=[
   {label:'recurring asset DELETE',method:'DELETE',resource:'recurring-service-assets'},
   {label:'provider binding PUT',method:'PUT',resource:'financial-provider-asset-binding'},
   {label:'artwork intent GET',method:'GET',resource:'artwork-upload-intents'},
+  {label:'artwork intent PATCH',method:'PATCH',resource:'artwork-upload-intents'},
 ] as const;
 type Operation=(typeof operations)[number];
 const writes=operations.filter(op=>op.method!=='GET');
@@ -86,6 +90,7 @@ function storeSpies(){
   return [
     metadata.readAccountMetadata,metadata.writeAccountMetadata,
     metadata.readFinancialProviders,metadata.readRecurringServiceAssets,metadata.readPendingArtworkUploadIntent,
+    metadata.abandonUndispatchedArtworkUploadIntent,metadata.acknowledgeArtworkUploadIntent,metadata.retireUnregisteredArtworkUploadIntent,
     metadata.writeFinancialProvider,metadata.updateFinancialProvider,
     metadata.uploadFinancialProviderAsset,metadata.uploadRecurringServiceAsset,
     metadata.deleteRecurringServiceAsset,metadata.setFinancialProviderAssetBinding,
@@ -213,8 +218,8 @@ describe('#649 I22.02 account metadata/provider/Storage endpoint owner+AAL2 boun
     assertNoMetadataAccess();
   });
 
-  it('permits authorized recovery GET and forwards only the active session; denies mutation resource',async()=>{
-    const op=operations[operations.length-1];
+  it('permits authorized recovery GET and forwards only the active session; denies unsupported mutation method',async()=>{
+    const op=operations.find(item=>item.method==='GET'&&item.resource==='artwork-upload-intents')!;
     const req=request(op);
     const res=resRecorder();
     await handleAccountMetadataRequest(req,res);
@@ -227,6 +232,45 @@ describe('#649 I22.02 account metadata/provider/Storage endpoint owner+AAL2 boun
     await handleAccountMetadataRequest({...req,method:'PUT'},denied);
     expect(denied.statusCode).toBe(400);
     expect(metadata.readPendingArtworkUploadIntent).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['provider','recurring'] as const)('uses one durable reservation for explicit and legacy %s uploads',async kind=>{
+    const op=operations.find(item=>item.method==='PUT'&&item.resource===(kind==='provider'?'financial-provider-assets':'recurring-service-assets'))!;
+    const key=kind==='provider'?'qa-bank-asset-000000000001':'service-asset-000000000000000000000001';
+    const asset={assetKey:key};
+    const upload=kind==='provider'?metadata.uploadFinancialProviderAsset:metadata.uploadRecurringServiceAsset;
+    upload.mockResolvedValue(asset);
+    const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+    for(const explicit of [true,false]){
+      metadata.acknowledgeArtworkUploadIntent.mockClear();
+      const req=request(op);
+      const query={resource:op.resource,fileName:'logo.png',...(kind==='provider'?{providerId:'qa-bank',role:'logo',variant:'light',primary:'0'}:{recurringId:'qa-service'}),...(explicit?{intentId:id}:{})};
+      const res=resRecorder();
+      await handleAccountMetadataRequest({...req,query,headers:{...req.headers,'content-type':'image/png'},
+        body:Buffer.from([137,80,78,71,13,10,26,10])},res);
+      expect(res.statusCode).toBe(200);
+      const input=upload.mock.calls.at(-1)?.[0];
+      expect(input.intentId).toMatch(/^[a-f0-9-]{36}$/);
+      expect(JSON.parse(res.body)).toEqual(explicit?{asset,intentId:id}:{asset});
+      if(explicit)expect(metadata.acknowledgeArtworkUploadIntent).not.toHaveBeenCalled();
+      else expect(metadata.acknowledgeArtworkUploadIntent).toHaveBeenCalledWith(
+        kind==='provider'?{kind,targetId:'qa-bank',role:'logo',variant:'light'}:{kind,targetId:'qa-service',role:'',variant:''},
+        {intentId:input.intentId,assetKey:key},tokenWithAal('aal2'));
+    }
+  });
+  it('forwards exact explicit resolution through the existing owner+AAL2 and origin boundary',async()=>{
+    const op=operations.find(item=>item.method==='PATCH'&&item.resource==='artwork-upload-intents')!;
+    const identity={intentId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',assetKey:'service-asset-000000000000000000000001'};
+    const req=request(op,{source:'cookie'});
+    metadata.retireUnregisteredArtworkUploadIntent.mockResolvedValue({...identity,disposition:'retired'});
+    const res=resRecorder();
+    await handleAccountMetadataRequest({...req,body:{...identity,action:'retire'}},res);
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({...identity,disposition:'retired'});
+    expect(metadata.retireUnregisteredArtworkUploadIntent).toHaveBeenCalledWith(
+      {kind:'recurring',targetId:'qa-service',role:'',variant:''},identity,tokenWithAal('aal2'));
+    expect(metadata.acknowledgeArtworkUploadIntent).not.toHaveBeenCalled();
+    expect(metadata.abandonUndispatchedArtworkUploadIntent).not.toHaveBeenCalled();
   });
 
   it('permits owner AAL2 bearer read and revisioned write without browser Origin while forwarding only the owner token',async()=>{
