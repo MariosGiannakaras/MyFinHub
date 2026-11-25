@@ -1,3 +1,11 @@
+## 2026-11-25 — Correct wire-format fixture; proceed to consolidated acceptance
+
+**Implementations 7/23 completed · Sub-implementations 106/132 completed**, unchanged. Exact `3720734` [CI #45657584954](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45657584954) FAILED in validate: 2,635/2,636 tests (345/346 files), CodeQL SUCCESS; build, hard bundle budgets and PostgreSQL smoke not reached. The sole positive explicit-provider-journal fixture returned `kind` (normalized client model) instead of `providerKind` (actual server catalog wire format). The existing strict parser correctly rejected it. Correct the synthetic wire field only, preserving exact PUT→GET→PATCH, missing/mismatched/unavailable catalog denial and all runtime/security guards. The previous recurring-logo source assertion is green. No new production behavior, test threshold relaxation, additional test cases, or manual rerun.
+
+**Next exact action:** inspect ordinary CI for this fixture-corrected head once. Since the changed registration migration and owner-authorized retirement are a high-risk boundary, do not mark Ready or merge until actual PostgreSQL and consolidated Real Stack proof pass. Reuse the staged existing Real Stack extension and existing changed-surface provider/recurring rendered suites in one acceptance batch; inspect artifacts. Complete remaining original items by shared owner and record explicit product-decision/external gates separately; do not add speculative test-only loops. No local executable repository checkout or PostgreSQL executable available. No hosted changes, Android, merge or release.
+
+---
+
 ## 2026-11-25 — Consolidated candidate validation repair and exact provider receipt
 
 **Implementations 7/23 completed · Sub-implementations 106/132 completed**, unchanged. Exact `3f4c69d` [CI #45643297373](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45643297373) FAILED: validate 2,630/2,631 tests, 345/346 files; sole failure was obsolete recurring logo source literal after the explicitly recovered-key path was introduced. CodeQL SUCCESS; build/budget/PostgreSQL not reached. Align and strengthen that existing source guard for the recovered key, catalog/target and draft reset invariants.

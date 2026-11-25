@@ -1064,7 +1064,7 @@ describe('#649 explicit provider upload journal integration',()=>{
       const key='qa-journal-bank-asset-aabbccddeeff';
       const asset={assetKey:key,role:'logo',variant:'universal',fileName:'logo.png',mimeType:'image/png',
         sizeBytes:2,url:'https://assets.example/storage/v1/object/public/financial-provider-assets/providers/qa-journal-bank/'+key+'.png'};
-      const provider={id:'qa-journal-bank',displayName:'Journal Bank',shortName:'Journal',kind:'bank',
+      const provider={id:'qa-journal-bank',displayName:'Journal Bank',shortName:'Journal',providerKind:'bank',
         countryCode:'GR',sortOrder:1,logoAssetKey:null,wordmarkAssetKey:null,logoUrl:null,wordmarkUrl:null,
         assets:scenario==='missing'?[]:[scenario==='wrong-bytes'?{...asset,sizeBytes:3}:asset],bindings:[]};
       let intentId='';
