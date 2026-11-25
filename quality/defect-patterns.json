@@ -661,19 +661,23 @@
       "title": "RLS-hidden recurring asset purge row cannot count as confirmed deletion",
       "category": "security-auth",
       "severity": "high",
-      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup. The sibling provider and recurring upload compensation paths also treated an empty exact-key read as absence without checking that the same session retained owner+AAL2 visibility; a masked Storage 404 could be mistaken for confirmed cleanup. The shared metadata error parser also trusted embedded SQLSTATE/message markers before testing the HTTP transport status, allowing a 5xx/408/429 to appear as definite rollback.",
-      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization. For definite registration rejection compensation, require fresh original-token owner+AAL2 before each bounded DELETE and after an acknowledged 200/404; never delete on failed/malformed owner proof or return the definite rejection as clean when authorization disappears. Both asset types preserve ambiguous-registration no-delete behavior. Treat upstream HTTP 408/429/5xx as ambiguous before interpreting any PostgreSQL marker. Test both artwork registration paths with contradictory validation, conflict and authorization payloads; do not delete or retry on an empty initial readback.",
+      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup. The sibling provider and recurring upload compensation paths also treated an empty exact-key read as absence without checking that the same session retained owner+AAL2 visibility; a masked Storage 404 could be mistaken for confirmed cleanup. The shared metadata error parser also trusted embedded SQLSTATE/message markers before testing the HTTP transport status, allowing a 5xx/408/429 to appear as definite rollback. Ambiguous IBAN and provider metadata writes also checked owner+AAL2 only before the exact-row GET, allowing a matching row to be returned after session retirement during readback.",
+      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization. For definite registration rejection compensation, require fresh original-token owner+AAL2 before each bounded DELETE and after an acknowledged 200/404; never delete on failed/malformed owner proof or return the definite rejection as clean when authorization disappears. Both asset types preserve ambiguous-registration no-delete behavior. Treat upstream HTTP 408/429/5xx as ambiguous before interpreting any PostgreSQL marker. Test both artwork registration paths with contradictory validation, conflict and authorization payloads; do not delete or retry on an empty initial readback. For recovered IBAN and provider metadata receipts, retain the initial owner check and independently require the same original token's true owner+AAL2 predicate after the matching row read; test revoked, malformed and unavailable post-read checks without replay.",
       "paths": [
         "server/accountMetadataStore.ts",
         "tests/recurring-service-assets.test.ts",
-        "tests/provider-brand-management.test.ts"
+        "tests/provider-brand-management.test.ts",
+        "tests/649-account-metadata-readback.test.ts",
+        "tests/649-provider-write-receipts.test.ts"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
       ],
       "guards": [
         "tests/recurring-service-assets.test.ts",
-        "tests/provider-brand-management.test.ts"
+        "tests/provider-brand-management.test.ts",
+        "tests/649-account-metadata-readback.test.ts",
+        "tests/649-provider-write-receipts.test.ts"
       ]
     },
     {

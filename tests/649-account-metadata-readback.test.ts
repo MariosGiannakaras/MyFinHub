@@ -83,6 +83,7 @@ describe('#649 I19.04 account metadata read/write response integrity',()=>{
 
   it.each([
     'committed-503','committed-timeout','owner-revoked','owner-unavailable',
+    'owner-revoked-after-read','owner-malformed-after-read','owner-unavailable-after-read',
     'missing-row','duplicate-rows','wrong-account','wrong-iban',
     'stale-revision','advanced-revision','invalid-row','read-unavailable',
     'definite-conflict','definite-invalid',
@@ -103,6 +104,11 @@ describe('#649 I19.04 account metadata read/write response integrity',()=>{
       }
       if(url.includes('/rpc/rheomiq_is_owner_aal2')){
         if(scenario==='owner-unavailable')return new Response('{}',{status:503});
+        if(calls.some(call=>call.url.includes('/rheomiq_account_metadata?'))){
+          if(scenario==='owner-unavailable-after-read')return new Response('{}',{status:503});
+          if(scenario==='owner-revoked-after-read')return new Response('false',{status:200});
+          if(scenario==='owner-malformed-after-read')return new Response('"true"',{status:200});
+        }
         return new Response(scenario==='owner-revoked'?'false':'true',{status:200});
       }
       if(url.includes('/rheomiq_account_metadata?')){
@@ -130,8 +136,10 @@ describe('#649 I19.04 account metadata read/write response integrity',()=>{
     }
     const expected=scenario.startsWith('definite-')?['POST']:
       scenario==='owner-revoked'||scenario==='owner-unavailable'?['POST','POST']:
+        scenario.startsWith('committed-')||scenario.endsWith('-after-read')?['POST','POST','GET','POST']:
         ['POST','POST','GET'];
     expect(calls.map(call=>call.method)).toEqual(expected);
+    if(expected.length===4)expect(calls[3]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
     expect(calls.filter(call=>call.url.includes('/rpc/rheomiq_upsert_account_metadata'))).toHaveLength(1);
     expect(calls.every(call=>call.authorization==='Bearer owner-token')).toBe(true);
     if(expected.includes('GET')){

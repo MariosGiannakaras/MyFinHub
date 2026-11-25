@@ -370,6 +370,10 @@ export async function writeAccountMetadata(accountId:string,iban:string|null,exp
       const row=mapRow(records[0]);
       if(row.accountId!==accountId||row.iban!==iban||
         row.revision!==expectedRevision+1)throw unverified();
+      // The original token must still have owner+AAL2 visibility after the
+      // exact readback, not merely before a potentially delayed GET.
+      if(await request('rpc/rheomiq_is_owner_aal2',
+        {method:'POST',body:'{}'},accessToken)!==true)throw unverified();
       return row;
     }catch{
       // No missing/foreign/stale/malformed/unavailable read can make the
@@ -434,6 +438,10 @@ async function writeProviderRpc(rpc:string,input:FinancialProviderWrite,accessTo
       if(!Array.isArray(records)||records.length!==1||records[0]?.active!==true)throw unverified();
       const row=mapFinancialProviderRow(records[0]);
       if(!matches(row))throw unverified();
+      // Do not return matching catalog data as a recovered write receipt
+      // when the originating device/session was revoked during readback.
+      if(await request('rpc/rheomiq_is_owner_aal2',
+        {method:'POST',body:'{}'},accessToken)!==true)throw unverified();
       return row;
     }catch{
       // Missing, stale, malformed, inaccessible or foreign postcommit reads

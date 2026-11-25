@@ -212,6 +212,7 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
   it.each([
     'create-503-committed','update-network-committed',
     'owner-revoked','owner-unavailable','missing-row','duplicate-row',
+    'owner-revoked-after-read','owner-malformed-after-read','owner-unavailable-after-read',
     'wrong-id','wrong-display','wrong-short','wrong-kind','wrong-country',
     'wrong-order','malformed-row','readback-unavailable',
     'inactive-provider-record','inactive-update-network','missing-active-column','invalid-active-column',
@@ -239,6 +240,11 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
       }
       if(url.includes('/rpc/rheomiq_is_owner_aal2')){
         if(scenario==='owner-unavailable')return new Response('{}',{status:503});
+        if(captured.some(call=>call.url.includes('/rheomiq_financial_providers?'))){
+          if(scenario==='owner-unavailable-after-read')return new Response('{}',{status:503});
+          if(scenario==='owner-revoked-after-read')return new Response('false',{status:200});
+          if(scenario==='owner-malformed-after-read')return new Response('"true"',{status:200});
+        }
         return new Response(scenario==='owner-revoked'?'false':'true',{status:200});
       }
       if(url.includes('/rheomiq_financial_providers?')){
@@ -277,8 +283,10 @@ describe('#649 I19.04 exact provider write and binding receipts',()=>{
     });
     const expected=scenario.startsWith('definite-')?['POST']:
       scenario==='owner-revoked'||scenario==='owner-unavailable'?['POST','POST']:
+        scenario==='create-503-committed'||scenario==='update-network-committed'||scenario.endsWith('-after-read')?['POST','POST','GET','POST']:
         ['POST','POST','GET'];
     expect(captured.map(x=>x.method)).toEqual(expected);
+    if(expected.length===4)expect(captured[3]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
     expect(captured.filter(x=>/rpc\/rheomiq_(create|update)_financial_provider/.test(x.url))).toHaveLength(1);
     expect(captured.every(x=>x.authorization==='Bearer owner-jwt'&&x.apiKey==='test-public-key')).toBe(true);
     expect(JSON.parse(captured[0]?.body??'{}')).toMatchObject({
