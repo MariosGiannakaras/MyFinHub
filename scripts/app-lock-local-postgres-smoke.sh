@@ -40,7 +40,8 @@ CREATE TABLE public.myfinhub_device_sessions(
  last_seen_at timestamptz DEFAULT now(),revoked_at timestamptz
 );
 INSERT INTO public.myfinhub_device_sessions(session_id,user_id)
- VALUES('22222222-2222-4222-8222-222222222222','11111111-1111-4111-8111-111111111111');
+ VALUES('22222222-2222-4222-8222-222222222222','11111111-1111-4111-8111-111111111111'),
+ ('55555555-5555-4555-8555-555555555555','11111111-1111-4111-8111-111111111111');
 CREATE FUNCTION private.myfinhub_session_is_active() RETURNS boolean
  LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
  AS $$ SELECT exists(select 1 from public.myfinhub_device_sessions d
@@ -75,6 +76,7 @@ CREATE POLICY rheomiq_financial_provider_assets_authenticated_read ON public.rhe
 \i supabase/migrations/20261024150000_add_device_details_and_nicknames.sql
 \i supabase/migrations/20261024160000_shared_owner_app_lock.sql
 \i supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql
+\i supabase/migrations/20261125090000_add_artwork_upload_intents.sql
 
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claims',jsonb_build_object(
@@ -84,8 +86,9 @@ SELECT set_config('request.jwt.claims',jsonb_build_object(
  jsonb_build_object('method','password','timestamp',floor(extract(epoch from now()))::bigint-500),
  jsonb_build_object('method','totp','timestamp',floor(extract(epoch from now()))::bigint-500)
  ))::text,false);
+\i scripts/recovery-fixtures/artwork-upload-intent-owner.sql
 
-DO $$
+DO $
 DECLARE
  result jsonb;
  receipt text;
@@ -106,6 +109,7 @@ BEGIN
  IF found_count<>0 THEN RAISE EXCEPTION 'Locked owner read provider catalog'; END IF;
  SELECT count(*) INTO found_count FROM public.rheomiq_financial_provider_assets;
  IF found_count<>0 THEN RAISE EXCEPTION 'Locked owner read provider artwork metadata'; END IF;
+ IF (SELECT count(*) FROM public.rheomiq_artwork_upload_intents)<>0 THEN RAISE EXCEPTION 'Locked owner read artwork intents'; END IF;
  FOR i IN 1..5 LOOP
    result:=public.myfinhub_app_lock_action('verify','0000');
    IF result->>'error'<>'APP_LOCK_WRONG_PIN' THEN RAISE EXCEPTION 'Wrong PIN accepted'; END IF;
@@ -186,7 +190,8 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'AAL1 read the protected provider catalog';
  END IF;
-END $$;
+END $;
+\i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
 
 -- Test effective grants on the actual compiled functions, not merely SQL text.
@@ -244,7 +249,8 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'Non-owner AAL2 read protected provider catalog records';
  END IF;
-END $$;
+END $;
+\i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
 
 -- Revocation of an otherwise valid owner AAL2 session must immediately
@@ -276,8 +282,25 @@ BEGIN
     (SELECT count(*) FROM public.rheomiq_financial_provider_assets)<>0 THEN
    RAISE EXCEPTION 'Revoked owner AAL2 read protected provider catalog records';
  END IF;
-END $$;
+END $;
+\i scripts/recovery-fixtures/artwork-upload-intent-denied.sql
 RESET ROLE;
+DO $
+BEGIN
+  IF has_table_privilege('anon','public.rheomiq_artwork_upload_intents','SELECT')
+    OR has_any_column_privilege('anon','public.rheomiq_artwork_upload_intents','INSERT')
+    OR has_any_column_privilege('anon','public.rheomiq_artwork_upload_intents','UPDATE')
+    OR has_table_privilege('authenticated','public.rheomiq_artwork_upload_intents','DELETE')
+    OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','owner_user_id','INSERT')
+    OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','disposition','INSERT')
+    OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','resolved_at','UPDATE') THEN
+    RAISE EXCEPTION 'Artwork intent grant boundary expanded';
+  END IF;
+  IF (SELECT count(*) FROM public.rheomiq_artwork_upload_intents)<>4
+    OR (SELECT count(*) FROM public.rheomiq_artwork_upload_intents WHERE disposition='pending')<>2 THEN
+    RAISE EXCEPTION 'Denied artwork intent operations changed durable inventory';
+  END IF;
+END $;
 ROLLBACK;
 \echo Local PostgreSQL PIN/RLS/recovery smoke: PASS
 SQL

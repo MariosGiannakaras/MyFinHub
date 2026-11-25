@@ -40,6 +40,7 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(script).toContain("fingerprints('postgres')");
     expect(script).toContain("sourceRls===restoredRls");
     expect(script).toContain("'auth.users'");
+    expect(script).toContain("['public.rheomiq_artwork_upload_intents','intent_id']");
     expect(script).toContain("'storage.objects'");
     expect(script).toContain("'supabase_migrations.schema_migrations'");
     expect(script).toContain("'dropdb','-U','postgres','--if-exists',scratch");

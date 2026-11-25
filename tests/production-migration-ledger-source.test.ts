@@ -72,12 +72,45 @@ const releasePending=[
   "20261122211000_guard_provider_binding_cross_provider.sql",
   "20261122214000_guard_recurring_asset_direct_lifecycle.sql",
   "20261122225000_guard_bound_provider_artwork_active.sql",
+  "20261125090000_add_artwork_upload_intents.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
   it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
+  });
+
+
+  it('preserves owner-scoped durable artwork reservation identity and local PostgreSQL proof',()=>{
+    const migration='supabase/migrations/20261125090000_add_artwork_upload_intents.sql';
+    const sql=readFileSync(migration,'utf8');
+    const smoke=readFileSync('scripts/app-lock-local-postgres-smoke.sh','utf8');
+    const owner=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-owner.sql','utf8');
+    const denied=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-denied.sql','utf8');
+    expect(releasePending).toContain('20261125090000_add_artwork_upload_intents.sql');
+    expect(sql).toContain('asset_key text not null unique');
+    expect(sql).toContain("where disposition='pending'");
+    expect(sql).toContain('on public.rheomiq_artwork_upload_intents(owner_user_id,kind,target_id,role,variant)');
+    expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(4);
+    expect(sql).toContain('grant update (disposition)');
+    expect(sql).toContain('ARTWORK_UPLOAD_INTENT_TERMINAL');
+    expect(sql).toContain('ARTWORK_UPLOAD_INTENT_IMMUTABLE');
+    expect(sql).not.toMatch(/security\s+definer|grant\s+delete|on delete cascade|delete\s+from|truncate\s/i);
+    expect(smoke).toContain('\\i '+migration);
+    expect(smoke).toContain('\\i scripts/recovery-fixtures/artwork-upload-intent-owner.sql');
+    expect(smoke.split('\\i scripts/recovery-fixtures/artwork-upload-intent-denied.sql')).toHaveLength(4);
+    for(const marker of [
+      'Artwork intent unavailable to independently active owner session',
+      'Second pending artwork intent for same slot was accepted',
+      'Retired artwork asset key was reused',
+      'Retired artwork intent ID was reused',
+      'Terminal artwork intent reopened',
+      'Owner deleted artwork intent tombstone',
+      'Artwork intent fingerprint rewritten',
+    ])expect(owner).toContain(marker);
+    for(const marker of ['Unauthorized session read artwork intents','Unauthorized session reserved artwork intent',
+      'Unauthorized session closed artwork intent','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
   });
 
   it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{

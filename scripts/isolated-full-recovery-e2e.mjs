@@ -62,6 +62,7 @@ const fingerprintTables=[
   ['public.rheomiq_backups','id'],
   ['public.rheomiq_history_points','id'],
   ['public.rheomiq_history_cursor','owner_user_id'],
+  ['public.rheomiq_artwork_upload_intents','intent_id'],
   ['public.rheomiq_audit_log','id'],
   ['auth.users','id'],
   ['storage.buckets','id'],
