@@ -99,7 +99,10 @@ describe('production migration ledger source contract',()=>{
     expect(sql).toContain("where disposition='pending'");
     expect(sql).toContain('on public.rheomiq_artwork_upload_intents(owner_user_id,kind,target_id,role,variant)');
     expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(4);
-    expect(sql).toContain('grant update (disposition)');
+    expect(sql).toContain('grant update (disposition,dispatch_claimed)');
+    expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_UNRESOLVED');
+    expect(sql).toContain('ARTWORK_UPLOAD_ACK_UNPROVEN');
+    expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_INVALID');
     expect(sql).toContain('ARTWORK_UPLOAD_INTENT_TERMINAL');
     expect(sql).toContain('ARTWORK_UPLOAD_INTENT_IMMUTABLE');
     expect(sql).not.toMatch(/security\s+definer|grant\s+delete|on delete cascade|delete\s+from|truncate\s/i);
@@ -114,9 +117,16 @@ describe('production migration ledger source contract',()=>{
       'Terminal artwork intent reopened',
       'Owner deleted artwork intent tombstone',
       'Artwork intent fingerprint rewritten',
+      'Undispatched artwork intent acknowledged',
+      'Artwork claim and terminal transition combined',
+      'Artwork dispatch claim replay accepted',
+      'Artwork dispatch claim reset',
+      'Claimed artwork intent abandoned',
+      'Claimed artwork without registry or object acknowledged',
+      'Abandoned artwork intent claimed',
     ])expect(owner).toContain(marker);
     for(const marker of ['Unauthorized session read artwork intents','Unauthorized session reserved artwork intent',
-      'Unauthorized session closed artwork intent','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
+      'Unauthorized session closed artwork intent','Unauthorized session claimed artwork dispatch','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
   });
 
   it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{

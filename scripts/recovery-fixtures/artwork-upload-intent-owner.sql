@@ -13,7 +13,7 @@ BEGIN
 
   if not exists(select 1 from public.rheomiq_artwork_upload_intents
     where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
-      and owner_user_id=auth.uid() and disposition='pending' and resolved_at is null
+      and owner_user_id=auth.uid() and disposition='pending' and not dispatch_claimed and resolved_at is null
       and storage_path='providers/qa-bank/qa-bank-asset-000000000001.png') then
     raise exception 'Artwork intent initial receipt missing or malformed';
   end if;
@@ -56,8 +56,48 @@ BEGIN
   exception when check_violation then null;
   end;
 
+  begin
+    update public.rheomiq_artwork_upload_intents set disposition='acknowledged'
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+    raise exception 'Undispatched artwork intent acknowledged';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.rheomiq_artwork_upload_intents set dispatch_claimed=true,disposition='acknowledged'
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+    raise exception 'Artwork claim and terminal transition combined';
+  exception when check_violation then null;
+  end;
+  update public.rheomiq_artwork_upload_intents set dispatch_claimed=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3' and disposition='pending' and not dispatch_claimed;
+  get diagnostics affected=row_count;
+  if affected<>1 then raise exception 'Fresh artwork dispatch claim not accepted'; end if;
+  update public.rheomiq_artwork_upload_intents set dispatch_claimed=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3' and disposition='pending' and not dispatch_claimed;
+  get diagnostics affected=row_count;
+  if affected<>0 then raise exception 'Artwork dispatch claim replay accepted'; end if;
+  begin
+    update public.rheomiq_artwork_upload_intents set dispatch_claimed=false
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+    raise exception 'Artwork dispatch claim reset';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.rheomiq_artwork_upload_intents set disposition='abandoned'
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+    raise exception 'Claimed artwork intent abandoned';
+  exception when check_violation then null;
+  end;
+  update public.rheomiq_artwork_upload_intents set dispatch_claimed=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4' and disposition='pending' and not dispatch_claimed;
+  begin
+    update public.rheomiq_artwork_upload_intents set disposition='acknowledged'
+      where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
+    raise exception 'Claimed artwork without registry or object acknowledged';
+  exception when check_violation then null;
+  end;
   update public.rheomiq_artwork_upload_intents set disposition='abandoned'
-    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and disposition='pending';
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and disposition='pending' and not dispatch_claimed;
   get diagnostics affected=row_count;
   if affected<>1 then raise exception 'Exact pending intent could not be closed'; end if;
   if not exists(select 1 from public.rheomiq_artwork_upload_intents
@@ -65,6 +105,11 @@ BEGIN
       and resolved_at is not null) then
     raise exception 'Terminal artwork intent receipt missing';
   end if;
+
+  update public.rheomiq_artwork_upload_intents set dispatch_claimed=true
+    where intent_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and disposition='pending' and not dispatch_claimed;
+  get diagnostics affected=row_count;
+  if affected<>0 then raise exception 'Abandoned artwork intent claimed'; end if;
 
   begin
     update public.rheomiq_artwork_upload_intents set disposition='pending'

@@ -532,7 +532,7 @@ type ArtworkIntentTarget=
   |{kind:'provider';targetId:string;role:'logo'|'wordmark'|'card-mark';variant:string}
   |{kind:'recurring';targetId:string;role:'';variant:''};
 
-const ARTWORK_INTENT_FIELDS='intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256,storage_path,disposition,created_at,resolved_at';
+const ARTWORK_INTENT_FIELDS='intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256,storage_path,disposition,dispatch_claimed,created_at,resolved_at';
 
 function artworkRecoveryUnverified(){
   return new ApiError(503,'ARTWORK_UPLOAD_INTENT_UNVERIFIED','Δεν επιβεβαιώθηκε η κατάσταση μεταφόρτωσης. Έλεγξε ξανά πριν από νέα μεταφόρτωση.');
@@ -549,7 +549,7 @@ function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
     typeof key!=='string'||!extension||typeof row.file_name!=='string'||!row.file_name||row.file_name.length>160||
     /[\u0000-\u001f\u007f]/.test(row.file_name)||typeof row.size_bytes!=='number'||!Number.isSafeInteger(row.size_bytes)||
     row.size_bytes<1||row.size_bytes>MAX_PROVIDER_ASSET_BYTES||typeof row.sha256!=='string'||! /^[a-f0-9]{64}$/.test(row.sha256)||
-    typeof row.make_primary!=='boolean'||row.disposition!=='pending'||row.resolved_at!==null||
+    typeof row.make_primary!=='boolean'||typeof row.dispatch_claimed!=='boolean'||row.disposition!=='pending'||row.resolved_at!==null||
     typeof row.created_at!=='string'||!Number.isFinite(Date.parse(row.created_at)))throw artworkRecoveryUnverified();
   const prefix=target.kind==='provider'?target.targetId+'-asset-':'service-asset-';
   const suffix=key.slice(prefix.length);
@@ -557,7 +557,7 @@ function parsePendingArtworkIntent(value:unknown,target:ArtworkIntentTarget){
   if(!key.startsWith(prefix)||!(target.kind==='provider'?/^[a-f0-9]{12}$/:/^[a-f0-9]{24}$/).test(suffix)||
     row.storage_path!==path||(row.make_primary&&(target.kind==='recurring'||target.role==='card-mark')))throw artworkRecoveryUnverified();
   return {intentId:row.intent_id,assetKey:key,fileName:row.file_name,mimeType:mime as string,
-    sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at};
+    sizeBytes:row.size_bytes,sha256:row.sha256,storagePath:path,makePrimary:row.make_primary,createdAt:row.created_at,dispatchClaimed:row.dispatch_claimed};
 }
 
 // PostgREST values containing reserved grammar characters must be quoted
@@ -570,8 +570,8 @@ function artworkIntentQuery(target:ArtworkIntentTarget){
   }).toString();
 }
 
-// Only a fresh INSERT with an exact 201 representation authorizes the next
-// Storage POST. A previously committed or uncertain reservation is recovery
+// A fresh INSERT and a fresh conditional dispatch claim are both required
+// before Storage POST. A previously committed or uncertain reservation is recovery
 // evidence, never dispatch permission. No upsert, retry or GET fallback.
 async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
   intentId:string;assetKey:string;fileName:string;mimeType:string;makePrimary:boolean;
@@ -581,6 +581,7 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
     throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Invalid artwork upload intent.');
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   const sha256=createHash('sha256').update(input.content).digest('hex');
+  let receipt:ReturnType<typeof parsePendingArtworkIntent>;
   try{
     const rows=await request('rheomiq_artwork_upload_intents?select='+ARTWORK_INTENT_FIELDS,{
       method:'POST',headers:{prefer:'return=representation'},
@@ -589,8 +590,8 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
         file_name:input.fileName,mime_type:input.mimeType,size_bytes:input.content.byteLength,sha256}),
     },accessToken,201);
     if(!Array.isArray(rows)||rows.length!==1)throw artworkRecoveryUnverified();
-    const receipt=parsePendingArtworkIntent(rows[0],target);
-    if(receipt.intentId!==input.intentId||receipt.assetKey!==input.assetKey||receipt.fileName!==input.fileName||
+    receipt=parsePendingArtworkIntent(rows[0],target);
+    if(receipt.dispatchClaimed||receipt.intentId!==input.intentId||receipt.assetKey!==input.assetKey||receipt.fileName!==input.fileName||
       receipt.mimeType!==input.mimeType||receipt.makePrimary!==input.makePrimary||receipt.storagePath!==input.storagePath||
       receipt.sizeBytes!==input.content.byteLength||receipt.sha256!==sha256)throw artworkRecoveryUnverified();
   }catch{
@@ -598,6 +599,21 @@ async function reserveArtworkUploadIntent(target:ArtworkIntentTarget,input:{
     // reservation. Do not retry with a fresh ID or read it back to upload.
     throw artworkRecoveryUnverified();
   }
+  if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
+  // This compare-and-transition races safely with pre-dispatch abandonment.
+  // A lost or malformed claim receipt must NEVER authorize Storage dispatch.
+  const eq=(value:string)=>'eq.'+JSON.stringify(value);
+  const path='rheomiq_artwork_upload_intents?'+new URLSearchParams({select:ARTWORK_INTENT_FIELDS,
+    kind:eq(target.kind),target_id:eq(target.targetId),role:eq(target.role),variant:eq(target.variant),
+    intent_id:eq(input.intentId),asset_key:eq(input.assetKey),disposition:'eq.pending',dispatch_claimed:'eq.false'}).toString();
+  try{
+    const rows=await request(path,{method:'PATCH',headers:{prefer:'return=representation'},
+      body:JSON.stringify({dispatch_claimed:true})},accessToken,200);
+    if(!Array.isArray(rows)||rows.length!==1)throw artworkRecoveryUnverified();
+    const claimed=parsePendingArtworkIntent(rows[0],target);
+    if(!claimed.dispatchClaimed||JSON.stringify({...claimed,dispatchClaimed:false})!==JSON.stringify(receipt))
+      throw artworkRecoveryUnverified();
+  }catch{throw artworkRecoveryUnverified()}
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
 }
 
@@ -645,7 +661,7 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
     if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
     return {intent:null};
   }
-  const asset=await verifyArtworkIntentAsset(target,intent,accessToken);
+  const asset=intent.dispatchClaimed?await verifyArtworkIntentAsset(target,intent,accessToken):null;
   // Detect a concurrent disposition change and require the original session
   // after all protected/public readbacks, including a missing registry row.
   const current=await load();
@@ -655,7 +671,7 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
   // committed finance revision, and NOT an acknowledgement of the journal.
   return {intent:{intentId:intent.intentId,assetKey:intent.assetKey,kind:target.kind,targetId:target.targetId,
     role:target.role,variant:target.variant,makePrimary:intent.makePrimary,fileName:intent.fileName,
-    mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,asset}};
+    mimeType:intent.mimeType,sizeBytes:intent.sizeBytes,createdAt:intent.createdAt,dispatchClaimed:intent.dispatchClaimed,asset}};
 }
 
 // Terminal state is a journal receipt only. Validate its immutable identity
@@ -699,7 +715,7 @@ export async function acknowledgeArtworkUploadIntent(target:ArtworkIntentTarget,
     JSON.stringify(a.identity)===JSON.stringify(b.identity);
   if(!await currentArtworkCleanupOwner(accessToken))throw artworkRecoveryUnverified();
   const original=await load();
-  if(original.disposition==='abandoned')throw artworkRecoveryUnverified();
+  if(original.disposition==='abandoned'||!original.identity.dispatchClaimed)throw artworkRecoveryUnverified();
   if(original.disposition==='acknowledged'){
     // Explicit retry after a lost HTTP response: read the exact terminal
     // identity, never PATCH it again. No claim of current binary availability.

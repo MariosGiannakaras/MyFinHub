@@ -23,6 +23,7 @@ create table public.rheomiq_artwork_upload_intents (
     case mime_type when 'image/png' then '.png' when 'image/jpeg' then '.jpg'
       when 'image/webp' then '.webp' when 'image/svg+xml' then '.svg' end
   ) stored,
+  dispatch_claimed boolean not null default false,
   disposition text not null default 'pending' check (disposition in ('pending','acknowledged','abandoned')),
   created_at timestamptz not null default clock_timestamp(),
   resolved_at timestamptz,
@@ -39,7 +40,8 @@ create table public.rheomiq_artwork_upload_intents (
   ),
   constraint artwork_upload_intent_resolution check (
     (disposition='pending' and resolved_at is null)
-    or (disposition<>'pending' and resolved_at is not null)
+    or (disposition='acknowledged' and dispatch_claimed and resolved_at is not null)
+    or (disposition='abandoned' and not dispatch_claimed and resolved_at is not null)
   )
 );
 
@@ -54,10 +56,11 @@ alter table public.rheomiq_artwork_upload_intents enable row level security;
 revoke all on table public.rheomiq_artwork_upload_intents from public,anon,authenticated;
 grant select on table public.rheomiq_artwork_upload_intents to authenticated;
 -- The owner, timestamps, generated path and initial disposition are database
--- controlled. Only a terminal disposition can be changed after insertion.
+-- controlled. A one-way dispatch claim and terminal disposition are the only
+-- transitions. They cannot be combined or reset.
 grant insert (intent_id,kind,target_id,role,variant,make_primary,asset_key,file_name,mime_type,size_bytes,sha256)
   on public.rheomiq_artwork_upload_intents to authenticated;
-grant update (disposition) on public.rheomiq_artwork_upload_intents to authenticated;
+grant update (disposition,dispatch_claimed) on public.rheomiq_artwork_upload_intents to authenticated;
 
 create policy artwork_upload_intents_owner_select on public.rheomiq_artwork_upload_intents
   for select to authenticated
@@ -73,7 +76,7 @@ create policy artwork_upload_intents_owner_update on public.rheomiq_artwork_uplo
 create function private.rheomiq_close_artwork_upload_intent()
 returns trigger language plpgsql security invoker set search_path='' as $$
 begin
-  if old.disposition<>'pending' or new.disposition not in ('acknowledged','abandoned') then
+  if old.disposition<>'pending' then
     raise exception using errcode='23514',message='ARTWORK_UPLOAD_INTENT_TERMINAL';
   end if;
   -- Protect provenance even if a future grant unintentionally permits
@@ -84,6 +87,47 @@ begin
     row(old.intent_id,old.owner_user_id,old.kind,old.target_id,old.role,old.variant,
       old.make_primary,old.asset_key,old.file_name,old.mime_type,old.size_bytes,old.sha256,old.created_at) then
     raise exception using errcode='23514',message='ARTWORK_UPLOAD_INTENT_IMMUTABLE';
+  end if;
+  -- Claim and pre-dispatch abandonment race on the same row. Once claimed,
+  -- a missing receipt, registry row or elapsed time cannot prove quiescence.
+  if new.dispatch_claimed is distinct from old.dispatch_claimed then
+    if old.dispatch_claimed or not new.dispatch_claimed or new.disposition<>'pending' then
+      raise exception using errcode='23514',message='ARTWORK_UPLOAD_DISPATCH_INVALID';
+    end if;
+    return new;
+  end if;
+  if new.disposition='abandoned' then
+    if old.dispatch_claimed then
+      raise exception using errcode='23514',message='ARTWORK_UPLOAD_DISPATCH_UNRESOLVED';
+    end if;
+  elsif new.disposition='acknowledged' then
+    -- DB-level minimum receipt: direct owner JWT updates cannot close a
+    -- claimed reservation merely by asserting success. The API additionally
+    -- verifies actual bytes/hash; metadata alone is not that proof.
+    if not old.dispatch_claimed or not (
+      (old.kind='provider' and exists(
+        select 1 from public.rheomiq_financial_provider_assets a
+        where a.asset_key=old.asset_key and a.provider_id=old.target_id
+          and a.asset_role=old.role and a.variant=old.variant and a.active
+          and a.file_name=old.file_name and a.mime_type=old.mime_type
+          and a.size_bytes=old.size_bytes and a.storage_bucket='financial-provider-assets'
+          and a.storage_path=old.storage_path))
+      or (old.kind='recurring' and exists(
+        select 1 from public.rheomiq_recurring_service_assets a
+        where a.owner_user_id=old.owner_user_id and a.asset_key=old.asset_key
+          and a.recurring_id=old.target_id and a.active
+          and a.file_name=old.file_name and a.mime_type=old.mime_type
+          and a.size_bytes=old.size_bytes and a.storage_bucket='recurring-service-assets'
+          and a.storage_path=old.storage_path))
+    ) or not exists(
+      select 1 from storage.objects o
+      where o.bucket_id=case old.kind when 'provider' then 'financial-provider-assets' else 'recurring-service-assets' end
+        and o.name=old.storage_path
+    ) then
+      raise exception using errcode='23514',message='ARTWORK_UPLOAD_ACK_UNPROVEN';
+    end if;
+  else
+    raise exception using errcode='23514',message='ARTWORK_UPLOAD_INTENT_TERMINAL';
   end if;
   new.resolved_at:=clock_timestamp();
   return new;

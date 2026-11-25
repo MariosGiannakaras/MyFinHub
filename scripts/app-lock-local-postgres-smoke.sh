@@ -62,8 +62,28 @@ GRANT SELECT ON public.rheomiq_app_state TO authenticated;
 -- #649: model both historical broad-read provider tables with synthetic rows.
 CREATE TABLE public.rheomiq_financial_providers(id text PRIMARY KEY,active boolean NOT NULL DEFAULT true);
 INSERT INTO public.rheomiq_financial_providers VALUES ('qa-owner-provider',true);
-CREATE TABLE public.rheomiq_financial_provider_assets(asset_key text PRIMARY KEY,active boolean NOT NULL DEFAULT true);
-INSERT INTO public.rheomiq_financial_provider_assets VALUES ('qa-owner-asset',true);
+CREATE TABLE public.rheomiq_financial_provider_assets(
+ asset_key text PRIMARY KEY,active boolean NOT NULL DEFAULT true,provider_id text,asset_role text,variant text,
+ file_name text,mime_type text,size_bytes bigint,storage_bucket text,storage_path text);
+INSERT INTO public.rheomiq_financial_provider_assets VALUES
+ ('qa-bank-asset-000000000003',true,'qa-bank','logo','dark','logo.png','image/png',8,
+  'financial-provider-assets','providers/qa-bank/qa-bank-asset-000000000003.png');
+CREATE TABLE public.rheomiq_recurring_service_assets(
+ owner_user_id uuid,asset_key text,recurring_id text,active boolean,file_name text,mime_type text,
+ size_bytes bigint,storage_bucket text,storage_path text);
+ALTER TABLE public.rheomiq_recurring_service_assets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY recurring_receipt_owner ON public.rheomiq_recurring_service_assets TO authenticated
+ USING (owner_user_id=(select auth.uid()) AND (select public.rheomiq_is_owner_aal2()));
+GRANT SELECT ON public.rheomiq_recurring_service_assets TO authenticated;
+CREATE SCHEMA storage;
+GRANT USAGE ON SCHEMA storage TO authenticated;
+CREATE TABLE storage.objects(bucket_id text,name text);
+INSERT INTO storage.objects VALUES
+ ('financial-provider-assets','providers/qa-bank/qa-bank-asset-000000000003.png');
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY artwork_receipt_owner ON storage.objects TO authenticated
+ USING ((select public.rheomiq_is_owner_aal2()));
+GRANT SELECT ON storage.objects TO authenticated;
 ALTER TABLE public.rheomiq_financial_providers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rheomiq_financial_provider_assets ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON public.rheomiq_financial_providers,public.rheomiq_financial_provider_assets TO authenticated;
@@ -293,6 +313,7 @@ BEGIN
     OR has_table_privilege('authenticated','public.rheomiq_artwork_upload_intents','DELETE')
     OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','owner_user_id','INSERT')
     OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','disposition','INSERT')
+    OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','dispatch_claimed','INSERT')
     OR has_column_privilege('authenticated','public.rheomiq_artwork_upload_intents','resolved_at','UPDATE') THEN
     RAISE EXCEPTION 'Artwork intent grant boundary expanded';
   END IF;
