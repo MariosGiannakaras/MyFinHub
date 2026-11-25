@@ -31,7 +31,7 @@ describe('Command Palette exact Lending person reachability',()=>{
    expect(page).toContain('const selected=desktop??mobile;');
    expect(page).toContain('.receivable-person-grid > article[tabindex="-1"]');
    expect(page).toContain('tabIndex={-1} key={row.person}');
-   expect(page).toContain('selected?.focus({preventScroll:true})');
+   expect(page).toMatch(/if\(!selected\)return;\s*focusedPersonKey\.current=commandPersonKey;\s*selected\.scrollIntoView\([^\n]+\);\s*selected\.focus\(\{preventScroll:true\}\)/);
  });
  it('asserts actual selected row and keyboard focus across two searches on one route',()=>{
    expect(browser).toContain('command-exact-lending-person');

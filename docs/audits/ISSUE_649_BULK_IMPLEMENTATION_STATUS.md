@@ -1,3 +1,11 @@
+## 2026-11-25 — Consolidated command-reachability source guard repair
+
+**Implementations 7/23 completed · Sub-implementations 106/132 completed**, unchanged. Exact `1191141` [CI #45673716334](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45673716334) FAILED: 2,633/2,636 tests, 343/346 files; CodeQL SUCCESS. Three stale optional-chaining focus assertions (account, lending, loan) after explicit visible-target early return and one-shot token consumption. Build/bundle and SQL smoke not reached. Align all three existing guards in one commit, requiring visible exact targets and ordered non-null check → token consumption → scroll → focus. New regexes checked against exact source via JavaScript; no executable checkout or Vitest run claimed. Runtime code, browser proof, security checks and thresholds unchanged. Expensive draft markers OFF.
+
+**Next:** inspect mandatory CI on new head, then enable only necessary consolidated Real Stack and existing command/keyboard acceptance after ordinary CI succeeds. Prior isolated recovery and recurring rendered evidence stand; final provider journal direct read and forward recovery remain unproven. No merge, production, hosted migrations or Android. No extra test suites or broad re-audit.
+
+---
+
 ## 2026-11-25 — Real durable recovery passed; fix proven sibling command-focus race
 
 **Implementations 7/23 completed · Sub-implementations 106/132 completed**, unchanged pending evidence reconciliation. Exact `1d63760` [CI #45668518696](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45668518696) SUCCESS, 2,636 tests, CodeQL, Unified, JS 526.5/528 KiB, disposable PostgreSQL journal/authorization/PIN smoke. [Real Stack #45668563709](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45668563709) PARTIAL: actual recurring pending journal from a second active owner session, exclusion of competing legacy PUT, exact terminal acknowledgement retry, claimed failed-provider retirement, recurring binary lifecycle and independent isolated PostgreSQL+Storage restore with matching hashes all PASS. Actual browser passed all named finance/metadata journeys through provider create/bind/reload and import. Final provider journal direct DB read and forward migration recovery were NOT reached because the later actual route-focus stage failed; do not claim full Real Stack PASS.

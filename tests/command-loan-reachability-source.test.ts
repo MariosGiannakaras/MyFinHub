@@ -21,7 +21,8 @@ describe('Command Palette exact Loan navigation',()=>{
     expect(loans).toContain('activeLoans.findIndex(loan=>loan.id===commandLoanId)');
     expect(loans).toContain('completedLoans.findIndex(loan=>loan.id===commandLoanId)');
     expect(loans).toContain('data-command-loan-id={loan.id}');
-    expect(loans).toContain('row?.focus({preventScroll:true})');
+    expect(loans).toContain('node.dataset.commandLoanId===commandLoanId&&node.getClientRects().length>0');
+    expect(loans).toMatch(/if\(!row\)return;\s*focusedLoanKey\.current=commandLoanKey;\s*row\.scrollIntoView\([^\n]+\);\s*row\.focus\(\{preventScroll:true\}\)/);
     expect(browser).toContain('command-exact-loan-row');
     expect(browser).toContain('named Loan keyboard focus');
   });

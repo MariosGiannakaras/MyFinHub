@@ -14,7 +14,8 @@ describe('account management search identity to canonical settings (DV-FB02/03)'
    expect(qa).toContain("setSettingsTab('accounts');setPage('settings');return");
    expect(settings).toContain('focusAccountId={accountFocusId}');
    expect(accounts).toContain('data-account-id={account.id}');
-   expect(accounts).toContain("row?.focus({preventScroll:true})");
+   expect(accounts).toContain('node.dataset.accountId===focusAccountId&&node.getClientRects().length>0');
+   expect(accounts).toMatch(/if\(!row\)return;\s*focusedAccountKey\.current=focusKey;\s*row\.scrollIntoView\([^\n]+\);\s*row\.focus\(\{preventScroll:true\}\)/);
    expect(accounts).toContain('cancelAnimationFrame(secondFrame)');
    expect(read('src/components/AccountManagementSettings.css')).toContain('.account-management-row:focus{outline:2px solid var(--accent)');
  });
