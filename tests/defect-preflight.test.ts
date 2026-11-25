@@ -47,11 +47,16 @@ describe('curated defect intelligence and read-only preflight',()=>{
   });
 
   it('orders critical incidents first and deduplicates paths and focused tests',()=>{
-    const report=buildReport(registry,['src/lib/lending.ts','server/deviceSessionRegistry.ts','src/lib/lending.ts','README.md']);
-    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(['FP-001','FP-002','FP-013']);
+    // Isolate the ordering/dedup contract from future additions to the live registry.
+    const ids=['FP-001','FP-002','FP-013','FP-042'];
+    const fixture={...registry,patterns:registry.patterns.filter((p:{id:string})=>ids.includes(p.id)).reverse()};
+    expect(fixture.patterns).toHaveLength(ids.length);
+    const report=buildReport(fixture,['src/lib/lending.ts','server/deviceSessionRegistry.ts','src/lib/lending.ts','README.md']);
+    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(ids);
     expect(report.changedFiles).toHaveLength(3);
     expect(report.suggestedCommands).toHaveLength(1);
     expect(report.suggestedCommands[0]).toContain('tests/device-access.test.ts');
+    expect(report.suggestedCommands[0].split(' ').filter((part:string)=>part==='tests/device-access.test.ts')).toHaveLength(1);
     expect(report.suggestedCommands[0]).toContain('tests/lending-history.test.ts');
     expect(buildReport(registry,['README.md']).matches).toEqual([]);
   });
@@ -60,7 +65,12 @@ describe('curated defect intelligence and read-only preflight',()=>{
     const output=run('--files','src/components/AppTextInput.tsx','server/deviceSessionRegistry.ts','--json');
     expect(output.status).toBe(0);
     const report=JSON.parse(output.stdout);
-    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(['FP-001','FP-003']);
+    // CLI must emit the entire live report, not a stale fixed list of IDs.
+    expect(report).toEqual(buildReport(registry,['src/components/AppTextInput.tsx','server/deviceSessionRegistry.ts']));
+    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(expect.arrayContaining(['FP-001','FP-003','FP-042']));
+    expect(report.matches.find((p:{id:string})=>p.id==='FP-042')).toMatchObject({
+      severity:'high',matchedPaths:['server/deviceSessionRegistry.ts'],guards:['tests/device-access.test.ts'],
+    });
     expect(report.suggestedCommands).toHaveLength(1);
     expect(report.suggestedCommands[0]).toContain('npx vitest run');
   });
