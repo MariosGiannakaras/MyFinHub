@@ -604,7 +604,7 @@ export async function readPendingArtworkUploadIntent(target:ArtworkIntentTarget,
     if(await confirmedAmbiguousArtworkUpload(url,apiKey,authorization,bucket,encodedPath,intent)){
       const common={assetKey:row.asset_key,url:publicStorageUrl(url,row),fileName:row.file_name,
         mimeType:row.mime_type,sizeBytes:intent.sizeBytes,updatedAt:row.updated_at};
-      asset='provider_id' in row?{...common,role:row.asset_role,variant:row.variant}:{...common,recurringId:row.recurring_id};
+      asset='provider_id' in row?{...common,role:row.asset_role as FinancialProviderAssetRow['role'],variant:row.variant}:{...common,recurringId:row.recurring_id};
     }
   }
   // Detect a concurrent disposition change and require the original session
