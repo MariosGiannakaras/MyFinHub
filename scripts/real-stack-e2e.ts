@@ -1713,7 +1713,7 @@ async function main(){
       assert(Array.isArray(bindings)&&Array.isArray(assets)&&Array.isArray(intents)&&objects.length===1,
         'Provider clear proof returned an invalid or incomplete durable snapshot.');
       const {bindings:catalogBindings,...catalogWithoutBindings}=provider;
-      return {catalogWithoutBindings,catalogBindings,bindings,assets,intents,objects,
+      return {catalogWithoutBindings,catalogBindings,bindings,assets,intents,objects:objects.map(row=>row.name),
         bytes:content.toString('base64'),finance:{revision:finance.body.revision,data:finance.body.data},
         history:history.body};
     };

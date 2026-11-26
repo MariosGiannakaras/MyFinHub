@@ -125,7 +125,7 @@
   .semantic-table-wrap:has(.receivables-table){margin-top:7px;border-radius:12px;border:1px solid #dfe7f1;background:#f7faff}
 
   /* Recurring: monthly pulse, active obligations and lifecycle history with progressive visual weight. */
-  .recurring-summary-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:7px}
+  .recurring-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .recurring-summary-grid>article{min-height:94px;border-radius:16px;padding:10px;background:rgba(249,252,255,.84);border:1px solid var(--mobile-border);box-shadow:var(--mobile-shadow-soft)}
   .recurring-summary-grid>article span{font-size:var(--ux-dense-label-size);line-height:1.3}
   .recurring-summary-grid>article b{font-size:15px;line-height:1.15;margin:6px 0 3px}
@@ -156,8 +156,7 @@
 }
 
 @media(max-width:350px){
-  .recurring-summary-grid{grid-template-columns:1fr 1fr}
-  .recurring-summary-grid>article:first-child{grid-column:1/-1}
+  .recurring-summary-grid{grid-template-columns:1fr}
   .savings-hero{grid-template-columns:82px minmax(0,1fr)}
   .gauge-ring{width:78px!important;height:78px!important}
 }

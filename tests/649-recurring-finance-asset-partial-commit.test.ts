@@ -41,6 +41,11 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     const domain=readFileSync('src/styles/mobile-finance-domain-layouts.css','utf8');
     expect(presentation).toContain('.mobile-recurring-amount{display:grid;justify-items:end;gap:2px;font-variant-numeric:tabular-nums}');
     expect(domain).toContain('.mobile-recurring-head .semantic-list-title{align-items:flex-start}');
+    expect(domain).toContain('.recurring-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}');
+    expect(domain).toContain('.recurring-summary-grid{grid-template-columns:1fr}');
+    expect(domain).not.toContain('.recurring-summary-grid>article:first-child{grid-column:1/-1}');
+    expect(qa).toContain('width<=350?summary.stacked:summary.paired');
+    expect(qa).toContain("await shot('recurring-service-brand-summary-'+width+'-'+theme)");
     expect(presentation+domain).not.toContain('.mobile-recurring-head>strong{');
     expect(qa).toContain("'long-name linked recurring payment'");
     expect(readFileSync('src/qa.tsx','utf8')).toContain("params.has('recurring-branding-long-name')");
