@@ -118,6 +118,10 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).not.toContain("setByLabel('Πραγματικό υπόλοιπο'");
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
+    expect(source).toContain('Withdrawal defaults must use bank-to-cash roles');
+    expect(source).toContain('Withdrawal exposes an incompatible account role.');
+    expect(source).toContain('withdrawal same-ID exact legs after edit and reload');
+    expect(source).toContain('quick-entry-withdrawal-edit-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
     expect(source).toContain("const seedPeriod=");
     expect(source).toContain("2026-10-01T00:00:00.000Z");

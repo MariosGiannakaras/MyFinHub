@@ -10,6 +10,8 @@ import {
   splitAllocation,
   splitDraftError,
   transferDraftError,
+  withdrawalAccountChoices,
+  withdrawalDraftError,
 } from '../src/lib/ledgerFoundations.js';
 import type { FinanceData, SplitPart } from '../src/types.js';
 import { creditDebtForCard } from '../src/lib/cards.js';
@@ -55,6 +57,30 @@ describe('ledger foundations', () => {
     expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'bank',amount:5})).toMatch(/διαφορετικοί/);
     expect(transferDraftError(data,{fromAccountId:'missing',toAccountId:'cash',amount:5})).toMatch(/προέλευσης/);
     expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'missing',amount:5})).toMatch(/προορισμού/);
+  });
+
+  it('defaults withdrawals to a real bank and cash even when the expense preference is cash',()=>{
+    const data=minimal();
+    data.state.settings.defaultExpenseAccount='cash';
+    expect(withdrawalAccountChoices(data)).toMatchObject({from:'bank',to:'cash',sources:[{id:'bank'}],targets:[{id:'cash'}]});
+    expect(withdrawalDraftError(data,{fromAccountId:'bank',toAccountId:'cash',amount:6.2})).toBeNull();
+    expect(withdrawalDraftError(data,{fromAccountId:'cash',toAccountId:'bank',amount:6.2})).toMatch(/τραπεζικό/);
+    expect(withdrawalDraftError(data,{fromAccountId:'bank',toAccountId:'savings',amount:6.2})).toMatch(/μετρητών/);
+    expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'savings',amount:6.2})).toBeNull();
+    data.seed.accounts=data.seed.accounts.filter(account=>account.kind!=='cash');
+    expect(withdrawalAccountChoices(data).to).toBe('');
+    expect(withdrawalDraftError(data,{fromAccountId:'bank',toAccountId:'',amount:6.2})).toMatch(/προορισμού/);
+  });
+
+  it('retains an unchanged historical withdrawal pair but rejects a newly changed wrong-kind pair',()=>{
+    const data=minimal();
+    const initial=createEvent({kind:'withdrawal',date:'2026-08-21',note:'Imported historical pair',fromAccountId:'cash',toAccountId:'bank',amount:6.2});
+    const pair={fromAccountId:'cash',toAccountId:'bank',amount:6.2};
+    expect(withdrawalDraftError(data,pair,initial)).toBeNull();
+    expect(withdrawalDraftError(data,{...pair,toAccountId:'savings'},initial)).toMatch(/τραπεζικό/);
+    expect(withdrawalDraftError(data,{...pair,amount:0.001},initial)).toMatch(/λεπτό/);
+    expect(withdrawalDraftError(data,{fromAccountId:'bank',toAccountId:'cash',amount:6.2},initial)).toBeNull();
+    expect(initial.legs).toEqual([{accountId:'cash',amount:-6.2},{accountId:'bank',amount:6.2}]);
   });
 
   it('rejects fractional-cent or zero-cent transfers and savings at the canonical draft boundary',()=>{

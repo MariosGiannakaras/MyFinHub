@@ -29,6 +29,8 @@ import {
   splitAllocation,
   splitDraftError,
   transferDraftError,
+  withdrawalAccountChoices,
+  withdrawalDraftError,
 } from '../lib/ledgerFoundations';
 import { preserveLoanPaymentLink } from '../lib/loans';
 import { preserveCreditEventEditLink } from '../lib/creditEventEdit';
@@ -69,6 +71,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
   const transferDefaults = useMemo(()=>defaultTransferPair(data),[data]);
   const savingDefaults=useMemo(()=>defaultSavingContributionPair(data),[data]);
+  const withdrawal=useMemo(()=>withdrawalAccountChoices(data),[data]);
   const savingSources=accounts.filter(isSavingContributionSource);
   const savingTargets=accounts.filter(isSavingsAccount);
   const fundingCreditCards=(data.state.cards??[]).filter(card=>card.kind==='credit'&&card.active!==false);
@@ -160,8 +163,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setCategory(initial.category||defaults.category);
       setSubcategory(initial.subcategory||'');
       setAccountId(initial.accountId||initial.legs.find(l=>l.accountId!=='credit-card')?.accountId||defaults.accountId);
-      setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||(initial.kind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from));
-      setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||(initial.kind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to));
+      setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||(initial.kind==='withdrawal'?withdrawal.from:initial.kind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from));
+      setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||(initial.kind==='withdrawal'?withdrawal.to:initial.kind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to));
       setPerson(initial.person||'');
       setParts(initial.parts?.length?initial.parts:freshParts());
       setActualBalance(initial.kind==='reconciliation'?String(accountBalancesForEditing(data,initial)):'');
@@ -184,8 +187,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setCategory(prefill?.category||defaults.category);
       setSubcategory(prefill?.subcategory||'');
       setAccountId(prefill?.accountId||defaults.accountId);
-      setFrom(initialKind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from);
-      setTo(initialKind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to);
+      setFrom(initialKind==='withdrawal'?withdrawal.from:initialKind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from);
+      setTo(initialKind==='withdrawal'?withdrawal.to:initialKind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to);
       setPerson('');
       setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);
       setFeeAmount('');setFeeCategory(defaultCategory(data.state.settings,'expense'));
@@ -193,7 +196,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setParts(initialKind==='split'&&prefill?.parts?.length?prefill.parts:freshParts());
     }
     setError('');setDirty(false);
-  },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to]);
+  },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to,withdrawal.from,withdrawal.to]);
 
   const reconciliation=useMemo(()=>{
     if(kind!=='reconciliation')return null;
@@ -223,7 +226,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     setKind(next);setCounterpartyId('');setError('');setReconciliationConfirmed(false);setMultiFundingOpen(false);setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
     if(next==='transfer'){setFrom(transferDefaults.from);setTo(transferDefaults.to)}
     if(next==='saving_cash_offset'){setFrom(savingDefaults.from);setTo(savingDefaults.to)}
-    if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
+    if(next==='withdrawal'){setFrom(withdrawal.from);setTo(withdrawal.to)}
   };
   const submit=async()=>{
     if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;
@@ -247,7 +250,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined;
       if(actual===null)throw new Error('Συμπλήρωσε έγκυρο επαληθευμένο υπόλοιπο.');
       if(kind==='withdrawal'){
-        const error=transferDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric});
+        const error=withdrawalDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric},initial);
         if(error)throw new Error(error);
       }else if(kind==='card_payment'){
         const error=singleAccountDraftError(data,from);
@@ -332,7 +335,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const feePreview=parseMoneyInputAmount(feeAmount);
   const accountOptions=(current:string,pool=accounts)=>{
     const poolIds=new Set(pool.map(account=>account.id));
-    return current&&!poolIds.has(current)?<><option value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>{pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
+    // AppSelectInput reads direct option children, not Fragment descendants.
+    // Preserve a legacy selection and still expose all valid replacements.
+    return [...(current&&!poolIds.has(current)?[<option key={current} value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>]:[]),...pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)];
   };
 
   return <><DialogShell open={open} busy={saving} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen&&!externalConfirmationOpen} onRequestClose={requestClose}>
@@ -345,7 +350,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           {kind!=='reconciliation'&&kind!=='split'?<label className="quick-field" data-filled={filled(amount)}><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={value=>{setAmount(value);mark()}}/></label>:null}
           <label className="quick-field" data-filled="true"><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);setReconciliationConfirmed(false);mark()}}/></label>
           {!transferLike && kind!=='card_purchase'&&!(kind==='expense'&&multiFundingOpen)?<label className="quick-field" data-filled="true"><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);setReconciliationConfirmed(false);mark()}}>{accountOptions(accountId,quickAccounts)}</AppSelectInput></label>:null}
-          {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)}</AppSelectInput></label>:null}</>:null}
+          {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from,kind==='withdrawal'?withdrawal.sources:kind==='saving_cash_offset'?savingSources:accounts)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to,kind==='withdrawal'?withdrawal.targets:kind==='saving_cash_offset'?savingTargets:accounts)}</AppSelectInput></label>:null}</>:null}
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<label className="quick-field" data-filled="true"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} aria-label="Κατηγορία ή υποκατηγορία κίνησης" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory);mark()}}/></label>:null}
           {kind==='transfer'?<><label className="quick-field" data-filled={filled(feeAmount)}><span>Προμήθεια μεταφοράς (€) · προαιρετική</span><MoneyInput value={feeAmount} onValueChange={value=>{setFeeAmount(value);mark()}}/></label>{feePreview!==null&&feePreview>0?<label className="quick-field"><span>Κατηγορία προμήθειας</span><AppSelectInput value={feeCategory} onChange={e=>{setFeeCategory(e.target.value);mark()}}>{data.state.settings.expenseCategories.map(name=><option value={name} key={name}>{name}</option>)}</AppSelectInput></label>:null}<div className="logic-note compact wide" role="note">Η κύρια μεταφορά δεν είναι έξοδο. Μόνο η πραγματική προμήθεια καταχωρίζεται ως ξεχωριστή δαπάνη, συνδεδεμένη με τη μεταφορά και στην ίδια αποθήκευση.</div></>:null}
           {kind==='expense'?<div className="multi-funding-editor wide" data-multi-funding>

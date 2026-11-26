@@ -25,6 +25,33 @@ export function defaultTransferPair(data: FinanceData) {
   return { from, to };
 }
 
+/** A withdrawal is bank → cash, not a generic transfer. Missing roles must
+ * stay empty rather than silently selecting an unrelated destination. */
+export function withdrawalAccountChoices(data:FinanceData){
+  const accounts=transferEligibleAccounts(data);
+  const sources=accounts.filter(account=>account.kind==='bank');
+  const targets=accounts.filter(account=>account.kind==='cash');
+  const source=sources.find(account=>account.id===data.state.settings.defaultExpenseAccount)
+    ??sources.find(account=>account.showInQuickChoices!==false)??sources[0];
+  const target=targets.find(account=>account.cashRole==='daily'&&account.showInQuickChoices!==false)
+    ??targets.find(account=>account.showInQuickChoices!==false)??targets[0];
+  return {sources,targets,from:source?.id??'',to:target?.id??''};
+}
+
+export function withdrawalDraftError(data:FinanceData,draft:{fromAccountId:string;toAccountId:string;amount:number},initial?:FinanceEvent|null){
+  const error=transferDraftError(data,draft);
+  if(error)return error;
+  // Do not rewrite historical account legs merely because the editor now
+  // restricts newly selected withdrawal pairs.
+  if(initial?.kind==='withdrawal'&&
+    (initial.fromAccountId||initial.legs.find(leg=>leg.amount<0)?.accountId)===draft.fromAccountId&&
+    (initial.toAccountId||initial.legs.find(leg=>leg.amount>0)?.accountId)===draft.toAccountId)return null;
+  const choices=withdrawalAccountChoices(data);
+  if(!choices.sources.some(account=>account.id===draft.fromAccountId))return 'Η ανάληψη χρειάζεται τραπεζικό λογαριασμό προέλευσης.';
+  if(!choices.targets.some(account=>account.id===draft.toAccountId))return 'Η ανάληψη χρειάζεται λογαριασμό μετρητών ως προορισμό.';
+  return null;
+}
+
 /** Saving cash-offsets are bank(current/payroll) → savings, not wallet
  * movements. A generic transfer may use any non-credit accounts. */
 export function defaultSavingContributionPair(data:FinanceData){

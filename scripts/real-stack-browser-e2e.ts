@@ -232,7 +232,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const addQuickIntent=async(label:string,note:string,kind:string,amount:string|null,configure?:()=>Promise<void>)=>{await openQuickEntry();await clickText('.generic-kind-grid button',label);if(amount!==null)await setByLabel('Ποσό',amount);if(configure)await configure();await setByLabel('Σχόλιο',note);await submitQuickEntry();await waitApiEventKind(note,kind)};
     await addQuickIntent('Έσοδο','Real Browser Quick Income','income','21.10');
     await addQuickIntent('Μεταφορά','Real Browser Quick Transfer','transfer','5.10',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
-    await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Local Real Stack QA')});
+    await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{
+      // The isolated fixture deliberately defaults expenses to its cash wallet.
+      // A withdrawal must default to bank→cash without manual correction.
+      const pair=await c!.call<string[]>("function(){return ['Από','Προς'].map(label=>[...document.querySelectorAll('.quick-modal label')].find(row=>row.querySelector(':scope > span')?.textContent===label)?.querySelector('input[role=combobox]')?.value||'')}");
+      assert(pair[0]==='Synthetic QA Bank Account'&&pair[1]==='Local Real Stack QA','Withdrawal defaults must use bank-to-cash roles, not the expense default.');
+      for(const [label,expected] of [['Από','Synthetic QA Bank Account'],['Προς','Local Real Stack QA']]){
+        const opened=await c!.call<boolean>("function(label){const input=[...document.querySelectorAll('.quick-modal label')].find(row=>row.querySelector(':scope > span')?.textContent===label)?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);
+        assert(opened,'Withdrawal selector missing '+label);
+        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=option]'))}",'withdrawal role-filtered options');
+        const options=await c!.call<string[]>("function(){return [...document.querySelectorAll('.owned-select-popover [role=option]:not(:disabled)')].map(node=>node.textContent?.trim()||'')}");
+        assert(options.includes(expected)&&!options.includes('Synthetic QA Savings')&&!options.includes(label==='Από'?'Local Real Stack QA':'Synthetic QA Bank Account'),'Withdrawal exposes an incompatible account role.');
+        await clickText('.owned-select-popover button[role=option]',expected);
+        await waitFor("function(){return !document.querySelector('.owned-select-popover')}",'withdrawal role selector close');
+      }
+      await shot('quick-entry-withdrawal-bank-to-cash');
+    });
     await addQuickIntent('Αποταμίευση','Real Browser Quick Saving','saving_cash_offset','7.30',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
     await addQuickIntent('Επιστροφή','Real Browser Quick Refund','refund','8.40');
     await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{
@@ -253,6 +268,23 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("async function(expected){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=payload.data?.state?.events||[];return expected.every(([note,kind])=>events.some(item=>item.note===note&&item.kind===kind))}",'persisted Quick Entry intent matrix',[quickIntentMatrix]);
     await search('Real Browser Quick');await waitFor("function(){const text=document.querySelector('#main-workspace')?.textContent||'';return ['Real Browser Quick Income','Real Browser Quick Transfer','Real Browser Quick Withdrawal','Real Browser Quick Saving','Real Browser Quick Refund','Real Browser Quick Reconciliation','Real Browser Quick Split'].every(note=>text.includes(note))}",'Quick Entry intent matrix rows');
     await shot('quick-entry-intents-persisted');
+    console.log('[real-browser] stage withdrawal-edit-exact-legs');
+    const withdrawalBefore=await c!.call<{id:string;createdAt:string;date:string;source:string}|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return null;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];if(events.length!==1||event?.kind!=='withdrawal'||event.amount!==6.2||event.fromAccountId!=='qa-bank-account'||event.toAccountId!=='qa-cash'||event.legs?.length!==2||!event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.2)||!event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.2))return null;return {id:event.id,createdAt:event.createdAt,date:event.date,source:event.source}}");
+    assert(withdrawalBefore,'Persisted withdrawal must have exact bank debit and cash credit.');
+    await search('Real Browser Quick Withdrawal');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal'))}",'withdrawal row');
+    const editWithdrawal=await c!.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Real Browser Quick Withdrawal'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(editWithdrawal,'Withdrawal edit action is missing.');
+    await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'withdrawal editor');
+    await setByLabel('Ποσό','6.21');
+    await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+    await waitFor("function(){return !document.querySelector('.quick-modal')}",'withdrawal edit close');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after withdrawal edit');
+    await waitFor("async function(before){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];return events.length===1&&event?.id===before.id&&event.createdAt===before.createdAt&&event.date===before.date&&event.source===before.source&&event.kind==='withdrawal'&&event.amount===6.21&&event.fromAccountId==='qa-bank-account'&&event.toAccountId==='qa-cash'&&event.legs?.length===2&&event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.21)&&event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.21)}",'withdrawal same-ID exact legs after edit and reload',[withdrawalBefore]);
+    await search('Real Browser Quick Withdrawal');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal')&&(row.textContent||'').includes('6,21'))}",'edited withdrawal row');
+    await shot('quick-entry-withdrawal-edit-persisted');
     await search('Real Browser Expense');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense'))}",'modern expense row after intent matrix');
 
     console.log('[real-browser] stage modern-edit-delete-undo');

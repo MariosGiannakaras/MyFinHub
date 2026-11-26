@@ -48,7 +48,12 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(quickAdd).toContain("const numeric=kind==='split'||kind==='reconciliation'?0:parseMoneyInputAmount(amount)");
     expect(quickAdd).toContain("const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined");
     expect(quickAdd).toContain("if(kind==='withdrawal'){");
-    expect(quickAdd).toContain("const error=transferDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric})");
+    expect(quickAdd).toContain("withdrawalDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric},initial)");
+    expect(quickAdd).toContain("accountOptions(from,kind==='withdrawal'?withdrawal.sources");
+    expect(quickAdd).toContain("accountOptions(to,kind==='withdrawal'?withdrawal.targets");
+    expect(quickAdd).toContain("if(next==='withdrawal'){setFrom(withdrawal.from);setTo(withdrawal.to)}");
+    expect(quickAdd).toContain("return [...(current&&!poolIds.has(current)?[<option");
+    expect(quickAdd).not.toContain("return current&&!poolIds.has(current)?<>");
     expect(quickAdd).toContain('singleAccountDraftError(data,accountId)');
     expect(quickAdd).toContain('singleAccountDraftError(data,from)');
     expect(quickAdd).toContain('const fundingPreview=sumValidMoneyInputAmounts');
