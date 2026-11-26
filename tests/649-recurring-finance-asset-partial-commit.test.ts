@@ -36,7 +36,12 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     expect(qa).toContain('same-turn recurring Save cannot launch two Storage PUTs');
     expect(qa).toContain("[[320,760,'dark'],[375,812,'light']]");
     expect(qa).toContain("facts.payLabel==='Πληρωμή '+longName");
-    expect(qa).toContain('facts.contained&&facts.noOverlap&&facts.overflow<=1');
+    expect(qa).toContain('facts.contained&&facts.noOverlap&&facts.overflow<=1&&facts.nameWidthShare>=.5&&facts.amountStacked&&facts.markAtStart');
+    const presentation=readFileSync('src/styles/mobile-finance-presentations.css','utf8');
+    const domain=readFileSync('src/styles/mobile-finance-domain-layouts.css','utf8');
+    expect(presentation).toContain('.mobile-recurring-amount{display:grid;justify-items:end;gap:2px;font-variant-numeric:tabular-nums}');
+    expect(domain).toContain('.mobile-recurring-head .semantic-list-title{align-items:flex-start}');
+    expect(presentation+domain).not.toContain('.mobile-recurring-head>strong{');
     expect(qa).toContain("'long-name linked recurring payment'");
     expect(readFileSync('src/qa.tsx','utf8')).toContain("params.has('recurring-branding-long-name')");
     expect(readFileSync('scripts/real-stack-browser-e2e.ts','utf8')).toContain("event.recurringId===row.id&&event.kind==='expense'");

@@ -853,6 +853,26 @@
       "guards": [
         "tests/device-access.test.ts"
       ]
+    },
+    {
+      "id": "FP-043",
+      "title": "Narrow recurring row passes overflow checks while amount qualifier consumes title width",
+      "category": "ui-responsive",
+      "severity": "medium",
+      "rootCause": "The recurring mobile amount owner changed from a direct strong child to an amount wrapper containing strong and small. Two old direct-child CSS rules no longer matched, leaving amount and mode inline and squeezing a long Greek service name into an excessively narrow column; the centered brand mark also lost its top identity alignment. Geometry checks only tested containment.",
+      "prevention": "Style the actual amount wrapper as a vertical grid with a separate mode row, align the mobile identity to the start, retain the shared semantic-list title and two-column header. At 320/375px with long Greek name require meaningful title width, separate amount/mode rectangles, top brand alignment, containment and exact linked payment identity. Directly inspect actual screenshots; no font shrink or budget relaxation.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/styles/mobile-finance-presentations.css",
+        "src/styles/mobile-finance-domain-layouts.css",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45820808005"
+      ],
+      "guards": [
+        "tests/649-recurring-finance-asset-partial-commit.test.ts"
+      ]
     }
   ]
 }

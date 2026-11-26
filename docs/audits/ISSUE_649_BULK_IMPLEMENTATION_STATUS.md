@@ -1,3 +1,13 @@
+## 2026-11-26 — Credit lifecycle accepted; recurring mobile amount hierarchy correction
+
+**Implementations 7/23 completed · Sub-implementations 90/132 completed** (+I08.06 only; 42 original items open). Exact `25f7a13` [CI #45806475853](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45806475853) SUCCESS, 2,638/2,638 tests, 346 files, CodeQL/Unified, root/API audit zero vulnerabilities; CSS 559.9/560 KiB, main JS 526.7/528 KiB. I08.06 accepted: actual new credit lifecycle guard in `tests/cards.test.ts`, existing source and isolated vault receipt/reload/cleanup/Undo/Redo evidence. #266 governs: soft archive preserves outstanding obligations; only hard deletion requires archived and settled. No financial behavior changed.
+
+**I11.05 rendered finding:** exact [focused #45820808005](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45820808005) SUCCESS after one bounded Chromium bootstrap retry, all existing brand/replacement/failure/receipt/release cases and new 320 Dark/375 Light identity/geometry tests passed. Downloaded artifact #15116888127 and directly inspected both new long-name screenshots. They reveal a real usability gap despite containment PASS: amount and fixed-mode label touch inline, excessive title wrapping and vertically centered mark far below the first name line. Cause: both stale `.mobile-recurring-head>strong` rules target obsolete DOM, not current amount wrapper. Fix the existing mobile owner rules (not global semantic-list-title): stack the amount/mode separately and top-align the identity. Shared tokens/finance events/branding and existing layout contracts otherwise unchanged. New focused test requires name width >= half the header, amount/mode vertical separation and top mark alignment, retaining exact linked payment/no artwork mutation and original containment assertions. FP-043 records this evidence and cheap source guard. No local executable test claim; new exact-head ordinary CI and targeted recurring rendered QA required. I11.05 remains open until corrected visuals accepted. CSS hard budget unchanged; if candidate exceeds it, remove proven dead/redundant CSS rather than relaxing threshold.
+
+**Next:** ordinary CI then one existing recurring opt-in, direct review. I16.04 additional positive unbind retention proof (remove optional assignment only; preserve reusable asset bytes, other slots and history) remains open. I19.01/I20.01 and CSS review pending. #645 production decision unchanged, #657/#658/#661 staged, no merge/hosted/Android/release. Opt-ins OFF.
+
+---
+
 ## 2026-11-26 — Vault recovery acceptance; credit lifecycle and recurring branding candidate
 
 **Implementations 7/23 completed · Sub-implementations 89/132 completed** (+I07.05 only; 43 original items open). Exact `d392a3f` [CI #45784506746](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45784506746) SUCCESS (2,637 tests in 346 files, including new unique-plan progress guard; validate, CodeQL, Unified). Previous `ae67221` Real Stack #45782158589 remains accepted. Full protected gates skipped on Draft.
@@ -38,7 +48,7 @@
 | I05 | 5/6 | I05.02 |
 | I06 | 2/5 | I06.01, I06.02, I06.05 |
 | I07 | 2/5 | I07.01, I07.02, I07.03 |
-| I08 | 3/6 | I08.02, I08.03, I08.06 |
+| I08 | 4/6 | I08.02, I08.03 |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
 | I11 | 3/6 | I11.02, I11.04, I11.05 |

@@ -133,7 +133,7 @@
   .page-stack>.panel:has(.mobile-recurring-list){padding:12px;border-radius:18px;background:rgba(249,252,255,.78);box-shadow:var(--mobile-shadow-soft)}
   .mobile-recurring-list{gap:8px}
   .mobile-recurring-row{border-radius:17px;padding:11px;background:rgba(251,253,255,.92);box-shadow:none;border:1px solid #dce5ef}
-  .mobile-recurring-head>strong{font-size:12.5px}
+  .mobile-recurring-head .semantic-list-title{align-items:flex-start}
   .mobile-recurring-meta{margin:9px 0;padding:8px;border-radius:11px;background:#f0f5fb;box-shadow:none}
   .mobile-recurring-meta b{font-size:var(--ux-dense-data-size)}
   .mobile-recurring-meta small{font-size:var(--ux-dense-label-size)}
