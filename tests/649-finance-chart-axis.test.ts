@@ -20,6 +20,13 @@ describe('#649 finance chart axis provenance and small-value precision',()=>{
     const cents=zeroAnchoredFinanceAxis([0,0.01]);
     expect(cents.ticks).toEqual([0,0.01]);
     expect(new Set(cents.ticks.map(formatFinanceAxisEuro)).size).toBe(2);
+    const tiny=zeroAnchoredFinanceAxis([0,0.001]);
+    expect(tiny.maximum).toBe(0.001);
+    expect(tiny.ticks).toEqual([0,0.001]);
+    expect(new Set(tiny.ticks.map(formatFinanceAxisEuro)).size).toBe(2);
+    const belowPrecision=zeroAnchoredFinanceAxis([0,0.00000001]);
+    expect(belowPrecision.maximum).toBe(0.00000001);
+    expect(new Set(belowPrecision.ticks.map(formatFinanceAxisEuro)).size).toBe(belowPrecision.ticks.length);
   });
   it('plots negatives and positives around the same actual zero baseline',()=>{
     const axis=zeroAnchoredFinanceAxis([-2,0,4]);
@@ -34,7 +41,7 @@ describe('#649 finance chart axis provenance and small-value precision',()=>{
     expect(savings).toContain('const trendAxis=zeroAnchoredFinanceAxis(');
     expect(savings).toContain('const trendZeroY=trendY(0)');
     expect(savings).toContain('formatFinanceAxisEuro(tick)');
-    expect(savings).toContain('28,${trendZeroY}');
+    expect(savings).toContain('${trendLabelGutter},${trendZeroY}');
     expect(savings).not.toContain('Math.max(1,targetTotal,flow.saving,...actualSeries)');
     expect(planning).toContain('tickFormatter={(value) => formatFinanceAxisEuro(Number(value))}');
     expect(planning).not.toContain('Math.round(Number(value))');

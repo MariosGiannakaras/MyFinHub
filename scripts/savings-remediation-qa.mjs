@@ -117,5 +117,33 @@ try{
     'August balances and goal progress restored after historical browsing');
   assert(restored.heading==='Αυτός ο μήνας'&&JSON.stringify(restored.routeValues)===JSON.stringify(august.routeValues)&&restored.goalBalance===august.goalBalance&&restored.goalProgress===august.goalProgress,'Savings current-period balances and goal progress restore after historical browsing');
   await screenshot('savings-selected-period-august-restored');
+  // A single page width and an actual chart label gutter at the desktop
+  // breakpoint, ordinary desktop and large monitors.
+  for(const width of [1100,1440,2560]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
+    await waitFor("function(){const page=document.querySelector('.savings-page'),body=page?.querySelector('.savings-desktop-target'),header=page?.querySelector('.page-heading'),actions=page?.querySelector('.savings-action-section');if(!body||!header||!actions)return false;const p=page.getBoundingClientRect(),r=[body,header,actions].map(n=>n.getBoundingClientRect());const svg=body.querySelector('.savings-trend-chart'),labels=[...svg?.querySelectorAll('g>text')||[]],lines=[...svg?.querySelectorAll('g>line')||[]];return r.every(b=>b.width>0&&Math.abs(b.left-p.left)<=1&&Math.abs(b.right-p.right)<=1)&&document.documentElement.scrollWidth<=innerWidth+1&&labels.length>0&&labels.length===lines.length&&new Set(labels.map(n=>n.textContent)).size===labels.length&&labels.every((n,i)=>n.getBBox().x+n.getBBox().width<=Number(lines[i].getAttribute('x1'))-2)}",'aligned Savings width and distinct nonoverlapping axis labels '+width);
+    await screenshot('savings-aligned-axis-'+width);
+  }
+  // A malformed goal amount must not create any goal or affect actual balances.
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
+  const beforeGoal=await state();
+  const goalCount=await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}");
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.savings-mobile-legacy .savings-goals button')].find(n=>(n.textContent||'').includes('Νέος στόχος'));button?.click();return Boolean(button)}"),'mobile goal opener');
+  await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'mobile goal editor');
+  const setGoalField=async(label,value)=>assert(await c.call("function(label,value){const row=[...document.querySelectorAll('.savings-dialog label')].find(n=>(n.textContent||'').includes(label));const input=row?.querySelector('input');if(!(input instanceof HTMLInputElement))return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true}",[label,value]),'goal input '+label);
+  const saveGoal=()=>c.call("function(){const button=[...document.querySelectorAll('.savings-dialog button')].find(n=>(n.textContent||'').includes('Αποθήκευση στόχου'));button?.click();return Boolean(button)}");
+  await setGoalField('Όνομα στόχου','Synthetic cent precision goal');
+  for(const invalid of ['1e3','0x10','1.234','0']){
+    await setGoalField('Στόχος ποσού',invalid);
+    assert(await saveGoal(),'goal save control');
+    await waitFor("function(){return (document.querySelector('#savings-goal-editor-error')?.textContent||'').includes('έγκυρο θετικό ποσό')}",'reject malformed goal '+invalid);
+    assert(await c.call("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}"),'invalid goal stays open');
+    assert((await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}"))===goalCount,'invalid goal creates no row');
+  }
+  await screenshot('savings-goal-invalid-cent-mobile');
+  await setGoalField('Στόχος ποσού','12,34');assert(await saveGoal(),'corrected goal save control');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')];return !document.querySelector('#savings-goal-editor-title')&&rows.some(n=>(n.textContent||'').includes('Synthetic cent precision goal')&&(n.textContent||'').includes('12,34'))}",'corrected cent-exact goal saved');
+  assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal metadata does not move actual savings money');
+  await screenshot('savings-goal-cent-exact-mobile');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);
 }finally{await browserSession?.stop()}

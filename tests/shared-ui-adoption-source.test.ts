@@ -208,6 +208,15 @@ describe('shared finance UI adoption contracts',()=>{
     expect(hardening).not.toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
     expect(hardening).toContain('.app-tooltip:hover .app-tooltip-bubble,.app-tooltip:focus-within .app-tooltip-bubble');
     expect(baseStyles).toContain('cursor:pointer');
+    const tooltip=read('src/lib/tooltipPlacement.ts');
+    expect(tooltip).toContain('const candidates=[side,opposite[side]');
+    expect(tooltip).toContain("window.addEventListener('scroll',place,true)");
+    expect(tooltip).toContain('observer.disconnect()');
+    expect(read('src/components/Tooltip.tsx')).toContain("import('../lib/tooltipPlacement')");
+    expect(read('src/styles/reporting-period-controls.css')).not.toContain('.period-control span');
+    expect(read('src/styles/mobile-more-navigation.css')).toContain('max-height:calc(100dvh');
+    expect(read('scripts/keyboard-semantic-accessibility-qa.mjs')).toContain('last More destination scrolls into visible sheet');
+    expect(read('scripts/keyboard-semantic-accessibility-qa.mjs')).toContain('period tooltip contained and clear of trigger');
   });
 
   it('retains rendered accessibility checks for names, touch targets, focus and tooltip semantics',()=>{

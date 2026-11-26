@@ -108,6 +108,17 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain("selectedMonthIsCurrent?'ΑΥΤΟΣ Ο ΜΗΝΑΣ':selectedMonthLabel.toLocaleUpperCase('el-GR')");
   });
 
+  it('shares desktop width and reserves the real axis label gutter',()=>{
+    expect(composition).toContain('width:min(100%,1500px);margin-inline:auto');
+    expect(composition).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.9fr)');
+    expect(source).toContain('formatFinanceAxisEuro(tick).length');
+    expect(source).toContain('x1={trendLabelGutter}');
+    expect(remediationQa).toContain('aligned Savings width and distinct nonoverlapping axis labels');
+    expect(source).toContain('parseMoneyInputAmount(goalAmountText)');
+    expect(source).toContain('parseMoneyInputAmount(amount)');
+    expect(remediationQa).toContain('invalid goal creates no row');
+  });
+
   it('uses the selected reporting-period end for balances and personal-goal progress',()=>{
     expect(source).toContain("import { reportingPeriodEndDate } from '../lib/reportingPeriod'");
     expect(source).toContain('const periodEndDate=reportingPeriodEndDate(month,asOf)');

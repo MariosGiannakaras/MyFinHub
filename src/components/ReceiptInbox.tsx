@@ -12,9 +12,12 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { normalizeReceiptFile } from '../lib/receiptImage';
+import { mergeReceiptQrOcr, type ReceiptQrResult } from '../lib/receiptQr';
+import { ReceiptQrCamera } from './ReceiptQrCamera';
 import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
 import { normalizeReceiptLineReview, receiptSplitParts } from '../lib/receiptItemReview';
+import { parseMoneyInputAmount } from '../lib/moneyInput';
 import { findReceiptPurchaseCandidates } from '../lib/receiptPurchaseMatches';
 import {
   createReceiptDraft,
@@ -119,20 +122,25 @@ export function ReceiptInbox({
   const [reviewDirty,setReviewDirty]=useState(false);
   const [reviewTotalEdited,setReviewTotalEdited]=useState(false);
   const [reviewNewPurchaseConfirmed,setReviewNewPurchaseConfirmed]=useState(false);
+  const [qrReviewConfirmed,setQrReviewConfirmed]=useState(false);
+  const [liveCamera,setLiveCamera]=useState(false);
+  const scanAbort=useRef<AbortController|null>(null);
   const [reviewSaving,setReviewSaving]=useState(false);
   const [discardTarget,setDiscardTarget]=useState<{kind:'close'}|{kind:'select';id:string}|{kind:'manual';id:string}|null>(null);
   const requestClose=()=>{
     if(reviewSaving||deleting||loading)return;
+    if(liveCamera){setLiveCamera(false);return}
     if(reviewDirty){setDiscardTarget({kind:'close'});return}
     onClose();
   };
   const chooseDraft=(id:string)=>{
-    if(reviewSaving||id===selectedId)return;
+    if(reviewSaving||scanningId||liveCamera||loading||deleting||id===selectedId)return;
     if(reviewDirty){setDiscardTarget({kind:'select',id});return}
     setSelectedId(id);setError('');setMessage('');
   };
   const requestManualApply=(id:string)=>{
-    if(reviewSaving)return;
+    if(reviewSaving||scanningId||liveCamera||loading||deleting||needsDuplicateReview||linkedPurchase)return;
+    if(reviewProposal?.qr&&!qrReviewConfirmed){setError('Έλεγξε πρώτα τα στοιχεία QR και OCR.');return}
     if(drafts.some(draft=>draft.id===id&&(draft.status==='posted'||draft.status==='posting'))){
       setError('Η κατάσταση της οικονομικής κίνησης πρέπει να ελεγχθεί πριν από νέα καταχώριση. Επιτρέπεται μόνο η τοπική διαγραφή.');return;
     }
@@ -162,12 +170,16 @@ export function ReceiptInbox({
   const purchaseMatches=useMemo(()=>{
     if(!reviewProposal)return [];
     const totalText=reviewTotal.trim();
-    const parsedTotal=totalText?Number(totalText):undefined;
+    const parsedTotal=totalText?(parseMoneyInputAmount(totalText)??undefined):undefined;
     const correctedEur=reviewTotalEdited&&parsedTotal!==undefined&&Number.isFinite(parsedTotal)&&parsedTotal>0;
     const currency=reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEur?reviewProposal.currency:'EUR';
     return findReceiptPurchaseCandidates(data,{merchant:reviewProposal.merchant,date:reviewProposal.date,total:parsedTotal,currency});
   },[data,reviewProposal,reviewTotal,reviewTotalEdited]);
   const linkedPurchase=reviewProposal?.matchedPurchase;
+  const fiscalQr=reviewProposal?.qr?.kind==='aade'?reviewProposal.qr:null;
+  const duplicateQrDraft=Boolean(fiscalQr&&drafts.some(draft=>draft.id!==selectedId&&draft.proposal?.qr?.kind==='aade'&&draft.proposal.qr.identifier===fiscalQr.identifier));
+  const needsQrReview=Boolean(reviewProposal?.qr&&!qrReviewConfirmed);
+  const needsDuplicateReview=(purchaseMatches.length>0||duplicateQrDraft)&&!reviewNewPurchaseConfirmed;
   const linkedCandidate=linkedPurchase?purchaseMatches.find(item=>item.source===linkedPurchase.source&&item.sourceId===linkedPurchase.sourceId):null;
 
   useEffect(()=>{
@@ -178,6 +190,7 @@ export function ReceiptInbox({
     setReviewDirty(false);
     setReviewTotalEdited(false);
     setReviewNewPurchaseConfirmed(false);
+    setQrReviewConfirmed(false);
   },[selected?.id,selected?.updatedAt]);
 
   const refresh = async (preferId?: string) => {
@@ -195,6 +208,8 @@ export function ReceiptInbox({
   useEffect(() => {
     if (!open) {
       scanToken.current += 1;
+      scanAbort.current?.abort();
+      setLiveCamera(false);
       setScanningId(null);
       setProgress(null);
       setDeleteRequest(null);
@@ -205,18 +220,21 @@ export function ReceiptInbox({
     setError('');
     setMessage('');
     void refresh();
+    return ()=>{scanToken.current+=1;scanAbort.current?.abort();void disposeReceiptOcrIfLoaded()};
   }, [open]);
 
-  const capture = async (file?: File) => {
+  const capture = async (file?: File, cameraQr?:ReceiptQrResult) => {
     if (!file) return;
     if(deleting||loading||scanningId)return;
     if(reviewDirty||reviewSaving){setError('Αποθήκευσε τις διορθώσεις της απόδειξης πριν προσθέσεις νέα εικόνα.');return}
     setLoading(true);
     setError('');
     setMessage('');
+    let captured:ReceiptDraft|undefined;
     try {
       const normalized = await normalizeReceiptFile(file);
       const draft = await createReceiptDraft(normalized);
+      captured=draft;
       await refresh(draft.id);
       setMessage('Αποθηκεύτηκε για αργότερα. Μπορείς να κλείσεις τώρα την εφαρμογή ή να κάνεις τοπική σάρωση.');
     } catch (reason) {
@@ -226,25 +244,41 @@ export function ReceiptInbox({
       if (cameraRef.current) cameraRef.current.value = '';
       if (fileRef.current) fileRef.current.value = '';
     }
+    if(captured&&cameraQr)await scan(captured,cameraQr);
   };
 
-  const scan = async (draft: ReceiptDraft) => {
-    if(draft.status==='posted'||draft.status==='posting')return;
+  const scan = async (draft: ReceiptDraft, knownQr?:ReceiptQrResult) => {
+    if(draft.status==='posted'||draft.status==='posting'||reviewDirty||reviewSaving||deleting)return;
     const token = ++scanToken.current;
+    scanAbort.current?.abort();
+    const controller=new AbortController();scanAbort.current=controller;
     setScanningId(draft.id);
-    setProgress({ status: 'Προετοιμασία εικόνας', progress: 0 });
+    setProgress({ status: 'Τοπικός έλεγχος QR', progress: 0 });
     setError('');
     setMessage('');
     try {
-      const { scanReceiptLocally } = await loadReceiptOcr();
-      if (token !== scanToken.current) return;
-      const extracted = await scanReceiptLocally(draft.image, setProgress);
-      if (token !== scanToken.current) return;
-      const category = suggestReceiptCategory(data, extracted.merchant);
-      const proposal = category ? { ...extracted, category } : extracted;
-      await saveReceiptProposal(draft.id, proposal);
+      const qr=knownQr??await import('../lib/receiptQrImage').then(module=>module.scanReceiptQr(draft.image,controller.signal)).catch(():ReceiptQrResult=>({kind:'unavailable'}));
+      if(token!==scanToken.current)return;
+      let extracted:ReceiptProposal={};
+      let ocrFailed=false;
+      try{
+        const { scanReceiptLocally } = await loadReceiptOcr();
+        if(token!==scanToken.current)return;
+        extracted=await scanReceiptLocally(draft.image,progress=>{if(token===scanToken.current)setProgress(progress)});
+      }catch(reason){
+        if(token!==scanToken.current)return;
+        if(qr.kind==='none'||qr.kind==='unavailable')throw reason;
+        ocrFailed=true;
+      }
+      if(token!==scanToken.current)return;
+      const merged=mergeReceiptQrOcr(qr,extracted);
+      const category = suggestReceiptCategory(data, merged.merchant);
+      const proposal = category ? { ...merged, category } : merged;
+      const saved=await saveReceiptProposal(draft.id, proposal);
+      if(token!==scanToken.current)return;
+      setDrafts(current=>current.map(row=>row.id===saved.id?saved:row));
       await refresh(draft.id);
-      setMessage('Η τοπική σάρωση ολοκληρώθηκε. Έλεγξε τα προτεινόμενα στοιχεία πριν τα χρησιμοποιήσεις.');
+      setMessage(ocrFailed?'Ο έλεγχος QR ολοκληρώθηκε, αλλά το OCR δεν έδωσε στοιχεία. Συμπλήρωσε και έλεγξε χειροκίνητα.':qr.kind==='unavailable'?'Η ανάγνωση QR δεν είναι διαθέσιμη. Ολοκληρώθηκε το τοπικό OCR· έλεγξε τα στοιχεία.':'Η τοπική σάρωση ολοκληρώθηκε. Έλεγξε τα προτεινόμενα στοιχεία πριν τα χρησιμοποιήσεις.');
     } catch (reason) {
       if (token !== scanToken.current) return;
       const readable = scanErrorMessage(reason);
@@ -263,11 +297,12 @@ export function ReceiptInbox({
 
   const cancelScan = async () => {
     scanToken.current += 1;
+    scanAbort.current?.abort();
     setScanningId(null);
     setProgress(null);
     setMessage('Η σάρωση σταμάτησε. Η απόδειξη παραμένει αποθηκευμένη για αργότερα.');
-    const module = await loadReceiptOcr();
-    await module.cancelReceiptOcr();
+    const module=receiptOcrModulePromise;
+    if(module)await module.then(value=>value.cancelReceiptOcr()).catch(()=>{});
   };
 
   const requestRemoveOne=(draft:ReceiptDraft)=>setDeleteRequest({mode:'one',draft});
@@ -306,7 +341,7 @@ export function ReceiptInbox({
   });
 
   const updateReview=(patch:Partial<ReceiptProposal>)=>{
-    setReviewNewPurchaseConfirmed(false);
+    setReviewNewPurchaseConfirmed(false);setQrReviewConfirmed(false);
     setReviewProposal(current=>current?{...current,matchedPurchase:undefined,...patch}:current);
     setReviewDirty(true);
     setMessage('');
@@ -332,8 +367,8 @@ export function ReceiptInbox({
   const normalizedReview=()=>{
     if(!reviewProposal||!lineReview?.valid)return null;
     const totalText=reviewTotal.trim();
-    const parsedTotal=totalText===''?undefined:Number(totalText);
-    if(parsedTotal!==undefined&&(!Number.isFinite(parsedTotal)||parsedTotal<0))return null;
+    const parsedTotal=totalText===''?undefined:parseMoneyInputAmount(totalText);
+    if(parsedTotal===null)return null;
     const correctedEurAmount=reviewTotalEdited&&totalText!==''&&parsedTotal!==undefined&&parsedTotal>0;
     return {
       ...reviewProposal,
@@ -360,7 +395,8 @@ export function ReceiptInbox({
     setDrafts(current=>current.map(draft=>draft.id===saved.id?saved:draft));
   };
   const setPurchaseAssociation=async(link?:NonNullable<ReceiptProposal['matchedPurchase']>)=>{
-    if(!selected||!reviewProposal||reviewSaving||selected.status==='posted'||selected.status==='posting')return;
+    if(!selected||!reviewProposal||reviewSaving||scanningId||selected.status==='posted'||selected.status==='posting')return;
+    if(needsQrReview){setError('Έλεγξε πρώτα τα στοιχεία QR και OCR.');return}
     const normalized=normalizedReview();
     if(!normalized){setError('Διόρθωσε τα ποσά και τις γραμμές της απόδειξης πριν επιβεβαιώσεις τη συσχέτιση.');return}
     if(link&&!purchaseMatches.some(item=>item.source===link.source&&item.sourceId===link.sourceId)){
@@ -380,12 +416,13 @@ export function ReceiptInbox({
   const splitProposal=normalizedReview();
   const splitReady=Boolean(splitProposal&&receiptSplitParts(splitProposal,data.state.settings));
   const saveReview=async(apply=false,split=false)=>{
-    if(!selected||!reviewProposal||reviewSaving||selected.status==='posted'||selected.status==='posting')return;
+    if(!selected||!reviewProposal||reviewSaving||scanningId||selected.status==='posted'||selected.status==='posting')return;
     const normalized=normalizedReview();
     if(!normalized){setError('Έλεγξε το διορθωμένο ποσό της απόδειξης.');return}
     if(apply&&normalized.currency!=='EUR'){setError('Η απόδειξη είναι σε ξένο νόμισμα. Διόρθωσε πρώτα το ποσό σε ευρώ.');return}
     if(apply&&normalized.matchedPurchase){setError('Η απόδειξη έχει ήδη συσχετιστεί με υπάρχουσα αγορά. Κατάργησε πρώτα τη συσχέτιση.');return}
-    if(apply&&purchaseMatches.length&&!reviewNewPurchaseConfirmed){setError('Έλεγξε τις πιθανές υπάρχουσες αγορές και επιβεβαίωσε ότι πρόκειται για νέα, διαφορετική αγορά.');return}
+    if(apply&&needsQrReview){setError('Έλεγξε πρώτα τα στοιχεία QR και OCR.');return}
+    if(apply&&needsDuplicateReview){setError('Έλεγξε τις πιθανές υπάρχουσες αγορές και επιβεβαίωσε ότι πρόκειται για νέα, διαφορετική αγορά.');return}
     if(split&&!receiptSplitParts(normalized,data.state.settings)){setError('Ο επιμερισμός χρειάζεται δύο ελεγμένες γραμμές με έγκυρες κατηγορίες και άθροισμα ίσο με το σύνολο σε ευρώ.');return}
     setReviewSaving(true);setError('');
     try{
@@ -405,8 +442,8 @@ export function ReceiptInbox({
   const proposal = selected?.proposal;
   const reviewed=reviewProposal??proposal;
   const nonEur = Boolean(reviewed?.currency && reviewed.currency !== 'EUR');
-  const reviewTotalInvalid=Boolean(reviewTotal.trim()&&(!Number.isFinite(Number(reviewTotal))||Number(reviewTotal)<0));
-  const needsEurTotal=nonEur&&!(reviewTotalEdited&&reviewTotal.trim()!==''&&Number.isFinite(Number(reviewTotal))&&Number(reviewTotal)>0);
+  const reviewTotalInvalid=Boolean(reviewTotal.trim()&&parseMoneyInputAmount(reviewTotal)===null);
+  const needsEurTotal=nonEur&&!(reviewTotalEdited&&(parseMoneyInputAmount(reviewTotal)??0)>0);
   const reviewLinesInvalid=Boolean(lineReview&&!lineReview.valid);
   const linesForeign=Boolean((reviewed?.itemsCurrency??proposal?.currency)&&
     (reviewed?.itemsCurrency??proposal?.currency)!=='EUR');
@@ -415,25 +452,27 @@ export function ReceiptInbox({
 
   return <>
   <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={requestClose}>
-    <section ref={modalRef} className="receipt-inbox surface-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}><X/></IconButton></header>
+    <section ref={modalRef} className={`receipt-inbox surface-raised${liveCamera?' receipt-inbox-camera-open':''}`} role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
+      <header className="receipt-inbox-header"><div><small>ΤΟΠΙΚΟ QR / OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν συγχρονίζεται σε άλλες συσκευές ούτε περιλαμβάνεται στο JSON backup. Θα χαθεί αν καθαρίσεις τα δεδομένα της εφαρμογής ή του browser. Μπορείς να τη σαρώσεις τώρα ή αργότερα.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
-        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
-        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} onChange={(event) => void capture(event.target.files?.[0])}/>
-        <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
-        <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
+        <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)||liveCamera} capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
+        <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)||liveCamera} onChange={(event) => void capture(event.target.files?.[0])}/>
+        <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
+        <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
+        {typeof navigator.mediaDevices?.getUserMedia==='function'?<Button type="button" variant="secondary" disabled={loading||scanning||reviewDirty||reviewSaving||deleting||liveCamera} onClick={()=>{setError('');setMessage('');setLiveCamera(true)}}><ScanLine size={17}/> Ζωντανή σάρωση QR</Button>:null}
         <small>JPG/PNG · έως 12 MB · έως 30 πρόχειρες αποδείξεις / 60 MB τοπικά</small>
         {reviewDirty?<small role="status">Αποθήκευσε ή απόρριψε τις διορθώσεις πριν προσθέσεις νέα απόδειξη.</small>:null}
       </div>
 
+      {liveCamera?<ReceiptQrCamera onCancel={()=>setLiveCamera(false)} onCapture={(file,result)=>{setLiveCamera(false);void capture(file,result)}}/>:null}
       {loading ? <div className="receipt-live-state" role="status"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση φωτογραφίας στη συσκευή…</div> : null}
       {reviewSaving ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση διορθώσεων απόδειξης στη συσκευή…</div> : null}
       {deleting ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Διαγραφή τοπικών αποδείξεων…</div> : null}
       {message ? <div className="receipt-live-state receipt-success" role="status" aria-live="polite"><Check size={17}/> {message}</div> : null}
       {error ? <FormError id="receipt-inbox-error">{error}</FormError> : null}
 
-      <div className="receipt-inbox-layout" inert={loading||reviewSaving||deleting} aria-busy={loading||reviewSaving||deleting}>
+      <div className="receipt-inbox-layout" inert={loading||reviewSaving||deleting||liveCamera} aria-busy={loading||reviewSaving||deleting}>
         <aside className="receipt-draft-list" aria-label="Τοπικές αποδείξεις σε αναμονή">
           <div className="receipt-list-head"><span>{drafts.length} σε αναμονή</span>{deleteSelection.size ? <Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}><Trash2 size={14}/> Διαγραφή ({deleteSelection.size})</Button> : null}</div>
           {drafts.length ? drafts.map((draft) => <div key={draft.id} className={`receipt-draft-row ${selectedId === draft.id ? 'active' : ''}`}>
@@ -448,11 +487,21 @@ export function ReceiptInbox({
         <div className="receipt-review-pane">
           {selected ? <>
             <div className="receipt-preview"><ReceiptPreview draft={selected}/><div><span>{statusLabel(selected)}</span><small>{capturedLabel(selected.capturedAt)}</small></div></div>
-            {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική OCR σάρωση</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><Button type="button" variant="secondary" onClick={() => void cancelScan()}>Διακοπή</Button></div> : null}
-            {selected.status==='posted' ? <div className="receipt-proposal" role="status"><b>Η οικονομική κίνηση έχει ήδη καταχωριστεί.</b><span>Η τοπική απόδειξη μπορεί μόνο να διαγραφεί· δεν μπορεί να δημιουργήσει ξανά οικονομική κίνηση.</span></div> : selected.status==='posting' ? <div className="receipt-proposal" role="alert"><b>Η αποθήκευση αυτής της απόδειξης δεν έχει επιβεβαιωθεί.</b>{' '}<span>Έλεγξε τις οικονομικές κινήσεις πριν από επανάληψη. Η απόδειξη δεν μπορεί να υποβληθεί ξανά· μπορεί μόνο να διαγραφεί μετά τον έλεγχο.</span></div> : proposal&&reviewed ? <div className="receipt-proposal receipt-proposal-editable" aria-label="Έλεγχος και διόρθωση στοιχείων OCR"><div className="receipt-proposal-head"><div><h3>Έλεγχος πρότασης OCR</h3><small>Τα ποσοστά αφορούν την αρχική αναγνώριση. Οι διορθώσεις σου υπερισχύουν πριν περάσουν στη Γρήγορη Κίνηση.</small></div>{reviewDirty?<span>Μη αποθηκευμένες διορθώσεις</span>:<span className="saved">Τοπικά αποθηκευμένη</span>}</div><div className="receipt-review-grid">
+            {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική σάρωση QR / OCR</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><Button type="button" variant="secondary" onClick={() => void cancelScan()}>Διακοπή</Button></div> : null}
+            {selected.status==='posted' ? <div className="receipt-proposal" role="status"><b>Η οικονομική κίνηση έχει ήδη καταχωριστεί.</b><span>Η τοπική απόδειξη μπορεί μόνο να διαγραφεί· δεν μπορεί να δημιουργήσει ξανά οικονομική κίνηση.</span></div> : selected.status==='posting' ? <div className="receipt-proposal" role="alert"><b>Η αποθήκευση αυτής της απόδειξης δεν έχει επιβεβαιωθεί.</b>{' '}<span>Έλεγξε τις οικονομικές κινήσεις πριν από επανάληψη. Η απόδειξη δεν μπορεί να υποβληθεί ξανά· μπορεί μόνο να διαγραφεί μετά τον έλεγχο.</span></div> : proposal&&reviewed ? <div className="receipt-proposal receipt-proposal-editable" inert={scanning} aria-label="Έλεγχος και διόρθωση στοιχείων OCR"><div className="receipt-proposal-head"><div><h3>Έλεγχος πρότασης QR / OCR</h3><small>Τα ποσοστά αφορούν την αρχική αναγνώριση. Οι διορθώσεις σου υπερισχύουν πριν περάσουν στη Γρήγορη Κίνηση.</small></div>{reviewDirty?<span>Μη αποθηκευμένες διορθώσεις</span>:<span className="saved">Τοπικά αποθηκευμένη</span>}</div>
+            {reviewed.qr?<section className="receipt-existing-matches" aria-label="Έλεγχος QR απόδειξης" data-receipt-qr-kind={reviewed.qr.kind}>
+              <h4>{fiscalQr?'Στοιχεία QR ταμειακής':'Τοπικό αποτέλεσμα QR'}</h4>
+              {fiscalQr?<><p>QR: {fiscalQr.date} · {fiscalQr.time} · {(fiscalQr.totalCents/100).toLocaleString('el-GR',{style:'currency',currency:'EUR'})}. Το QR δεν πιστοποιεί τη γνησιότητα της απόδειξης.</p>
+                <p>OCR: {fiscalQr.ocrDate||'Χωρίς ημερομηνία'} · {fiscalQr.ocrTotal===undefined?'Χωρίς ποσό':fiscalQr.ocrTotal.toLocaleString('el-GR')+' '+(fiscalQr.ocrCurrency||'άγνωστο νόμισμα')}</p>
+                {fiscalQr.conflicts?.length?<p role="alert">Τα στοιχεία QR και OCR διαφέρουν. Έλεγξε την πραγματική απόδειξη και επίλεξε ή διόρθωσε τα σωστά στοιχεία.</p>:null}
+                <Button type="button" variant="secondary" onClick={()=>{setReviewTotal(String(fiscalQr.totalCents/100));setReviewTotalEdited(true);updateReview({date:fiscalQr.date})}}>Χρήση ποσού και ημερομηνίας QR</Button>
+              </>:<p>{reviewed.qr.kind==='external-link'?'Βρέθηκε σύνδεσμος QR, πιθανόν ηλεκτρονικό παραστατικό. Δεν ανοίχθηκε ούτε ανακτήθηκαν στοιχεία.':reviewed.qr.kind==='product'?'Βρέθηκε γραμμωτός κώδικας προϊόντος, όχι QR απόδειξης.':reviewed.qr.kind==='multiple'?'Βρέθηκαν διαφορετικοί ή υπερβολικά πολλοί κώδικες. Δεν επιλέχθηκε QR.':reviewed.qr.kind==='malformed'?'Το QR δεν έχει έγκυρη υποστηριζόμενη μορφή.':'Το QR δεν υποστηρίζεται.'} Έλεγξε το OCR ή συμπλήρωσε χειροκίνητα.</p>}
+              <label className="receipt-existing-confirm"><input type="checkbox" checked={qrReviewConfirmed} onChange={event=>setQrReviewConfirmed(event.target.checked)}/><span>Έλεγξα τα στοιχεία QR / OCR και επιβεβαιώνω τις τιμές της πρότασης.</span></label>
+            </section>:null}
+            <div className="receipt-review-grid">
               <label><span>Κατάστημα <small>OCR {confidenceLabel(proposal.confidence?.merchant)}</small></span><AppTextInput value={reviewed.merchant??''} maxLength={120} aria-label="Διόρθωση καταστήματος απόδειξης" onChange={event=>updateReview({merchant:event.target.value})}/></label>
               <label><span>Ημερομηνία <small>OCR {confidenceLabel(proposal.confidence?.date)}</small></span><div className="receipt-review-date"><AppDateInput value={reviewed.date??''} aria-label="Διόρθωση ημερομηνίας απόδειξης" onChange={event=>updateReview({date:event.target.value})}/>{reviewed.date?<Button type="button" variant="ghost" onClick={()=>updateReview({date:undefined})}>Καθαρισμός</Button>:null}</div></label>
-              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewNewPurchaseConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setMessage('');setError('')}}/></label>
+              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewNewPurchaseConfirmed(false);setQrReviewConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setMessage('');setError('')}}/></label>
 
               <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} subcategory={reviewed.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας ή υποκατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
             </div>
@@ -461,20 +510,21 @@ export function ReceiptInbox({
               <p>Τα OCR ποσά είναι προτάσεις. Έλεγξέ τα πριν από οποιαδήποτε καταχώριση· δεν δημιουργούν αυτόματα δαπάνες.</p>
               <div className="receipt-items-list">{reviewed.items.map((item,index)=><div key={item.id} className="receipt-item-row">
                 <label><span>Περιγραφή γραμμής {index+1}</span><AppTextInput value={item.description} maxLength={90} aria-label={`Διόρθωση περιγραφής γραμμής ${index+1}`} onChange={event=>updateReviewLine(item.id,{description:event.target.value})}/></label>
-                <label><span>Ποσό γραμμής {index+1}</span><MoneyInput value={reviewItemAmounts[item.id]??String(item.amount)} aria-label={`Διόρθωση ποσού γραμμής ${index+1}`} onValueChange={value=>{setReviewItemAmounts(current=>({...current,[item.id]:value}));setReviewNewPurchaseConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setError('');setMessage('')}}/></label>
+                <label><span>Ποσό γραμμής {index+1}</span><MoneyInput value={reviewItemAmounts[item.id]??String(item.amount)} aria-label={`Διόρθωση ποσού γραμμής ${index+1}`} onValueChange={value=>{setReviewItemAmounts(current=>({...current,[item.id]:value}));setReviewNewPurchaseConfirmed(false);setQrReviewConfirmed(false);setReviewProposal(current=>current?{...current,matchedPurchase:undefined}:current);setReviewDirty(true);setError('');setMessage('')}}/></label>
                 <label className="receipt-item-category"><span>Κατηγορία γραμμής {index+1}</span><CategorySelectInput settings={data.state.settings} kind="expense" category={item.category??''} subcategory={item.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label={`Κατηγορία γραμμής ${index+1}`} onChange={selection=>updateReviewLine(item.id,{category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
                 <Button type="button" variant="ghost" className="danger" onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής {index+1}</Button>
               </div>)}</div>
               {reviewLinesInvalid?<FormError id="receipt-review-items-error">Κάθε γραμμή χρειάζεται περιγραφή και θετικό ποσό με ακρίβεια λεπτού.</FormError>:null}
-              {linesForeign?<p className="receipt-item-balance">Οι γραμμές προέρχονται από απόδειξη σε άλλο νόμισμα. Δεν υπολογίζονται ως ευρώ ούτε χρησιμοποιούνται αυτόματα για κατανομή δαπάνης.</p>:
+              {linesForeign?<p className="receipt-item-balance">Το νόμισμα των αρχικών γραμμών δεν έχει επιβεβαιωθεί ως EUR. Δεν υπολογίζονται ως ευρώ ούτε χρησιμοποιούνται αυτόματα για κατανομή δαπάνης.</p>:
                 <p className="receipt-item-balance" aria-live="polite">Σύνολο γραμμών: {(lineReview?.sumCents??0)/100} € · Σύνολο απόδειξης: {lineReview&&lineReview.totalCents!==null?`${lineReview.totalCents/100} €`:'—'} · Διαφορά: {lineReview&&lineReview.totalCents!==null?`${(lineReview.totalCents-lineReview.sumCents)/100} €`:'—'}{lineReview?.balanced?' · Συμφωνεί':' · Χρειάζεται έλεγχο'}</p>}
             </section> : null}
             <Button type="button" variant="secondary" disabled={(reviewed.items?.length??0)>=40} onClick={addReviewLine}>Προσθήκη γραμμής</Button>
             {reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{needsEurTotal ? <div className="receipt-currency-warning" role="alert">Το OCR αναγνώρισε {reviewed.currency} στην απόδειξη. Η καταχώριση γίνεται μόνο σε €. Διόρθωσε το ποσό σε ευρώ πριν συνεχίσεις.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
-            {selected.status!=='posted'&&selected.status!=='posting'&&purchaseMatches.length ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
+            {selected.status!=='posted'&&selected.status!=='posting'&&(purchaseMatches.length>0||duplicateQrDraft) ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
               <h3>Έλεγξε αν έχει ήδη καταχωριστεί η αγορά</h3>
+              {duplicateQrDraft?<p role="alert">Υπάρχει άλλη τοπική απόδειξη με το ίδιο αναγνωριστικό QR. Έλεγξε ότι δεν πρόκειται για διπλότυπο.</p>:null}
               <p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>
-              <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small><Button type="button" variant="secondary" disabled={reviewSaving||Boolean(linkedPurchase)||reviewDirty} onClick={()=>void setPurchaseAssociation({source:row.source,sourceId:row.sourceId})}>Συσχέτιση με αυτήν</Button></li>)}</ul>
+              <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small><Button type="button" variant="secondary" disabled={reviewSaving||Boolean(linkedPurchase)||reviewDirty||needsQrReview} onClick={()=>void setPurchaseAssociation({source:row.source,sourceId:row.sourceId})}>Συσχέτιση με αυτήν</Button></li>)}</ul>
               <label className="receipt-existing-confirm"><input type="checkbox" checked={reviewNewPurchaseConfirmed} onChange={event=>setReviewNewPurchaseConfirmed(event.target.checked)}/><span>Έλεγξα τις παραπάνω καταχωρίσεις και επιβεβαιώνω ότι πρόκειται για διαφορετική νέα αγορά.</span></label>
             </aside> : null}
             {selected.status!=='posted'&&selected.status!=='posting'&&linkedPurchase?<div className="receipt-existing-matches" role="status" aria-live="polite">
@@ -484,10 +534,10 @@ export function ReceiptInbox({
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning&&selected.status!=='posted'&&selected.status!=='posting' ? <Button type="button" variant="secondary" disabled={reviewDirty||reviewSaving} onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
-              {selected.status!=='posted'&&selected.status!=='posting'?<Button type="button" variant="secondary" disabled={scanning||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={() => requestManualApply(selected.id)}>Χειροκίνητη καταχώριση</Button>:null}
+              {selected.status!=='posted'&&selected.status!=='posting'?<Button type="button" variant="secondary" disabled={scanning||Boolean(linkedPurchase)||needsQrReview||needsDuplicateReview} onClick={() => requestManualApply(selected.id)}>Χειροκίνητη καταχώριση</Button>:null}
               {selected.status!=='posted'&&selected.status!=='posting'&&proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid||reviewLinesInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
-              {selected.status!=='posted'&&selected.status!=='posting'&&proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
-              {selected.status!=='posted'&&selected.status!=='posting'&&proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
+              {selected.status!=='posted'&&selected.status!=='posting'&&proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||needsQrReview||needsDuplicateReview} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
+              {selected.status!=='posted'&&selected.status!=='posting'&&proposal&&(reviewed?.items?.length??0)>=2 ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!splitReady||Boolean(linkedPurchase)||needsQrReview||needsDuplicateReview} onClick={()=>void saveReview(true,true)}>Χρήση ως επιμερισμένη δαπάνη</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>

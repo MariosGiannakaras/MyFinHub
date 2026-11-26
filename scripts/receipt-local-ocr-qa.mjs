@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 
 const receiptQaUrl=new URL(process.env.RHEOMIQ_QA_URL || 'http://127.0.0.1:5173/qa.html?page=dashboard');
 receiptQaUrl.searchParams.set('receipt-persist-posted-qa','1');
@@ -756,6 +756,58 @@ try {
   await screenshot('counterparty-owner-quick-entry-selected');
   assert((await receiptCount())===0,'owner identity selection did not create or delete receipt data');
   console.log('C2 QA: owner directory, renamed identity, mobile/dark geometry and opt-in Quick Entry passed.');
+
+  console.log('Receipt QR QA: actual local decoder, conflict review and fallback');
+  const qrFixtures=JSON.parse(readFileSync(new URL('../tests/fixtures/receipt-qr-images.json',import.meta.url),'utf8'));
+  const qrWrites=()=>c.call("function(){return Number(document.documentElement.dataset.qaFinanceWrites||0)}");
+  const qrCapture=async(name,withText=false)=>{
+    const before=await receiptCount();
+    const uploaded=await c.call(`async function(encoded,withText){const bytes=Uint8Array.from(atob(encoded),x=>x.charCodeAt(0));let blob=new Blob([bytes],{type:'image/png'});if(withText){const bitmap=await createImageBitmap(blob);const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1200;const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,1200,1200);ctx.fillStyle='black';ctx.textBaseline='top';ctx.font='700 76px Arial';ctx.fillText('MY MARKET',90,90);ctx.font='600 62px Arial';ctx.fillText('DATE 21/08/2026',90,235);ctx.fillText('TOTAL 24.50 EUR',90,360);ctx.imageSmoothingEnabled=false;ctx.drawImage(bitmap,90,510,bitmap.width*2,bitmap.height*2);bitmap.close();blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'))}const input=document.querySelectorAll('.receipt-file-input')[1];if(!input||!blob)return false;const transfer=new DataTransfer();transfer.items.add(new File([blob],'synthetic-qr.png',{type:'image/png'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[qrFixtures[name],withText]);
+    assert(uploaded,'actual synthetic PNG captured via file input '+name);
+    await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('Αποθηκεύτηκε για αργότερα')}",'local QR image persistence '+name);
+    assert(await receiptCount()===before+1,'QR capture persists only local image '+name);
+    assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Σάρωση τώρα'));b?.click();return Boolean(b&&!b.disabled)}"),'start actual QR-first scan '+name);
+  };
+  const qrStatus=kind=>waitFor("function(kind){return document.querySelector('[data-receipt-qr-kind]')?.getAttribute('data-receipt-qr-kind')===kind&&!document.querySelector('.receipt-scan-progress')}",'actual decoded '+kind,[kind],650);
+  const qrProposal=()=>c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readonly'),all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const rows=all.result.sort((a,b)=>b.capturedAt.localeCompare(a.capturedAt));db.close();resolve(rows[0]?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};open.onerror=()=>reject(open.error)})}`);
+  const deleteCurrentQr=async()=>{assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'delete local synthetic QR');await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'QR deletion confirm');assert(await c.call("function(){const b=[...document.querySelectorAll('[role=alertdialog] button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'confirm local QR deletion');await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&!document.querySelector('.receipt-draft-row')}",'local QR removed')};
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  await c.send('Page.navigate',{url:baseUrl});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'QR QA workspace');
+  await openReceiptInbox();
+  const qrBefore=await qrWrites();
+  externalRequests.length=0;monitorOcrNetwork=true;
+  // A valid QR must survive absent OCR assets. Subsequent fallbacks must not
+  // manufacture any date or amount from non-receipt or ambiguous codes.
+  await c.send('Network.setBlockedURLs',{urls:['*://*/ocr/asset-manifest.json','*://provider.invalid/*','*://www1.aade.gr/*']});
+  for(const [name,kind] of [['aade','aade'],['multi','multiple'],['provider','external-link'],['malformed','malformed'],['product','product']]){
+    await qrCapture(name);await qrStatus(kind);
+    const proposal=await qrProposal();assert(proposal?.qr?.kind===kind,'persisted normalized QR classification '+kind);
+    if(kind==='aade')assert(proposal.total===18.35&&proposal.date==='2026-08-22'&&proposal.qr.identifier==='TST00000001:00000042','QR-only exact local fields with OCR unavailable');
+    else assert(proposal.total===undefined&&proposal.date===undefined,'unsupported or conflicting QR never invents receipt fields '+kind);
+    assert(await qrWrites()===qrBefore,'QR decode and fallback never post finance');
+    await screenshot('receipt-qr-local-'+kind);await deleteCurrentQr();
+  }
+  await c.send('Network.setBlockedURLs',{urls:[]});
+  await qrCapture('aade',true);await qrStatus('aade');
+  const conflict=await qrProposal();
+  assert(conflict.qr.conflicts.includes('amount')&&conflict.qr.conflicts.includes('date')&&conflict.qr.ocrTotal===24.5&&conflict.qr.totalCents===1835,'actual OCR/QR disagreement survives independently');
+  assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(b?.disabled)}"),'unconfirmed QR review cannot hand off');
+  await screenshot('receipt-qr-conflict-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await c.call("function(){document.querySelector('[data-receipt-qr-kind]')?.scrollIntoView({block:'center'});return true}");
+  await screenshot('receipt-qr-conflict-mobile');
+  assert(await c.call("function(){const b=[...document.querySelectorAll('[data-receipt-qr-kind] button')].find(n=>(n.textContent||'').includes('Χρήση ποσού'));b?.click();return Boolean(b)}"),'explicit owner choice of QR fields');
+  await waitFor("function(){return Number(document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value)===18.35}",'selected exact QR cents');
+  assert(await c.call("function(){const checkbox=document.querySelector('[data-receipt-qr-kind] input[type=checkbox]');checkbox?.focus();checkbox?.click();return Boolean(checkbox?.checked)}"),'owner explicitly reviews QR/OCR conflict');
+  // If matching purchases exist, retain the existing separate duplicate guard.
+  await c.call("function(){const checkbox=document.querySelector('.receipt-existing-matches:not([data-receipt-qr-kind]) .receipt-existing-confirm input');if(checkbox&&!checkbox.checked)checkbox.click();return true}");
+  assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));if(!b||b.disabled)return false;b.click();return true}"),'reviewed QR handoff');
+  await waitFor("function(){return !document.querySelector('.receipt-inbox')&&Boolean(document.querySelector('.quick-modal'))}",'reviewed QR only pre-fills existing Quick Entry');
+  assert(await qrWrites()===qrBefore&&await receiptCount()===1,'QR handoff leaves draft and finance unchanged before explicit save');
+  await screenshot('receipt-qr-reviewed-quick-entry');
+  monitorOcrNetwork=false;
+  assert(externalRequests.length===0,'QR/OCR scan never contacts a provider, AADE or external decoder');
 
   console.log('Receipt local OCR rendered QA passed.');
 } finally {

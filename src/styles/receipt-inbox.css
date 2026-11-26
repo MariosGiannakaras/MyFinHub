@@ -1,6 +1,6 @@
 .receipt-inbox-backdrop{z-index:130}
 .receipt-inbox-backdrop + .modal-backdrop{z-index:140}
-.receipt-inbox{width:min(1180px,97vw);height:min(820px,94dvh);overflow:hidden;border-radius:28px;background:#f4f8fd;display:grid;grid-template-rows:auto auto auto minmax(0,1fr)}
+.receipt-inbox{width:min(1180px,97vw);height:min(820px,94dvh);overflow:hidden;border-radius:28px;background:#f4f8fd;display:flex;flex-direction:column}.receipt-inbox-layout{flex:1;min-height:0}
 .receipt-inbox-header{padding:18px 20px 12px;display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #dce5f0}
 .receipt-inbox-header small{color:#4777d6;font-size:8px;letter-spacing:.14em;font-weight:850}
 .receipt-inbox-header h2{display:flex;align-items:center;gap:8px;font-size:24px;margin:4px 0}
@@ -114,3 +114,5 @@
 @media(max-width:520px){.receipt-item-row{grid-template-columns:minmax(0,1fr)}.receipt-item-row>label,.receipt-item-row .receipt-item-category{grid-column:1}.receipt-item-row>button{min-height:44px}}
 
 .receipt-existing-matches li>button,.receipt-existing-matches>button{justify-self:start;min-height:44px}
+
+.receipt-inbox-camera-open .receipt-inbox-layout{display:none}.receipt-qr-camera{min-height:0;overflow:auto;padding:12px;display:grid;gap:8px;justify-items:start}.receipt-qr-camera video{width:100%;max-height:48dvh;background:var(--surface-inset);object-fit:contain}.receipt-qr-camera button{min-height:44px}

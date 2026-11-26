@@ -15,7 +15,11 @@ type ReceiptItemProposal = {
   subcategory?: string;
 };
 
+import type { ReceiptQrEvidence } from './receiptQr.js';
+
 export type ReceiptProposal = {
+  /** Local-only decoded evidence, never the raw code or an authenticity claim. */
+  qr?: ReceiptQrEvidence;
   merchant?: string;
   date?: string;
   total?: number;

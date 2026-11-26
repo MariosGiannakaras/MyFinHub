@@ -329,6 +329,25 @@ try{
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'mobile More restores focus to opener');
  await shot('keyboard-semantic-mobile-dashboard');
 
+ // Actual shared period and topbar tooltip geometry with fine-pointer
+ // keyboard focus, and the short sheet's last keyboard destination.
+ await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ for(const [width,height] of [[1440,1000],[768,600],[320,500]]){
+   await navigate('dashboard',pages.dashboard,width,height,false);
+   const focusTip=await c.call("function(){const button=[...document.querySelectorAll('.period-control button')].find(node=>!node.disabled&&node.getClientRects().length);button?.focus();return Boolean(button&&document.activeElement===button)}");
+   assert(focusTip,'reporting-period tooltip focus '+width);
+   await waitFor("function(){const button=document.activeElement,bubble=document.getElementById(button?.getAttribute('aria-describedby')||'');if(!bubble)return false;const r=bubble.getBoundingClientRect(),a=button.getBoundingClientRect(),s=getComputedStyle(bubble);return s.visibility==='visible'&&Number(s.opacity)>.95&&r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&(r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1)}",'period tooltip contained and clear of trigger '+width);
+   await shot('keyboard-period-tooltip-'+width);
+ }
+ await navigate('dashboard',pages.dashboard,320,420,false);
+ assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}"),'short viewport More opener exists');
+ await waitFor("function(){const menu=document.querySelector('.mobile-more-menu');const r=menu?.getBoundingClientRect();return Boolean(r&&r.width>0&&r.top>=0&&r.bottom<=innerHeight&&menu.scrollHeight>menu.clientHeight)}",'short More sheet contained and scrollable');
+ for(let index=0;index<8;index++)await pressTab();
+ await waitFor("function(){const menu=document.querySelector('.mobile-more-menu'),button=document.activeElement;const r=menu.getBoundingClientRect(),b=button.getBoundingClientRect();return button===menu.querySelector('nav button:last-child')&&b.top>=r.top-1&&b.bottom<=r.bottom+1&&b.left>=r.left-1&&b.right<=r.right+1}",'last More destination scrolls into visible sheet');
+ await shot('keyboard-more-short-last-destination');
+ await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'short More Escape close');
+ assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'short More restores focus');
+
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await viewport(720,500,false);

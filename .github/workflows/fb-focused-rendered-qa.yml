@@ -28,6 +28,7 @@ jobs:
        contains(github.event.pull_request.body, '<!-- run-649-recurring-asset-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-quick-receipt-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-card-vault-receipt-qa -->') ||
+       contains(github.event.pull_request.body, '<!-- run-649-shell-savings-receipt-batch-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-keyboard-a11y-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->') ||
        contains(github.event.pull_request.body, '<!-- run-649-focused-qa -->') ||
@@ -51,7 +52,9 @@ jobs:
     env:
       # One opt-in browser runner, one suite batch, never an extra full Ready gate.
       # Each marker selects one coherent suite batch; Reports runs one existing browser QA script.
-      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-credit-localization-qa -->') &&
+      FOCUSED_SUITES: ${{ contains(github.event.pull_request.body, '<!-- run-649-shell-savings-receipt-batch-qa -->') &&
+          'keyboard-semantic-accessibility ui-ux-hardening shell-dashboard-hierarchy savings-remediation owned-controls receipt-local-ocr' ||
+          contains(github.event.pull_request.body, '<!-- run-649-credit-localization-qa -->') &&
           'credit-statements' ||
           contains(github.event.pull_request.body, '<!-- run-649-receipt-reload-qa -->') &&
           'receipt-local-ocr' ||

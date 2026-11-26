@@ -5,7 +5,7 @@ describe('receipt split handoff cannot bypass canonical finance save',()=>{
  const inbox=readFileSync('src/components/ReceiptInbox.tsx','utf8');
  const bridge=readFileSync('src/components/ReceiptAwareQuickAdd.tsx','utf8');
  const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
- expect(inbox).toContain('purchaseMatches.length&&!reviewNewPurchaseConfirmed');
+ expect(inbox).toContain('if(apply&&needsDuplicateReview)');
  expect(inbox).toContain('Χρήση ως επιμερισμένη δαπάνη');
  expect(inbox).toContain("itemsCurrency:reviewProposal.currency==='EUR'&&!reviewProposal.itemsCurrency?'EUR':reviewProposal.itemsCurrency");
  expect(readFileSync('scripts/receipt-local-ocr-qa.mjs','utf8')).toContain('receipt-reviewed-split-quick-entry');

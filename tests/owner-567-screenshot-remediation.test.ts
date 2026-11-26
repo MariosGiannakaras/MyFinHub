@@ -194,7 +194,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     const accounts=file('../src/styles/dashboard-approved-target.css');
     const pickerCss=file('../src/components/CategoryIconAssignmentWorkspace.css');
     expect(settings).toContain('grid-template-columns:minmax(0,1fr)');
-    expect(period).toContain('.period-control>span{min-width:0');
+    expect(period).toContain('.period-label{min-width:0');
     expect(accounts).toContain('.approved-account-chart{left:min(48%,170px)');
     expect(pickerCss).toContain('.category-icon-assignment-workspace,.category-icon-library');
   });
