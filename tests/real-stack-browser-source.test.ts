@@ -133,6 +133,13 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('edited reconciliation rejects unconfirmed adjustment');
     expect(source).toContain('correctionTargetCents-baseBankCents');
     expect(source).toContain('quick-entry-six-edits-persisted');
+    expect(source).toContain("const root=[...document.querySelectorAll('.quick-modal')].find(visible)||document");
+    expect(source).toContain("label+' own options',[controlId]");
+    expect(source).toContain("label+' committed selected value '+optionText,[controlId,optionText]");
+    expect(source).toContain('reconciliation confirmed on intended bank before write');
+    expect(source).toContain('Reconciliation create must settle the intended bank to 123.45');
+    expect(source).toContain("moneyToCents(accountBalances(originalCorrectionData,originalCorrection.date)['qa-bank-account'])===12345");
+    expect(source).toContain("await clickText('.transactions-detail-panel button.edit','Επεξεργασία')");
     expect(source).toContain('stage legacy-edit-delete-undo');
     expect(source).toContain("const seedPeriod=");
     expect(source).toContain("2026-10-01T00:00:00.000Z");
