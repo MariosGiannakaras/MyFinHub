@@ -1,3 +1,15 @@
+## 2026-11-26 — I11.05 recurring branding and I16.04 provider unbind retention accepted
+
+**Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact `f692f3d` [ordinary CI #45839868198](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45839868198), [focused recurring #45846789289](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45846789289) and [isolated Real Stack #45846789462](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45846789462) SUCCESS. Ordinary CI 2,638/2,638 tests, 346 files, CodeQL/Unified, disposable PG checks, zero root/API audit vulnerabilities. Hard bundle budgets passed: CSS 559.9/560 KiB raw (soft warning remains), JS 526.7/528 KiB raw.
+
+**I11.05 accepted:** focused suite passed after one bounded Chromium bootstrap retry, zero failed suites. Directly reviewed artifact #15131337904 summary and long-name rows at 320 Dark/375 Light. The two actual KPI cards fill the grid at 375 and stack at 320; prior row amount/mode and mark alignment corrected, exact linked payment identity and existing partial-failure/retry/release regressions pass. No new artwork mutation on payment.
+
+**I16.04 accepted at bounded repository/isolated scope:** actual provider optional slot assignment/clear retains exact reusable bytes, primary bindings, active registry and terminal journal, finance/history; existing genuine upload/registration-failure cleanup, independent scratch PostgreSQL+Storage hash restore and forward migration recovery passed. Unbinding is not physical deletion; retain reusable assets and unknown/retained references. No claim of arbitrary zero-orphan atomicity or hosted restore. I16 6/6; 40 original items remain open.
+
+**Next:** both opt-in markers removed. Continue I19.01 transaction editor/account/source-target-result coverage and I20.01 shared modal focus/label/Escape/nesting/inert/route-scroll evidence, then CSS budget review. Existing source guard and keyboard suite are evidence foundations, not full inertness or programmatic-focus proof. Reuse accepted evidence, add only missing meaningful guards, retain Draft until complete required Ready matrix. No merge, production, hosted or Android action. #645 remains separate owner-gated release; #657/#658/#661 equivalents staged, not separately merged.
+
+---
+
 ## 2026-11-26 — Recurring row accepted; two-card summary repair and isolated provider retention candidate
 
 **Implementations 7/23 completed · Sub-implementations 90/132 completed.** Exact `ac8b18b` ordinary CI #45838538462 SUCCESS (2,638 tests, 346 files, CodeQL/Unified, root/API audit clean, CSS rounded 560.0/560 KiB hard check PASS, JS 526.7/528). [Focused #45839450121](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45839450121) SUCCESS, 0 failures without retry. Downloaded #15126743606, directly inspected long-name 320 Dark and 375 Light PNGs: amount and mode now separate, brand aligned to first line, no row overlap, payment accessible. All existing failure/cleanup/retry and exact linked identity assertions passed. Secondary 375px summary still wasted a third track for nonexistent third KPI, forcing excessive title wrapping. Repair the existing two-card mobile grid owner: equal minmax tracks above 350px, both full-width stacked at <=350px (replace old three-track rule and obsolete first-child span). FP-043 expanded within its same obsolete-markup/layout class, new geometry guard proves two cards fill the grid and captures both summary and row at existing 320/375 stress viewports. No new visual system, no text shrink, no budget relaxation. I11.05 remains open pending complete corrected summary evidence.
@@ -567,7 +579,7 @@ Source-overlaid bot PRs #657/#658/#660 remain open **without standalone merging*
 
 **One #649 implementation owner:** [Draft PR #654](https://github.com/MariosGiannakaras/MyFinHub/pull/654), `fix/649-bulk-remediation` → `develop`. This roadmap and the original evidence are now available on the *implementation* branch; independent draft audit PR #650 is superseded. Do **not** open a new PR per defect, resume an already accepted item, or treat an inactive branch as the implementation head.
 
-**Exact active code progress: Implementations 7/23 completed · Sub-implementations 106/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
+**Exact active code progress: Implementations 8/23 completed · Sub-implementations 92/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
 
 ### Consolidated execution sequence (one coherent milestone, no PR proliferation)
 
@@ -733,7 +745,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I10.04** Exercise partial/multiple repayments, historic as-of, future-dated event exclusion, overpayment guards and custom person mapping.
 - [x] **I10.05** Guard masked/unmasked receivables across summary and details, date/amount formatting, failure/conflict/pending receipts.
 
-### I11. Recurring subscriptions and obligations / Πάγια — 3/6
+### I11. Recurring subscriptions and obligations / Πάγια — 4/6
 
 **Priority:** P0 · **Owner:** `RecurringPage, recurrenceCadence, Attention selector, forecast` · **Dependencies:** #646 overdue-display done; forecast approval gated
 
@@ -741,7 +753,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [ ] **I11.02** Define unpaid past-cycle forecast policy via approved booked/due/estimated distinction; guard no double counting across 1/2/12/24-month cadences.
 - [x] **I11.03** Retest early/partial/duplicate payments, pause/stop/resume, day-end/Feb/annual rollover and linked canonical Loans payment.
 - [ ] **I11.04** Clarify variable amount estimate vs actual recorded amount; align due-state primary/secondary CTA hierarchy after visual/product review.
-- [ ] **I11.05** Check provider logos/branding partial upload failure, mobile/dark long names, event origin and retry/conflict feedback.
+- [x] **I11.05** Check provider logos/branding partial upload failure, mobile/dark long names, event origin and retry/conflict feedback.
 - [x] **I11.06** Protect historical legacy identity and lifetime purchases from forced monthly recurring reclassification.
 
 ### I12. Planning and future cashflow / Προγραμματισμός — 2/5
@@ -785,14 +797,14 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I15.04** Recheck profile email/owner session and security actions against actual supported backend calls; no fictitious device activity metadata.
 - [ ] **I15.05** Verify messages/copy in Greek, timestamps, login/session failure instructions and no unsupported claims about encryption/recovery.
 
-### I16. Settings — Accounts and Financial Providers — 5/6
+### I16. Settings — Accounts and Financial Providers — 6/6
 
 **Priority:** P1 · **Owner:** `AccountManagementSettings, FinancialProviderManagementSettings` · **Dependencies:** #647 ST-03 complete
 
 - [x] **I16.01** Preserve fixed provider summary spacing/technical ID only in edit field; guard long Greek names and heading alignment.
 - [x] **I16.02** Verify account create/edit/default/reorder/deactivate/delete eligibility and exact dependency blockers without changing historical references.
 - [x] **I16.03** Check IBAN data provenance/secure store, missing account details, owner+AAL2 server validation, clipboard and masked display where contracted.
-- [ ] **I16.04** Test bankmark/logo chooser upload/replacement/delete/partial success with rollback and no orphan secrets or storage assets.
+- [x] **I16.04** Test bankmark/logo chooser upload/replacement/delete/partial success with rollback and no orphan secrets or storage assets.
 - [x] **I16.05** Cover account/provider modal focus, keyboard search, 320/375 mobile panels, long form errors and receipt-driven status.
 - [x] **I16.06** Keep one coherent account/provider component ownership model and avoid per-page duplicate dropdown/action styling.
 

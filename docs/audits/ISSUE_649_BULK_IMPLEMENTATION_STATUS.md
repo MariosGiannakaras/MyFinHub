@@ -1,3 +1,15 @@
+## 2026-11-26 — I11.05 recurring branding and I16.04 provider unbind retention accepted
+
+**Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact `f692f3d` [ordinary CI #45839868198](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45839868198), [focused recurring #45846789289](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45846789289) and [isolated Real Stack #45846789462](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45846789462) SUCCESS. Ordinary CI 2,638/2,638 tests, 346 files, CodeQL/Unified, disposable PG checks, zero root/API audit vulnerabilities. Hard bundle budgets passed: CSS 559.9/560 KiB raw (soft warning remains), JS 526.7/528 KiB raw.
+
+**I11.05 accepted:** focused suite passed after one bounded Chromium bootstrap retry, zero failed suites. Directly reviewed artifact #15131337904 summary and long-name rows at 320 Dark/375 Light. The two actual KPI cards fill the grid at 375 and stack at 320; prior row amount/mode and mark alignment corrected, exact linked payment identity and existing partial-failure/retry/release regressions pass. No new artwork mutation on payment.
+
+**I16.04 accepted at bounded repository/isolated scope:** actual provider optional slot assignment/clear retains exact reusable bytes, primary bindings, active registry and terminal journal, finance/history; existing genuine upload/registration-failure cleanup, independent scratch PostgreSQL+Storage hash restore and forward migration recovery passed. Unbinding is not physical deletion; retain reusable assets and unknown/retained references. No claim of arbitrary zero-orphan atomicity or hosted restore. I16 6/6; 40 original items remain open.
+
+**Next:** both opt-in markers removed. Continue I19.01 transaction editor/account/source-target-result coverage and I20.01 shared modal focus/label/Escape/nesting/inert/route-scroll evidence, then CSS budget review. Existing source guard and keyboard suite are evidence foundations, not full inertness or programmatic-focus proof. Reuse accepted evidence, add only missing meaningful guards, retain Draft until complete required Ready matrix. No merge, production, hosted or Android action. #645 remains separate owner-gated release; #657/#658/#661 equivalents staged, not separately merged.
+
+---
+
 ## 2026-11-26 — Recurring row accepted; two-card summary repair and isolated provider retention candidate
 
 **Implementations 7/23 completed · Sub-implementations 90/132 completed.** Exact `ac8b18b` ordinary CI #45838538462 SUCCESS (2,638 tests, 346 files, CodeQL/Unified, root/API audit clean, CSS rounded 560.0/560 KiB hard check PASS, JS 526.7/528). [Focused #45839450121](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45839450121) SUCCESS, 0 failures without retry. Downloaded #15126743606, directly inspected long-name 320 Dark and 375 Light PNGs: amount and mode now separate, brand aligned to first line, no row overlap, payment accessible. All existing failure/cleanup/retry and exact linked identity assertions passed. Secondary 375px summary still wasted a third track for nonexistent third KPI, forcing excessive title wrapping. Repair the existing two-card mobile grid owner: equal minmax tracks above 350px, both full-width stacked at <=350px (replace old three-track rule and obsolete first-child span). FP-043 expanded within its same obsolete-markup/layout class, new geometry guard proves two cards fill the grid and captures both summary and row at existing 320/375 stress viewports. No new visual system, no text shrink, no budget relaxation. I11.05 remains open pending complete corrected summary evidence.
@@ -71,12 +83,12 @@
 | I08 | 4/6 | I08.02, I08.03 |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
-| I11 | 3/6 | I11.02, I11.04, I11.05 |
+| I11 | 4/6 | I11.02, I11.04 |
 | I12 | 2/5 | I12.01, I12.03, I12.05 |
 | I13 | 5/5 | Complete |
 | I14 | 6/6 | Complete |
 | I15 | 2/5 | I15.01, I15.03, I15.05 |
-| I16 | 5/6 | I16.04 |
+| I16 | 6/6 | Complete |
 | I17 | 6/6 | Complete |
 | I18 | 6/6 | Complete |
 | I19 | 6/7 | I19.01 |
