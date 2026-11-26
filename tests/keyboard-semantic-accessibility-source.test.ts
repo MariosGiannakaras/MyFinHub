@@ -56,6 +56,8 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect((reports.match(/<ComposedChart accessibilityLayer=\{false\}/g)||[]).length).toBe(3);
     expect(qa).toContain("const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex=\"-1\"])'");
     expect(qa).toContain('root.querySelectorAll(hiddenSelector)');
+    expect(qa).toContain("chartFocus:Boolean(el.closest('.recharts-wrapper'))");
+    expect(qa).toContain('decorative Recharts subtree entered sequential Tab order');
     expect(qa).toContain('if(!(el instanceof Element))return null');
   });
 
