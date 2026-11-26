@@ -71,7 +71,13 @@ export function assertSameOrigin(req: any) {
   const forwardedHost = requestHeader(req, 'x-forwarded-host');
   const host = forwardedHost || requestHeader(req, 'host');
   const forwardedProto = requestHeader(req, 'x-forwarded-proto');
-  const proto = forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  // Packaged Windows serves the UI from an actual HTTP loopback socket while
+  // NODE_ENV=production. Never infer HTTPS for that explicitly bounded local
+  // origin; normal web production must continue to require HTTPS.
+  const desktopLoopback = process.env.RHEOMIQ_DESKTOP === '1'
+    && !forwardedHost
+    && /^127\.0\.0\.1:\d{1,5}$/.test(host);
+  const proto = forwardedProto || (desktopLoopback ? 'http' : process.env.NODE_ENV === 'production' ? 'https' : 'http');
   if (!host) throw new ApiError(403, 'ORIGIN_INVALID', 'Request origin is invalid.');
 
   let parsed: URL;

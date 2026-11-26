@@ -14,7 +14,7 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
   const [capsLock,setCapsLock]=useState(false);
   const [errorDismissed,setErrorDismissed]=useState(false);
   useEffect(()=>setErrorDismissed(false),[error]);
-  const visibleError=error&&!errorDismissed;
+  const visibleError=errorDismissed?'':error;
   const ready=Boolean(email.trim())&&password.length>=8;
 
   const trackCaps=(event:KeyboardEvent<HTMLInputElement>)=>setCapsLock(event.getModifierState('CapsLock'));

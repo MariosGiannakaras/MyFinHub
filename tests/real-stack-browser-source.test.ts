@@ -51,6 +51,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
+    expect(source).toContain('const seedPeriod=');
+    expect(source).toContain("selectPeriod(seedPeriod,'previous')");
+    expect(source).toContain("querySelector('.period-control>span:not(.app-tooltip)')");
+    expect(source).not.toContain("querySelector('.period-control>span')");
+    expect(source).toContain('reporting period navigation');
+    expect(source).toContain("selectPeriod(previousPeriod,'next')");
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');
     expect(source).toContain('waitCreditState(false)');
