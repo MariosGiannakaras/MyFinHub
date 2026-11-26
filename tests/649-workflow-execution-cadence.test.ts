@@ -8,6 +8,36 @@ const backup=read('.github/workflows/desktop-backup-focused-qa.yml');
 const codeql=read('.github/workflows/codeql.yml');
 
 describe('#649 whole-implementation CI workflow cost and safety cadence',()=>{
+  it('derives current progress from unique original roadmap IDs rather than accumulated checkpoint increments',()=>{
+    const plan=read('docs/audits/WHOLE_APP_REMEDIATION_649_PLAN.md');
+    const status=read('docs/audits/ISSUE_649_BULK_IMPLEMENTATION_STATUS.md');
+    const frozen=read('docs/audits/WHOLE_APP_PHASE1_132_DISPOSITIONS_649.md');
+    const start=plan.indexOf('## Code work packages and explicit sub-implementations');
+    const end=plan.indexOf('## Evidence and release acceptance — separate from code implementation counters',start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const checklist=plan.slice(start,end);
+    const entries=[...checklist.matchAll(/^- \[([ x])\] \*\*(I\d\d\.\d\d)\*\*/gm)];
+    const original=[...frozen.matchAll(/^\| (I\d\d\.\d\d) \|/gm)].map(m=>m[1]);
+    expect(original).toHaveLength(132);
+    expect(new Set(original).size).toBe(132);
+    expect(entries.map(m=>m[2]).sort()).toEqual(original.sort());
+    const groups=[...checklist.matchAll(/^### (I\d\d)\. .+ — (\d+)\/(\d+)$/gm)];
+    expect(groups).toHaveLength(23);
+    expect(new Set(groups.map(m=>m[1])).size).toBe(23);
+    let complete=0;
+    for(const [,id,n,d] of groups){
+      const rows=entries.filter(m=>m[2].startsWith(id+'.'));
+      expect(rows.length,id).toBe(Number(d));
+      expect(rows.filter(m=>m[1]==='x').length,id).toBe(Number(n));
+      if(n===d)complete++;
+    }
+    const accepted=entries.filter(m=>m[1]==='x').length;
+    const expected='Implementations '+complete+'/23 completed · Sub-implementations '+accepted+'/132 completed';
+    expect(plan.match(/Implementations \d+\/23 completed · Sub-implementations \d+\/132 completed/)?.[0]).toBe(expected);
+    expect(status.match(/Implementations \d+\/23 completed · Sub-implementations \d+\/132 completed/)?.[0]).toBe(expected);
+  });
+
   it('allows a single credit-stack browser suite to cover post-restack secret copy cancellation',()=>{
     const focused=read('.github/workflows/fb-focused-rendered-qa.yml');
     expect(focused).toContain("contains(github.event.pull_request.body, '<!-- run-649-credit-copy-stale-qa -->')");
