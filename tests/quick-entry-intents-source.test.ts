@@ -40,6 +40,16 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('invalid split subtotal is not presented as a confirmed amount');
     expect(qa).toContain('split shared control geometry at');
     expect(qa).toContain('comma decimal normalization retains exact split cents');
+    const taxonomy=readFileSync(new URL('../src/styles/taxonomy-filter-controls.css',import.meta.url),'utf8');
+    const audit=readFileSync(new URL('../src/styles/frontend-audit-remediation.css',import.meta.url),'utf8');
+    const owner=readFileSync(new URL('../src/styles/quick-entry-body-split.css',import.meta.url),'utf8');
+    const responsive=readFileSync(new URL('../src/styles/root-responsive-coordination.css',import.meta.url),'utf8');
+    expect(owner).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px 44px');
+    expect(owner).toContain('.split-line button{min-height:44px;');
+    expect(responsive).toContain('.split-line{grid-template-columns:repeat(2,minmax(0,1fr))}');
+    expect(taxonomy).not.toContain('.split-line-taxonomy');
+    expect(audit).not.toContain('.split-line button');
+    expect(qa).toContain('split geometry diagnostic');
   });
 
   it('shows only actual funded accounts in multi-source expense mode and preserves ordinary account editing on exit',()=>{

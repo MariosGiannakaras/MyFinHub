@@ -55,5 +55,11 @@ describe('#649 I19.04 fail closed after uncertain finance write acknowledgments'
     const qa=readFileSync('src/qa.tsx','utf8');
     expect(qa.indexOf('addEvent(event);')).toBeLessThan(qa.indexOf("if(params.get('quick-event-save-ambiguous')==='1')"));
     expect(qa).toContain("params.get('quick-event-save-rejected')==='1'");
+    const budgets=readFileSync('scripts/budget-rules-qa.mjs','utf8');
+    expect(budgets).toContain("contextualFailureUrl.searchParams.set('quick-event-save-rejected','1')");
+    expect(budgets).toContain("quickEntryReceiptUrl('quick-event-save-rejected')");
+    expect(budgets).not.toContain("contextualFailureUrl.searchParams.set('quick-event-save-failure'");
+    expect(budgets).not.toContain("quickEntryReceiptUrl('quick-event-save-failure')");
+    expect(budgets).toContain('corrected contextual draft attempted exactly one precommit rejected save and no finance write');
   });
 });

@@ -255,7 +255,15 @@ try{
   await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input.money-input-control')];return fields[0]?.value==='3.25'&&fields[1]?.value==='4.75'&&(document.querySelector('.generic-quick-modal .split-box [aria-live=polite]')?.textContent||'').includes('8,00')}",'comma decimal normalization retains exact split cents');
   for(const [width,height] of [[1440,1000],[768,1024],[375,812],[320,740]]){
     await viewport(width,height);
+    try{
     await waitFor("function(width){const rows=[...document.querySelectorAll('.generic-quick-modal .split-line')];if(innerWidth!==width||rows.length!==2)return false;return rows.every(row=>{const bounds=row.getBoundingClientRect(),controls=[...row.children],rects=controls.map(node=>node.getBoundingClientRect());return controls.length===4&&Boolean(row.querySelector('input.app-text-input'))&&Boolean(row.querySelector('.category-select-input input[role=combobox]'))&&Boolean(row.querySelector('.money-input input.money-input-control'))&&rects.every(rect=>rect.width>0&&rect.height>0&&rect.left>=bounds.left-1&&rect.right<=bounds.right+1)&&rects[3].height>=44&&rects.every((a,i)=>rects.every((b,j)=>i===j||Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1))})&&document.documentElement.scrollWidth<=innerWidth+1}",'split shared control geometry at '+width,[width]);
+    }catch(error){
+      // Keep the full geometry predicate: expose the actual computed tracks,
+      // children, containment and hit targets on failure instead of guessing.
+      console.error('split geometry diagnostic',JSON.stringify(await c.call("function(){return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,rows:[...document.querySelectorAll('.generic-quick-modal .split-line')].map(row=>({tracks:getComputedStyle(row).gridTemplateColumns,bounds:row.getBoundingClientRect().toJSON(),children:[...row.children].map(node=>({tag:node.tagName,classes:node.className,bounds:node.getBoundingClientRect().toJSON(),minHeight:getComputedStyle(node).minHeight}))}))}}")));
+      await screenshot('quick-entry-split-geometry-failure-'+width);
+      throw error;
+    }
     await c.call("function(){document.querySelector('.generic-quick-modal .split-line')?.scrollIntoView({block:'center'});return true}");
     await sleep(160);await screenshot('quick-entry-split-shared-controls-'+width);
   }

@@ -306,7 +306,9 @@ try{
 
   console.log('Budget/Rules QA: contextual Quick Entry clears stale amount validation, preserves rejected draft');
   const contextualFailureUrl=new URL(urlFor('savings','savings-bank-transfer'));
-  contextualFailureUrl.searchParams.set('quick-event-save-failure','1');
+  // Use the server-proven precommit rejection, not an untyped failure whose
+  // outcome must remain uncertain and non-retryable.
+  contextualFailureUrl.searchParams.set('quick-event-save-rejected','1');
   await viewport(1440,1000);
   await c.send('Page.navigate',{url:contextualFailureUrl.href});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'contextual finance rejection fixture');
@@ -324,9 +326,10 @@ try{
   await editContextualAmount('21');
   await waitFor("function(){return !document.querySelector('.contextual-quick-modal #context-quick-error')}",'corrected contextual amount removes stale validation message');
   await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
-  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση κίνησης απέτυχε')}",'contextual durable finance rejection announces new error');
+  await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('Η αναθεώρηση άλλαξε πριν από την αποθήκευση.')}",'contextual durable finance rejection announces new error');
   const rejectedContextual=await c.call("function(){const dialog=document.querySelector('.contextual-quick-modal'),amount=[...dialog?.querySelectorAll('label')||[]].find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Ποσό')?.querySelector('input');const save=[...dialog?.querySelectorAll('.editor-actions button')||[]].find(button=>(button.textContent||'').includes('Καταχώριση'));return {open:Boolean(dialog),amount:amount?.value||'',saveEnabled:Boolean(save&&!save.disabled),ariaBusy:dialog?.getAttribute('aria-busy')||''}}");
   assert(rejectedContextual.open&&rejectedContextual.saveEnabled&&rejectedContextual.ariaBusy!=='true'&&Number(rejectedContextual.amount.replace(',','.'))>0,'rejected contextual finance receipt leaves corrected draft editable without false success: '+JSON.stringify(rejectedContextual));
+  assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===1&&Number(document.documentElement.dataset.qaFinanceWrites||0)===expected}",[writesBeforeInvalidAmount]),'corrected contextual draft attempted exactly one precommit rejected save and no finance write');
   await screenshot('contextual-quick-invalid-corrected-save-rejected-desktop');
 
   console.log('Budget/Rules QA: contextual Savings targets bank-classified savings accounts');
@@ -388,13 +391,13 @@ try{
   // failure fixture checks the *desktop* quick entry action first.
   await viewport(1440,1000);
   const quickEntryReceiptUrl=(value)=>{const url=new URL(urlFor('savings','budget-rules'));url.searchParams.set(value,'1');return url.href};
-  await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-failure')});
+  await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-rejected')});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'rejected Quick Entry receipt fixture');
   await clickAria('Γρήγορη προσθήκη');
   await setLabelInput('Ποσό','26');
   await setLabelInput('Σχόλιο','QA Failed Durable Entry');
   await clickText('.generic-quick-modal footer button','Καταχώριση');
-  await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected Quick Entry receipt error');
+  await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('Η αναθεώρηση άλλαξε πριν από την αποθήκευση.')}",'rejected Quick Entry receipt error');
   await waitFor("function(){const error=document.getElementById('quick-add-error');return Boolean(error&&error.tabIndex===-1&&document.activeElement===error)}",'rejected Quick Entry focuses the visible error without losing draft');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&[...document.querySelectorAll('.generic-quick-modal label')].some(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Σχόλιο')&&label.querySelector('input')?.value==='QA Failed Durable Entry')}"),'rejected receipt keeps current unsaved Quick Entry draft');
   const rejectedUndo=await c.call("function(){const undo=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');return {writeCount:Number(document.documentElement.dataset.qaFinanceWrites||0),undoDisabled:undo?.disabled===true,modalOpen:Boolean(document.querySelector('.generic-quick-modal'))}}");

@@ -22,7 +22,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .eyebrow{font-size:10px}.page-heading p{font-size:12px}.metric-head{font-size:10px}.metric-card small{font-size:10px;line-height:1.35}.panel-head small{font-size:10px}.legend div,.legend b{font-size:10px}.tr,.tr b{font-size:11px}.tr.th,.tr small{font-size:10px}.flow-pill{font-size:9px}.review-copy h3{font-size:12px}.review-copy p{font-size:10.5px}.review-buttons button{font-size:10px}.recurring-table b{font-size:11px}.recurring-table small,.recurring-table em{font-size:10px}.loan-title h3{font-size:12px}.loan-title small,.loan-stats{font-size:10px}.kind-grid b{font-size:10px}.kind-grid small{font-size:9px}.mobile-nav button{font-size:9px;min-height:46px}.mobile-more-menu>div>button{font-size:10px}
 
-.row-actions button,.review-part button,.split-line button,.icon-button,.mobile-more-menu>header button{min-width:40px;min-height:40px}
+.row-actions button,.review-part button,.icon-button,.mobile-more-menu>header button{min-width:40px;min-height:40px}
 .top-actions button{min-width:40px;min-height:40px}
 
 .persistence-notice{position:sticky;top:86px;z-index:24;margin:0 4px 12px;border-radius:14px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #cbd8e9;background:rgba(248,251,255,.97);box-shadow:0 10px 24px rgba(24,52,96,.09);font-size:11px}
