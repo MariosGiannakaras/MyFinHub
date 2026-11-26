@@ -112,8 +112,8 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(inbox).toContain("if(target.kind==='select'){setSelectedId(target.id);");
     expect(inbox).toContain('await saveReceiptProposal(selected.id,reviewedSplit)');
     expect(inbox).toContain('if(reviewDirty||reviewSaving){setError(');
-    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
-    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment"');
+    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
+    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)||liveCamera} capture="environment"');
   });
   it('uses the confirmed local receipt row instead of a failing second IndexedDB read',()=>{
     const association=inbox.slice(inbox.indexOf('const setPurchaseAssociation='),inbox.indexOf('const splitProposal='));
@@ -134,11 +134,14 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   it('locks receipt review while asynchronous local saves, deletes and image capture are pending',()=>{
     // A local IndexedDB save can be slow: edits or draft switching during the await
     // must not be accepted then lost by the subsequent refresh.
-    expect(inbox).toContain('className="receipt-inbox-layout" inert={loading||reviewSaving||deleting} aria-busy={loading||reviewSaving||deleting}');
+    expect(inbox).toContain('className="receipt-inbox-layout" inert={loading||reviewSaving||deleting||liveCamera} aria-busy={loading||reviewSaving||deleting}');
     expect(inbox).toContain('disabled={reviewSaving||deleting||loading} onClick={requestClose}');
-    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)} capture="environment"');
-    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
+    expect(inbox).toContain('disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)||liveCamera} capture="environment"');
+    expect(inbox).toContain('disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
     expect(inbox).toContain('if(deleting||loading||scanningId)return;');
+    expect(inbox).toContain('if(reviewSaving||scanningId||liveCamera||loading||deleting||id===selectedId)return;');
+    expect(inbox).toContain('if(reviewSaving||scanningId||liveCamera||loading||deleting||needsDuplicateReview||linkedPurchase)return;');
+    expect(inbox).toContain('if(liveCamera){closeLiveCamera();return}');
     expect(inbox).toContain('if(reviewSaving||deleting||loading)return;');
     expect(inbox).toContain('setReviewSaving(true);setError(\'\');');
     expect(inbox).toContain('finally{setReviewSaving(false)}');

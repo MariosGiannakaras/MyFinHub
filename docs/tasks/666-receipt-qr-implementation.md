@@ -19,6 +19,8 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 
 ## Checkpoint
 
+2026-11-27: parent `79891c0` CI #45912676309 passed hygiene and CodeQL; all 11 QR tests (including 5 actual WASM fixture decodes) passed. Six outdated source guards and stale desktop linked root manifest metadata failed, repaired together. Full build, rendered QA and real-stack acceptance remain pending; no completion claim.
+
 2026-11-27: exact parent `5f2999a` CI #45912099725 failed solely at unused exports (two private parser type aliases); CodeQL, install, cycles and unused-symbol checks passed, tests/build not reached. Remove those exports, restore camera trigger focus on close, clarify duplicate-only messaging, and prepare browser media-denial/late-stream cleanup, duplicate guard, cancel/reopen and explicit QR save assertions in the existing suite. No rendered or functional PASS claimed; acceptance remains open. All opt-ins OFF until mandatory CI is clean.
 
 Prepared in the 2026-11-27 combined shell/Savings/receipt batch based on `786b161`. Previous ordinary CI passed; the current candidate has only syntax preflight, not a claimed green build. Keep Draft and optional QA opt-ins off during implementation; on ordinary green use `run-649-shell-savings-receipt-batch-qa` and Real Stack together on the coherent head. Inspect evidence, repair the full set of failures and update this checklist before acceptance. No production or hosted financial operations.

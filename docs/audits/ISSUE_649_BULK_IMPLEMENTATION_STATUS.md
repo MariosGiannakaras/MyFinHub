@@ -1,3 +1,11 @@
+## 2026-11-27 — Combined ordinary CI source-contract and linked lock reconciliation
+
+**Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Exact `79891c0` [CI #45912676309](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45912676309) FAILED: hygiene fully PASS, CodeQL PASS, 2647/2654 tests (344/349 files); all 11 new receipt QR parser/actual WASM image/source tests and all four chart-axis tests PASS. Seven failures across five files: six obsolete source assertions (camera guards, shared button adoption/count, lazy cancellable OCR, 44px More close target, explicit period-label class) and one actual stale Windows linked root dependency snapshot. Reconcile all in one push: preserve and extend guards, including camera duplicate/QR review and exact focus/close shared controls; sync only desktop linked-root dependency metadata to the actual manifest. No runtime behavior, gate thresholds, version or unrelated dependency changes. Build/budgets and rendered evidence not reached.
+
+Next: mandatory ordinary CI on this repaired head. When green, opt in to the combined shell/Savings/receipt batch and Real Stack together, inspect evidence before acceptance. No expensive opt-ins enabled during edits. No merge, production, hosted data or Android changes.
+
+---
+
 ## 2026-11-27 — Combined batch hygiene repair and receipt acceptance preparation
 
 **Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Exact `5f2999a` [CI #45912099725](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45912099725) FAILED validate at hygiene:exports; dependency install, cycles, unused-symbol check and CodeQL succeeded. Two receipt parser types were unnecessarily exported; make private without changing runtime/parser contracts. Other tests, build/bundle/security and rendering were not reached. No check weakened.

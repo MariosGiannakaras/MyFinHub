@@ -176,7 +176,8 @@ describe('completion UX contracts',()=>{
     const more=read('src/styles/mobile-more-navigation.css');
     const shell=read('src/styles/root-responsive-coordination.css');
     expect(more).toContain('.mobile-more-backdrop{display:block;position:fixed;inset:0;z-index:80');
-    expect(more).toContain('.mobile-more-menu>header button{width:40px;height:40px;min-width:40px;min-height:40px');
+    expect(more).toContain('.mobile-more-menu>header button{width:44px;height:44px;min-width:44px;min-height:44px');
+    expect(more).toContain('max-height:calc(100dvh - 90px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;overscroll-behavior:contain');
     expect(shell).toContain('.mobile-nav{display:grid;position:fixed;z-index:70');
     const appShell=read('src/components/AppShell.tsx');
     expect(appShell).toContain('className="mobile-more-menu surface-raised" role="dialog" aria-modal="true"');

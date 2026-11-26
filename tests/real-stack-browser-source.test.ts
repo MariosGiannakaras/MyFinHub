@@ -155,7 +155,7 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).not.toContain("querySelector('.period-control>span')");
     const monthControl=readFileSync('src/components/PeriodControl.tsx','utf8');
     expect(monthControl).toContain('<Tooltip label="Προηγούμενος μήνας">');
-    expect(monthControl).toContain('<span>{monthLabel(month)}</span>');
+    expect(monthControl).toContain('<span className="period-label">{monthLabel(month)}</span>');
     expect(source).toContain('reporting period navigation');
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');

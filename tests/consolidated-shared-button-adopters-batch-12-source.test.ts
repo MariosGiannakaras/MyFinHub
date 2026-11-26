@@ -6,6 +6,7 @@ const root=process.cwd();
 const contextual=fs.readFileSync(path.join(root,'src/components/ContextualQuickAdd.tsx'),'utf8');
 const taxonomy=fs.readFileSync(path.join(root,'src/components/CategoryIconsWorkspace.tsx'),'utf8');
 const receipts=fs.readFileSync(path.join(root,'src/components/ReceiptInbox.tsx'),'utf8');
+const receiptCamera=fs.readFileSync(path.join(root,'src/components/ReceiptQrCamera.tsx'),'utf8');
 
 describe('consolidated Stage 2 shared action adoption',()=>{
   it('moves ContextualQuickAdd generic dialog actions to shared primitives only',()=>{
@@ -73,15 +74,19 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('keeps ReceiptInbox capture, review and apply actions on shared primitives',()=>{
     expect(receipts).toContain("from './Button'");
     expect(receipts).toContain("from './IconButton'");
-    expect(receipts.match(/<Button/g)).toHaveLength(15);
+    expect(receipts.match(/<Button/g)).toHaveLength(17);
     expect(receipts.match(/<IconButton/g)).toHaveLength(1);
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(10);
+    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(12);
+    expect(receiptCamera).toContain("from './Button'");
+    expect(receiptCamera.match(/<Button/g)).toHaveLength(1);
+    expect(receiptCamera).toContain('variant="secondary" onClick={onCancel}>Κλείσιμο κάμερας</Button>');
+    expect(receiptCamera).not.toContain('<button');
     expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(3);
     expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}>');
-    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
-    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting}');
-    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)}');
+    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
+    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
+    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||needsQrReview||needsDuplicateReview}');
     expect(receipts).toContain('onClick={addReviewLine}>Προσθήκη γραμμής</Button>');
     expect(receipts).toContain('onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής');
     expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
@@ -96,7 +101,12 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(receipts).not.toContain('<button type="button" className="text-button danger"');
     expect(receipts).not.toContain('<button type="button" className="secondary danger"');
     expect(receipts).toContain('className="receipt-draft-open"');
-    expect(receipts).toContain('await module.cancelReceiptOcr()');
+    expect(receipts).toContain('const module=receiptOcrModulePromise;');
+    expect(receipts).toContain('if(module)await module.then(value=>value.cancelReceiptOcr()).catch(()=>{});');
+    expect(receipts).toContain('scanAbort.current?.abort()');
+    expect(receipts).toContain('const needsDuplicateReview=(purchaseMatches.length>0||duplicateQrDraft)&&!reviewNewPurchaseConfirmed;');
+    expect(receipts).toContain('if(apply&&needsQrReview)');
+    expect(receipts).toContain('if(apply&&needsDuplicateReview)');
     expect(receipts).toContain('await saveReceiptProposal(draft.id, proposal)');
     expect(receipts).toContain('await deleteReceiptDrafts(request.ids)');
     expect(receipts).toContain('<ConfirmDialog open={Boolean(deleteRequest)}');
