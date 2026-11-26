@@ -1681,6 +1681,68 @@ async function main(){
       'Rejected direct provider asset mutations changed persistent metadata.');
     const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
     assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');
+    // Clearing an optional presentation slot must never delete the reusable
+    // binary, registry row, primary logo/wordmark or finance history.
+    console.log('[real-stack] stage provider-optional-binding-clear-retention');
+    const bindingPath='/api/account-metadata?resource=financial-provider-asset-binding';
+    const optionalBinding={providerId:'real-browser-provider',role:'card-mark',variant:'dark'};
+    const readProviderProof=async()=>{
+      const [catalog,bindings,assets,intents,objects,bytes,finance,history]=await Promise.all([
+        primary.request('/api/account-metadata?resource=financial-providers'),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key&order=asset_role.asc,variant.asc',local.serviceRole),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.real-browser-provider&select=*&order=asset_key.asc',local.serviceRole),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?target_id=eq.real-browser-provider&select=*&order=intent_id.asc',local.serviceRole),
+        upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider'),
+        fetch(local.apiUrl+'/storage/v1/object/public/financial-provider-assets/'+providerPath+'?qa='+randomUUID(),{
+          headers:{apikey:local.serviceRole,authorization:'Bearer '+local.serviceRole},
+        }),
+        primary.request('/api/data'),primary.request('/api/history'),
+      ]);
+      expect(catalog,200,undefined,'provider-clear-catalog');
+      expect(finance,200,undefined,'provider-clear-finance');
+      expect(history,200,undefined,'provider-clear-history');
+      assert(bytes.status===200,'Provider clear proof could not read existing Storage bytes.');
+      const content=Buffer.from(await bytes.arrayBuffer());
+      assert(content.length===Number(providerAssets[0].size_bytes)&&content.length>0,
+        'Provider clear proof byte count does not match the registered object.');
+      const provider=catalog.body?.providers?.find((row:any)=>row.id==='real-browser-provider');
+      assert(provider&&Array.isArray(provider.bindings)&&Array.isArray(provider.assets)&&
+        provider.assets.length===1&&provider.assets[0].assetKey===providerAssetKey&&
+        provider.logoAssetKey===providerAssetKey&&provider.wordmarkAssetKey===providerAssetKey,
+        'Provider clear proof lost the original catalog identity or reusable artwork.');
+      assert(Array.isArray(bindings)&&Array.isArray(assets)&&Array.isArray(intents)&&objects.length===1,
+        'Provider clear proof returned an invalid or incomplete durable snapshot.');
+      const {bindings:catalogBindings,...catalogWithoutBindings}=provider;
+      return {catalogWithoutBindings,catalogBindings,bindings,assets,intents,objects,
+        bytes:content.toString('base64'),finance:{revision:finance.body.revision,data:finance.body.data},
+        history:history.body};
+    };
+    const beforeOptional=await readProviderProof();
+    assert(beforeOptional.bindings.length===2&&beforeOptional.catalogBindings.length===2,
+      'Provider optional-clear fixture must start with exactly its two existing primary assignments.');
+    const assignOptional=await primary.request(bindingPath,{method:'PUT',
+      body:{...optionalBinding,assetKey:providerAssetKey}});
+    expect(assignOptional,200,undefined,'provider-optional-bind');
+    assert(assignOptional.body?.ok===true,'Provider optional assignment lacks an exact success receipt.');
+    const assignedOptional=await readProviderProof();
+    const {bindings:assignedDb,catalogBindings:assignedCatalog,...assignedUnchanged}=assignedOptional;
+    const {bindings:beforeDb,catalogBindings:beforeCatalog,...beforeUnchanged}=beforeOptional;
+    assert(assignedDb.length===3&&assignedCatalog.length===3&&
+      assignedDb.some((row:any)=>row.asset_role==='card-mark'&&row.variant==='dark'&&row.asset_key===providerAssetKey)&&
+      assignedCatalog.some((row:any)=>row.role==='card-mark'&&row.variant==='dark'&&row.assetKey===providerAssetKey)&&
+      beforeDb.every((row:any)=>assignedDb.some((after:any)=>JSON.stringify(after)===JSON.stringify(row)))&&
+      beforeCatalog.every((row:any)=>assignedCatalog.some((after:any)=>JSON.stringify(after)===JSON.stringify(row))),
+      'Provider optional assignment did not preserve both primary assignments.');
+    assert(JSON.stringify(assignedUnchanged)===JSON.stringify(beforeUnchanged),
+      'Adding a reusable optional binding mutated binary, registry, journal or finance/history.');
+    const clearOptional=await primary.request(bindingPath,{method:'PUT',
+      body:{...optionalBinding,assetKey:null}});
+    expect(clearOptional,200,undefined,'provider-optional-clear');
+    assert(clearOptional.body?.ok===true,'Provider optional clear lacks an exact success receipt.');
+    const clearedOptional=await readProviderProof();
+    assert(JSON.stringify(clearedOptional)===JSON.stringify(beforeOptional),
+      'Clearing the optional binding failed to preserve exact artwork, primary slots, journal and finance/history.');
+    console.log('[real-stack] PASS provider optional clear retains exact reusable Storage bytes, primary bindings and finance/history');
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;
     assert(providerHealth?.ok===true,'Database health is not clean after provider Storage mutation.');
 

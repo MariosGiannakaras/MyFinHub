@@ -123,6 +123,16 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("Canonical API read-back is missing one or more generic Quick Entry intents.");
     expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
+    const optionalClear=script.slice(script.indexOf('stage provider-optional-binding-clear-retention'),script.indexOf('const providerHealth='));
+    expect(optionalClear).toContain("role:'card-mark',variant:'dark'");
+    expect(optionalClear).toContain("body:{...optionalBinding,assetKey:providerAssetKey}");
+    expect(optionalClear).toContain("body:{...optionalBinding,assetKey:null}");
+    expect(optionalClear).toContain("bytes:content.toString('base64')");
+    expect(optionalClear).toContain("content.length===Number(providerAssets[0].size_bytes)&&content.length>0");
+    expect(optionalClear).toContain("assignedDb.length===3&&assignedCatalog.length===3");
+    expect(optionalClear).toContain("JSON.stringify(assignedUnchanged)===JSON.stringify(beforeUnchanged)");
+    expect(optionalClear).toContain("JSON.stringify(clearedOptional)===JSON.stringify(beforeOptional)");
+    expect(script).toContain('PASS provider optional clear retains exact reusable Storage bytes, primary bindings and finance/history');
     expect(script).toContain("[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback");
     const directRpc=read('scripts/real-stack-receivable-rpc.ts');
     const directFinance=directRpc.slice(directRpc.indexOf('const protectedFinanceCalls='),directRpc.indexOf('const overpay='));
