@@ -316,7 +316,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       await search(before.note);
       const rowPredicate="function(id){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>row.getClientRects().length>0&&row.getAttribute('data-transaction-id')===id)}";
       await waitFor(rowPredicate,before.note+' exact row',[before.id]);
-      const opened=await c!.call<boolean>("function(id){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&item.getAttribute('data-transaction-id')===id);const button=row?.querySelector('button[aria-label^=\\"Επεξεργασία\\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}",[before.id]);
+      const opened=await c!.call<boolean>("function(id){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&item.getAttribute('data-transaction-id')===id);const button=[...row?.querySelectorAll('button[aria-label]')||[]].find(node=>(node.getAttribute('aria-label')||'').startsWith('Επεξεργασία'));if(!(button instanceof HTMLElement))return false;button.click();return true}",[before.id]);
       assert(opened,'Missing edit action: '+before.note);
       await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",before.note+' editor');
     };
