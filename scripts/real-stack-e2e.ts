@@ -473,6 +473,28 @@ async function main(){
           for(const result of results)expect(result,200,undefined,'asset-http-positive-catalog');
           return {metadata:results[0].body,providers:results[1].body,recurring:results[2].body};
         };
+
+        // A real pending upload must be visible and resolvable by the active
+        // owner. A nonexistent intent would not prove a denial prevents a
+        // terminal mutation when an ambient owner cookie is also present.
+        const journalTarget='qa-auth-intent-'+identity;
+        const journalId=randomUUID();
+        const journalPath=metadataPath+'?'+new URLSearchParams({
+          resource:'artwork-upload-intents',kind:'recurring',targetId:journalTarget,
+        });
+        const journalUpload=await primary.requestBinary(metadataPath+'?'+new URLSearchParams({
+          resource:'recurring-service-assets',recurringId:journalTarget,fileName:'auth-intent.svg',intentId:journalId,
+        }),{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset});
+        expect(journalUpload,200,undefined,'asset-http-positive-intent-upload');
+        const journalKey=String(journalUpload.body?.asset?.assetKey||'');
+        assert(/^service-asset-[a-f0-9]{24}$/.test(journalKey)&&journalUpload.body?.intentId===journalId,
+          'HTTP journal proof requires a real explicit upload receipt.');
+        const journalBefore=await primary.request(journalPath);
+        expect(journalBefore,200,undefined,'asset-http-positive-intent-read');
+        assert(journalBefore.body?.intent?.intentId===journalId&&journalBefore.body.intent.assetKey===journalKey&&
+          journalBefore.body.intent.registrationRecorded===true&&journalBefore.body.intent.asset?.assetKey===journalKey,
+          'HTTP journal proof requires a pending registered asset with verified bytes.');
+        const journalResolution={intentId:journalId,assetKey:journalKey,action:'acknowledge'};
         const before=await readCatalogs();
         const record=before.metadata?.records?.find((row:any)=>row.accountId===assetFixture.accountId);
         const provider=before.providers?.providers?.find((row:any)=>row.id===assetFixture.providerId);
@@ -490,6 +512,7 @@ async function main(){
           artwork:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?select=*&order=asset_key.asc',local.serviceRole),
           bindings:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?select=*&order=provider_id.asc,asset_role.asc,variant.asc',local.serviceRole),
           recurring:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_recurring_service_assets?select=*&order=asset_key.asc',local.serviceRole),
+          intents:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?select=*&order=intent_id.asc',local.serviceRole),
           vault:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_card_secrets?select=*&card_id=eq.'+TEST_CARD_ID,local.serviceRole),
           providerObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/'+assetFixture.providerId),
           recurringObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets'),
@@ -514,6 +537,8 @@ async function main(){
           [providerPath,{method:'PATCH',headers,body:providerWrite},'provider-update'],
           [metadataPath+'?resource=financial-provider-asset-binding',{method:'PUT',headers,body:{providerId:provider.id,role:'card-mark',variant:'dark',assetKey:null}},'provider-unbind'],
           [recurringPath,{headers},'recurring-catalog-read'],
+          [journalPath,{headers},'artwork-intent-read'],
+          [journalPath,{method:'PATCH',headers,body:journalResolution},'artwork-intent-acknowledge'],
           [recurringPath+'&assetKey='+encodeURIComponent(assetFixture.recurringAssetKey),{method:'DELETE',headers},'recurring-release'],
           [vaultPath,{method:'POST',headers,body:{cardId:TEST_CARD_ID}},'vault-read'],
           [vaultPath,{method:'PUT',headers,body:{cardId:TEST_CARD_ID,cvv:'321'}},'vault-write'],
@@ -533,8 +558,28 @@ async function main(){
         assert(JSON.stringify(vaultAfter.body)===JSON.stringify(vaultBefore.body),
           'Unauthorized HTTP request changed readable Card Vault fixture: '+identity);
         assert(JSON.stringify(await snapshotRows())===JSON.stringify(rowsBefore),
-          'Unauthorized HTTP request changed metadata, encrypted vault rows or Storage object inventory: '+identity);
+          'Unauthorized HTTP request changed metadata, artwork journal, encrypted vault rows or Storage object inventory: '+identity);
+        const journalAfter=await primary.request(journalPath);
+        expect(journalAfter,200,undefined,'asset-http-intent-preserved');
+        assert(JSON.stringify(journalAfter.body)===JSON.stringify(journalBefore.body),
+          'Unauthorized HTTP request changed the owner-visible pending artwork receipt: '+identity);
         expect(await primary.request('/api/auth/session'),200,undefined,'asset-http-cookie-preserved');
+        // Prove the same exact resolution was valid (not rejected by an
+        // unrelated precondition) and release only this unreferenced fixture.
+        const journalAck=await primary.request(journalPath,{method:'PATCH',body:journalResolution});
+        expect(journalAck,200,undefined,'asset-http-owner-intent-acknowledgement');
+        assert(journalAck.body?.intentId===journalId&&journalAck.body?.assetKey===journalKey&&
+          journalAck.body?.disposition==='acknowledged','Authorized exact journal resolution was not committed.');
+        const journalResolved=await primary.request(journalPath);
+        expect(journalResolved,200,undefined,'asset-http-owner-intent-terminal-read');
+        assert(journalResolved.body?.intent===null,'Authorized journal resolution left a pending target.');
+        expect(await primary.request(recurringPath+'&assetKey='+encodeURIComponent(journalKey),{method:'DELETE'}),
+          200,undefined,'asset-http-owner-intent-fixture-release');
+        const journalRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?intent_id=eq.'+
+          encodeURIComponent(journalId)+'&select=intent_id,asset_key,disposition',local.serviceRole) as any[];
+        assert(journalRows.length===1&&journalRows[0]?.intent_id===journalId&&journalRows[0]?.asset_key===journalKey&&
+          journalRows[0]?.disposition==='acknowledged','Fixture release must preserve its terminal journal tombstone.');
+        console.log('[real-stack] PASS artwork-intent-http-owner-aal2-denial '+identity);
         console.log('[real-stack] PASS metadata-vault-http-owner-aal2-denial '+identity);
       },
     });

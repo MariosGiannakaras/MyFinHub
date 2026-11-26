@@ -165,7 +165,7 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(directRpc.indexOf("await options.proveAssetHttpDenial('revoked-aal2',aal2Token,httpFixture)")).toBeGreaterThan(directRpc.indexOf('const revokedDevice='));
     expect(directRpc).toContain('await storageBytesUnchanged(recurringStorage)&&await storageBytesUnchanged(registeredAssetStorage)');
     const assetHttp=script.slice(script.indexOf('proveAssetHttpDenial:async(identity,accessToken,assetFixture)'),script.indexOf('const afterDirectDevices='));
-    for(const label of ['iban-read','iban-clear','provider-catalog-read','provider-create','provider-update','provider-unbind','provider-upload','recurring-catalog-read','recurring-release','recurring-upload','vault-read','vault-write','vault-delete'])
+    for(const label of ['iban-read','iban-clear','provider-catalog-read','provider-create','provider-update','provider-unbind','provider-upload','recurring-catalog-read','recurring-release','recurring-upload','artwork-intent-read','artwork-intent-acknowledge','vault-read','vault-write','vault-delete'])
       expect(assetHttp).toContain(label);
     expect(assetHttp).toContain("identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED'");
     expect(assetHttp).toContain('JSON.stringify([...primary.snapshot()])===cookies');
@@ -173,6 +173,16 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(assetHttp).toContain('JSON.stringify(await readCatalogs())===JSON.stringify(before)');
     expect(assetHttp).toContain('JSON.stringify(vaultAfter.body)===JSON.stringify(vaultBefore.body)');
     expect(assetHttp).toContain("'asset-http-cookie-preserved'");
+    expect(assetHttp).toContain("resource:'artwork-upload-intents',kind:'recurring',targetId:journalTarget");
+    expect(assetHttp).toContain("journalBefore.body.intent.registrationRecorded===true");
+    expect(assetHttp).toContain("rheomiq_artwork_upload_intents?select=*&order=intent_id.asc");
+    expect(assetHttp).toContain("[journalPath,{method:'PATCH',headers,body:journalResolution},'artwork-intent-acknowledge']");
+    expect(assetHttp).toContain("JSON.stringify(journalAfter.body)===JSON.stringify(journalBefore.body)");
+    expect(assetHttp.indexOf("const journalBefore=")).toBeLessThan(assetHttp.indexOf("const rowsBefore="));
+    expect(assetHttp.indexOf("const journalAck=")).toBeGreaterThan(assetHttp.indexOf("JSON.stringify(await snapshotRows())===JSON.stringify(rowsBefore)"));
+    expect(assetHttp).toContain("journalAck.body?.disposition==='acknowledged'");
+    expect(assetHttp).toContain("journalRows[0]?.disposition==='acknowledged'");
+    expect(assetHttp).toContain("'asset-http-owner-intent-fixture-release'");
     expect(script).toContain("[real-stack] stage revoked-bearer-finance-mutation-history-backup-import");
     const revokedStage=script.slice(script.indexOf("stage revoked-bearer-finance-mutation-history-backup-import"),script.indexOf("stage revoked-bearer-finance-vault-no-cookie-fallback"));
     for(const label of ['revoked-bearer-finance-put','revoked-bearer-history-read','revoked-bearer-history-redo','revoked-bearer-backup','revoked-bearer-import'])
