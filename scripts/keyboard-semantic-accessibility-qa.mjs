@@ -260,6 +260,43 @@ try{
  await waitFor("function(){return Boolean(document.querySelector('.quick-modal[aria-modal=true]'))}",'Quick Entry modal');
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'Quick Entry initial focus is inside modal');
  for(let i=0;i<20;i++){await pressTab(i%7===0);assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),`Quick Entry focus trap step ${i+1}`)}
+ // Exercise the real shared trap with rendered, non-tabbable descendants.
+ // Test-only sentinels model pending inert forms, disabled fieldsets and hidden
+ // controls without changing the finance fixture or product DOM after cleanup.
+ const trapFixture=await c.call(`function(){
+   const modal=document.querySelector('.quick-modal[aria-modal=true]');
+   if(!modal)return false;
+   const fixture=document.createElement('div');fixture.dataset.qaModalTabFixture='true';
+   const button=name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.dataset.qaModalTab=name;return b};
+   const before=button('before'),after=button('after');
+   const inert=document.createElement('div');inert.inert=true;inert.append(button('inert'));
+   const disabled=document.createElement('fieldset');disabled.disabled=true;disabled.append(button('fieldset'));
+   const hidden=button('hidden');hidden.style.visibility='hidden';
+   const ariaHidden=document.createElement('div');ariaHidden.setAttribute('aria-hidden','true');ariaHidden.append(button('aria-hidden'));
+   fixture.append(before,inert,disabled,hidden,ariaHidden,after);modal.prepend(fixture);before.focus({preventScroll:true});
+   return document.activeElement===before&&[inert.firstElementChild,disabled.firstElementChild,hidden,ariaHidden.firstElementChild].every(el=>el.getClientRects().length>0);
+ }`);
+ assert(trapFixture,'modal trap regression fixture has real layout and initial focus');
+ try{
+   await pressTab();
+   assert(await c.call("function(){return document.activeElement?.dataset.qaModalTab==='after'}"),'modal Tab skips inert, disabled-fieldset, hidden and aria-hidden controls');
+   await pressTab(true);
+   assert(await c.call("function(){return document.activeElement?.dataset.qaModalTab==='before'}"),'modal Shift+Tab skips unavailable controls in reverse');
+ }finally{
+   await c.call("function(){document.querySelector('[data-qa-modal-tab-fixture]')?.remove();document.querySelector('.quick-modal [data-autofocus=true]')?.focus({preventScroll:true});return true}");
+ }
+ const dateTrigger=await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.focus({preventScroll:true});return Boolean(input&&document.activeElement===input)}");
+ assert(dateTrigger,'Quick Entry date control accepts keyboard focus');
+ await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+ await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+ await waitFor("function(){const d=document.querySelector('.owned-date-popover[aria-modal=true]');return Boolean(d&&d.contains(document.activeElement))}",'keyboard opens and focuses nested date portal');
+ await pressTab();
+ assert(await c.call("function(){return Boolean(document.activeElement?.closest('.owned-date-popover[aria-modal=true]'))}"),'nested date portal owns Tab');
+ await pressEscape();
+ await waitFor("function(){return !document.querySelector('.owned-date-popover')&&document.activeElement===document.querySelector('.quick-modal .owned-date-shell input')}",'nested date Escape restores parent date control');
+ assert(await c.call("function(){return document.body.style.position==='fixed'}"),'nested date Escape retains parent scroll lock');
+ await shot('keyboard-quick-entry-nested-date-restored');
+
  await pressEscape();await waitFor("function(){return !document.querySelector('.quick-modal[aria-modal=true]')}",'Quick Entry Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('[data-global-quick-entry=desktop]')}"),'Quick Entry restores focus to opener');
 

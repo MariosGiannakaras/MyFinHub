@@ -50,6 +50,18 @@ describe('DialogShell source contract',()=>{
     expect(scrollLock).toContain('html.style.overscrollBehavior=held.overscroll');
   });
 
+  it('excludes unavailable controls from shared modal keyboard traversal and checks the real nested portal',()=>{
+    expect(focus).toContain("!element.matches(':disabled')");
+    expect(focus).toContain("!element.closest('[inert], [aria-hidden=\"true\"]')");
+    expect(focus).toContain("getComputedStyle(element).visibility==='visible'");
+    const rendered=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(rendered).toContain('modal Tab skips inert, disabled-fieldset, hidden and aria-hidden controls');
+    expect(rendered).toContain('modal Shift+Tab skips unavailable controls in reverse');
+    expect(rendered).toContain('nested date portal owns Tab');
+    expect(rendered).toContain('nested date Escape restores parent date control');
+    expect(rendered).toContain('nested date Escape retains parent scroll lock');
+  });
+
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
     expect(shell).toContain('dataAttributes?:DialogDataAttributes');
     expect(shell).toContain('{...dataAttributes}');

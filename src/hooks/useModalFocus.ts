@@ -11,7 +11,8 @@ function isTopmostModal(root: HTMLElement) {
 }
 
 function canReceiveFocus(element:HTMLElement|null){
-  return Boolean(element&&element.matches(FOCUSABLE)&&element.tabIndex>=0&&element.isConnected&&element.getClientRects().length>0);
+  return Boolean(element&&element.matches(FOCUSABLE)&&element.tabIndex>=0&&element.isConnected&&element.getClientRects().length>0&&
+    !element.matches(':disabled')&&!element.closest('[inert], [aria-hidden="true"]')&&getComputedStyle(element).visibility==='visible');
 }
 
 function addDescription(element:HTMLElement,id:string){
