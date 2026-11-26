@@ -62,6 +62,18 @@ describe('DialogShell source contract',()=>{
     expect(rendered).toContain('nested date Escape retains parent scroll lock');
   });
 
+  it('isolates only the active modal and preserves pre-existing inert plus explicit route handoff',()=>{
+    expect(focus).toContain('modalRoots.has(element)');
+    expect(focus).toContain('for(const element of ownedInert)');
+    expect(focus).toContain('if(!element.inert){element.inert=true;ownedInert.add(element)}');
+    expect(focus).toContain('isolationObserver.observe(document.body,{childList:true,subtree:true})');
+    expect(focus).toContain('releaseModalBackground(root);');
+    expect(read('src/components/CommandPalette.tsx')).toContain('releaseModalBackground(modalRef.current);onExecute(row)');
+    const rendered=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    for(const assertion of ['native inert blocks programmatic focus','late background cannot receive programmatic focus','nested body portal makes parent dialog inert','nested close reactivates only parent dialog','final close restores owned inert only and preserves pre-existing inert','Command Palette background is inert','inline mobile More background is inert'])expect(rendered).toContain(assertion);
+    expect(read('scripts/command-palette-qa.mjs')).toContain('budget command retains keyboard focus after palette dismissal');
+  });
+
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
     expect(shell).toContain('dataAttributes?:DialogDataAttributes');
     expect(shell).toContain('{...dataAttributes}');

@@ -36,6 +36,7 @@ try{
  await waitFor("function(){return Boolean(document.querySelector('#report-budgets')?.open)}",'budget management on current Reports page');
  await sleep(240);
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command retains keyboard focus after palette dismissal');
+ assert(await c.call("function(){return !document.querySelector('#report-budgets')?.closest('[inert]')}"),'command destination is no longer inert after palette execution');
  await screenshot('command-budget-editor-current-page');
  budgetUrl.searchParams.set('page','dashboard');await c.send('Page.navigate',{url:budgetUrl.href});
  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Οι λογαριασμοί')}",'budget Dashboard fixture');

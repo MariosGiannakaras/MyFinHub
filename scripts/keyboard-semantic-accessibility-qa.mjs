@@ -258,10 +258,16 @@ try{
  }
 
  await navigate('dashboard',pages.dashboard,1440,1000,false);
+ // A pre-existing native inert subtree is not owned by the modal coordinator.
+ await c.call("function(){const el=document.createElement('div');el.id='qa-existing-inert';el.inert=true;document.body.append(el);return true}");
  const opener=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=desktop]');button?.focus();button?.click();return button?.getAttribute('aria-label')||button?.textContent||''}");
  assert(opener,'Quick Entry keyboard opener exists');
  await waitFor("function(){return Boolean(document.querySelector('.quick-modal[aria-modal=true]'))}",'Quick Entry modal');
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'Quick Entry initial focus is inside modal');
+ assert(await c.call("function(){const opener=document.querySelector('[data-global-quick-entry=desktop]');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'native inert blocks programmatic focus into Quick Entry background');
+ await c.call("function(){const el=document.createElement('button');el.id='qa-late-background';el.textContent='QA only';el.style.cssText='position:fixed;left:0;top:0;opacity:0';document.body.append(el);return true}");
+ await waitFor("function(){return document.getElementById('qa-late-background')?.inert===true}",'late background subtree becomes inert');
+ assert(await c.call("function(){document.getElementById('qa-late-background')?.focus();return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'late background cannot receive programmatic focus');
  for(let i=0;i<20;i++){await pressTab(i%7===0);assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),`Quick Entry focus trap step ${i+1}`)}
  // Exercise the real shared trap with rendered, non-tabbable descendants.
  // Test-only sentinels model pending inert forms, disabled fieldsets and hidden
@@ -293,19 +299,23 @@ try{
  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  await waitFor("function(){const d=document.querySelector('.owned-date-popover[aria-modal=true]');return Boolean(d&&d.contains(document.activeElement))}",'keyboard opens and focuses nested date portal');
+ assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.focus();return Boolean(input?.closest('[inert]')&&document.activeElement?.closest('.owned-date-popover[aria-modal=true]'))}"),'nested body portal makes parent dialog inert');
  await pressTab();
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.owned-date-popover[aria-modal=true]'))}"),'nested date portal owns Tab');
  await pressEscape();
  await waitFor("function(){return !document.querySelector('.owned-date-popover')&&document.activeElement===document.querySelector('.quick-modal .owned-date-shell input')}",'nested date Escape restores parent date control');
  assert(await c.call("function(){return document.body.style.position==='fixed'}"),'nested date Escape retains parent scroll lock');
+ assert(await c.call("function(){return !document.querySelector('.quick-modal')?.closest('[inert]')&&Boolean(document.querySelector('[data-global-quick-entry=desktop]')?.closest('[inert]'))}"),'nested close reactivates only parent dialog');
  await shot('keyboard-quick-entry-nested-date-restored');
 
  await pressEscape();await waitFor("function(){return !document.querySelector('.quick-modal[aria-modal=true]')}",'Quick Entry Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('[data-global-quick-entry=desktop]')}"),'Quick Entry restores focus to opener');
+ assert(await c.call("function(){const late=document.getElementById('qa-late-background'),existing=document.getElementById('qa-existing-inert');const valid=late?.inert===false&&existing?.inert===true&&!document.querySelector('[data-global-quick-entry=desktop]')?.closest('[inert]');late?.remove();existing?.remove();return valid}"),'final close restores owned inert only and preserves pre-existing inert');
 
  const commandButton=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναζήτηση και εντολές\"]');button?.focus();button?.click();return Boolean(button)}");
  assert(commandButton,'Command Palette opener exists');await waitFor("function(){return Boolean(document.querySelector('.command-palette[role=dialog]'))}",'Command Palette');
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.command-palette[role=dialog]'))}"),'Command Palette initial focus is inside dialog');
+ assert(await c.call("function(){const opener=document.querySelector('.top-action-command');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.command-palette[role=dialog]'))}"),'Command Palette background is inert');
  for(let i=0;i<14;i++){await pressTab();assert(await c.call("function(){return Boolean(document.activeElement?.closest('.command-palette[role=dialog]'))}"),`Command Palette focus trap step ${i+1}`)}
  await pressEscape();await waitFor("function(){return !document.querySelector('.command-palette[role=dialog]')}",'Command Palette Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('.top-actions button[aria-label=\"Αναζήτηση και εντολές\"]')}"),'Command Palette restores focus to opener');
@@ -313,6 +323,7 @@ try{
  await navigate('dashboard',pages.dashboard,375,812,true);
  const more=await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}");
  assert(more,'mobile More opener exists');await waitFor("function(){return Boolean(document.querySelector('.mobile-more-menu[role=dialog]'))}",'mobile More dialog');
+ assert(await c.call("function(){const opener=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.mobile-more-menu[role=dialog]'))}"),'inline mobile More background is inert');
  for(let i=0;i<12;i++){await pressTab();assert(await c.call("function(){return Boolean(document.activeElement?.closest('.mobile-more-menu[role=dialog]'))}"),`mobile More focus trap step ${i+1}`)}
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'mobile More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'mobile More restores focus to opener');

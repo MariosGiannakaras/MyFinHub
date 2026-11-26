@@ -4,10 +4,46 @@ import { acquireModalScrollLock } from '../lib/modalScrollLock';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-function isTopmostModal(root: HTMLElement) {
-  const modals = [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')]
-    .filter((element) => element.isConnected && element.getClientRects().length > 0);
-  return modals.at(-1) === root;
+// Only live hook-owned modal roots participate; exiting motion DOM is not active.
+const modalRoots=new Set<HTMLElement>();
+const ownedInert=new Set<HTMLElement>();
+let isolationObserver:MutationObserver|null=null;
+
+function topmostModal(){
+  return [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')]
+    .filter(element=>modalRoots.has(element)&&element.isConnected&&element.getClientRects().length>0).at(-1);
+}
+function isTopmostModal(root:HTMLElement){return topmostModal()===root}
+
+function syncModalBackground(){
+  // Isolate sibling subtrees along the active modal's path, not its ancestors.
+  // This works for inline editors and body-portalled date/select dialogs alike.
+  const desired=new Set<HTMLElement>();
+  for(let node=topmostModal();node&&node!==document.body;node=node.parentElement??undefined){
+    for(const sibling of node.parentElement?.children??[]){
+      if(sibling!==node&&sibling instanceof HTMLElement)desired.add(sibling);
+    }
+  }
+  // Remove only attributes that this owner introduced, never existing inert.
+  for(const element of ownedInert)if(!desired.has(element)){element.inert=false;ownedInert.delete(element)}
+  for(const element of desired)if(!element.inert){element.inert=true;ownedInert.add(element)}
+}
+
+function acquireModalBackground(root:HTMLElement){
+  modalRoots.add(root);
+  syncModalBackground();
+  if(!isolationObserver){
+    isolationObserver=new MutationObserver(syncModalBackground);
+    isolationObserver.observe(document.body,{childList:true,subtree:true});
+  }
+}
+
+// An executing command may synchronously focus its real route destination
+// before React unmounts the palette. Ordinary dismissals release in cleanup.
+export function releaseModalBackground(root:HTMLElement|null){
+  if(!root||!modalRoots.delete(root))return;
+  syncModalBackground();
+  if(!modalRoots.size){isolationObserver?.disconnect();isolationObserver=null}
 }
 
 function canReceiveFocus(element:HTMLElement|null){
@@ -42,13 +78,14 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     if (!root) return;
 
     const releaseScrollLock=acquireModalScrollLock();
+    acquireModalBackground(root);
     const body=document.body;
 
     const preferredTarget = preferred ? root.querySelector<HTMLElement>(preferred) : null;
     const initial = canReceiveFocus(preferredTarget)
       ? preferredTarget!
       : [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].find(canReceiveFocus) ?? root;
-    if (focusActiveRef.current) queueMicrotask(() => initial.focus({ preventScroll: true }));
+    queueMicrotask(()=>{if(focusActiveRef.current&&isTopmostModal(root))initial.focus({preventScroll:true})});
 
     let associatedErrorId='';
     const syncErrorAssociation=()=>{
@@ -106,6 +143,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused)&&!inOtherModal;
       // Only the last modal restores the original page scroll. A navigated
       // destination keeps its own scroll, even when the last modal exits.
+      releaseModalBackground(root);
       const unlocked=releaseScrollLock();
       if(!hasDestination){
         if(unlocked)window.scrollTo({ ...unlocked, behavior: 'auto' });
