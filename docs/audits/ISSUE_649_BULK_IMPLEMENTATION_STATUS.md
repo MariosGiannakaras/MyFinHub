@@ -1,3 +1,19 @@
+## 2026-11-26 — I20.01 accepted; I19.01 split shared controls checkpoint
+
+**Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Original plan I20.01 now complete (I20 5/6); only I20.05 remains in that area. Exact prior `2054d90` [provider/receipt #45868073762](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45868073762) SUCCESS, both suites PASS, zero failures/no retry. Downloaded #15141930615 and inspected six targeted screenshots and suite logs: nested provider picker and Escape, dark mobile editor, receipt delete/cancel, dirty Quick Entry switch confirm, reviewed split handoff and uncertain posting. Combine with exact prior ordinary/Real Stack/command proof and native keyboard isolation #45857681101; shared modal background isolation, native inert preservation, nested focus, keyboard dismissal/restoration and destination handoff accepted. Final coherent Ready gates still required. All opt-ins OFF.
+
+The split shared-control candidate immediately below is now the implementation checkpoint; its prior-head evidence is accepted, its new code is NOT yet validated. Next ordinary CI, then focused action-center (existing finance-entry opt-in) and receipt handoff; inspect screenshots/logs. Recheck lending geometry on the coherent review head. I19.01 remains partial, no additional count. No merge, production, hosted or Android change.
+
+---
+
+## 2026-11-26 — I19.01 split shared-control candidate (prepared while prior head validated)
+
+**Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact prior `2054d90` ordinary #45860712044 SUCCESS: 2642/2642 tests, 346 files, CodeQL/Unified, zero vulnerabilities; JS 527.3/528, CSS 559.9/560 KiB hard pass / soft warning. Isolated #45861653741 SUCCESS: actual withdrawal bank→cash default/options and same-ID 6.20→6.21 exact legs, date/source/createdAt retained after reload, eight generic create kinds, independent API readback and migration recovery. Focused #45861653722 SUCCESS: transaction scanability, command-palette PASS after one permitted CDP bootstrap timeout retry (no assertion retry). Downloaded #15138148621/#15138871354, directly inspected nine targeted images and logs (withdrawal, matrix, budget same/cross-route, mobile entity focus and filters). Prior head representative nested provider/receipt gate #45868073762 started; do not invalidate it. Reconcile its actual result before moving branch, and keep all opt-ins OFF during new ordinary CI.
+
+**New candidate I19.01:** existing split editor used raw inputs, conditional separate category/subcategory selects (five children in four desktop tracks), nth-of-type mobile placement, and displayed an apparent total of valid parts even when a malformed part had been mapped to zero. Replace description with existing AppTextInput, single shared CategorySelectInput (category and subcategory retained), amount with MoneyInput; preserve stable part IDs, raw malformed text/cent rejection, no-write/receipt handoff and same minimum-two-row removal. Sum only fully valid positive cent inputs using existing sumValidMoneyInputAmounts; show dash until complete. Four deterministic shrink-safe tracks; mobile natural two-column ordering; 44px removal target. Remove superseded initial grid and duplicate overflow declaration in Lending settlement owner; its later flex owner and established mobile geometry guards remain. No threshold changes. Source regression and existing action-center synthetic browser QA add shared-control/no false subtotal/comma-normalized cents and 1440/768/375/320 geometry/screenshots; retain prior malformed/no-write/rapid-row guards. Source-reviewed candidate only; no local tests claimed. New ordinary CI must pass budget, then focused action-center and receipt handoff (and representative Lending geometry on review head); remaining intent edit/leg matrix open. I20.01 requires completed nested evidence reconciliation, no automatic count change. No production, hosted, Android, merge action.
+
+---
+
 ## 2026-11-26 — Withdrawal candidate source guard reconciliation
 
 **Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact `461a232` [CI #45858323570](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45858323570) FAILED validate: 2641/2642 tests, 345/346 files; CodeQL SUCCESS, Unified FAIL. Complete failure set: Savings source guard expected the previous exact accountOptions ternary, not the new outer withdrawal role branch. Actual savings source/target filtering is unchanged. Update both exact source expectations to assert the complete new branch expression, retaining the existing semantic restriction; no weakening or production-code change. New withdrawal unit/source tests passed; build/budget and isolated browser have NOT run on that head. Retest ordinary CI; only on green enable existing command-focused and Real Stack gates on exact head, inspect artifacts, then representative nested provider/receipt/confirm and remaining intent edit/leg proof. All markers OFF. No merge, production, hosted or Android action.
@@ -132,7 +148,7 @@
 | I17 | 6/6 | Complete |
 | I18 | 6/6 | Complete |
 | I19 | 6/7 | I19.01 |
-| I20 | 4/6 | I20.01, I20.05 |
+| I20 | 5/6 | I20.05 |
 | I21 | 0/5 | I21.01, I21.02, I21.03, I21.04, I21.05 |
 | I22 | 7/7 | Complete |
 | I23 | 4/7 | I23.03, I23.06, I23.07 |

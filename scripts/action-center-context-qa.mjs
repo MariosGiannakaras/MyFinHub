@@ -249,7 +249,17 @@ try{
   await clickText('.generic-quick-modal footer button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('επιμέρους')}",'split amount cannot silently coerce exponent notation');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'split malformed entry stays in draft without a posted event');
+  assert(await c.call("function(){return (document.querySelector('.generic-quick-modal .split-box [aria-live=polite]')?.textContent||'').includes('—')}"),'invalid split subtotal is not presented as a confirmed amount');
   await screenshot('quick-entry-split-nondecimal-rejected-desktop');
+  assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input.money-input-control')];if(fields.length!==2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [field,value] of [[fields[0],'3,25'],[fields[1],'4.75']]){setter?.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}return true}"),'shared split MoneyInput accepts comma and dot decimal drafts');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input.money-input-control')];return fields[0]?.value==='3.25'&&fields[1]?.value==='4.75'&&(document.querySelector('.generic-quick-modal .split-box [aria-live=polite]')?.textContent||'').includes('8,00')}",'comma decimal normalization retains exact split cents');
+  for(const [width,height] of [[1440,1000],[768,1024],[375,812],[320,740]]){
+    await viewport(width,height);
+    await waitFor("function(width){const rows=[...document.querySelectorAll('.generic-quick-modal .split-line')];if(innerWidth!==width||rows.length!==2)return false;return rows.every(row=>{const bounds=row.getBoundingClientRect(),controls=[...row.children],rects=controls.map(node=>node.getBoundingClientRect());return controls.length===4&&Boolean(row.querySelector('input.app-text-input'))&&Boolean(row.querySelector('.category-select-input input[role=combobox]'))&&Boolean(row.querySelector('.money-input input.money-input-control'))&&rects.every(rect=>rect.width>0&&rect.height>0&&rect.left>=bounds.left-1&&rect.right<=bounds.right+1)&&rects[3].height>=44&&rects.every((a,i)=>rects.every((b,j)=>i===j||Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1))})&&document.documentElement.scrollWidth<=innerWidth+1}",'split shared control geometry at '+width,[width]);
+    await c.call("function(){document.querySelector('.generic-quick-modal .split-line')?.scrollIntoView({block:'center'});return true}");
+    await sleep(160);await screenshot('quick-entry-split-shared-controls-'+width);
+  }
+  await viewport(1440,1000);
 
   console.log('Quick Entry split same-turn row additions retain independent raw amount fields');
   const addedSplitParts=await c.call("async function(){const node=[...document.querySelectorAll('.generic-quick-modal .split-box button')].find(b=>(b.textContent||'').includes('Προσθήκη μέρους'));if(!node)return false;const now=Date.now;Date.now=()=>1795011000000;try{node.click();node.click();await new Promise(resolve=>setTimeout(resolve,0))}finally{Date.now=now}return true}");

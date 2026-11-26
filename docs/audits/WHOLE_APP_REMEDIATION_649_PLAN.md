@@ -1,3 +1,19 @@
+## 2026-11-26 — I20.01 accepted; I19.01 split shared controls checkpoint
+
+**Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Original plan I20.01 now complete (I20 5/6); only I20.05 remains in that area. Exact prior `2054d90` [provider/receipt #45868073762](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45868073762) SUCCESS, both suites PASS, zero failures/no retry. Downloaded #15141930615 and inspected six targeted screenshots and suite logs: nested provider picker and Escape, dark mobile editor, receipt delete/cancel, dirty Quick Entry switch confirm, reviewed split handoff and uncertain posting. Combine with exact prior ordinary/Real Stack/command proof and native keyboard isolation #45857681101; shared modal background isolation, native inert preservation, nested focus, keyboard dismissal/restoration and destination handoff accepted. Final coherent Ready gates still required. All opt-ins OFF.
+
+The split shared-control candidate immediately below is now the implementation checkpoint; its prior-head evidence is accepted, its new code is NOT yet validated. Next ordinary CI, then focused action-center (existing finance-entry opt-in) and receipt handoff; inspect screenshots/logs. Recheck lending geometry on the coherent review head. I19.01 remains partial, no additional count. No merge, production, hosted or Android change.
+
+---
+
+## 2026-11-26 — I19.01 split shared-control candidate (prepared while prior head validated)
+
+**Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact prior `2054d90` ordinary #45860712044 SUCCESS: 2642/2642 tests, 346 files, CodeQL/Unified, zero vulnerabilities; JS 527.3/528, CSS 559.9/560 KiB hard pass / soft warning. Isolated #45861653741 SUCCESS: actual withdrawal bank→cash default/options and same-ID 6.20→6.21 exact legs, date/source/createdAt retained after reload, eight generic create kinds, independent API readback and migration recovery. Focused #45861653722 SUCCESS: transaction scanability, command-palette PASS after one permitted CDP bootstrap timeout retry (no assertion retry). Downloaded #15138148621/#15138871354, directly inspected nine targeted images and logs (withdrawal, matrix, budget same/cross-route, mobile entity focus and filters). Prior head representative nested provider/receipt gate #45868073762 started; do not invalidate it. Reconcile its actual result before moving branch, and keep all opt-ins OFF during new ordinary CI.
+
+**New candidate I19.01:** existing split editor used raw inputs, conditional separate category/subcategory selects (five children in four desktop tracks), nth-of-type mobile placement, and displayed an apparent total of valid parts even when a malformed part had been mapped to zero. Replace description with existing AppTextInput, single shared CategorySelectInput (category and subcategory retained), amount with MoneyInput; preserve stable part IDs, raw malformed text/cent rejection, no-write/receipt handoff and same minimum-two-row removal. Sum only fully valid positive cent inputs using existing sumValidMoneyInputAmounts; show dash until complete. Four deterministic shrink-safe tracks; mobile natural two-column ordering; 44px removal target. Remove superseded initial grid and duplicate overflow declaration in Lending settlement owner; its later flex owner and established mobile geometry guards remain. No threshold changes. Source regression and existing action-center synthetic browser QA add shared-control/no false subtotal/comma-normalized cents and 1440/768/375/320 geometry/screenshots; retain prior malformed/no-write/rapid-row guards. Source-reviewed candidate only; no local tests claimed. New ordinary CI must pass budget, then focused action-center and receipt handoff (and representative Lending geometry on review head); remaining intent edit/leg matrix open. I20.01 requires completed nested evidence reconciliation, no automatic count change. No production, hosted, Android, merge action.
+
+---
+
 ## 2026-11-26 — Withdrawal candidate source guard reconciliation
 
 **Implementations 8/23 completed · Sub-implementations 92/132 completed.** Exact `461a232` [CI #45858323570](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45858323570) FAILED validate: 2641/2642 tests, 345/346 files; CodeQL SUCCESS, Unified FAIL. Complete failure set: Savings source guard expected the previous exact accountOptions ternary, not the new outer withdrawal role branch. Actual savings source/target filtering is unchanged. Update both exact source expectations to assert the complete new branch expression, retaining the existing semantic restriction; no weakening or production-code change. New withdrawal unit/source tests passed; build/budget and isolated browser have NOT run on that head. Retest ordinary CI; only on green enable existing command-focused and Real Stack gates on exact head, inspect artifacts, then representative nested provider/receipt/confirm and remaining intent edit/leg proof. All markers OFF. No merge, production, hosted or Android action.
@@ -619,7 +635,7 @@ Source-overlaid bot PRs #657/#658/#660 remain open **without standalone merging*
 
 **One #649 implementation owner:** [Draft PR #654](https://github.com/MariosGiannakaras/MyFinHub/pull/654), `fix/649-bulk-remediation` → `develop`. This roadmap and the original evidence are now available on the *implementation* branch; independent draft audit PR #650 is superseded. Do **not** open a new PR per defect, resume an already accepted item, or treat an inactive branch as the implementation head.
 
-**Exact active code progress: Implementations 8/23 completed · Sub-implementations 92/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
+**Exact active code progress: Implementations 8/23 completed · Sub-implementations 93/132 completed.** These count only fully accepted implementation items per [branch-local current status](./ISSUE_649_BULK_IMPLEMENTATION_STATUS.md). Individual 2026-10-29 checklists and their original 0/23 counters below are **historical intake baselines**, *not* live progress and not instructions to restart completed work. The 23/132 inventory is an evidence-backed work breakdown, not a claim that 132 independent bugs exist. Do not increase denominators or fabricate completion based on aggregate code edits.
 
 ### Consolidated execution sequence (one coherent milestone, no PR proliferation)
 
@@ -882,11 +898,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I19.06** Guard legacy transaction reclassification/splits/Pay&Save/IRIS semantics and taxonomic owner-approved aliases without inference from note alone.
 - [x] **I19.07** Inspect responsive desktop/tablet/mobile dialogs, dark/light, offline, long labels, keyboard and text-size effects.
 
-### I20. Shared dialogs, History, Command Palette and confirmations — 4/6
+### I20. Shared dialogs, History, Command Palette and confirmations — 5/6
 
 **Priority:** P1 · **Owner:** `DialogShell, ConfirmDialog, HistoryDialog, CommandPalette` · **Dependencies:** shared-system changes require sibling sweep
 
-- [ ] **I20.01** Review DialogShell focus trap, dialog labels, Escape, nested confirm, inert background and focus restore under route/scroll changes.
+- [x] **I20.01** Review DialogShell focus trap, dialog labels, Escape, nested confirm, inert background and focus restore under route/scroll changes.
 - [x] **I20.02** Audit shared confirmation danger/destructive/undo copy and cancel paths; do not confuse archive vs permanent writeoff/delete.
 - [x] **I20.03** Verify command palette search exact entity ranking and destination focus for transactions, persons, credit, recurring, budgets and schedules.
 - [x] **I20.04** Audit History time travel, undo/redo, conflict/restore/partial write, crossed branches and provenance without silently rewinding immutable ledger.

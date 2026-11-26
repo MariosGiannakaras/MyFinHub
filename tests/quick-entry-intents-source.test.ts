@@ -25,7 +25,11 @@ describe('Quick Entry intent UI source contract',()=>{
 
   it('keeps raw split-part values visible but maps only valid cents to finance state',()=>{
     expect(quickAdd).toContain('const [splitAmountText,setSplitAmountText]=useState<Record<string,string>>({})');
-    expect(quickAdd).toContain('value={rawSplitAmount??(p.amount||\'\')}');
+    expect(quickAdd).toContain("value={rawSplitAmount??String(p.amount||'')}");
+    expect(quickAdd).toContain('<MoneyInput data-autofocus={i===0?true:undefined}');
+    expect(quickAdd).toContain('<CategorySelectInput settings={data.state.settings} kind="expense" category={p.category}');
+    expect(quickAdd).toContain('sumValidMoneyInputAmounts(parts.map(part=>splitAmountText[part.id]');
+    expect(quickAdd).toContain("splitTotal===null?'—':money.format(splitTotal)");
     expect(quickAdd).toContain('setSplitAmountText(current=>({...current,[p.id]:text}))');
     expect(quickAdd).toContain('amount:parsed??0');
     expect(quickAdd).toContain('parseMoneyInputAmount(statementMovement,true)');
@@ -33,6 +37,9 @@ describe('Quick Entry intent UI source contract',()=>{
     const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
     expect(qa).toContain('quick-entry-split-nondecimal-rejected-desktop');
     expect(qa).toContain('split malformed entry stays in draft without a posted event');
+    expect(qa).toContain('invalid split subtotal is not presented as a confirmed amount');
+    expect(qa).toContain('split shared control geometry at');
+    expect(qa).toContain('comma decimal normalization retains exact split cents');
   });
 
   it('shows only actual funded accounts in multi-source expense mode and preserves ordinary account editing on exit',()=>{
