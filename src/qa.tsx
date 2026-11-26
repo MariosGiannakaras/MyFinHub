@@ -412,7 +412,7 @@ function buildQaData(params:URLSearchParams){
   if(params.get('state')==='recurring-branding'){
     next.seed.recurring=[];next.state.recurringOverrides={};
     next.state.recurringCustom=[
-      {id:'qa-service-branded',name:'QA Streaming',amount:14.99,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:'piraeus-payroll',category:'Διασκέδαση',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+      {id:'qa-service-branded',name:params.has('recurring-branding-long-name')?'QA Streaming — Πολύ μεγάλη ελληνική ονομασία υπηρεσίας με ανανέωση συνδρομής και δοκιμή αναγνωσιμότητας':'QA Streaming',amount:14.99,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:'piraeus-payroll',category:'Διασκέδαση',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
       {id:'qa-service-fallback',name:'QA Utility',amount:31.20,day:22,firstExpectedDate:'2026-08-22',endDate:null,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1},
       {id:'qa-service-paused',name:'QA Paused Service',amount:7.50,day:8,firstExpectedDate:'2026-08-08',endDate:null,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:false,status:'paused',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-cccccccccccccccccccccccc'},
     ];

@@ -34,5 +34,11 @@ describe('#649 I19.04 recurring asset cleanup after finance receipt',()=>{
     expect(qa).toContain('current.writes===1&&current.deletes===0');
     expect(qa).toContain('uncertain.disabled&&uncertain.error.includes');
     expect(qa).toContain('same-turn recurring Save cannot launch two Storage PUTs');
+    expect(qa).toContain("[[320,760,'dark'],[375,812,'light']]");
+    expect(qa).toContain("facts.payLabel==='Πληρωμή '+longName");
+    expect(qa).toContain('facts.contained&&facts.noOverlap&&facts.overflow<=1');
+    expect(qa).toContain("'long-name linked recurring payment'");
+    expect(readFileSync('src/qa.tsx','utf8')).toContain("params.has('recurring-branding-long-name')");
+    expect(readFileSync('scripts/real-stack-browser-e2e.ts','utf8')).toContain("event.recurringId===row.id&&event.kind==='expense'");
   });
 });
