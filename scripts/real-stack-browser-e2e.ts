@@ -207,6 +207,12 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const waitRule=async(name:string)=>waitFor("async function(name){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.transactionRules||[]).some(item=>item.name===name&&item.enabled!==false)}",'rule '+name,[name]);
     const waitApiEventCategory=async(note:string,category:string)=>waitFor("async function(note,category){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.events||[]).some(item=>item.note===note&&item.category===category)}",'categorized event '+note,[note,category]);
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+    // Finance screenshots must show the settled rendered state, not an
+    // opacity/transformation intermediate from the route or modal entrance.
+    const settledIntentShot=async(name:string,modal:boolean)=>{
+      await waitFor("function(modal){const root=modal?document.querySelector('.quick-modal'):document.querySelector('#main-workspace');if(!(root instanceof HTMLElement)||!root.getClientRects().length)return false;if(!modal&&document.querySelector('.quick-modal'))return false;for(let node=root;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}const items=modal?[...root.querySelectorAll('header,.entry-body,footer')]:[root.firstElementChild,...root.querySelectorAll('.transactions-approved-table tbody tr')].filter(Boolean);return items.length>0&&items.every(node=>Number(getComputedStyle(node).opacity)>=.995)&&!root.getAnimations({subtree:true}).some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",name+' visually settled',[modal]);
+      await shot(name);
+    };
 
     console.log('[real-browser] stage login');
     const loginUrl=origin+'/#/transactions';
@@ -258,7 +264,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
         await clickText('.owned-select-popover button[role=option]',expected);
         await waitFor("function(){return !document.querySelector('.owned-select-popover')}",'withdrawal role selector close');
       }
-      await shot('quick-entry-withdrawal-bank-to-cash');
+      await settledIntentShot('quick-entry-withdrawal-bank-to-cash',true);
     });
     await addQuickIntent('Αποταμίευση','Real Browser Quick Saving','saving_cash_offset','7.30',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
     await addQuickIntent('Επιστροφή','Real Browser Quick Refund','refund','8.40');
@@ -274,8 +280,9 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       assert(Boolean(await c!.call("function(){return Boolean(document.querySelector('.quick-modal'))}")),'Unconfirmed bank correction unexpectedly closed the real editor.');
       const confirmed=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
       assert(confirmed,'Real owner review checkbox could not be confirmed.');
+      await waitFor("function(){return !document.querySelector('.quick-modal #quick-add-error')}",'confirmed reconciliation create clears stale confirmation error');
       await waitFor("function(){const modal=document.querySelector('.quick-modal');const row=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Λογαριασμός');return row?.querySelector('input[role=combobox]')?.value==='Synthetic QA Bank Account'&&Boolean(modal?.querySelector('input[type=checkbox]:checked'))}",'reconciliation confirmed on intended bank before write');
-      await shot('quick-entry-bank-reconciliation-create');
+      await settledIntentShot('quick-entry-bank-reconciliation-create',true);
     });
     const originalCorrectionData=await c!.call<FinanceData|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});return response.ok?(await response.json()).data:null}");
     assert(originalCorrectionData,'Original reconciliation readback unavailable.');
@@ -290,7 +297,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after Quick Entry intent matrix');
     await waitFor("async function(expected){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=payload.data?.state?.events||[];return expected.every(([note,kind])=>events.some(item=>item.note===note&&item.kind===kind))}",'persisted Quick Entry intent matrix',[quickIntentMatrix]);
     await search('Real Browser Quick');await waitFor("function(){const text=document.querySelector('#main-workspace')?.textContent||'';return ['Real Browser Quick Income','Real Browser Quick Transfer','Real Browser Quick Withdrawal','Real Browser Quick Saving','Real Browser Quick Refund','Real Browser Quick Reconciliation','Real Browser Quick Split'].every(note=>text.includes(note))}",'Quick Entry intent matrix rows');
-    await shot('quick-entry-intents-persisted');
+    await settledIntentShot('quick-entry-intents-persisted',false);
     console.log('[real-browser] stage withdrawal-edit-exact-legs');
     const withdrawalBefore=await c!.call<{id:string;createdAt:string;date:string;source:string}|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return null;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];if(events.length!==1||event?.kind!=='withdrawal'||event.amount!==6.2||event.fromAccountId!=='qa-bank-account'||event.toAccountId!=='qa-cash'||event.legs?.length!==2||!event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.2)||!event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.2))return null;return {id:event.id,createdAt:event.createdAt,date:event.date,source:event.source}}");
     assert(withdrawalBefore,'Persisted withdrawal must have exact bank debit and cash credit.');
@@ -307,7 +314,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("async function(before){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];return events.length===1&&event?.id===before.id&&event.createdAt===before.createdAt&&event.date===before.date&&event.source===before.source&&event.kind==='withdrawal'&&event.amount===6.21&&event.fromAccountId==='qa-bank-account'&&event.toAccountId==='qa-cash'&&event.legs?.length===2&&event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.21)&&event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.21)}",'withdrawal same-ID exact legs after edit and reload',[withdrawalBefore]);
     await search('Real Browser Quick Withdrawal');
     await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal')&&(row.textContent||'').includes('6,21'))}",'edited withdrawal row');
-    await shot('quick-entry-withdrawal-edit-persisted');
+    await settledIntentShot('quick-entry-withdrawal-edit-persisted',false);
 
     // Reuse the actual create fixtures. Prove the remaining six generic
     // editors on the same real authenticated stack, not a second harness.
@@ -383,7 +390,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await openIntentEdit(beforeSplit);
     await setByLabel('Ποσό μέρους 1','3,26');
     await selectOwnedOption('Κατηγορία ή υποκατηγορία μέρους 1','Rule Applied');
-    await shot('quick-entry-split-shared-edit');
+    await settledIntentShot('quick-entry-split-shared-edit',true);
     await saveIntentEdit();
 
     // Reconciliation excludes its original leg, and must require owner
@@ -405,7 +412,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     assert(await currentRevision()===preRejectedRevision,'Unconfirmed reconciliation edit changed the canonical revision.');
     const confirmedEdit=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
     assert(confirmedEdit,'Reconciliation edit confirmation unavailable.');
-    await shot('quick-entry-reconciliation-confirmed-edit');
+    await waitFor("function(){return !document.querySelector('.quick-modal #quick-add-error')}",'confirmed reconciliation edit clears stale confirmation error');
+    await settledIntentShot('quick-entry-reconciliation-confirmed-edit',true);
     await saveIntentEdit();
 
     await c.send('Page.reload',{ignoreCache:true});
@@ -436,7 +444,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       'Edited reconciliation failed to settle the exact verified as-of bank balance after reload.');
     await search('Real Browser Quick');
     await waitFor("function(expected){const rows=[...document.querySelectorAll('[data-transaction-source=event]')].filter(row=>row.getClientRects().length>0);return expected.every(id=>rows.some(row=>row.getAttribute('data-transaction-id')===id))}",'six same-ID edited intent rows after reload',[[income.id,transfer.id,saving.id,refund.id,split.id,correction.id]]);
-    await shot('quick-entry-six-edits-persisted');
+    await settledIntentShot('quick-entry-six-edits-persisted',false);
 
     await search('Real Browser Expense');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense'))}",'modern expense row after intent matrix');
 

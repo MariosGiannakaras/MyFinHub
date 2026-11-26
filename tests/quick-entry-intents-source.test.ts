@@ -66,6 +66,8 @@ describe('Quick Entry intent UI source contract',()=>{
   it('guards all ordinary Quick Entry account legs and prevents coerced multi-funding previews',()=>{
     expect(quickAdd).toContain("const numeric=kind==='split'||kind==='reconciliation'?0:parseMoneyInputAmount(amount)");
     expect(quickAdd).toContain("const actual=kind==='reconciliation'?parseMoneyInputAmount(actualBalance,true):undefined");
+    expect(quickAdd).toContain("if(e.target.checked&&reconciliation&&!manualReconciliationDraftError(reconciliation,true)&&error===manualReconciliationDraftError(reconciliation,false))setError('')");
+    expect(quickAdd).toContain('const visibleError=receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error;');
     expect(quickAdd).toContain("if(kind==='withdrawal'){");
     expect(quickAdd).toContain("withdrawalDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric},initial)");
     expect(quickAdd).toContain("accountOptions(from,kind==='withdrawal'?withdrawal.sources");

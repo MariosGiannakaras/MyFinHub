@@ -133,6 +133,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('edited reconciliation rejects unconfirmed adjustment');
     expect(source).toContain('correctionTargetCents-baseBankCents');
     expect(source).toContain('quick-entry-six-edits-persisted');
+    expect(source).toContain('confirmed reconciliation create clears stale confirmation error');
+    expect(source).toContain('confirmed reconciliation edit clears stale confirmation error');
+    expect(source).toContain("await settledIntentShot('quick-entry-reconciliation-confirmed-edit',true)");
+    expect(source).toContain("await settledIntentShot('quick-entry-six-edits-persisted',false)");
+    expect(source).toContain("name+' visually settled',[modal]");
     expect(source).toContain("const root=[...document.querySelectorAll('.quick-modal')].find(visible)||document");
     expect(source).toContain("label+' own options',[controlId]");
     expect(source).toContain("label+' committed selected value '+optionText,[controlId,optionText]");
