@@ -62,8 +62,8 @@ describe('Savings page action hierarchy',()=>{
     expect(dashboard).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(genericQuick).toContain('savingContributionDraftError(data,');
     expect(genericQuick).toContain('const savingSources=accounts.filter(isSavingContributionSource)');
-    expect(genericQuick).toContain("accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)");
-    expect(genericQuick).toContain("accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)");
+    expect(genericQuick).toContain("accountOptions(from,kind==='withdrawal'?withdrawal.sources:kind==='saving_cash_offset'?savingSources:accounts)");
+    expect(genericQuick).toContain("accountOptions(to,kind==='withdrawal'?withdrawal.targets:kind==='saving_cash_offset'?savingTargets:accounts)");
     expect(genericQuick).toContain("initial?.kind==='saving_cash_offset'");
     expect(loans).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(loans).toContain('const selfLoanDestinations=accounts.filter(account=>!isSavingsAccount(account))');
