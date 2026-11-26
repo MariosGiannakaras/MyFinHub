@@ -1585,8 +1585,8 @@ async function main(){
     const browserFinance=await primary.request('/api/data');
     expect(browserFinance,200,undefined,'browser-finance-direct-read');
     const browserEvents=browserFinance.body?.data?.state?.events||[];
-    const expectedQuickIntents=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
-    assert(expectedQuickIntents.every(([note,kind])=>browserEvents.some((event:any)=>event?.note===note&&event?.kind===kind)),'Canonical API read-back is missing one or more generic Quick Entry intents.');
+    const expectedQuickIntents=[['Real Browser Quick Income','income',21.11],['Real Browser Quick Transfer','transfer',5.11],['Real Browser Quick Withdrawal','withdrawal',6.21],['Real Browser Quick Saving','saving_cash_offset',7.31],['Real Browser Quick Refund','refund',8.41],['Real Browser Quick Reconciliation','reconciliation',null],['Real Browser Quick Split','split',8.01]] as const;
+    assert(expectedQuickIntents.every(([note,kind,amount])=>{const matches=browserEvents.filter((event:any)=>event?.note===note);return matches.length===1&&matches[0].kind===kind&&(amount===null||matches[0].amount===amount)}),'Canonical API read-back is missing a unique edited Quick Entry intent or its exact amount.');
     const attentionDismissScheduled=(browserFinance.body?.data?.state?.scheduled||[]).find((item:any)=>item?.note==='Real Browser Attention Dismiss');
     assert(attentionDismissScheduled?.id,'Canonical API read-back is missing the dismissible Attention fixture.');
     const attentionDecision=browserFinance.body?.data?.state?.attentionDecisions?.[`scheduled:${attentionDismissScheduled.id}`];

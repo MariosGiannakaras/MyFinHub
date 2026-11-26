@@ -40,6 +40,8 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(qa).toContain('invalid split subtotal is not presented as a confirmed amount');
     expect(qa).toContain('split shared control geometry at');
     expect(qa).toContain('comma decimal normalization retains exact split cents');
+    expect(qa).toContain('corrected split no longer announces stale amount validation');
+    expect(quickAdd).toContain("amount:parsed??0}:x));setError('');mark()");
     const taxonomy=readFileSync(new URL('../src/styles/taxonomy-filter-controls.css',import.meta.url),'utf8');
     const audit=readFileSync(new URL('../src/styles/frontend-audit-remediation.css',import.meta.url),'utf8');
     const owner=readFileSync(new URL('../src/styles/quick-entry-body-split.css',import.meta.url),'utf8');

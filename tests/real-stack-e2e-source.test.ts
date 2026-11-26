@@ -120,7 +120,8 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("String(stateRows[0]?.revision)===String(redone.body?.revision)");
     expect(script).not.toContain("String(stateRows[0]?.revision)===String(persisted.body?.revision)");
     expect(script).toContain("[real-stack] stage browser-finance-direct-read");
-    expect(script).toContain("Canonical API read-back is missing one or more generic Quick Entry intents.");
+    expect(script).toContain("Canonical API read-back is missing a unique edited Quick Entry intent or its exact amount.");
+    expect(script).toContain("matches.length===1&&matches[0].kind===kind&&(amount===null||matches[0].amount===amount)");
     expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
     const optionalClear=script.slice(script.indexOf('stage provider-optional-binding-clear-retention'),script.indexOf('const providerHealth='));

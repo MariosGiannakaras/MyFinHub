@@ -122,6 +122,17 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Withdrawal exposes an incompatible account role.');
     expect(source).toContain('withdrawal same-ID exact legs after edit and reload');
     expect(source).toContain('quick-entry-withdrawal-edit-persisted');
+    expect(source).toContain('stage remaining-quick-intent-edit-exact-legs');
+    expect(source).toContain('assertIntentIdentity(before,after)');
+    expect(source).toContain("assertIntentLegs(income,2111,[['qa-bank-account',2111]])");
+    expect(source).toContain("assertIntentLegs(transfer,511,[['qa-cash',-511],['qa-savings',511]])");
+    expect(source).toContain("assertIntentLegs(saving,731,[['qa-bank-account',-731],['qa-savings',731]])");
+    expect(source).toContain("assertIntentLegs(refund,841,[['qa-cash',841]])");
+    expect(source).toContain("assertIntentLegs(split,801,[['qa-cash',-801]])");
+    expect(source).toContain('split.parts[0].id===beforeSplit.parts[0].id');
+    expect(source).toContain('edited reconciliation rejects unconfirmed adjustment');
+    expect(source).toContain('correctionTargetCents-baseBankCents');
+    expect(source).toContain('quick-entry-six-edits-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
     expect(source).toContain("const seedPeriod=");
     expect(source).toContain("2026-10-01T00:00:00.000Z");

@@ -1,6 +1,9 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { accountBalances } from '../src/lib/domain.js';
+import { moneyToCents } from '../src/lib/money.js';
+import type { FinanceData, FinanceEvent } from '../src/types.js';
 
 type BrowserProofOptions={origin:string;email:string;password:string;nextTotp:()=>Promise<string>};
 
@@ -147,7 +150,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const setSelector=async(selector:string,value:string)=>{const ok=await c!.call<boolean>("function(selector,value){const input=document.querySelector(selector);if(!(input instanceof HTMLInputElement||input instanceof HTMLTextAreaElement))return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[selector,value]);assert(ok,'Missing input '+selector)};
     const setByLabel=async(label:string,value:string)=>{const ok=await c!.call<boolean>("function(label,value){const visible=node=>{if(!(node instanceof HTMLElement))return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&rect.width>0&&rect.height>0};const direct=[...document.querySelectorAll('input,textarea,select')].find(node=>visible(node)&&node.getAttribute('aria-label')===label);const wrapper=[...document.querySelectorAll('label')].find(node=>visible(node)&&(node.textContent||'').replace(/\\s+/g,' ').includes(label));const control=direct??wrapper?.querySelector('input,textarea,select')??wrapper?.parentElement?.querySelector('input,textarea,select');if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}if(!(control instanceof HTMLInputElement||control instanceof HTMLTextAreaElement))return false;const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(control,value);control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,'Missing field '+label)};
     const clickText=async(selector:string,text:string)=>{const ok=await c!.call<boolean>("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>item.getClientRects().length>0&&(item.textContent||'').trim().includes(text));if(!(node instanceof HTMLElement))return false;node.click();return true}",[selector,text]);assert(ok,'Missing control '+text)};
-    const selectOwnedOption=async(label:string,optionText:string)=>{const opened=await c!.call<boolean>("function(label){const row=[...document.querySelectorAll('label')].find(node=>node.getClientRects().length>0&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);assert(opened,'Missing owned selector '+label);await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",label+' options');const selected=await c!.call<boolean>("function(optionText){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>(node.textContent||'').trim()===optionText&&node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}",[optionText]);assert(selected,'Missing owned option '+optionText)};
+    const selectOwnedOption=async(label:string,optionText:string)=>{const opened=await c!.call<boolean>("function(label){const row=[...document.querySelectorAll('label')].find(node=>node.getClientRects().length>0&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=[...document.querySelectorAll('input[role=combobox][aria-label]')].find(node=>node.getClientRects().length>0&&node.getAttribute('aria-label')===label)??row?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);assert(opened,'Missing owned selector '+label);await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",label+' options');const selected=await c!.call<boolean>("function(optionText){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>(node.textContent||'').trim()===optionText&&node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}",[optionText]);assert(selected,'Missing owned option '+optionText)};
     const chooseOwnedDateOffset=async(label:string,days:number)=>{
       const opened=await c!.call<boolean>("function(label){const visible=node=>Boolean(node instanceof HTMLElement&&node.getClientRects().length>0);const row=[...document.querySelectorAll('label')].find(node=>visible(node)&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('.owned-date-shell input[aria-haspopup=dialog]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);
       assert(opened,'Missing owned date selector '+label);
@@ -285,6 +288,134 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await search('Real Browser Quick Withdrawal');
     await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal')&&(row.textContent||'').includes('6,21'))}",'edited withdrawal row');
     await shot('quick-entry-withdrawal-edit-persisted');
+
+    // Reuse the actual create fixtures. Prove the remaining six generic
+    // editors on the same real authenticated stack, not a second harness.
+    console.log('[real-browser] stage remaining-quick-intent-edit-exact-legs');
+    const readIntentData=async()=>{
+      const data=await c!.call<FinanceData|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return null;return (await response.json()).data||null}");
+      assert(data,'Canonical intent data unavailable.');
+      return data;
+    };
+    const findIntent=(data:FinanceData,note:string)=>{
+      const matches=(data.state.events??[]).filter(event=>event.note===note);
+      assert(matches.length===1,'Expected exactly one persisted intent: '+note);
+      return matches[0];
+    };
+    type ExpectedLeg=readonly [accountId:string,cents:number];
+    const assertIntentLegs=(event:FinanceEvent,amountCents:number,legs:readonly ExpectedLeg[])=>{
+      assert(moneyToCents(event.amount)===amountCents&&event.legs.length===legs.length
+        &&legs.every(([id,cents])=>event.legs.filter(leg=>leg.accountId===id&&moneyToCents(leg.amount)===cents&&Math.abs(leg.amount*100-cents)<1e-6).length===1),
+        'Unexpected persisted amount/account legs for '+event.note+': '+JSON.stringify(event.legs));
+    };
+    const assertIntentIdentity=(before:FinanceEvent,after:FinanceEvent)=>{
+      assert(after.id===before.id&&after.kind===before.kind&&after.createdAt===before.createdAt&&after.date===before.date&&after.source===before.source,
+        'Edited intent lost identity/date/source: '+before.note);
+    };
+    const openIntentEdit=async(before:FinanceEvent)=>{
+      await search(before.note);
+      const rowPredicate="function(id){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>row.getClientRects().length>0&&row.getAttribute('data-transaction-id')===id)}";
+      await waitFor(rowPredicate,before.note+' exact row',[before.id]);
+      const opened=await c!.call<boolean>("function(id){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&item.getAttribute('data-transaction-id')===id);const button=row?.querySelector('button[aria-label^=\\"Επεξεργασία\\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}",[before.id]);
+      assert(opened,'Missing edit action: '+before.note);
+      await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",before.note+' editor');
+    };
+    const saveIntentEdit=async()=>{
+      await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+      await waitFor("function(){return !document.querySelector('.quick-modal')}",'durable intent edit close');
+    };
+    const initialIntents=await readIntentData();
+    const beforeIncome=findIntent(initialIntents,'Real Browser Quick Income');
+    const beforeTransfer=findIntent(initialIntents,'Real Browser Quick Transfer');
+    const beforeSaving=findIntent(initialIntents,'Real Browser Quick Saving');
+    const beforeRefund=findIntent(initialIntents,'Real Browser Quick Refund');
+    const beforeSplit=findIntent(initialIntents,'Real Browser Quick Split');
+    const beforeReconciliation=findIntent(initialIntents,'Real Browser Quick Reconciliation');
+    assertIntentLegs(beforeIncome,2110,[['qa-cash',2110]]);
+    assertIntentLegs(beforeTransfer,510,[['qa-bank-account',-510],['qa-savings',510]]);
+    assertIntentLegs(beforeSaving,730,[['qa-bank-account',-730],['qa-savings',730]]);
+    assertIntentLegs(beforeRefund,840,[['qa-cash',840]]);
+    assertIntentLegs(beforeSplit,800,[['qa-cash',-800]]);
+    assert(beforeIncome.kind==='income'&&beforeIncome.accountId==='qa-cash'&&beforeRefund.kind==='refund'&&beforeRefund.accountId==='qa-cash'
+      &&beforeTransfer.kind==='transfer'&&beforeTransfer.fromAccountId==='qa-bank-account'&&beforeTransfer.toAccountId==='qa-savings'
+      &&beforeSaving.kind==='saving_cash_offset'&&beforeSaving.fromAccountId==='qa-bank-account'&&beforeSaving.toAccountId==='qa-savings'&&moneyToCents(beforeSaving.savingAmount??0)===730
+      &&beforeSplit.kind==='split'&&beforeSplit.accountId==='qa-cash'&&beforeSplit.parts?.length===2
+      &&beforeSplit.parts[0].label==='Real Browser Part A'&&moneyToCents(beforeSplit.parts[0].amount)===325
+      &&beforeSplit.parts[1].label==='Real Browser Part B'&&moneyToCents(beforeSplit.parts[1].amount)===475,
+      'Original generic intent account/part contract differs from the fixture.');
+    // The earlier withdrawal edit reduced this day's verified bank balance
+    // by exactly one cent. The correction itself has not yet been edited.
+    assert(beforeReconciliation.kind==='reconciliation'&&beforeReconciliation.accountId==='qa-bank-account'&&beforeReconciliation.legs.length===1
+      &&moneyToCents(accountBalances(initialIntents,beforeReconciliation.date)['qa-bank-account'])===12344,
+      'Original reconciliation must preserve the verified as-of balance minus the earlier one-cent withdrawal edit.');
+    assertIntentLegs(beforeReconciliation,Math.abs(moneyToCents(beforeReconciliation.legs[0].amount)),[['qa-bank-account',moneyToCents(beforeReconciliation.legs[0].amount)]]);
+
+    await openIntentEdit(beforeIncome);
+    await setByLabel('Ποσό','21.11');await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');await saveIntentEdit();
+    await openIntentEdit(beforeTransfer);
+    await setByLabel('Ποσό','5.11');await selectOwnedOption('Από','Local Real Stack QA');await saveIntentEdit();
+    await openIntentEdit(beforeSaving);
+    await setByLabel('Ποσό','7.31');await saveIntentEdit();
+    await openIntentEdit(beforeRefund);
+    await setByLabel('Ποσό','8.41');await saveIntentEdit();
+    await openIntentEdit(beforeSplit);
+    await setByLabel('Ποσό μέρους 1','3,26');
+    await selectOwnedOption('Κατηγορία ή υποκατηγορία μέρους 1','Rule Applied');
+    await shot('quick-entry-split-shared-edit');
+    await saveIntentEdit();
+
+    // Reconciliation excludes its original leg, and must require owner
+    // confirmation again even though this is an existing event.
+    const beforeCorrectionData=await readIntentData();
+    const currentBankCents=moneyToCents(accountBalances(beforeCorrectionData,beforeReconciliation.date)['qa-bank-account']);
+    const withoutCorrection={...beforeCorrectionData,state:{...beforeCorrectionData.state,events:(beforeCorrectionData.state.events??[]).filter(event=>event.id!==beforeReconciliation.id)}};
+    const baseBankCents=moneyToCents(accountBalances(withoutCorrection,beforeReconciliation.date)['qa-bank-account']);
+    const correctionTargetCents=12346;
+    const correctionDeltaCents=correctionTargetCents-baseBankCents;
+    assert(Number.isSafeInteger(correctionDeltaCents)&&correctionDeltaCents!==0,'Synthetic reconciliation needs a nonzero exact adjustment.');
+    await openIntentEdit(beforeReconciliation);
+    const prefilledBankCents=await c!.call<number>("function(){const label=[...document.querySelectorAll('.quick-modal label')].find(row=>(row.textContent||'').includes('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία'));const field=label?.querySelector('input');return field?Math.round(Number(field.value.replace(',','.'))*100):NaN}");
+    assert(prefilledBankCents===currentBankCents,'Reconciliation edit must prefill the current historical as-of balance.');
+    const preRejectedRevision=await currentRevision();
+    await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.46');
+    await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+    await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Επιβεβαίωσε')}",'edited reconciliation rejects unconfirmed adjustment');
+    assert(await currentRevision()===preRejectedRevision,'Unconfirmed reconciliation edit changed the canonical revision.');
+    const confirmedEdit=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
+    assert(confirmedEdit,'Reconciliation edit confirmation unavailable.');
+    await shot('quick-entry-reconciliation-confirmed-edit');
+    await saveIntentEdit();
+
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after remaining six intent edits');
+    const editedIntents=await readIntentData();
+    const income=findIntent(editedIntents,beforeIncome.note),transfer=findIntent(editedIntents,beforeTransfer.note);
+    const saving=findIntent(editedIntents,beforeSaving.note),refund=findIntent(editedIntents,beforeRefund.note);
+    const split=findIntent(editedIntents,beforeSplit.note),correction=findIntent(editedIntents,beforeReconciliation.note);
+    for(const [before,after] of [[beforeIncome,income],[beforeTransfer,transfer],[beforeSaving,saving],[beforeRefund,refund],[beforeSplit,split],[beforeReconciliation,correction]])assertIntentIdentity(before,after);
+    assertIntentLegs(income,2111,[['qa-bank-account',2111]]);
+    assertIntentLegs(transfer,511,[['qa-cash',-511],['qa-savings',511]]);
+    assertIntentLegs(saving,731,[['qa-bank-account',-731],['qa-savings',731]]);
+    assertIntentLegs(refund,841,[['qa-cash',841]]);
+    assertIntentLegs(split,801,[['qa-cash',-801]]);
+    assertIntentLegs(correction,Math.abs(correctionDeltaCents),[['qa-bank-account',correctionDeltaCents]]);
+    assert(income.accountId==='qa-bank-account'&&transfer.fromAccountId==='qa-cash'&&transfer.toAccountId==='qa-savings'
+      &&saving.fromAccountId==='qa-bank-account'&&saving.toAccountId==='qa-savings'&&moneyToCents(saving.savingAmount??0)===731&&saving.savingSource===beforeSaving.savingSource
+      &&refund.accountId==='qa-cash'&&split.accountId==='qa-cash'&&correction.accountId==='qa-bank-account',
+      'Edited generic intent lost its actual account/source/target/result metadata.');
+    assert(split.parts?.length===2&&beforeSplit.parts?.length===2
+      &&split.parts[0].id===beforeSplit.parts[0].id&&split.parts[0].label===beforeSplit.parts[0].label
+      &&split.parts[0].category==='Rule Applied'&&moneyToCents(split.parts[0].amount)===326
+      &&split.parts[1].id===beforeSplit.parts[1].id&&split.parts[1].label===beforeSplit.parts[1].label
+      &&split.parts[1].category===beforeSplit.parts[1].category&&split.parts[1].subcategory===beforeSplit.parts[1].subcategory
+      &&moneyToCents(split.parts[1].amount)===475,
+      'Split edit changed an unrelated part or failed to persist exact cents/category.');
+    assert(moneyToCents(accountBalances(editedIntents,correction.date)['qa-bank-account'])===correctionTargetCents,
+      'Edited reconciliation failed to settle the exact verified as-of bank balance after reload.');
+    await search('Real Browser Quick');
+    await waitFor("function(expected){const rows=[...document.querySelectorAll('[data-transaction-source=event]')].filter(row=>row.getClientRects().length>0);return expected.every(id=>rows.some(row=>row.getAttribute('data-transaction-id')===id))}",'six same-ID edited intent rows after reload',[[income.id,transfer.id,saving.id,refund.id,split.id,correction.id]]);
+    await shot('quick-entry-six-edits-persisted');
+
     await search('Real Browser Expense');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense'))}",'modern expense row after intent matrix');
 
     console.log('[real-browser] stage modern-edit-delete-undo');

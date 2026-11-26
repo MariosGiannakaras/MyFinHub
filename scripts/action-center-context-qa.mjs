@@ -253,6 +253,7 @@ try{
   await screenshot('quick-entry-split-nondecimal-rejected-desktop');
   assert(await c.call("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input.money-input-control')];if(fields.length!==2)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;for(const [field,value] of [[fields[0],'3,25'],[fields[1],'4.75']]){setter?.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}return true}"),'shared split MoneyInput accepts comma and dot decimal drafts');
   await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal .split-box input.money-input-control')];return fields[0]?.value==='3.25'&&fields[1]?.value==='4.75'&&(document.querySelector('.generic-quick-modal .split-box [aria-live=polite]')?.textContent||'').includes('8,00')}",'comma decimal normalization retains exact split cents');
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal #quick-add-error')}",'corrected split no longer announces stale amount validation');
   for(const [width,height] of [[1440,1000],[768,1024],[375,812],[320,740]]){
     await viewport(width,height);
     try{
