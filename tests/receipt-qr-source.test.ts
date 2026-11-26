@@ -22,6 +22,11 @@ describe('#666 receipt QR safety boundary',()=>{
     expect(inbox).toContain('setQrReviewConfirmed(false)');
     expect(camera).toContain("video:{facingMode:{ideal:'environment'}},audio:false");
     expect(camera).toContain('track.stop()');
+    expect(inbox).toContain('liveCameraTriggerRef.current?.focus()');
+    expect(qa).toContain('late camera stream is stopped after cancellation');
+    expect(qa).toContain('QR review alone cannot bypass independent duplicate confirmation');
+    expect(qa).toContain('cancelled QR handoff preserves draft without finance write');
+    expect(qa).toContain('explicit QR save dispatches exactly one synthetic finance write');
     expect(read('vercel.json')).toContain('camera=(self), microphone=()');
     expect(read('server/index.ts')).toContain('camera=(self), microphone=()');
     expect(qa).toContain('actual OCR/QR disagreement survives independently');

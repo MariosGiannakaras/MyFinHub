@@ -1,3 +1,11 @@
+## 2026-11-27 — Combined batch hygiene repair and receipt acceptance preparation
+
+**Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Exact `5f2999a` [CI #45912099725](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/45912099725) FAILED validate at hygiene:exports; dependency install, cycles, unused-symbol check and CodeQL succeeded. Two receipt parser types were unnecessarily exported; make private without changing runtime/parser contracts. Other tests, build/bundle/security and rendering were not reached. No check weakened.
+
+Bounded sibling review of receipt camera/review: restore focus to live-scan trigger on close/Escape; only show matched-finance explanatory text when matches actually exist (local QR duplicate alone is not a matched finance transaction). Extend the existing receipt suite with deterministic browser media permission denial and cancellation before a late real synthetic MediaStream resolves, track cleanup and restored file fallback, same-fiscal-ID duplicate independent guard, cancel/reopen and explicit single-write QR Quick Entry. These new assertions are prepared, not executed. Keep all expensive opt-ins OFF; mandatory CI first, then combined shell/Savings/receipt focused QA and isolated Real Stack on the same green head. Inspect artifacts and batch any failures. No production, hosted data, merge or Android changes.
+
+---
+
 ## 2026-11-27 — Combined shell, Savings and receipt QR implementation batch
 
 **Implementations 8/23 completed · Sub-implementations 93/132 completed (70.5%).** Counts retain previously accepted work; candidates below do not inflate acceptance. Prior head `786b161` ordinary CI #45907425333 passed; the bounded reconciliation confirmation/settled visual correction remains included and awaits Real Stack evidence. Owner explicitly requested bulk delivery rather than one CI cycle per minor change, and requested new issue #666. Same Draft #654 is the integration owner because the shared shell, finance entry and receipt review surfaces overlap. One coherent push, all optional QA markers OFF during implementation.

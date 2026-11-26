@@ -6,7 +6,7 @@ import type { ReceiptProposal } from './receiptDrafts.js';
 // Decode the printed fields, never request the URL or claim authenticity.
 const AADE_PREFIX='https://www1.aade.gr/tameiakes/myweb/q1.php?SIG=';
 const SIG=/^([A-Z0-9]{11})([0-9]{8})([A-Fa-f0-9]{30})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{1,12})(?:\.([0-9]{1,2}))?$/;
-export type FiscalReceiptQr={kind:'aade';identifier:string;date:string;time:string;totalCents:number};
+type FiscalReceiptQr={kind:'aade';identifier:string;date:string;time:string;totalCents:number};
 type NonFiscalQrKind='product'|'unsupported'|'external-link'|'malformed'|'multiple';
 type DetectedReceiptQr=FiscalReceiptQr|{kind:NonFiscalQrKind};
 export type ReceiptQrResult=DetectedReceiptQr|{kind:'none'}|{kind:'unavailable'};
@@ -14,7 +14,7 @@ export type ReceiptQrEvidence=DetectedReceiptQr&{
   ocrDate?:string;ocrTotal?:number;ocrCurrency?:string;
   conflicts?:('date'|'amount'|'currency')[];
 };
-export type ReceiptCode={format:string;text:string;valid?:boolean;sequenceSize?:number};
+type ReceiptCode={format:string;text:string;valid?:boolean;sequenceSize?:number};
 export const MAX_RECEIPT_CODES=8;
 
 export function parseAadeReceiptQr(text:string):FiscalReceiptQr|null{

@@ -124,12 +124,18 @@ export function ReceiptInbox({
   const [reviewNewPurchaseConfirmed,setReviewNewPurchaseConfirmed]=useState(false);
   const [qrReviewConfirmed,setQrReviewConfirmed]=useState(false);
   const [liveCamera,setLiveCamera]=useState(false);
+  const liveCameraTriggerRef=useRef<HTMLButtonElement>(null);
+  const restoreCameraFocus=useRef(false);
+  const closeLiveCamera=()=>{restoreCameraFocus.current=true;setLiveCamera(false)};
+  useEffect(()=>{
+    if(open&&!liveCamera&&restoreCameraFocus.current){restoreCameraFocus.current=false;liveCameraTriggerRef.current?.focus()}
+  },[open,liveCamera]);
   const scanAbort=useRef<AbortController|null>(null);
   const [reviewSaving,setReviewSaving]=useState(false);
   const [discardTarget,setDiscardTarget]=useState<{kind:'close'}|{kind:'select';id:string}|{kind:'manual';id:string}|null>(null);
   const requestClose=()=>{
     if(reviewSaving||deleting||loading)return;
-    if(liveCamera){setLiveCamera(false);return}
+    if(liveCamera){closeLiveCamera();return}
     if(reviewDirty){setDiscardTarget({kind:'close'});return}
     onClose();
   };
@@ -460,12 +466,12 @@ export function ReceiptInbox({
         <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" disabled={reviewDirty||reviewSaving||deleting||loading||Boolean(scanningId)||liveCamera} onChange={(event) => void capture(event.target.files?.[0])}/>
         <Button type="button" variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
         <Button type="button" variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
-        {typeof navigator.mediaDevices?.getUserMedia==='function'?<Button type="button" variant="secondary" disabled={loading||scanning||reviewDirty||reviewSaving||deleting||liveCamera} onClick={()=>{setError('');setMessage('');setLiveCamera(true)}}><ScanLine size={17}/> Ζωντανή σάρωση QR</Button>:null}
+        {typeof navigator.mediaDevices?.getUserMedia==='function'?<Button ref={liveCameraTriggerRef} type="button" variant="secondary" disabled={loading||scanning||reviewDirty||reviewSaving||deleting||liveCamera} onClick={()=>{setError('');setMessage('');setLiveCamera(true)}}><ScanLine size={17}/> Ζωντανή σάρωση QR</Button>:null}
         <small>JPG/PNG · έως 12 MB · έως 30 πρόχειρες αποδείξεις / 60 MB τοπικά</small>
         {reviewDirty?<small role="status">Αποθήκευσε ή απόρριψε τις διορθώσεις πριν προσθέσεις νέα απόδειξη.</small>:null}
       </div>
 
-      {liveCamera?<ReceiptQrCamera onCancel={()=>setLiveCamera(false)} onCapture={(file,result)=>{setLiveCamera(false);void capture(file,result)}}/>:null}
+      {liveCamera?<ReceiptQrCamera onCancel={closeLiveCamera} onCapture={(file,result)=>{setLiveCamera(false);void capture(file,result)}}/>:null}
       {loading ? <div className="receipt-live-state" role="status"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση φωτογραφίας στη συσκευή…</div> : null}
       {reviewSaving ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση διορθώσεων απόδειξης στη συσκευή…</div> : null}
       {deleting ? <div className="receipt-live-state" role="status" aria-live="polite"><LoaderCircle className="is-spinning" size={17}/> Διαγραφή τοπικών αποδείξεων…</div> : null}
@@ -523,7 +529,7 @@ export function ReceiptInbox({
             {selected.status!=='posted'&&selected.status!=='posting'&&(purchaseMatches.length>0||duplicateQrDraft) ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
               <h3>Έλεγξε αν έχει ήδη καταχωριστεί η αγορά</h3>
               {duplicateQrDraft?<p role="alert">Υπάρχει άλλη τοπική απόδειξη με το ίδιο αναγνωριστικό QR. Έλεγξε ότι δεν πρόκειται για διπλότυπο.</p>:null}
-              <p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>
+              {purchaseMatches.length>0?<p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>:null}
               <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small><Button type="button" variant="secondary" disabled={reviewSaving||Boolean(linkedPurchase)||reviewDirty||needsQrReview} onClick={()=>void setPurchaseAssociation({source:row.source,sourceId:row.sourceId})}>Συσχέτιση με αυτήν</Button></li>)}</ul>
               <label className="receipt-existing-confirm"><input type="checkbox" checked={reviewNewPurchaseConfirmed} onChange={event=>setReviewNewPurchaseConfirmed(event.target.checked)}/><span>Έλεγξα τις παραπάνω καταχωρίσεις και επιβεβαιώνω ότι πρόκειται για διαφορετική νέα αγορά.</span></label>
             </aside> : null}

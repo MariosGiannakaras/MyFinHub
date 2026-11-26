@@ -770,13 +770,39 @@ try {
   };
   const qrStatus=kind=>waitFor("function(kind){return document.querySelector('[data-receipt-qr-kind]')?.getAttribute('data-receipt-qr-kind')===kind&&!document.querySelector('.receipt-scan-progress')}",'actual decoded '+kind,[kind],650);
   const qrProposal=()=>c.call(`async function(){return await new Promise((resolve,reject)=>{const open=indexedDB.open('myfinhub-local-receipts-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('receipts','readonly'),all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const rows=all.result.sort((a,b)=>b.capturedAt.localeCompare(a.capturedAt));db.close();resolve(rows[0]?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};open.onerror=()=>reject(open.error)})}`);
-  const deleteCurrentQr=async()=>{assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'delete local synthetic QR');await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'QR deletion confirm');assert(await c.call("function(){const b=[...document.querySelectorAll('[role=alertdialog] button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'confirm local QR deletion');await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&!document.querySelector('.receipt-draft-row')}",'local QR removed')};
+  const deleteCurrentQr=async(remaining=0)=>{assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'delete local synthetic QR');await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'QR deletion confirm');assert(await c.call("function(){const b=[...document.querySelectorAll('[role=alertdialog] button')].find(n=>(n.textContent||'').trim()==='Διαγραφή');b?.click();return Boolean(b)}"),'confirm local QR deletion');await waitFor("function(count){return !document.querySelector('[role=alertdialog]')&&document.querySelectorAll('.receipt-draft-row').length===count}",'local QR removed',[remaining]);assert(await receiptCount()===remaining,'only the chosen QR draft was removed')};
   await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
   await c.send('Page.navigate',{url:baseUrl});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'QR QA workspace');
   await openReceiptInbox();
   const qrBefore=await qrWrites();
   externalRequests.length=0;monitorOcrNetwork=true;
+  // Deterministic browser media-boundary fixtures: no physical camera or permission prompt needed.
+  const openLiveCamera=async()=>{
+    assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-inbox button')].find(n=>(n.textContent||'').trim()==='Ζωντανή σάρωση QR');if(!b||b.disabled)return false;b.click();return true}"),'open live receipt camera');
+    await waitFor("function(){return Boolean(document.querySelector('.receipt-qr-camera'))}",'live camera section');
+  };
+  const closeLiveCamera=async()=>{
+    assert(await c.call("function(){const b=document.querySelector('.receipt-qr-camera button');b?.click();return Boolean(b)}"),'close live camera');
+    await waitFor("function(){return !document.querySelector('.receipt-qr-camera')&&(document.activeElement?.textContent||'').trim()==='Ζωντανή σάρωση QR'}",'camera closes and restores launch focus');
+  };
+  assert(await c.call("function(){const media=navigator.mediaDevices;if(!media)return false;const original=media.getUserMedia;window.__qaRestoreCamera=()=>{media.getUserMedia=original};media.getUserMedia=async options=>{if(options.audio!==false)throw Error('Unexpected microphone');throw new DOMException('Synthetic permission denial','NotAllowedError')};return true}"),'install deterministic permission-denied fixture');
+  try{
+    await openLiveCamera();
+    await waitFor("function(){return (document.querySelector('.receipt-qr-camera [role=status]')?.textContent||'').includes('Δεν ήταν δυνατή η πρόσβαση')}",'permission denial has accessible fallback');
+    await screenshot('receipt-qr-camera-denied');
+    await closeLiveCamera();
+    assert(await c.call("function(){return !document.querySelectorAll('.receipt-file-input')[1]?.disabled}"),'file fallback reenabled after camera denial');
+    assert(await c.call("function(){navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{window.__qaResolveCamera=resolve});return true}"),'install deferred camera permission fixture');
+    await openLiveCamera();
+    await waitFor("function(){return typeof window.__qaResolveCamera==='function'}",'pending camera permission');
+    await closeLiveCamera();
+    assert(await c.call("function(){const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;const stream=canvas.captureStream(1);window.__qaLateCameraTrack=stream.getVideoTracks()[0];window.__qaResolveCamera(stream);return Boolean(window.__qaLateCameraTrack)}"),'resolve permission after cancellation with real synthetic video track');
+    await waitFor("function(){return window.__qaLateCameraTrack?.readyState==='ended'}",'late camera stream is stopped after cancellation');
+    assert(await receiptCount()===0&&await qrWrites()===qrBefore,'camera denial and cancelled late stream persist nothing');
+  }finally{
+    await c.call("function(){window.__qaLateCameraTrack?.stop();window.__qaRestoreCamera?.();delete window.__qaLateCameraTrack;delete window.__qaResolveCamera;delete window.__qaRestoreCamera;return true}");
+  }
   // A valid QR must survive absent OCR assets. Subsequent fallbacks must not
   // manufacture any date or amount from non-receipt or ambiguous codes.
   await c.send('Network.setBlockedURLs',{urls:['*://*/ocr/asset-manifest.json','*://provider.invalid/*','*://www1.aade.gr/*']});
@@ -786,7 +812,16 @@ try {
     if(kind==='aade')assert(proposal.total===18.35&&proposal.date==='2026-08-22'&&proposal.qr.identifier==='TST00000001:00000042','QR-only exact local fields with OCR unavailable');
     else assert(proposal.total===undefined&&proposal.date===undefined,'unsupported or conflicting QR never invents receipt fields '+kind);
     assert(await qrWrites()===qrBefore,'QR decode and fallback never post finance');
-    await screenshot('receipt-qr-local-'+kind);await deleteCurrentQr();
+    await screenshot('receipt-qr-local-'+kind);
+    if(kind==='aade'){
+      await qrCapture('aade');await qrStatus('aade');
+      await waitFor("function(){return (document.querySelector('.receipt-existing-matches:not([data-receipt-qr-kind])')?.textContent||'').includes('ίδιο αναγνωριστικό QR')}",'same fiscal QR identity flagged across two local drafts');
+      assert(await c.call("function(){const checkbox=document.querySelector('[data-receipt-qr-kind] input[type=checkbox]');checkbox?.click();const apply=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(checkbox?.checked&&apply?.disabled)}"),'QR review alone cannot bypass independent duplicate confirmation');
+      assert(await qrWrites()===qrBefore&&await receiptCount()===2,'duplicate QR guard is advisory and local only');
+      await screenshot('receipt-qr-duplicate-guard');
+      await deleteCurrentQr(1);
+    }
+    await deleteCurrentQr();
   }
   await c.send('Network.setBlockedURLs',{urls:[]});
   await qrCapture('aade',true);await qrStatus('aade');
@@ -806,6 +841,19 @@ try {
   await waitFor("function(){return !document.querySelector('.receipt-inbox')&&Boolean(document.querySelector('.quick-modal'))}",'reviewed QR only pre-fills existing Quick Entry');
   assert(await qrWrites()===qrBefore&&await receiptCount()===1,'QR handoff leaves draft and finance unchanged before explicit save');
   await screenshot('receipt-qr-reviewed-quick-entry');
+  assert(await c.call("function(){const b=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');b?.click();return Boolean(b)}"),'cancel reviewed QR Quick Entry');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'cancelled QR Quick Entry closes');
+  assert(await qrWrites()===qrBefore&&await receiptCount()===1,'cancelled QR handoff preserves draft without finance write');
+  await openReceiptInbox();
+  await qrStatus('aade');
+  assert(await c.call("function(){const checkbox=document.querySelector('[data-receipt-qr-kind] input[type=checkbox]');if(checkbox&&!checkbox.checked)checkbox.click();const duplicate=document.querySelector('.receipt-existing-matches:not([data-receipt-qr-kind]) .receipt-existing-confirm input');if(duplicate&&!duplicate.checked)duplicate.click();return Boolean(checkbox?.checked)}"),'review persisted QR again after cancelling');
+  assert(await c.call("function(){const b=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));if(!b||b.disabled)return false;b.click();return true}"),'reopen reviewed QR handoff');
+  await waitFor("function(){return !document.querySelector('.receipt-inbox')&&Boolean(document.querySelector('.quick-modal'))}",'second reviewed QR handoff');
+  assert(await qrWrites()===qrBefore&&await receiptCount()===1,'reopened QR handoff still does not write finance');
+  assert(await c.call("function(){const b=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) footer button')].find(n=>(n.textContent||'').includes('Καταχώριση'));if(!b||b.disabled)return false;b.click();return true}"),'explicit QR finance save');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'explicit QR finance save acknowledged');
+  assert(await qrWrites()===qrBefore+1,'explicit QR save dispatches exactly one synthetic finance write');
+  assert(await receiptCount()===0,'confirmed QR finance save cleans up the local receipt');
   monitorOcrNetwork=false;
   assert(externalRequests.length===0,'QR/OCR scan never contacts a provider, AADE or external decoder');
 
