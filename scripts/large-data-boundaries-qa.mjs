@@ -94,6 +94,8 @@ try{
   assert(history.dom<7000,`history dialog DOM remains bounded (${history.dom})`);
   results.historyHeapMb=await heapMb();
   assert(results.historyHeapMb<256,`large history heap ${results.historyHeapMb.toFixed(1)} MiB`);
+  await waitFor("function(){const d=document.querySelector('.change-history-dialog'),b=d?.closest('.command-backdrop');return Boolean(d&&b&&d.contains(document.activeElement)&&Number(getComputedStyle(d).opacity)>=0.99&&Number(getComputedStyle(b).opacity)>=0.99)}",'large History settled and focused');
+  await c.call("function(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}");
   await screenshot('large-history-dialog-desktop');
 
   results.settingsLoadMs=await navigate('settings','Ρυθμίσεις');

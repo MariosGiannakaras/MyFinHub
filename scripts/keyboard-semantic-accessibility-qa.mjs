@@ -351,7 +351,27 @@ try{
      await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip reopens on new keyboard focus '+width);
    }
  }
+ // Actual mobile More typography, labels and scroll containment at the
+ // former awkward wrapping width and the user's larger-text preference.
+ for(const [width,height,textSize,theme] of [[375,812,'normal','light'],[390,700,'large','dark'],[640,480,'large','light']]){
+   await navigate('dashboard',pages.dashboard,width,height,true);
+   await c.call("async function(size,theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);document.documentElement.dataset.textSize=size}",[textSize,theme]);
+   assert(await c.call("function(){const b=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');b?.focus();b?.click();return Boolean(b)}"),'readable More opener');
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=m?.closest('.mobile-more-backdrop');return Boolean(m&&b&&Number(getComputedStyle(m).opacity)>=.99&&Number(getComputedStyle(b).opacity)>=.99&&m.contains(document.activeElement))}",'readable More settles');
+   await pressEscape(); // Existing modal Escape contract must not be consumed by a tooltip.
+   await waitFor("function(){return !document.querySelector('.mobile-more-menu')&&document.activeElement?.getAttribute('aria-label')==='Περισσότερες ενότητες'}",'readable More Escape restores opener');
+   assert(await c.call("function(){const b=document.activeElement;b.click();return Boolean(b)}"),'reopen readable More');
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=m?.closest('.mobile-more-backdrop');return Boolean(m&&b&&Number(getComputedStyle(m).opacity)>=.99&&Number(getComputedStyle(b).opacity)>=.99&&m.contains(document.activeElement))}",'readable More reopens settled');
+   const geometry=await c.call(`function(){const m=document.querySelector('.mobile-more-menu'),n=m.querySelector('nav'),r=m.getBoundingClientRect(),nr=n.getBoundingClientRect(),buttons=[...n.querySelectorAll('button')];return {contained:r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1&&m.scrollWidth<=m.clientWidth+1,subtitle:parseFloat(getComputedStyle(m.querySelector('header small')).fontSize),rows:buttons.length,labels:buttons.every(b=>{const label=b.querySelector('span'),a=b.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(label);return parseFloat(getComputedStyle(label).fontSize)>=13&&a.height>=44&&Math.abs(a.left-nr.left)<=1&&Math.abs(a.right-nr.right)<=1&&[...range.getClientRects()].every(x=>x.left>=a.left-1&&x.right<=a.right+1&&x.top>=a.top-1&&x.bottom<=a.bottom+1)})}}`);
+   assert(geometry.contained&&geometry.subtitle>=13&&geometry.rows===8&&geometry.labels,'readable More complete destination rows '+width+' '+JSON.stringify(geometry));
+   await shot('keyboard-more-readable-'+width+'-'+theme+'-'+textSize);
+   for(let i=0;i<8;i++)await pressTab();
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=document.activeElement;if(!m||b!==m.querySelector('nav button:last-child'))return false;const a=b.getBoundingClientRect(),r=m.getBoundingClientRect();return a.top>=r.top-1&&a.bottom<=r.bottom+1}",'readable More last destination visible '+width);
+   await shot('keyboard-more-readable-end-'+width+'-'+theme+'-'+textSize);
+   await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu')&&document.activeElement?.getAttribute('aria-label')==='Περισσότερες ενότητες'}",'readable More closes');
+ }
  await navigate('dashboard',pages.dashboard,320,420,false);
+ await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');document.documentElement.dataset.textSize='normal'}");
  assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}"),'short viewport More opener exists');
  await waitFor("function(){const menu=document.querySelector('.mobile-more-menu');const r=menu?.getBoundingClientRect();return Boolean(r&&r.width>0&&r.top>=0&&r.bottom<=innerHeight&&menu.scrollHeight>menu.clientHeight)}",'short More sheet contained and scrollable');
  for(let index=0;index<8;index++)await pressTab();

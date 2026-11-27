@@ -67,10 +67,10 @@
   }
   .mobile-more-menu:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:#ced8e6;margin:-7px auto 10px}
   .mobile-more-menu>header{padding:1px 4px 12px}
-  .mobile-more-menu>header b{font-size:14px;letter-spacing:-.015em}
-  .mobile-more-menu>header small{font-size:9px}
+  .mobile-more-menu>header b{font-size:var(--ux-body-size);letter-spacing:-.015em}
+  .mobile-more-menu>header small{font-size:var(--ux-small-size);line-height:1.4}
   .mobile-more-menu nav{gap:8px}
-  .mobile-more-menu nav>button{min-height:56px;border:1px solid #dbe5f1;border-radius:15px;background:#f8fbff;color:var(--ink-2);display:flex;align-items:center;gap:10px;padding:10px 12px;text-align:left;font-size:10px;font-weight:750}
+  .mobile-more-menu nav>button{min-height:56px;border:1px solid #dbe5f1;border-radius:15px;background:#f8fbff;color:var(--ink-2);display:flex;align-items:center;gap:10px;padding:10px 12px;text-align:left;font-size:var(--ux-small-size);font-weight:750}
   .mobile-more-menu nav>button.active{border-color:rgba(47,111,237,.22);background:rgba(47,111,237,.08);color:var(--blue-2)}
 
   /* Page framing becomes lighter and less desktop-panel-like. */

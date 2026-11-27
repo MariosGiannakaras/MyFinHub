@@ -36,6 +36,14 @@ describe('history focused rendered regression ownership',()=>{
     expect(css).toContain('.command-palette.change-history-dialog>header p{display:block}');
     expect(css).toContain('.command-palette.change-history-dialog>footer span:first-child{display:flex}');
     expect(browser).toContain('state.introVisible&&state.caveatVisible');
+    expect(css).toContain('@media(max-height:600px)');
+    expect(css).toContain('.command-palette.change-history-dialog{grid-template-rows:auto auto auto auto auto;overflow:auto;overscroll-behavior:contain}');
+    expect(read('src/components/HistoryDialog.tsx')).toContain("scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'})");
+    expect(browser).toContain('short History Tab reaches each enabled control');
+    expect(browser).toContain('short History Shift+Tab remains visible');
+    expect(browser).toContain('short History disclosure remains reachable');
+    expect(browser).toContain('short History Escape restores opener');
+    expect(read('scripts/large-data-boundaries-qa.mjs')).toContain('large History settled and focused');
     expect(browser).toContain('history-dialog-');
   });
   it('proves exactly 100 scrollable history snapshots and reaches the final row on mobile and desktop',()=>{

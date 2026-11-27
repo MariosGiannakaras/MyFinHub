@@ -32,6 +32,14 @@
   .command-palette.change-history-dialog>footer span:first-child{display:flex}
 }
 
+/* Short viewports cannot fit the complete privacy disclosure, list and
+   footer simultaneously. Keep one real scrollport rather than a zero-height
+   list inside an overflow:hidden palette. Normal heights keep bounded rows. */
+@media(max-height:600px){
+  .command-palette.change-history-dialog{grid-template-rows:auto auto auto auto auto;overflow:auto;overscroll-behavior:contain}
+  .change-history-dialog .command-results{overflow:visible}
+}
+
 /* A confirmation is the only active footer action. Never squeeze its copy
    between the irreversible-data disclosure and disabled Undo/Redo buttons. */
 .change-history-dialog footer.history-footer-confirm{display:flex;flex-direction:column;align-items:stretch;gap:10px}

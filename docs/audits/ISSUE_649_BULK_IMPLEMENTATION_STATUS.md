@@ -1,3 +1,11 @@
+## 2026-11-27 — M2 integrated; M3 bounded shell navigation and History reachability
+
+**Implementations 9/23 completed · Sub-implementations 96/132 completed (72.7%).** M2 #669 merged into [develop `19a8f899`](https://github.com/MariosGiannakaras/MyFinHub/commit/19a8f899abb7bb76e19fb516d3acefb68d948506). Exact cb6e898d CI #46062409972 and direct CodeQL #46062390909 SUCCESS: 2665 tests / 350 files, 56 Chromium suites / 911 PNGs, Windows, WebKit, Lighthouse, security and Unified. Main JS 527.9/528 KiB; CSS 559.3/560 KiB hard PASS, soft warning remains. Inspected 14 exact-head overlay captures. I20.05 accepted; 36 original IDs remain. No production/Android changes; develop push-run result unavailable through connector. Reconciled checklist and area counts (including stale Savings rollup) against unique IDs.
+
+**M3 frozen scope:** I01.03 History keyboard/settled evidence and I01.06 responsive More navigation/readability. Both remain partial pending validation of complete scope. Directly inspected M2 artifact #15230385964 short More, dark 375 More and large History: More subtitle 9px, destination 10px and Greek word wrapping; large History screenshot captured before opacity settles. Existing history-dialog QA already proves normal-height Escape/opener/100-point semantics; retain those and add short 320x500 Light / 768x480 Dark keyboard traversal, focus-visible geometry, scroll-reachable privacy/import disclosures and Escape restoration. Source review: five-row history grid can collapse scrollable body in short viewport; use one outer scrollport only <=600px, retain normal-height list bounds, lazy History focus scroll nearest. Preserve all history/receipt/security semantics. Large-data capture waits for both backdrop and dialog opacity + two animation frames. More appearance uses existing typography tokens and row layout one column <=390px or large text, preserving safe-area and touch target rules; actual 375/390/640 Light/Dark normal/large text, full labels, last-row keyboard reachability, Escape and reopen assertions. Existing title/route IDs, Attention (no new notification surface), bottom bar and all finance logic unchanged. No new features or independent roadmap work. Scope counts unchanged until acceptance. Source guards and JS syntax preflight; actual exact-head required CI/CodeQL/browser evidence pending. Bundle hard limits unchanged. Review actual screenshots, all failed jobs together and protect integration. No release work.
+
+---
+
 ## M2 checkpoint — eager bundle regression corrected in lazy tooltip owner
 
 **Implementations 8/23 completed · Sub-implementations 95/132 completed (72.0%).** Draft review head `f1382b36`: CI #46060053825 validate failed only hard raw main JS size (528.1 KiB vs 528.0 KiB); 2665/2665 tests, 350/350 files, typecheck and build compilation passed, nested and direct CodeQL #46060053858 passed. No rendered gate executed. CSS soft warning remains; no budget increase. Move all new Escape, fresh focus/hover, noninteractive click suppression and lifecycle cleanup into the existing lazy placement module. Restore exact accepted develop Tooltip.tsx bytes, preserving eager shell import boundary and React activation. Keep measured bridge CSS and existing rendered assertions unchanged. Source preflight checks and a lazy lifecycle regression lock; actual bundle output and browser proof pending. M2 I01.03/I20.05 remain partial. Use one coherent review cycle for required gates when candidate ready, not separate broad matrices. No new scope or production/Android action.
@@ -332,7 +340,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I03 | 5/6 | I03.01 |
 | I04 | 4/5 | I04.05 |
 | I05 | 5/6 | I05.02 |
-| I06 | 3/5 | I06.01, I06.05 |
+| I06 | 4/5 | I06.05 |
 | I07 | 2/5 | I07.01, I07.02, I07.03 |
 | I08 | 4/6 | I08.02, I08.03 |
 | I09 | 5/5 | Complete |
@@ -346,7 +354,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I17 | 6/6 | Complete |
 | I18 | 6/6 | Complete |
 | I19 | 6/7 | I19.01 |
-| I20 | 5/6 | I20.05 |
+| I20 | 6/6 | Complete |
 | I21 | 0/5 | I21.01, I21.02, I21.03, I21.04, I21.05 |
 | I22 | 7/7 | Complete |
 | I23 | 4/7 | I23.03, I23.06, I23.07 |

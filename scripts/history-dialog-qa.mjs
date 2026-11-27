@@ -99,6 +99,39 @@ try{
     await waitFor("function(){return document.activeElement?.getAttribute('aria-label')==='Ιστορικό αλλαγών'}",'opener focus restored');
   }
 
+  // Short visual viewport: disclosures stay in the scroll flow, not clipped
+  // by the ordinary five-row grid. Use real Tab to prove every enabled
+  // action can be seen and reached, including after reverse traversal.
+  for(const {width,height,theme} of [
+    {width:320,height:500,theme:'light'},
+    {width:768,height:480,theme:'dark'},
+  ]){
+    await open({width,height,theme});
+    const count=await c.call("function(){const d=document.querySelector('.change-history-dialog');return d?.querySelectorAll('button:not([disabled])').length}");
+    assert(count>=5,'short History fixture exposes close, reachable points and Undo/Redo');
+    const focusVisible="function(){const d=document.querySelector('.change-history-dialog'),b=document.activeElement;if(!d||!d.contains(b))return false;const r=d.getBoundingClientRect(),a=b.getBoundingClientRect();return Boolean(a.width>0&&a.height>0&&r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&a.left>=r.left-1&&a.right<=r.right+1&&a.top>=r.top-1&&a.bottom<=r.bottom+1&&d.scrollWidth<=d.clientWidth+1)}";
+    const pressTab=async shift=>{const params={key:'Tab',code:'Tab',windowsVirtualKeyCode:9,modifiers:shift?8:0};await c.send('Input.dispatchKeyEvent',{type:'keyDown',...params});await c.send('Input.dispatchKeyEvent',{type:'keyUp',...params})};
+    const seen=new Set();
+    for(let i=0;i<count;i++){
+      await waitFor(focusVisible,'short History focused control fully visible '+width+' '+i);
+      seen.add(await c.call("function(){return [...document.querySelectorAll('.change-history-dialog button:not([disabled])')].indexOf(document.activeElement)}"));
+      if(i===0)await screenshot('history-short-'+width+'-'+theme+'-header');
+      if(i===count-1)await screenshot('history-short-'+width+'-'+theme+'-footer');
+      if(i<count-1)await pressTab(false);
+    }
+    assert(seen.size===count&&!seen.has(-1),'short History Tab reaches each enabled control');
+    await pressTab(true);await waitFor(focusVisible,'short History Shift+Tab remains visible');
+    // Both disclosures must remain genuinely scroll-reachable; never hide
+    // them to make the compact viewport fit.
+    for(const selector of ['header p','footer > span:first-child']){
+      const visible=await c.call("function(selector){const d=document.querySelector('.change-history-dialog'),n=d?.querySelector(selector);if(!n)return false;n.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});const r=d.getBoundingClientRect(),a=n.getBoundingClientRect();return getComputedStyle(n).display!=='none'&&a.height>0&&a.top>=r.top-1&&a.bottom<=r.bottom+1}",[selector]);
+      assert(visible,'short History disclosure remains reachable: '+selector+' '+width);
+    }
+    await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await waitFor("function(){return !document.querySelector('.change-history-dialog')&&document.activeElement?.getAttribute('aria-label')==='Ιστορικό αλλαγών'&&!document.activeElement.closest('[inert]')}",'short History Escape restores opener');
+  }
+
   // Selecting a real ancestor in the History dialog is a button interaction,
   // never merely clicking a non-interactive listitem. Confirm/cancel and focus
   // must work at mobile and desktop sizes, without concealing the caveats.
