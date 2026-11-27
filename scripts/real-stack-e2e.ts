@@ -295,6 +295,22 @@ async function main(){
     console.log('[real-stack] stage card-vault-pre-aal2-guarded-denial');
     const preAal2VaultDelete=await primary.request('/api/card-secrets',guardedVaultDelete);
     assert((preAal2VaultDelete.status===401||preAal2VaultDelete.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2VaultDelete.body?.code||'')),'Guarded card-vault deletion accepted a pre-AAL2 session.');
+    const preAal2Access=primary.snapshot().get('rheomiq_access');
+    assert(typeof preAal2Access==='string'&&preAal2Access.length>40,'Missing actual AAL1 access token.');
+    const nativeAccessRequest=async(path:string,access:string,method='GET',body?:unknown):Promise<ApiResult>=>{
+      // No ambient cookie, browser Origin or browser CSRF metadata. Only the
+      // explicit native credential authorizes these two reviewed endpoints.
+      const headers:Record<string,string>={authorization:'Bearer '+access,
+        'x-myfinhub-client-platform':'android','x-myfinhub-device-name':'Synthetic native QA',
+        'x-myfinhub-app-version':'real-stack-qa'};
+      if(body!==undefined)headers['content-type']='application/json';
+      const response=await fetch(APP_ORIGIN+path,{method,headers,
+        body:body===undefined?undefined:JSON.stringify(body),redirect:'manual'});
+      assert(!response.headers.has('set-cookie'),'Native access settings response mutated browser cookies.');
+      return {status:response.status,body:await response.json().catch(()=>null),headers:response.headers};
+    };
+    expect(await nativeAccessRequest('/api/auth/devices',preAal2Access),403,'MFA_REQUIRED','native-settings-aal1-devices');
+    expect(await nativeAccessRequest('/api/auth/account',preAal2Access,'PATCH',{action:'email',email}),403,'MFA_REQUIRED','native-settings-aal1-account');
     console.log('[real-stack] stage mfa-valid-code');
     const verified=await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:correct}});
     expect(verified,200,undefined,'mfa-valid-code');
@@ -1067,6 +1083,26 @@ async function main(){
     const other=devices.body.devices.find((item:any)=>item.current===false);
     assert(other?.sessionId,'Secondary device session was not discoverable.');
 
+    console.log('[real-stack] stage native-access-settings');
+    const nativeAccess=primary.snapshot().get('rheomiq_access');
+    assert(typeof nativeAccess==='string'&&nativeAccess.length>40,'Missing actual owner AAL2 access token.');
+    const nativeDevices=await nativeAccessRequest('/api/auth/devices',nativeAccess);
+    expect(nativeDevices,200,undefined,'native-settings-list');
+    assert(nativeDevices.body?.count===2&&nativeDevices.body?.devices?.some((item:any)=>item.current===true),
+      'Native settings device list did not identify the current owner session.');
+    for(const nickname of ['Synthetic native QA rename','']){
+      const renamed=await nativeAccessRequest('/api/auth/devices',nativeAccess,'POST',
+        {action:'rename',sessionId:other.sessionId,nickname});
+      expect(renamed,200,undefined,'native-settings-rename-reset');
+      const reread=await primary.request('/api/auth/devices');
+      expect(reread,200,undefined,'native-settings-cookie-readback');
+      assert(reread.body?.devices?.find((item:any)=>item.sessionId===other.sessionId)?.nickname===(nickname||null),
+        'Native device rename/reset did not persist to the actual owner device registry.');
+    }
+    // A same-email request proves the actual native owner reaches account
+    // validation without changing the local login identity or requiring SMTP.
+    expect(await nativeAccessRequest('/api/auth/account',nativeAccess,'PATCH',{action:'email',email}),
+      400,'EMAIL_UNCHANGED','native-settings-account-authenticated');
     // Preserve the revoked AAL2 bearer for cross-domain endpoint negatives
     // with an otherwise valid, unrelated owner browser cookie.
     const revokedDeviceBearer=secondary.snapshot().get('rheomiq_access');
@@ -1076,6 +1112,16 @@ async function main(){
     expect(revokeOthers,200);
     assert(revokeOthers.body?.count===1,'Revoke-others did not retain only the current device.');
     expect(await secondary.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
+    const settingsCookies=JSON.stringify([...primary.snapshot()]);
+    for(const [authorization,code] of [['Bearer '+revokedDeviceBearer,'DEVICE_ACCESS_REVOKED'],['invalid','AUTH_REQUIRED']] as const){
+      const headers={authorization};
+      expect(await primary.request('/api/auth/devices',{headers}),401,code,'native-settings-denied-devices');
+      expect(await primary.request('/api/auth/account',{method:'PATCH',headers,body:{action:'email',email}}),
+        401,code,'native-settings-denied-account');
+      assert(JSON.stringify([...primary.snapshot()])===settingsCookies,'Native settings rejection changed independent owner cookies.');
+    }
+    expect(await primary.request('/api/auth/devices'),200,undefined,'native-settings-cookie-preserved');
+    console.log('[real-stack] PASS native owner access settings, AAL1/revoked/malformed denial and cookie preservation');
 
     const reauthenticated=new CookieClient('QA Browser B Reauthenticated');
     lastCode=await loginAndVerify(reauthenticated,email,TEST_PASSWORD,secret,lastCode);
@@ -1748,11 +1794,36 @@ async function main(){
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;
     assert(providerHealth?.ok===true,'Database health is not clean after provider Storage mutation.');
 
+    // Run the password mutation proof last: disposable local Auth only, no
+    // later finance/browser fixture can depend on the original password.
+    console.log('[real-stack] stage native-current-password-proof');
+    const passwordSession=await primary.request('/api/auth/session');
+    expect(passwordSession,200,undefined,'native-password-active-session');
+    const passwordAccess=primary.snapshot().get('rheomiq_access');
+    assert(typeof passwordAccess==='string'&&passwordAccess.length>40,'Missing active owner token for password proof.');
+    const changedPassword='Local-Only-Rotated-Real-Stack-8r2!';
+    expect(await nativeAccessRequest('/api/auth/account',passwordAccess,'PATCH',{
+      action:'password',currentPassword:'Definitely-Wrong-Password-9!',newPassword:changedPassword,
+    }),400,'INVALID_CURRENT_PASSWORD','native-password-wrong-denied');
+    // The original password must still authenticate after the rejected write.
+    // The accepted rotation itself proves possession of that original password.
+    expect(await nativeAccessRequest('/api/auth/account',passwordAccess,'PATCH',{
+      action:'password',currentPassword:TEST_PASSWORD,newPassword:changedPassword,
+    }),200,undefined,'native-password-correct-accepted');
+    expect(await primary.request('/api/auth/session'),200,undefined,'native-password-owner-session-preserved');
     const logout=await primary.request('/api/auth/logout',{method:'POST',body:{}});
     expect(logout,200);
     assert(logout.body?.authenticated===false,'Logout response did not clear authenticated state.');
     expect(await primary.request('/api/auth/session'),401,'AUTH_REQUIRED');
 
+    const rotatedLogin=new CookieClient('Synthetic password rotation readback');
+    expect(await rotatedLogin.request('/api/auth/login',{method:'POST',body:{email,password:TEST_PASSWORD}}),
+      401,'INVALID_CREDENTIALS','native-password-old-rejected');
+    const rotated=await rotatedLogin.request('/api/auth/login',{method:'POST',body:{email,password:changedPassword}});
+    expect(rotated,200,undefined,'native-password-new-accepted');
+    assert(rotated.body?.authenticated===false&&rotated.body?.mfaRequired===true,
+      'Rotated password bypassed the existing mandatory TOTP boundary.');
+    console.log('[real-stack] PASS native password wrong denial, real rotation, preserved AAL2 session and mandatory MFA readback');
     console.log('[real-stack] PASS auth/password, TOTP enrollment+challenge, session restore/logout');
     console.log('[real-stack] PASS active-device list/revoke/revoke-others/stale-session/re-auth');
     console.log('[real-stack] PASS import, mutable persistence, revision conflict, history undo/redo, backup/restore, direct DB read-back');

@@ -1,6 +1,6 @@
 # #666 — Greek receipt QR import
 
-Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integration: active Draft [#654](https://github.com/MariosGiannakaras/MyFinHub/pull/654), branch `fix/649-bulk-remediation`. Separate acceptance checklist; does not change #649's denominators. Owner requested the feature in the combined remediation batch.
+Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integration: merged [#654](https://github.com/MariosGiannakaras/MyFinHub/pull/654) into `develop@4b6b6cc9`. Separate acceptance checklist; does not change #649's denominators. Owner requested the feature in the combined remediation batch.
 
 ## Implementation checklist
 
@@ -11,13 +11,15 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 - [x] Initial parser, image, source-contract and real browser regression coverage prepared; actual QR-only/multi/link/malformed/product fixtures, QR/OCR disagreement, responsive review and pre-save no-write assertions added to receipt QA.
 - [x] Execute mandatory ordinary CI including clean npm install, typecheck/tests, lint, dependency/security and hard bundle budgets; inspect actual results. Dependency/lock entries are pinned from matching upstream metadata; local registry unavailable here.
 - [x] Run consolidated focused browser QA and inspect desktop/mobile/keyboard evidence; cover live camera permission denial/cancel and QR-specific duplicate and explicit save/cancel, including finance receipt protection, local draft durability and offline failure paths. Correct any defects; retain established acceptance gates.
-- [ ] Reconcile acceptance with the issue, final review-head gates and designated integration PR. Issue stays open until evidence establishes completion.
+- [x] Reconcile acceptance with the issue, final review-head gates and designated integration PR. #666 closed after verified protected merge; 8/8 accepted.
 
 ## Provider URLs and safety
 
 [AADE A.1112/2025](https://www.aade.gr/sites/default/files/2025-07/a_1112_2025.pdf) describes electronic-invoicing provider receipt QR references. No universal verified, authorized public retrieval API has been established. The feature identifies an external receipt link without opening it or transmitting it; local OCR/manual review remain the safe fallback. A QR is evidence, not authentication. Conflicting evidence requires explicit owner choice; canonical receipt save remains the only finance write boundary. No provider scraping, third-party network decoder, raw QR storage, automatic receipt booking or Android changes.
 
 ## Checkpoint
+
+2026-11-27: #654 merged into `develop@4b6b6cc9`; exact review head `000fba68` ordinary CI #46027078683, direct CodeQL #46027078580, Real Stack #46027078496 and Backup #46027078739 all SUCCESS. Final full receipt regression suite passed; reviewed exact-head QR conflict/mobile/live camera and explicit 18.35 review handoff from artifact #15213477640. #666 accepted 8/8, closed. Postmerge develop push-run result not available through PR-only connector; no production deployment or Android change.
 
 2026-11-27: exact `ce32642` ordinary CI #45980762756 PASS and focused #45982350917 receipt-local-ocr PASS, despite separate Savings editor assertion failure. Artifact #15190301762 directly inspected: corrected complete 320/375 capture labels, visible QR conflict and settled opaque Quick Entry with correct 18.35 amount; prior verified live camera/duplicate/cancel/explicit save/no external requests unchanged. Focused receipt acceptance checked (7/8); final Ready and integration remain pending. No Android or production change.
 

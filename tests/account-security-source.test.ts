@@ -28,7 +28,7 @@ describe('account security settings source contracts',()=>{
     expect(ui).toContain('if(result.pendingEmail)');
     expect(ui).toContain("setPendingEmail(result.pendingEmail)");
     expect(ui).toContain('await changeAccountPassword(currentPassword,newPassword)');
-    expect(handler).toContain('requireSession(req, res)');
+    expect(handler).toContain('requireSession(req, res, { allowBearer: true })');
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');
@@ -37,7 +37,7 @@ describe('account security settings source contracts',()=>{
     expect(device).not.toContain("return 'Πρόσφατα';");
     expect(deviceHandler).toContain('lastSeenAt: row.last_seen_at');
     expect(deviceHandler).toContain('firstSeenAt: row.first_seen_at');
-    expect(deviceHandler).toContain('requireSession(req, res)');
+    expect(deviceHandler).toContain('requireSession(req, res, { allowBearer: true })');
     expect(deviceHandler).toContain('isOwner(session.accessToken)');
     expect(deviceHandler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(deviceHandler).toContain('assertMutationSessionOrigin(req, session)');

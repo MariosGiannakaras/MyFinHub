@@ -33,10 +33,13 @@ describe('account security settings',()=>{
     const handler=read('server/accountSecurityHandler.ts');
     const route=read('api/auth/session.ts');
     const config=JSON.parse(read('vercel.json')) as {rewrites?:Array<{source:string;destination:string}>};
-    expect(handler).toContain('requireSession(req, res)');
+    expect(handler).toContain('requireSession(req, res, { allowBearer: true })');
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');
+    expect(handler).toContain('await verifyCurrentPassword(session, change.currentPassword)');
+    expect(handler).toContain('signInWithPassword(email, currentPassword)');
+    expect(handler).toContain('/auth/v1/logout?scope=local');
     expect(handler).toContain("current_password: change.currentPassword");
     expect(handler).toContain("`${url}/auth/v1/user`");
     expect(route).toContain('handleAccountSecurityRequest');
