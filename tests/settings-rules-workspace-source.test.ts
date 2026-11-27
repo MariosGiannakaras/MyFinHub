@@ -123,9 +123,9 @@ describe('Settings Rules workspace source contract',()=>{
 
 
   it('keeps shared mobile editor chrome theme-semantic in dark mode',()=>{
-    expect(mobileDomainCss).toContain('background:var(--surface-elevated)!important');
-    expect(mobileDomainCss).toContain('.editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:var(--surface-elevated)');
-    expect(mobileDomainCss).toContain('background:linear-gradient(180deg,transparent,var(--surface-elevated) 28%)');
+    expect(mobileDomainCss).toContain('background:var(--surface-elevated,var(--surface,#fff))!important');
+    expect(mobileDomainCss).toContain('.editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:var(--surface-elevated,var(--surface,#fff))');
+    expect(mobileDomainCss).toContain('background:linear-gradient(180deg,transparent,var(--surface-elevated,var(--surface,#fff)) 28%)');
     expect(mobileDomainCss).not.toContain('.editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:rgba(248,251,255,.99)!important}');
   });
 
