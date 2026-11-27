@@ -120,6 +120,12 @@ describe('Savings page action hierarchy',()=>{
     expect(remediationQa).toContain('aligned mobile Savings width');
     expect(remediationQa).toContain('invalid Savings goal editor visually settled');
     expect(remediationQa).toContain('invalid Savings goal editor has an opaque dialog surface');
+    const editorCss=readFileSync(new URL('../src/styles/mobile-finance-domain-layouts.css',import.meta.url),'utf8');
+    expect(editorCss).toContain('background:var(--surface-elevated,var(--surface,#fff))!important');
+    expect(editorCss).toContain('background:var(--surface-elevated,var(--surface,#fff));padding-bottom:8px');
+    expect(editorCss).toContain('linear-gradient(180deg,transparent,var(--surface-elevated,var(--surface,#fff)) 28%)');
+    expect(remediationQa).toContain('Savings editor solid theme surface');
+    expect(remediationQa).toContain('paint.alpha===255&&paint.headerAlpha===255&&paint.matches');
     expect(remediationQa).toContain('narrow Savings action text and arrow share one readable row');
     const narrowCompletion=readFileSync(new URL('../src/pages/SavingsCompletion.css',import.meta.url),'utf8');
     expect(narrowCompletion).not.toContain('.savings-action strong{width:30px');
