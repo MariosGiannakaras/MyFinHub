@@ -47,7 +47,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('isBrowserBootstrapFailure(result.output)');
     expect(coordinator).toContain('retrying once with primary Chromium');
     expect(coordinator).toContain('FALLBACK ACTIVATED');
-    expect(coordinator).toContain('127\\.0\\.0\\.1:9\\d{3}');
+    expect(coordinator).toContain('127\\.0\\.0\\.1:\\d+');
     expect(coordinator).toMatch(/process\.env\.MYFINHUB_QA_REQUIRE_PRIMARY\s*===\s*'1'/);
   });
 
@@ -129,7 +129,16 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('await acquirePort(port)');
     expect(coordinator).toContain('releasePort(port)');
     expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)}');
-    expect(coordinator).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
+    expect(coordinator).toContain('for(const item of isolatedScripts)await runAndCollect(item)');
+    expect(coordinator).toContain('await runAndCollect(parallelScripts[index])');
+    expect(coordinator).toContain('failures.push({path:item.path,detail})');
+    expect(coordinator).toContain('if(failures.length)throw new Error');
+    expect(coordinator).toContain("source.match(/\\bport\\s*=\\s*(\\d+)/)");
+    const tooltipCss=readFileSync('src/styles/ui-hardening-foundations.css','utf8');
+    const dialogQa=readFileSync('scripts/completion-dialog-geometry-qa.mjs','utf8');
+    expect(tooltipCss).toContain('.app-tooltip-bubble:not([data-positioned]){left:auto!important;right:0;top:0!important}');
+    expect(dialogQa).toContain('horizontalDetails');
+    expect(dialogQa).toContain('More opens without horizontal scroll');
   });
 
   it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
@@ -201,7 +210,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(frontendQa).toContain('confirm-persistence-recovery-mobile');
     expect(qaWorkspace).toContain('title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;"');
     expect(qaWorkspace).toContain('onRecover={()=>setRecoverOpen(true)}');
-    expect(confirmDialogCss).toContain('.quick-modal.app-confirm-dialog{background:var(--surface)!important');
+    expect(confirmDialogCss).toContain('.quick-modal.app-confirm-dialog{width:min(520px,100%);background:var(--surface)!important');
     expect(moneyEditDialogCss).toContain('.quick-modal.app-money-edit-dialog{background:var(--surface)!important');
     expect(receiptInboxCss).toContain('.receipt-inbox-backdrop + .modal-backdrop{z-index:140}');
     expect(receiptQa).toContain('receipt delete confirmation renders above Receipt Inbox');

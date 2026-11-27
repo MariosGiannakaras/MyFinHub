@@ -1,9 +1,9 @@
 .modal-backdrop{position:fixed;inset:0;background:rgba(18,33,62,.24);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:100;padding:18px}
 .quick-modal{width:min(1050px,96vw);max-height:94dvh;overflow:auto;border-radius:20px}
 .quick-modal>header{padding:20px 20px 12px;display:flex;justify-content:space-between;gap:20px}
-.quick-modal>header small{color:#4777d6;font-size:8px;letter-spacing:.14em;font-weight:850}
+.quick-modal>header small{color:#4777d6;font-size:11px;letter-spacing:.14em;font-weight:850}
 .quick-modal>header h2{font-size:25px;margin:4px 0}
-.quick-modal>header p{font-size:9px;color:var(--muted);margin:0;max-width:630px}
+.quick-modal>header p{font-size:12px;line-height:1.45;overflow-wrap:break-word;color:var(--muted);margin:0;max-width:630px}
 .kind-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:0 20px 14px}
 .kind-grid button{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:10px;text-align:left;cursor:pointer;transition:.15s}
 .kind-grid button:hover{transform:translateY(-1px);border-color:var(--border-strong);background:var(--surface-hover)}

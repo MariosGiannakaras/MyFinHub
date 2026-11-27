@@ -8,8 +8,10 @@ describe('rendered QA strict latency isolation',()=>{
     expect(isolated).toContain("'scripts/transactions-scanability-qa.mjs'");
     expect(isolated).toContain("'scripts/large-data-boundaries-qa.mjs'");
     expect(source).toContain('scripts.filter(item=>!resourceIsolatedSuites.has(item.path))');
-    expect(source).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
+    expect(source).toContain('for(const item of isolatedScripts)await runAndCollect(item)');
     expect(source.indexOf('await Promise.all(Array.from')).toBeLessThan(source.indexOf('for(const item of isolatedScripts)'));
+    expect(source).toContain('try{await runRenderedItem(item)}');
+    expect(source.indexOf('for(const item of isolatedScripts)')).toBeLessThan(source.indexOf('if(failures.length)throw new Error'));
   });
   it('preserves strict real-world mutation latency and data checks',()=>{
     const scan=readFileSync('scripts/transactions-scanability-qa.mjs','utf8');

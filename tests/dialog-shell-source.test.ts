@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const shell=read('src/components/DialogShell.tsx');
+const focus=read('src/hooks/useModalFocus.ts');
 const confirm=read('src/components/ConfirmDialog.tsx');
 const money=read('src/components/MoneyEditDialog.tsx');
 const quickAdd=read('src/components/QuickAdd.tsx');
@@ -15,7 +16,7 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('useReducedMotion');
     expect(shell).toContain("type DialogMotionMode='system'|'reduced'|'full'|'none'");
     expect(shell).not.toContain('export type DialogMotionMode');
-    expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
+    expect(shell).toContain('useModalFocus<HTMLElement>(open,preferredFocus,onRequestClose,focusActive)');
     expect(shell).toContain('focusActive=true');
     expect(shell).toContain('focusActive?:boolean');
     expect(shell).toContain('className="modal-backdrop"');
@@ -31,6 +32,46 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('const reduce=Boolean(systemReduced)');
     expect(shell).not.toContain("motionMode==='reduced'");
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
+  });
+
+  it('preserves the original opener focus and scroll boundary across nested confirmation (#649 I20.01)',()=>{
+    expect(focus).toContain('const focusActiveRef = useRef(focusActive)');
+    expect(focus).toContain('focusActiveRef.current = focusActive');
+    expect(focus).toContain('if (!focusActiveRef.current || !isTopmostModal(root)) return;');
+    expect(focus).toContain('const inOtherModal=');
+    expect(focus).toContain("focused.closest('[aria-modal=\"true\"]')");
+    expect(focus).toContain('requestAnimationFrame(()=>{');
+    expect(focus).toContain('if(opener.current?.isConnected)opener.current.focus({ preventScroll: true })');
+    expect(focus).toContain('const hasDestination=');
+    expect(focus).toContain('const unlocked=releaseScrollLock()');
+    expect(focus).toContain("if(unlocked)window.scrollTo({ ...unlocked, behavior: 'auto' })");
+    const scrollLock=read('src/lib/modalScrollLock.ts');
+    expect(scrollLock).toContain('if(--held.holders!==0||active!==held)return null');
+    expect(scrollLock).toContain('html.style.overscrollBehavior=held.overscroll');
+  });
+
+  it('excludes unavailable controls from shared modal keyboard traversal and checks the real nested portal',()=>{
+    expect(focus).toContain("!element.matches(':disabled')");
+    expect(focus).toContain("!element.closest('[inert], [aria-hidden=\"true\"]')");
+    expect(focus).toContain("getComputedStyle(element).visibility==='visible'");
+    const rendered=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(rendered).toContain('modal Tab skips inert, disabled-fieldset, hidden and aria-hidden controls');
+    expect(rendered).toContain('modal Shift+Tab skips unavailable controls in reverse');
+    expect(rendered).toContain('nested date portal owns Tab');
+    expect(rendered).toContain('nested date Escape restores parent date control');
+    expect(rendered).toContain('nested date Escape retains parent scroll lock');
+  });
+
+  it('isolates only the active modal and preserves pre-existing inert plus explicit route handoff',()=>{
+    expect(focus).toContain('modalRoots.has(element)');
+    expect(focus).toContain('for(const element of ownedInert)');
+    expect(focus).toContain('if(!element.inert){element.inert=true;ownedInert.add(element)}');
+    expect(focus).toContain('isolationObserver.observe(document.body,{childList:true,subtree:true})');
+    expect(focus).toContain('releaseModalBackground(root);');
+    expect(read('src/components/CommandPalette.tsx')).toContain('releaseModalBackground(modalRef.current);onExecute(row)');
+    const rendered=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    for(const assertion of ['native inert blocks programmatic focus','late background cannot receive programmatic focus','nested body portal makes parent dialog inert','nested close reactivates only parent dialog','final close restores owned inert only and preserves pre-existing inert','Command Palette background is inert','inline mobile More background is inert'])expect(rendered).toContain(assertion);
+    expect(read('scripts/command-palette-qa.mjs')).toContain('budget command retains keyboard focus after palette dismissal');
   });
 
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
@@ -74,7 +115,7 @@ describe('DialogShell source contract',()=>{
     expect(quickAdd).toContain('ariaLabelledBy="quick-add-title"');
     expect(quickAdd).toContain('ariaDescribedBy="quick-add-description"');
     expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('focusActive={!discardOpen&&!externalConfirmationOpen}');
     expect(quickAdd).toContain('onRequestClose={requestClose}');
     expect(quickAdd).not.toContain("from 'framer-motion'");
     expect(quickAdd).not.toContain('useModalFocus');
@@ -103,10 +144,12 @@ describe('DialogShell source contract',()=>{
     expect(contextual).toContain('open={true}');
     expect(contextual).toContain('className="contextual-quick-modal"');
     expect(contextual).toContain('ariaLabelledBy="context-quick-title"');
-    expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
+    expect(contextual).toContain("ariaDescribedBy={visibleError?'context-quick-error':'context-quick-description'}");
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('onRequestClose={requestClose}');
+    expect(contextual).toContain('focusActive={!discardOpen}');
+    expect(contextual).toContain('<ConfirmDialog open={discardOpen}');
     expect(contextual).toContain('busy={saving}');
     expect(contextual).toContain('inert={saving}');
     expect(contextual).not.toContain('useModalFocus');

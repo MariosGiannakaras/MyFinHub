@@ -1,16 +1,54 @@
 import { useEffect, useId, useRef, type RefObject } from 'react';
 import { shortcutMatches } from '../lib/shortcuts';
+import { acquireModalScrollLock } from '../lib/modalScrollLock';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-function isTopmostModal(root: HTMLElement) {
-  const modals = [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')]
-    .filter((element) => element.isConnected && element.getClientRects().length > 0);
-  return modals.at(-1) === root;
+// Only live hook-owned modal roots participate; exiting motion DOM is not active.
+const modalRoots=new Set<HTMLElement>();
+const ownedInert=new Set<HTMLElement>();
+let isolationObserver:MutationObserver|null=null;
+
+function topmostModal(){
+  return [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')]
+    .filter(element=>modalRoots.has(element)&&element.isConnected&&element.getClientRects().length>0).at(-1);
+}
+function isTopmostModal(root:HTMLElement){return topmostModal()===root}
+
+function syncModalBackground(){
+  // Isolate sibling subtrees along the active modal's path, not its ancestors.
+  // This works for inline editors and body-portalled date/select dialogs alike.
+  const desired=new Set<HTMLElement>();
+  for(let node=topmostModal();node&&node!==document.body;node=node.parentElement??undefined){
+    for(const sibling of node.parentElement?.children??[]){
+      if(sibling!==node&&sibling instanceof HTMLElement)desired.add(sibling);
+    }
+  }
+  // Remove only attributes that this owner introduced, never existing inert.
+  for(const element of ownedInert)if(!desired.has(element)){element.inert=false;ownedInert.delete(element)}
+  for(const element of desired)if(!element.inert){element.inert=true;ownedInert.add(element)}
+}
+
+function acquireModalBackground(root:HTMLElement){
+  modalRoots.add(root);
+  syncModalBackground();
+  if(!isolationObserver){
+    isolationObserver=new MutationObserver(syncModalBackground);
+    isolationObserver.observe(document.body,{childList:true,subtree:true});
+  }
+}
+
+// An executing command may synchronously focus its real route destination
+// before React unmounts the palette. Ordinary dismissals release in cleanup.
+export function releaseModalBackground(root:HTMLElement|null){
+  if(!root||!modalRoots.delete(root))return;
+  syncModalBackground();
+  if(!modalRoots.size){isolationObserver?.disconnect();isolationObserver=null}
 }
 
 function canReceiveFocus(element:HTMLElement|null){
-  return Boolean(element&&element.matches(FOCUSABLE)&&element.tabIndex>=0&&element.isConnected&&element.getClientRects().length>0);
+  return Boolean(element&&element.matches(FOCUSABLE)&&element.tabIndex>=0&&element.isConnected&&element.getClientRects().length>0&&
+    !element.matches(':disabled')&&!element.closest('[inert], [aria-hidden="true"]')&&getComputedStyle(element).visibility==='visible');
 }
 
 function addDescription(element:HTMLElement,id:string){
@@ -22,8 +60,12 @@ function removeDescription(element:HTMLElement,id:string){
   if(values.length)element.setAttribute('aria-describedby',values.join(' '));else element.removeAttribute('aria-describedby');
 }
 
-export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
+export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void, focusActive = true): RefObject<T | null> {
   const ref = useRef<T | null>(null);
+  // Nested confirmations suspend only the parent's keyboard trap, not its
+  // open lifetime. Preserve the original launcher across suspend/resume.
+  const focusActiveRef = useRef(focusActive);
+  focusActiveRef.current = focusActive;
   const opener = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const generatedErrorId = `${useId().replace(/:/g,'')}-form-error`;
@@ -35,25 +77,15 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     const root = ref.current;
     if (!root) return;
 
-    const body = document.body;
-    const html = document.documentElement;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    const bodyStyle = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow };
-    const htmlOverscroll = html.style.overscrollBehavior;
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = `-${scrollX}px`;
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    html.style.overscrollBehavior = 'none';
+    const releaseScrollLock=acquireModalScrollLock();
+    acquireModalBackground(root);
+    const body=document.body;
 
     const preferredTarget = preferred ? root.querySelector<HTMLElement>(preferred) : null;
     const initial = canReceiveFocus(preferredTarget)
       ? preferredTarget!
       : [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].find(canReceiveFocus) ?? root;
-    queueMicrotask(() => initial.focus({ preventScroll: true }));
+    queueMicrotask(()=>{if(focusActiveRef.current&&isTopmostModal(root))initial.focus({preventScroll:true})});
 
     let associatedErrorId='';
     const syncErrorAssociation=()=>{
@@ -69,7 +101,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     errorObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['id','role','class']});
 
     const trap = (event: KeyboardEvent) => {
-      if (!isTopmostModal(root)) return;
+      if (!focusActiveRef.current || !isTopmostModal(root)) return;
       if (shortcutMatches(event, 'dismiss') && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
@@ -100,21 +132,34 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       document.removeEventListener('keydown', trap);
       errorObserver.disconnect();
       if(associatedErrorId)removeDescription(root,associatedErrorId);
-      body.style.position = bodyStyle.position;
-      body.style.top = bodyStyle.top;
-      body.style.left = bodyStyle.left;
-      body.style.right = bodyStyle.right;
-      body.style.width = bodyStyle.width;
-      body.style.overflow = bodyStyle.overflow;
-      html.style.overscrollBehavior = htmlOverscroll;
       // A command may deliberately move focus and scroll into its destination
       // before the exiting dialog unmounts. Preserve that destination; restore
       // the opener and scroll only after ordinary dismissals.
       const focused=document.activeElement;
-      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused);
+      // On an explicit nested discard, the focused ConfirmDialog is closing
+      // along with this editor. It must not count as an intentional new route
+      // destination merely because the two dialogs are DOM siblings.
+      const inOtherModal=focused instanceof HTMLElement&&Boolean(focused.closest('[aria-modal="true"]'))&&!root.contains(focused);
+      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused)&&!inOtherModal;
+      // Only the last modal restores the original page scroll. A navigated
+      // destination keeps its own scroll, even when the last modal exits.
+      releaseModalBackground(root);
+      const unlocked=releaseScrollLock();
       if(!hasDestination){
-        window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
-        queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
+        if(unlocked)window.scrollTo({ ...unlocked, behavior: 'auto' });
+        if(inOtherModal){
+          // Allow the child's opener-restoration microtask to settle first.
+          // A deliberate focus move to a nonmodal route target wins instead.
+          requestAnimationFrame(()=>{
+            const active=document.activeElement;
+            if(active instanceof HTMLElement&&active!==body&&active.isConnected&&!active.closest('[aria-modal="true"]')&&active!==opener.current)return;
+            if(opener.current?.isConnected)opener.current.focus({ preventScroll: true });
+          });
+        }else{
+          queueMicrotask(() => {
+            if(opener.current?.isConnected)opener.current.focus({ preventScroll: true });
+          });
+        }
       }
     };
   }, [open, preferred, generatedErrorId]);

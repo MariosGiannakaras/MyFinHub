@@ -1,7 +1,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import { visualEvidenceContext } from './visual-evidence-store.mjs';
+import { assertSyntheticVisualQaUrl, visualEvidenceContext } from './visual-evidence-store.mjs';
 
 if(process.argv.includes('--validate-only')){
   console.log('Final screenshot harness module validation passed.');
@@ -11,10 +11,10 @@ if(process.argv.includes('--validate-only')){
 const context=visualEvidenceContext();
 const {repositoryRoot,appVersion,timeZone,timestamp,generatedAt,sourceSha,shortSha,sourceBranch,evidenceRoot}=context;
 if(process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1')throw new Error('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
+const baseUrl=assertSyntheticVisualQaUrl(process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html');
+// Validate the synthetic source before deleting local artifacts or launching Chromium.
 rmSync(evidenceRoot,{recursive:true,force:true});
 mkdirSync(evidenceRoot,{recursive:true});
-
-const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const browser=process.env.MYFINHUB_QA_PRIMARY_BROWSER||execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!browser)throw new Error('Chrome/Chromium is required for final screenshots.');
 const basePort=9238;

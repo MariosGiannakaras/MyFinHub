@@ -107,13 +107,13 @@ async function preflightBrowser(browser,attempt){
   }finally{await stopBrowser(child);await sleep(250);cleanPaths([profile])}
 }
 function runScript(path,useFallback,evidenceDir){return new Promise(resolve=>{let output='';const env={...process.env,MYFINHUB_QA_USE_FALLBACK:useFallback?'1':'0',MYFINHUB_UX_EVIDENCE_DIR:evidenceDir};const child=spawn(process.execPath,['scripts/qa-script-runner.mjs',path],{env,stdio:['ignore','pipe','pipe']});const forward=(stream,target)=>stream.on('data',chunk=>{const text=chunk.toString();output+=text;target.write(text)});forward(child.stdout,process.stdout);forward(child.stderr,process.stderr);child.on('error',error=>resolve({code:1,output:`${output}\n${error.stack||error.message}`}));child.on('close',code=>resolve({code:code??1,output}))})}
-function isBrowserBootstrapFailure(output){return /Timed out waiting for http:\/\/127\.0\.0\.1:9\d{3}\/json\/version/.test(output)||/Chrome\/Chromium is required/.test(output)||/ECONNREFUSED.*9\d{3}/i.test(output)}
+function isBrowserBootstrapFailure(output){return /Timed out waiting for http:\/\/127\.0\.0\.1:\d+\/json\/version/.test(output)||/Chrome\/Chromium is required/.test(output)||/ECONNREFUSED.*9\d{3}/i.test(output)}
 const primaryBrowser=resolvePrimaryBrowser();const fallbackBrowser=process.env.MYFINHUB_QA_FALLBACK_BROWSER||'';const hasDistinctFallback=Boolean(fallbackBrowser&&fallbackBrowser!==primaryBrowser);const requirePrimary=process.env.MYFINHUB_QA_REQUIRE_PRIMARY==='1';if(!primaryBrowser)throw new Error('Chrome/Chromium is required for rendered frontend QA.');
 let preflightError=null;for(let attempt=1;attempt<=2;attempt+=1){try{await preflightBrowser(primaryBrowser,attempt);preflightError=null;break}catch(error){preflightError=error;console.warn(`Primary Chromium preflight attempt ${attempt} failed: ${error instanceof Error?error.message:String(error)}`);if(attempt<2)await sleep(750)}}if(preflightError)throw preflightError;
 const evidenceContext=visualEvidenceContext();let primaryBootstrapRetries=0,fallbackActivations=0,persistedScreenshots=0;
 const parallelism=Math.max(1,Math.min(4,Number(process.env.MYFINHUB_QA_PARALLELISM||3)||3));
 const activePorts=new Set();
-function scriptPort(path){try{const source=readFileSync(path,'utf8');const match=source.match(/\\bport\\s*=\\s*(\\d+)/);return match?Number(match[1]):null}catch{return null}}
+function scriptPort(path){try{const source=readFileSync(path,'utf8');const match=source.match(/\bport\s*=\s*(\d+)/);return match?Number(match[1]):null}catch{return null}}
 async function acquirePort(port){if(!port)return;while(activePorts.has(port))await sleep(100);activePorts.add(port)}
 function releasePort(port){if(port)activePorts.delete(port)}
 async function runRenderedItem(item){
@@ -146,8 +146,14 @@ const resourceIsolatedSuites=new Set([
 ]);
 const parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path));
 const isolatedScripts=scripts.filter(item=>resourceIsolatedSuites.has(item.path));
+const failures=[];
+async function runAndCollect(item){
+  try{await runRenderedItem(item)}
+  catch(error){const detail=error instanceof Error?error.message:String(error);failures.push({path:item.path,detail});console.error(detail)}
+}
 let cursor=0;
-async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
+async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runAndCollect(parallelScripts[index])}}
 await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
-for(const item of isolatedScripts)await runRenderedItem(item);
+for(const item of isolatedScripts)await runAndCollect(item);
+if(failures.length)throw new Error(`Rendered QA failed in ${failures.length} suite(s):\n${failures.map(item=>item.path+': '+item.detail).join('\n')}`);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);

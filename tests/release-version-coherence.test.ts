@@ -36,6 +36,9 @@ describe('Web/Windows release candidate version synchronization',()=>{
     // one test dependency, or later npm updates silently leave stale locks.
     expect(desktopLock.packages['..'].dependencies).toEqual(root.dependencies);
     expect(desktopLock.packages['..'].devDependencies).toEqual(root.devDependencies);
+    expect(rootLock.packages[''].dependencies).toEqual(root.dependencies);
+    expect(rootLock.packages[''].devDependencies).toEqual(root.devDependencies);
+    expect(desktopLock.packages['node_modules/electron'].version).toBe(desktop.devDependencies.electron);
     expect(desktopLock.packages[''].devDependencies['electron-builder']).toBe(desktop.devDependencies['electron-builder']);
     expect(desktop.devDependencies.rheomiq).toBe('file:..');
     expect(readFileSync('.github/workflows/desktop-publish-release.yml','utf8')).toContain('myfinhub-v$version');

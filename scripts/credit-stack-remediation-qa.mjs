@@ -148,5 +148,65 @@ try{
   const reducedBefore=await state();await pressArrow('ArrowDown');await sleep(520);const reducedAfter=await state();
   assert(reducedAfter.topId!==reducedBefore.topId,'reduced-motion mode preserves functional card selection');
 
+
+  console.log('Sensitive credit-stack clipboard single-flight: one status for same-turn double click');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  const stackFixture=await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard'),legacy=document.execCommand;const probe=globalThis.__qaCreditSensitiveCopy={requests:0,copies:0,mode:'deny',release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.requests++;return Promise.resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{probe.copies++;if(probe.mode==='deny')return Promise.reject(new Error('synthetic clipboard denial'));return new Promise(resolve=>{probe.release=resolve})}}});document.execCommand=()=>false;globalThis.__qaCreditSensitiveCopyRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;document.execCommand=legacy;delete globalThis.__qaCreditSensitiveCopy;delete globalThis.__qaCreditSensitiveCopyRestore};return true}");
+  assert(stackFixture,'credit stack runs isolated Card Vault and clipboard fixture');
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();return Boolean(b)}"),'real top physical card copy selected');
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=alert]')?.textContent?.includes('Δεν ήταν δυνατή η αντιγραφή')}",'denied credit stack copy remains explicit alert');
+  assert(await c.call("function(){return globalThis.__qaCreditSensitiveCopy?.copies===1&&globalThis.__qaCreditSensitiveCopy?.requests===1}"),'first credit copy used one Card Vault read and one clipboard attempt');
+  await shot('credit-stack-sensitive-copy-denied-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopy.mode='pending';return true}"),'arm held credit clipboard');
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();b?.click();return Boolean(b)}"),'two credit copy clicks in same event turn');
+  await waitFor("function(){return globalThis.__qaCreditSensitiveCopy?.copies===2}",'exactly one new clipboard attempt for double click');
+  assert(await c.call("function(){const n=document.querySelector('#myfinhub-card-stack .sr-status');return n?.textContent===''&&n?.getAttribute('role')==='status'}"),'old credit denial cleared while pending, no false green');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopy.release?.();return true}"),'confirm pending credit clipboard outcome');
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=status]')?.textContent==='Αντιγράφηκε'}",'credit copy status only after acknowledged clipboard');
+  assert(await c.call("function(){return globalThis.__qaCreditSensitiveCopy?.copies===2&&globalThis.__qaCreditSensitiveCopy?.requests===1}"),'credit sensitive copy never repeats vault read or clipboard for duplicate click');
+  await viewport(375,812,true);
+  assert(await c.call("function(){const n=document.querySelector('#myfinhub-card-stack .sr-status');return Boolean(n&&n.getAttribute('role')==='status'&&n.textContent==='Αντιγράφηκε'&&document.documentElement.scrollWidth<=innerWidth+1)}"),'mobile credit screen-reader-only status is accessible without document overflow');
+  await shot('credit-stack-sensitive-copy-singleflight-mobile');
+  assert(await c.call("function(){globalThis.__qaCreditSensitiveCopyRestore?.();return true}"),'credit stack clipboard fixture restored');
+
+
+  console.log('Sensitive credit-stack stale-card pending-vault copy is cancelled before clipboard after restack');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  const staleCardFixture=await c.call("function(){const original=globalThis.fetch,descriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard'),probe=globalThis.__qaCreditStaleCopy={reads:0,writes:0,release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.reads++;return new Promise(resolve=>{probe.release=()=>resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))})}return original(input,init)};Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>{probe.writes++;return Promise.resolve()}}});globalThis.__qaCreditStaleCopyRestore=()=>{globalThis.fetch=original;if(descriptor)Object.defineProperty(navigator,'clipboard',descriptor);else delete navigator.clipboard;delete globalThis.__qaCreditStaleCopy;delete globalThis.__qaCreditStaleCopyRestore};return true}");
+  assert(staleCardFixture,'isolated delayed Card Vault read and counted clipboard writes installed');
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .copy-btn[data-field=pan]');b?.click();return Boolean(b)}"),'original top-card copy requested');
+  await waitFor("function(){return globalThis.__qaCreditStaleCopy?.reads===1&&typeof globalThis.__qaCreditStaleCopy.release==='function'}",'confidential original-card read deliberately held pending');
+  const originalCopyCard=(await state()).topId;
+  await pressArrow('ArrowDown');
+  await waitFor("function(original){const top=document.querySelector('#myfinhub-card-stack .stack-card.top');return Boolean(top&&top.getAttribute('data-card-id')!==original)}",'top card changes while original-card vault read is pending',[originalCopyCard]);
+  await sleep(550);
+  assert(await c.call("function(){globalThis.__qaCreditStaleCopy.release?.();return true}"),'release stale card vault response after selected card switches');
+  await sleep(240);
+  const staleCopyOutcome=await c.call("function(){const p=globalThis.__qaCreditStaleCopy,n=document.querySelector('#myfinhub-card-stack .sr-status');return {reads:p?.reads,writes:p?.writes,role:n?.getAttribute('role'),status:n?.textContent||'',top:document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')}}");
+  assert(staleCopyOutcome.reads===1&&staleCopyOutcome.writes===0&&staleCopyOutcome.top!==originalCopyCard&&!staleCopyOutcome.status,'the old card never reaches clipboard or announces success/error after restack: '+JSON.stringify(staleCopyOutcome));
+  await shot('credit-stack-stale-card-copy-cancelled-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditStaleCopyRestore?.();return true}"),'stale card copy fixture removed');
+
+
+  console.log('Sensitive credit-stack stale pending-vault reveal must remain masked after restack');
+  await viewport(1440,1000,false);await navigate('credit-stack');
+  assert(await c.call("function(){const original=globalThis.fetch,probe=globalThis.__qaCreditStaleReveal={reads:0,release:null};globalThis.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url,uri=new URL(raw,location.href);if(uri.pathname==='/api/card-secrets'&&String(init?.method||'GET').toUpperCase()==='POST'){probe.reads++;return new Promise(resolve=>{probe.release=()=>resolve(new Response(JSON.stringify({pan:'4444333322221111',expiry:'11/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}}))})}return original(input,init)};globalThis.__qaCreditStaleRevealRestore=()=>{globalThis.fetch=original;delete globalThis.__qaCreditStaleReveal;delete globalThis.__qaCreditStaleRevealRestore};return true}"),'install isolated delayed Credit Card Vault reveal response');
+  const originalRevealCard=(await state()).topId;
+  assert(await c.call("function(){const b=document.querySelector('#myfinhub-card-stack .stack-card.top .reveal-btn');b?.click();return Boolean(b)}"),'top credit card starts pending vault reveal');
+  await waitFor("function(){return globalThis.__qaCreditStaleReveal?.reads===1&&typeof globalThis.__qaCreditStaleReveal?.release==='function'}",'top-card vault reveal deliberately pending');
+  await pressArrow('ArrowDown');
+  await waitFor("function(original){return document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')!==original}",'credit stack changes active card while reveal is pending',[originalRevealCard]);
+  await sleep(550);
+  assert(await c.call("function(){globalThis.__qaCreditStaleReveal?.release?.();return true}"),'old card vault read returns only after restack');
+  await sleep(200);
+  const revealWhileInactive=await c.call("function(original){const card=[...document.querySelectorAll('#myfinhub-card-stack .stack-card')].find(node=>node.getAttribute('data-card-id')===original);return {active:document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id'),revealed:card?.querySelector('.payment-card')?.dataset.revealed,numberMasked:Boolean(card?.querySelector('.card-number.masked')),status:document.querySelector('#myfinhub-card-stack .sr-status')?.textContent||''}}",[originalRevealCard]);
+  assert(revealWhileInactive.active!==originalRevealCard&&revealWhileInactive.revealed==='false'&&revealWhileInactive.numberMasked&&!revealWhileInactive.status,'obsolete reveal does not unmask old inactive card or announce vault error');
+  for(let cycle=0;cycle<5;cycle++){await pressArrow('ArrowDown');await sleep(530)}
+  await waitFor("function(original){return document.querySelector('#myfinhub-card-stack .stack-card.top')?.getAttribute('data-card-id')===original}",'original card returns to front without any new reveal',[originalRevealCard]);
+  const staleRevealMasked=await c.call("function(){const card=document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card');return Boolean(card&&card.dataset.revealed==='false'&&card.querySelector('.card-number.masked')&&card.querySelector('.reveal-btn[aria-pressed=false]')&&!document.querySelector('#myfinhub-card-stack .sr-status')?.textContent)}");
+  assert(staleRevealMasked,'staleRevealMasked: original card stays masked after full rotation; old vault read never latches visible');
+  await shot('credit-stack-stale-vault-reveal-cancelled-desktop');
+  assert(await c.call("function(){globalThis.__qaCreditStaleRevealRestore?.();return true}"),'restore isolated credit vault reveal mock');
+
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

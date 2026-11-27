@@ -1,13 +1,15 @@
 import { apiRequest } from './api.js';
 import { trackDatabaseWrite } from './databaseSaveActivity.js';
-import { assertValidIban, isValidIban } from './iban';
-import { notifyAuthExpired } from './authExpiry';
-import { userErrorMessage } from './userMessage';
+import { assertValidIban, isValidIban } from './iban.js';
+import { notifyAuthExpired } from './authExpiry.js';
+import { userErrorMessage } from './userMessage.js';
+import { watchAuthScope, assertCurrentAuthScope } from './authScopedCache.js';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
+const QA_LOST_IBAN_RECEIPT=QA_MODE&&new URLSearchParams(location.search).has('qaIbanReceiptLost');
 const QA_UPDATED_AT='2026-08-17T12:00:00.000Z';
 const QA_RECORDS:Record<string,AccountMetadataRecord>={
   'piraeus-payroll':{accountId:'piraeus-payroll',iban:'GR1601101250000000012300695',revision:1,updatedAt:QA_UPDATED_AT},
@@ -17,10 +19,31 @@ const QA_RECORDS:Record<string,AccountMetadataRecord>={
 let snapshot:AccountMetadataSnapshot={loaded:false,loading:false,records:{},error:null};
 let pending:Promise<AccountMetadataSnapshot>|null=null;
 const listeners=new Set<()=>void>();
+// An IBAN PUT may commit before its acknowledgement is lost.
+const unverifiedAccountWrites=new Set<string>();
+export class UnverifiedAccountMetadataWrite extends Error{
+  constructor(invalidReceipt=false){
+    super((invalidReceipt?'Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη. ':'')+
+      'Η εγγραφή IBAN ίσως ολοκληρώθηκε. Επαναφόρτωσε και έλεγξε την τρέχουσα τιμή πριν από νέα αποθήκευση.');
+    this.name='UnverifiedAccountMetadataWrite';
+  }
+}
 
 function publish(next:AccountMetadataSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getAccountMetadataSnapshot(){return snapshot}
 export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
+export function accountMetadataWriteNeedsReview(accountId:string){return unverifiedAccountWrites.has(accountId)}
+export const accountMetadataReviewMessage='Η ενημέρωση IBAN ίσως ολοκληρώθηκε. Επαναφόρτωσε και έλεγξε τα στοιχεία πριν από νέα αποθήκευση.';
+const authEpoch=watchAuthScope(()=>{
+  pending=null;
+  unverifiedAccountWrites.clear();
+  publish({loaded:false,loading:false,records:{},error:null});
+});
+
+function markUnverifiedAccountWrite(accountId:string,epoch:number,invalidReceipt=false):never{
+  if(epoch===authEpoch())unverifiedAccountWrites.add(accountId);
+  throw new UnverifiedAccountMetadataWrite(invalidReceipt);
+}
 
 function errorMessage(error:unknown){
   return userErrorMessage(error,'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.');
@@ -48,42 +71,88 @@ export async function refreshAccountMetadata(force=false){
   if(snapshot.loaded&&!force)return snapshot;
   if(pending)return pending;
   if(QA_MODE)return publish({loaded:true,loading:false,records:snapshot.loaded?snapshot.records:{...QA_RECORDS},error:null});
+  const epoch=authEpoch();
   publish({...snapshot,loading:true,error:null});
+  // A synchronous subscriber can retire this scope before dispatch.
+  if(epoch!==authEpoch())return snapshot;
   pending=(async()=>{
     try{
       const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
+      if(epoch!==authEpoch())return snapshot;
       if(!response.ok)throw requestError(response,payload,'Δεν ήταν δυνατή η φόρτωση των IBAN.');
-      const records:Array<unknown>=Array.isArray(payload?.records)?payload.records:[];
+      const records=payload?.records;
+      if(!Array.isArray(records))throw new Error('Η λίστα IBAN είναι μη έγκυρη.');
       const byId:Record<string,AccountMetadataRecord>={};
-      for(const value of records){const record=parseRecord(value);if(record)byId[record.accountId]=record}
+      for(const value of records){
+        const record=parseRecord(value);
+        if(!record||byId[record.accountId])throw new Error('Η λίστα IBAN είναι μη έγκυρη.');
+        byId[record.accountId]=record;
+      }
       return publish({loaded:true,loading:false,records:byId,error:null});
-    }catch(error){return publish({...snapshot,loaded:true,loading:false,error:errorMessage(error)})}
-    finally{pending=null}
+    }catch(error){
+      if(epoch!==authEpoch())return snapshot;
+      return publish({...snapshot,loaded:true,loading:false,error:errorMessage(error)});
+    }
+    finally{if(epoch===authEpoch())pending=null}
   })();
   return pending;
 }
 
 export async function saveAccountMetadata(accountId:string,iban:string|null){
   const normalized=assertValidIban(iban);
-  const current=snapshot.records[accountId];
   if(QA_MODE){
+    if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();
+    const current=snapshot.records[accountId];
     const record:AccountMetadataRecord={accountId,iban:normalized,revision:(current?.revision??0)+1,updatedAt:QA_UPDATED_AT};
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
+    if(QA_LOST_IBAN_RECEIPT){
+      document.documentElement.dataset.qaIbanMetadataWrites=String(Number(document.documentElement.dataset.qaIbanMetadataWrites||0)+1);
+      return markUnverifiedAccountWrite(accountId,authEpoch());
+    }
     return record;
   }
+  // Bind this call to the owner session that initiated the save, BEFORE
+  // awaiting a cold-catalog GET or notifying shared save-progress listeners.
+  const epoch=authEpoch();
   return trackDatabaseWrite(async()=>{
-  const response=await apiRequest('/api/account-metadata',{
-    method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
-    body:JSON.stringify({accountId,iban:normalized}),
-  });
+  assertCurrentAuthScope(epoch);
+  if(unverifiedAccountWrites.has(accountId))throw new UnverifiedAccountMetadataWrite();
+  // A failed/incomplete GET is not evidence that an account has no metadata
+  // and can be written at revision zero. Reconcile by read-only GET first;
+  // never create an uncertain duplicate versioned write on blind retry.
+  if(!snapshot.loaded||snapshot.loading||snapshot.error){
+    const recovered=await refreshAccountMetadata(true);
+    if(!recovered.loaded||recovered.error)
+      throw new Error('Η τρέχουσα έκδοση IBAN δεν έχει επιβεβαιωθεί. Φόρτωσε ξανά τα στοιχεία πριν από αποθήκευση.');
+  }
+  // An old GET can settle with the newer owner's snapshot after auth reset.
+  // Never use that new-session revision to issue an old-session IBAN PUT.
+  assertCurrentAuthScope(epoch);
+  const current=snapshot.records[accountId];
+  let response:Response;
+  try{
+    response=await apiRequest('/api/account-metadata',{
+      method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
+      body:JSON.stringify({accountId,iban:normalized}),
+    });
+  }catch{
+    // Do not infer rollback: the server may have committed before reply loss.
+    return markUnverifiedAccountWrite(accountId,epoch);
+  }
   const payload=await json(response);
+  if(epoch!==authEpoch())
+    throw new Error('Η συνεδρία άλλαξε πριν επιβεβαιωθεί η αποθήκευση IBAN.');
   if(!response.ok){
     if(response.status===409){await refreshAccountMetadata(true);throw new Error('Το IBAN άλλαξε από άλλη συσκευή. Φορτώθηκε η νεότερη τιμή· έλεγξέ την και δοκίμασε ξανά.');}
+    if(response.status===408||response.status===429||response.status>=500)
+      return markUnverifiedAccountWrite(accountId,epoch);
     throw requestError(response,payload,'Δεν ήταν δυνατή η αποθήκευση του IBAN.');
   }
   const record=parseRecord(payload?.record);
-  if(!record||record.accountId!==accountId)throw new Error('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');
+  if(!record||record.accountId!==accountId||record.iban!==normalized||
+    record.revision!==(current?.revision??0)+1)
+    return markUnverifiedAccountWrite(accountId,epoch,true);
   publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
   return record;
   });

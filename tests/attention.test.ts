@@ -15,6 +15,18 @@ describe('Needs Attention deterministic engine',()=>{
     expect(items.some(item=>item.id==='scheduled:qa-scheduled-transfer'&&item.scheduledId==='qa-scheduled-transfer')).toBe(true);
   });
 
+  it('preserves action IDs for recurring, loan, scheduled and credit statement without posting (#649 I13.02)',()=>{
+    const data=clone(),before=JSON.stringify(data);
+    const items=allAttentionItems(data,'2026-08-17');
+    expect(items.find(item=>item.id==='recurring:rec-1')).toMatchObject({action:'pay_recurring',recurringId:'rec-1'});
+    expect(items.find(item=>item.id==='loan:loan-long')).toMatchObject({action:'pay_loan',loanId:'loan-long'});
+    expect(items.find(item=>item.id==='scheduled:qa-scheduled-transfer')).toMatchObject({action:'complete_scheduled',scheduledId:'qa-scheduled-transfer'});
+    expect(items.find(item=>item.id==='credit-statement:qa-card:2026-08-12')).toMatchObject({
+      action:'pay_credit',cardId:'qa-card',statementId:'qa-card:2026-08-12',
+    });
+    expect(JSON.stringify(data)).toBe(before);
+  });
+
   it('never flags an installment overdue before a future first loan payment',()=>{
     const data=clone();
     data.seed.loans=[];

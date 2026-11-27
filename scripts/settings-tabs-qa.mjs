@@ -1,13 +1,36 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-settings-tabs-qa';mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();if(!chrome)throw new Error('Chrome/Chromium is required for Settings tabs QA.');
-const port=9254;const profile='/tmp/myfinhub-settings-tabs-qa-chrome';const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+// Chromium binds an available loopback debugging port itself. A fixed 9254
+// could fail before any Settings assertion if a stale profile/socket survives.
+const profile='/tmp/myfinhub-settings-tabs-qa-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+const child=spawn(chrome,['--headless=new','--remote-debugging-port=0','--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','ignore','pipe']});
+let chromiumDiagnostics='';
+child.stderr?.on('data',chunk=>{chromiumDiagnostics=(chromiumDiagnostics+String(chunk)).slice(-4096)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+async function waitForChromiumCdp(){
+  for(let attempt=0;attempt<120;attempt++){
+    try{
+      const raw=readFileSync(`${profile}/DevToolsActivePort`,'utf8');
+      const first=raw.split(/\r?\n/,1)[0]?.trim()||'';
+      if(/^[1-9][0-9]{1,4}$/.test(first)){
+        const port=Number(first);
+        if(port>0&&port<=65535){
+          const result=await fetch(`http://127.0.0.1:${port}/json/version`);
+          if(result.ok)return port;
+        }
+      }
+    }catch{}
+    if(child.exitCode!==null)throw new Error(`Settings Chromium CDP bootstrap failed: exited ${child.exitCode}; ${chromiumDiagnostics}`);
+    await sleep(150);
+  }
+  throw new Error(`Settings Chromium CDP bootstrap failed: no reachable loopback DevToolsActivePort (Chrome exit: ${child.exitCode??'running'}); ${chromiumDiagnostics}`);
+}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map();this.listeners=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(message.id){const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);return}for(const fn of this.listeners.get(message.method)||[])fn(message.params)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}on(method,fn){const list=this.listeners.get(method)||[];list.push(fn);this.listeners.set(method,list)}async call(functionDeclaration,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime function call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Settings tabs QA assertion failed: ${message}`)};
 const tabs=[
@@ -21,11 +44,27 @@ const tabs=[
 ];
 let c=null;
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('state','settings-tabs');const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
+  const port=await waitForChromiumCdp();const url=new URL(baseUrl);url.searchParams.set('page','settings');url.searchParams.set('state','settings-tabs');const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url.href)}`,{method:'PUT'}).then(response=>response.json());c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
   const runtimeErrors=[];const failedRequests=[];c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));c.on('Network.loadingFailed',params=>{if(!params.canceled&&params.errorText!=='net::ERR_ABORTED')failedRequests.push(`${params.errorText||'network failure'} [${params.type||'unknown'}]`)});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickTab=async tab=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()===label);if(!node||node.disabled)return false;node.click();node.scrollIntoView({block:'nearest',inline:'center'});return true}",[tab.label]);assert(ok,`tab ${tab.label} is enabled and clickable`);await waitFor("function(id,selector){const selected=[...document.querySelectorAll('.settings-tablist [role=tab]')].filter(node=>node.getAttribute('aria-selected')==='true');const panel=document.querySelector('.settings-tab-panel');const target=document.querySelector(selector);return selected.length===1&&selected[0].getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`&&Boolean(target&&target.getClientRects().length)}",`${tab.label} selected panel`,[tab.id,tab.selector]);await c.call("function(){document.querySelector('.settings-tab-panel')?.scrollIntoView({block:'start'});window.scrollBy(0,-132);return true}");await sleep(180)};
+  const verifyKeyboardTablist=async()=>{
+    await clickTab(tabs[0]);
+    const focusFirst=await c.call("function(){const first=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');first?.focus();return document.activeElement===first}");
+    assert(focusFirst,'keyboard tablist starts on selected tab');
+    const press=async(key,expected)=>{
+      await c.call("function(key){document.activeElement?.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}))}",[key]);
+      await waitFor("function(id){const active=document.activeElement;const selected=document.querySelector('.settings-tablist [role=tab][aria-selected=true]');const panel=document.querySelector('.settings-tab-panel');return Boolean(active&&selected&&active===selected&&selected.getAttribute('aria-controls')===`settings-panel-${id}`&&panel?.id===`settings-panel-${id}`)}",`Settings tab keyboard ${key} → ${expected}`,[expected]);
+      const oneStop=await c.call("function(){return [...document.querySelectorAll('.settings-tablist [role=tab]')].filter(el=>el.tabIndex===0).length===1}");
+      assert(oneStop,`exactly one sequential Tab stop after ${key}`);
+    };
+    await press('ArrowRight','profile');
+    await press('End','data');
+    await press('ArrowRight','general');
+    await press('ArrowLeft','data');
+    await press('Home','general');
+  };
   const noPageOverflow=async label=>{const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(overflow<=1,`${label} horizontal page overflow ${overflow}px`)};
   const prepareScreenshot=async()=>{const state=await c.call("function(){const active=document.activeElement;if(active instanceof HTMLElement)active.blur();window.scrollTo({top:0,left:0,behavior:'auto'});return {scrollY:window.scrollY}}");assert(Math.abs(state.scrollY)<=1,`screenshot capture scroll offset ${state.scrollY}px`);await sleep(120)};
   const screenshot=async(name)=>{await prepareScreenshot();await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
@@ -56,15 +95,30 @@ try{
           const revokeOpened=await c.call("function(){const row=[...document.querySelectorAll('.device-access-row')].find(node=>(node.textContent||'').includes('Android · Pixel'));const button=row?.querySelector('.device-access-revoke');button?.click();return Boolean(button)}");assert(revokeOpened,'Remote device exposes revoke confirmation');
           await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Αφαίρεση πρόσβασης από Android · Pixel'))}",'device revoke confirmation');
           await screenshot('settings-device-revoke-confirm-desktop');
-          const revokeConfirmed=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Αφαίρεση πρόσβασης');button?.click();return Boolean(button)}");assert(revokeConfirmed,'Device revoke confirmation can enter busy state');
+          const revokeConfirmed=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Αφαίρεση πρόσβασης');button?.click();button?.click();return Boolean(button)}");assert(revokeConfirmed,'Device revoke confirmation can enter busy state');
           await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');const buttons=[...dialog?.querySelectorAll('button')||[]];return buttons.length>=2&&buttons.every(button=>button.disabled)}",'device revoke busy confirmation');
           await screenshot('settings-device-revoke-busy-desktop');
           await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');const message=document.querySelector('.device-access-message[role=alert]');return Boolean(dialog&&message&&(message.textContent||'').includes('Δεν ήταν δυνατή η αφαίρεση πρόσβασης')&&[...dialog.querySelectorAll('button')].some(button=>!button.disabled))}",'device revoke failure state');
+          assert(await c.call("function(){return globalThis.__myfinhubQaDevicePostCount?.()===1}"),'device revoke double confirm triggers only one HTTP POST');
           const revokeCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(revokeCancelled,'Failed device revoke confirmation exposes safe cancel');
           await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&[...document.querySelectorAll('.device-access-row')].some(node=>(node.textContent||'').includes('Android · Pixel'))}",'failed device revoke preserves remote device');
           const revokeFailureVisible=await c.call("function(){const message=document.querySelector('.device-access-message[role=alert]');if(!message||(message.textContent||'').indexOf('Δεν ήταν δυνατή η αφαίρεση πρόσβασης')<0)return false;message.scrollIntoView({block:'center',inline:'nearest'});const r=message.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight}");
           assert(revokeFailureVisible,'Device revoke failure alert is visible in the evidence viewport');
           await screenshotCurrentViewport('settings-device-revoke-failure-desktop');
+          // A real acknowledged 200 removes the remote session, closes its
+          // confirmation and announces success only after the response.
+          const reopen=await c.call("function(){window.__myfinhubQaNextDevicePostOk=true;const row=[...document.querySelectorAll('.device-access-row')].find(node=>(node.textContent||'').includes('Android · Pixel'));const button=row?.querySelector('.device-access-revoke');button?.click();return Boolean(button)}");assert(reopen,'reopen synthetic device for verified revoke success');
+          await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'second revoke confirmation');
+          assert(await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Αφαίρεση πρόσβασης');button?.click();return Boolean(button)}"),'confirm synthetic successful revoke');
+          await waitFor("function(){const panel=document.querySelector('.device-access-settings');return Boolean(panel&&!document.querySelector('[role=alertdialog]')&&panel.querySelectorAll('.device-access-row').length===1&&!panel.textContent.includes('Android · Pixel')&&(panel.querySelector('.device-access-message[role=status]')?.textContent||'').includes('Η πρόσβαση της συσκευής αφαιρέθηκε.')&&(panel.querySelector('.device-access-count')?.textContent||'').includes('1 ενεργές'))}",'device revoke green receipt after one completed remote mutation');
+          assert(await c.call("function(){return globalThis.__myfinhubQaDevicePostCount?.()===2}"),'one failed and one successful revoke request, no duplicated POST');
+          await screenshotCurrentViewport('settings-device-revoke-success-desktop');
+          // A later GET failure must not lie about zero active sessions.
+          assert(await c.call("function(){window.__myfinhubQaNextDeviceGetError=true;const button=document.querySelector('[aria-label=\"Ανανέωση συσκευών\"]');button?.click();return Boolean(button)}"),'refresh device list using synthetic read error');
+          await waitFor("function(){const panel=document.querySelector('.device-access-settings');return Boolean(panel?.querySelector('.device-access-empty[role=alert]')&&(panel.querySelector('.device-access-empty b')?.textContent||'').includes('δεν επιβεβαιώθηκε')&&(panel.querySelector('.device-access-count')?.textContent||'').includes('άγνωστη κατάσταση')&&!panel.querySelector('.device-access-count')?.textContent.includes('0 ενεργές'))}",'device GET failure displays unknown, never zero confirmed active');
+          await screenshotCurrentViewport('settings-device-catalog-unknown-desktop');
+          assert(await c.call("function(){window.__myfinhubQaResetDeviceRows?.();const button=document.querySelector('[aria-label=\"Ανανέωση συσκευών\"]');button?.click();return Boolean(button)}"),'restore original synthetic devices without mutation');
+          await waitFor("function(){return document.querySelectorAll('.device-access-row').length===2}",'recovered device GET restores two verified synthetic sessions');
         }
       }
       if(tab.id==='accounts'){
@@ -78,12 +132,17 @@ try{
           assert(['auto','scroll'].includes(geometry.bodyOverflow),'Mobile account editor body is the scroll container');
           assert(geometry.providerColumns>=2,'Provider picker stays compact with two columns on normal phones');
           assert(geometry.targets.every(target=>target.h>=40&&target.w>=40),`Mobile provider touch targets too small: ${JSON.stringify(geometry.targets)}`);
+          const labels=await c.call("function(){const nodes=[...document.querySelectorAll('.account-management-provider-picker button b,.account-management-provider-picker button small')];return nodes.map(node=>({wrap:getComputedStyle(node).overflowWrap,nowrap:getComputedStyle(node).whiteSpace==='nowrap',scroll:node.scrollWidth,client:node.clientWidth}))}");
+          assert(labels.length>=12&&labels.every(row=>row.wrap==='anywhere'&&!row.nowrap&&row.scroll<=row.client+1),`Long bank/provider names are legible and wrap within 375px mobile picker: ${JSON.stringify(labels)}`);
           await screenshot('settings-accounts-provider-picker-mobile');
           const closed=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-new');const button=modal?.querySelector('button[aria-label=\"Κλείσιμο\"]');button?.click();return Boolean(button)}");assert(closed,'Mobile new account modal closes');
           await waitFor("function(){return !document.querySelector('.account-management-modal')}",'mobile account modal close');
         }
       }
-      if(tab.id==='categories')assert(await c.call("function(){return ![...document.querySelectorAll('.settings-categories-only .taxonomy-icon-disclosure')].some(node=>node.getClientRects().length)}") ,'Categories keeps icon pickers out of the visible taxonomy workspace');
+      if(tab.id==='categories'){
+        const sections=await c.call("function(){const root=document.querySelector('.settings-categories-only');if(!root)return null;const visible=node=>node.getClientRects().length>0;const pickers=[...root.querySelectorAll('.category-icon-picker-block,.taxonomy-icon-disclosure:not(.taxonomy-subcategory-disclosure)')];const disclosure=[...root.querySelectorAll('.taxonomy-subcategory-disclosure')];return {pickerVisible:pickers.some(visible),subcategoryCount:disclosure.length,subcategoriesVisible:disclosure.some(visible),actions:root.querySelectorAll('.taxonomy-row-actions button').length}}");
+        assert(Boolean(sections&&!sections.pickerVisible&&sections.subcategoryCount>0&&sections.subcategoriesVisible&&sections.actions>0),`Categories isolates icon pickers while retaining visible subcategory disclosure and existing mutation actions: ${JSON.stringify(sections)}`);
+      }
       if(tab.id==='icons'){
         const iconState=await c.call("function(){const root=document.querySelector('.settings-icons-only');return {picker:[...(root?.querySelectorAll('.taxonomy-icon-disclosure')||[])].some(node=>node.getClientRects().length>0),management:[...(root?.querySelectorAll('.taxonomy-add-row,.taxonomy-row-actions')||[])].some(node=>node.getClientRects().length>0)}}");assert(iconState.picker,'Icons exposes real icon preference controls');assert(!iconState.management,'Icons does not duplicate taxonomy mutation controls');
       }
@@ -91,11 +150,62 @@ try{
         const ruleState=await c.call("function(){const root=document.querySelector('.settings-rules-only [data-rules-workspace]');const text=root?.textContent||'';return {dedicated:Boolean(root),budget:Boolean(document.querySelector('.settings-rules-only .budget-settings-panel')),editorClosed:!document.querySelector('[data-rule-editor]'),newAction:Boolean(root?.querySelector('.rules-new-button')),context:Boolean(root?.querySelector('.rules-status-strip')||root?.querySelector('.rules-empty-state')),human:text.includes('Κανόνες νέων κινήσεων')&&text.includes('δεν αλλάζουν το ιστορικό')}}");assert(ruleState.dedicated,'Rules renders the dedicated transaction-rule workspace');assert(!ruleState.budget,'Rules does not render budget editor');assert(ruleState.editorClosed,'Rules keeps the editor closed until explicitly requested');assert(ruleState.newAction,'Rules exposes the modal editor entry point');assert(ruleState.context,'Rules exposes rule status/order context or the explicit empty state');assert(ruleState.human,'Rules explains the rule model and history safety in human language');
       }
       if(mode.name==='desktop'&&tab.id==='data'){
-        const importRequested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([JSON.stringify({version:'qa-dialog-proof'})],'qa-dialog-proof.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");assert(importRequested,'JSON import fixture enters through real file input');
+        // The backup acknowledgement succeeds in the isolated QA fixture,
+        // but the subsequent JSON read is intentionally unavailable.
+        const blockedRead=await c.call("function(){const original=window.fetch;window.fetch=(input,init)=>{const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;const url=new URL(raw,location.href);if(url.pathname==='/api/data')return Promise.reject(new Error('QA_BACKUP_READ_UNAVAILABLE'));return original(input,init)};window.__qaRestoreBackupRead=()=>{window.fetch=original};return true}");
+        assert(blockedRead,'synthetic post-backup JSON read rejection installed');
+        try{
+          const backupCallsBefore=await c.call("function(){return Number(document.documentElement.dataset.qaBackupCalls||0)}");
+          const clicked=await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();button?.click();return Boolean(button)}");
+          assert(clicked,'backup action invoked in isolated fixture');
+          await waitFor("function(){const node=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(node&&(node.textContent||'').includes('Το backup στη βάση δημιουργήθηκε')&&(node.textContent||'').includes('λήψη του JSON'))}",'database backup acknowledged but JSON retrieval fails with partial-success warning');
+          const truthful=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
+          assert(truthful.warnings===1&&truthful.errors===0&&truthful.successes===0,'confirmed database backup is never reported as a total failure on JSON retrieval error');
+          assert(await c.call("function(before){return Number(document.documentElement.dataset.qaBackupCalls||0)===before+1}",[backupCallsBefore]),'same-turn backup clicks invoke one backup action');
+          await screenshot('settings-backup-db-ack-download-unavailable-desktop');
+        }finally{
+          await c.call("function(){window.__qaRestoreBackupRead?.();delete window.__qaRestoreBackupRead;return true}");
+        }
+        // A 503 after backup RPC may mean a committed backup with lost reply.
+        // The UI must not present definite failure or start JSON download.
+        assert(await c.call("function(){window.__myfinhubQaLoseNextBackupReceipt=true;return true}"),'arm synthetic lost database backup receipt');
+        assert(await c.call("function(){const button=document.querySelector('.settings-data-action-card button.settings-data-action-button');button?.click();return Boolean(button)}"),'attempt backup with lost server receipt');
+        await waitFor("function(){const n=document.querySelector('.settings-data-tab .operation-feedback[data-feedback-tone=warning]');return Boolean(n&&(n.textContent||'').includes('Δεν επιβεβαιώθηκε αν δημιουργήθηκε')&&(n.textContent||'').includes('Δεν κατέβηκε JSON'))}",'lost backup receipt stays a warning without false success');
+        const uncertainty=await c.call("function(){const root=document.querySelector('.settings-data-tab');return {warnings:root?.querySelectorAll('.operation-feedback[data-feedback-tone=warning]').length||0,errors:root?.querySelectorAll('.operation-feedback[data-feedback-tone=error]').length||0,successes:root?.querySelectorAll('.operation-feedback[data-feedback-tone=success]').length||0}}");
+        assert(uncertainty.warnings===1&&uncertainty.errors===0&&uncertainty.successes===0,'uncertain backup remains a single warning rather than an error or fake success');
+        await screenshot('settings-backup-uncertain-commit-warning-desktop');
+        const oversized=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([new Uint8Array(4*1024*1024+1)],'qa-oversized.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(oversized,'oversized import fixture enters through the real input');
+        await waitFor("function(){return (document.querySelector('.settings-data-tab [role=alert]')?.textContent||'').includes('4 MB')}",'oversized import exposes error alert');
+        assert(await c.call("function(){return !document.querySelector('[role=alertdialog]')}"),'oversized JSON never opens destructive import confirmation');
+        await screenshot('settings-json-import-oversize-error-desktop');
+        const malformed=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const transfer=new DataTransfer();transfer.items.add(new File(['{invalid-json'],'qa-invalid.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(malformed,'malformed JSON preview cannot reach destructive confirmation');
+        await waitFor("function(){const alert=document.querySelector('.settings-data-tab [role=alert]');return Boolean(alert&&(alert.textContent||'').includes('δεν περιέχει έγκυρο JSON'))}",'malformed JSON rejected before confirmation');
+        assert(await c.call("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&!document.querySelector('.settings-import-preview')}"),'invalid JSON has no preview or destructive action');
+        await screenshot('settings-json-import-malformed-error-desktop');
+        const importRequested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const file=new File([JSON.stringify({app:'RheomIQ',schemaVersion:3,updatedAt:'2026-10-29T00:00:00.000Z',seed:{accounts:[],transactions:[]},state:{events:[]}})],'qa-dialog-proof.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");assert(importRequested,'valid JSON import fixture enters through real file input');
+        await waitFor("function(){return !document.querySelector('.settings-data-tab .operation-feedback')}",'new valid import request clears prior oversized-file failure before confirmation');
         await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων από JSON;'))}",'JSON import confirmation');
+        const preview=await c.call("function(){const node=document.querySelector('.settings-import-preview'),dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return {visible:Boolean(node),text:node?.textContent||'',description:dialog?.textContent||''}}");
+        assert(preview.visible&&preview.text.includes('Προεπισκόπηση επιλεγμένου JSON')&&preview.text.includes('Προκαταρκτικός έλεγχος')&&preview.description.includes('Προεπισκόπηση JSON: 0 λογαριασμοί'),'valid JSON reveals only metadata and explicit server-validation disclaimer: '+JSON.stringify(preview));
+        const typography=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');return {description:p?parseFloat(getComputedStyle(p).fontSize):0,eyebrow:small?parseFloat(getComputedStyle(small).fontSize):0}}");
+        assert(typography.description>=12&&typography.eyebrow>=11,'destructive confirmation prose stays readable on desktop: '+JSON.stringify(typography));
         await screenshot('settings-json-import-confirm-desktop');
         const importCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(importCancelled,'JSON import confirmation exposes safe cancel');
         await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&!document.querySelector('.settings-data-tab [role=status]')}",'JSON import cancel leaves data unchanged');
+      }
+      if(mode.name==='mobile'&&tab.id==='data'){
+        const requested=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify({app:'RheomIQ',schemaVersion:3,updatedAt:'2026-10-29T00:00:00.000Z',seed:{accounts:[],transactions:[]},state:{events:[]}})],'qa-mobile-confirm.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+        assert(requested,'mobile import creates a pending confirmation without a finance write');
+        await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'mobile destructive import confirmation');
+        assert(await c.call("function(){return Boolean(document.querySelector('.settings-import-preview'))&&(document.querySelector('.app-confirm-dialog[role=alertdialog]')?.textContent||'').includes('Προεπισκόπηση JSON:')}"),'mobile import shows the same bounded preview before confirmation');
+        const geometry=await c.call("function(){const modal=document.querySelector('.app-confirm-dialog[role=alertdialog]'),p=modal?.querySelector('header p'),small=modal?.querySelector('header small');if(!modal||!p||!small)return null;const r=modal.getBoundingClientRect(),desc=p.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,descriptionSize:parseFloat(getComputedStyle(p).fontSize),eyebrowSize:parseFloat(getComputedStyle(small).fontSize),descriptionLeft:desc.left,descriptionRight:desc.right}}");
+        assert(geometry&&geometry.descriptionSize>=12&&geometry.eyebrowSize>=11&&geometry.left>=-1&&geometry.right<=geometry.width+1&&geometry.top>=-1&&geometry.bottom<=geometry.height+1&&geometry.descriptionLeft>=geometry.left-1&&geometry.descriptionRight<=geometry.right+1,'destructive confirmation prose stays readable and contained on mobile: '+JSON.stringify(geometry));
+        await screenshot('settings-json-import-confirm-mobile');
+        const cancelled=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const cancel=[...dialog?.querySelectorAll('button')||[]].find(b=>(b.textContent||'').trim()==='Ακύρωση');cancel?.click();return Boolean(cancel)}");
+        assert(cancelled,'mobile destructive import has explicit cancel');
+        await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",'mobile import cancellation without finance mutation');
       }
       if(mode.name==='mobile')await visibleTouchTargets(`${mode.name} ${tab.label}`);
       await screenshot(`settings-${tab.id}-${mode.name}`);
@@ -139,6 +249,8 @@ try{
       }
     }
   }
+  console.log('Settings tabs QA: real Arrow/Home/End focus and deep-link activation');
+  await viewport(1440,1000);await verifyKeyboardTablist();
   console.log('Settings tabs QA: explicit Dark desktop evidence for every tab');
   await viewport(1440,1000);assert((await applyTheme('dark'))==='dark','Settings Dark theme applied');
   for(const tab of tabs){await clickTab(tab);await noPageOverflow(`dark desktop ${tab.label}`);await screenshot(`settings-${tab.id}-dark-desktop`)}

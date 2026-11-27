@@ -15,7 +15,11 @@ type ReceiptItemProposal = {
   subcategory?: string;
 };
 
+import type { ReceiptQrEvidence } from './receiptQr.js';
+
 export type ReceiptProposal = {
+  /** Local-only decoded evidence, never the raw code or an authenticity claim. */
+  qr?: ReceiptQrEvidence;
   merchant?: string;
   date?: string;
   total?: number;
@@ -36,13 +40,16 @@ export type ReceiptProposal = {
   confidence?: ReceiptFieldConfidence;
 };
 
-type ReceiptDraftStatus = 'pending' | 'ready' | 'error';
+type ReceiptDraftStatus = 'pending' | 'ready' | 'error' | 'posting' | 'posted';
+type UnpostedReceiptStatus = Extract<ReceiptDraftStatus,'pending'|'ready'|'error'>;
 
 export type ReceiptDraft = {
   id: string;
   capturedAt: string;
   updatedAt: string;
   status: ReceiptDraftStatus;
+  /** Original local-only state, for proven precommit rejection recovery. */
+  postingPreviousStatus?: UnpostedReceiptStatus;
   image: Blob;
   mimeType: 'image/jpeg' | 'image/png';
   bytes: number;
@@ -158,13 +165,6 @@ export async function listReceiptDrafts(): Promise<ReceiptDraft[]> {
   });
 }
 
-async function getReceiptDraft(id: string): Promise<ReceiptDraft | null> {
-  return withStore('readonly', async (store) => {
-    const row = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
-    return row ?? null;
-  });
-}
-
 async function requestPersistentReceiptStorage() {
   try {
     const storage = localStorageManager();
@@ -176,14 +176,6 @@ async function requestPersistentReceiptStorage() {
 }
 
 export async function createReceiptDraft(image: NormalizedReceiptImage): Promise<ReceiptDraft> {
-  const existing = await listReceiptDrafts();
-  const usedBytes = existing.reduce((sum, draft) => sum + Number(draft.bytes || draft.image.size || 0), 0);
-  if (existing.length >= RECEIPT_DRAFT_LIMIT) {
-    throw new Error(`Έχεις ήδη ${RECEIPT_DRAFT_LIMIT} αποδείξεις σε αναμονή. Επεξεργάσου ή διέγραψε κάποια πριν προσθέσεις άλλη.`);
-  }
-  if (usedBytes + image.bytes > RECEIPT_STORAGE_BUDGET_BYTES) {
-    throw new Error('Ο τοπικός χώρος για αποδείξεις σε αναμονή έφτασε το όριό του. Επεξεργάσου ή διέγραψε παλιότερες αποδείξεις.');
-  }
   const now = new Date().toISOString();
   const draft: ReceiptDraft = {
     id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `receipt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -192,36 +184,108 @@ export async function createReceiptDraft(image: NormalizedReceiptImage): Promise
     status: 'pending',
     ...image,
   };
-  await withStore('readwrite', (store) => { store.put(draft); });
+  // IndexedDB serializes readwrite transactions across tabs. The quota check
+  // and insertion must be atomic or concurrent captures can exceed both caps.
+  await withStore('readwrite', async (store) => {
+    const existing = await requestResult(store.getAll() as LocalRequest<ReceiptDraft[]>);
+    const usedBytes = existing.reduce((sum, row) => sum + Number(row.bytes || row.image.size || 0), 0);
+    if (existing.length >= RECEIPT_DRAFT_LIMIT) {
+      throw new Error(`Έχεις ήδη ${RECEIPT_DRAFT_LIMIT} αποδείξεις σε αναμονή. Επεξεργάσου ή διέγραψε κάποια πριν προσθέσεις άλλη.`);
+    }
+    if (usedBytes + image.bytes > RECEIPT_STORAGE_BUDGET_BYTES) {
+      throw new Error('Ο τοπικός χώρος για αποδείξεις σε αναμονή έφτασε το όριό του. Επεξεργάσου ή διέγραψε παλιότερες αποδείξεις.');
+    }
+    store.put(draft);
+  });
   void requestPersistentReceiptStorage();
   return draft;
 }
 
 export async function saveReceiptProposal(id: string, proposal: ReceiptProposal): Promise<ReceiptDraft> {
-  const draft = await getReceiptDraft(id);
-  if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
-  const next: ReceiptDraft = {
-    ...draft,
-    status: 'ready',
-    proposal,
-    errorCode: undefined,
-    updatedAt: new Date().toISOString(),
-  };
-  await withStore('readwrite', (store) => { store.put(next); });
-  return next;
+  // Read + update in one transaction: a concurrent delete must never
+  // resurrect a removed local receipt with a stale proposal.
+  return withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή.');
+    if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Επιτρέπεται μόνο η τοπική διαγραφή.');
+    if (draft.status === 'posting') throw new Error('Η κατάσταση αυτής της απόδειξης χρειάζεται έλεγχο πριν από νέα καταχώριση.');
+    const next: ReceiptDraft = {
+      ...draft,
+      status: 'ready',
+      proposal,
+      errorCode: undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    store.put(next);
+    return next;
+  });
 }
 
 export async function markReceiptDraftError(id: string, errorCode: ReceiptDraft['errorCode'] = 'ocr-failed') {
-  const draft = await getReceiptDraft(id);
-  if (!draft) return null;
-  const next: ReceiptDraft = {
-    ...draft,
-    status: 'error',
-    errorCode,
-    updatedAt: new Date().toISOString(),
-  };
-  await withStore('readwrite', (store) => { store.put(next); });
-  return next;
+  return withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) return null;
+    if (draft.status === 'posted' || draft.status === 'posting') return draft;
+    const next: ReceiptDraft = {
+      ...draft,
+      status: 'error',
+      errorCode,
+      updatedAt: new Date().toISOString(),
+    };
+    store.put(next);
+    return next;
+  });
+}
+
+/** Finance was durably acknowledged. Keep this marker in the existing local
+ * IndexedDB row BEFORE attempting a separate DELETE; a lost DELETE must not
+ * make the same receipt look unposted after a reload.
+ */
+/** A receipt prefill can outlive its IndexedDB row (e.g. when another tab
+ * finished posting or discarded it). Recheck the persisted status immediately
+ * before a new finance write, rather than trusting Quick Entry's stale prefill.
+ * This is a fail-closed preflight, not a cross-tab distributed write lock.
+ */
+export async function assertReceiptDraftUnposted(id: string): Promise<void> {
+  await withStore('readonly', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή. Επίλεξε άλλη απόδειξη.');
+    if (draft.status === 'posted') throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Μην καταχωρίσεις ξανά την ίδια απόδειξη.');
+    if (draft.status === 'posting') throw new Error('Η οικονομική καταχώριση αυτής της απόδειξης δεν έχει επιβεβαιωθεί. Μην την καταχωρίσεις ξανά πριν ελέγξεις τις κινήσεις.');
+  });
+}
+
+/** A readonly preflight is not a cross-tab lock. Acquire an IndexedDB
+ * readwrite claim before finance dispatch. Never auto-expire ambiguous writes.
+ */
+export async function reserveReceiptDraftForPosting(id:string):Promise<void>{
+  await withStore('readwrite',async store=>{
+    const draft=await requestResult(store.get(id) as LocalRequest<ReceiptDraft|undefined>);
+    if(!draft)throw new Error('Η απόδειξη δεν υπάρχει πλέον στην τοπική αναμονή. Επίλεξε άλλη απόδειξη.');
+    if(draft.status==='posted')throw new Error('Η οικονομική κίνηση έχει ήδη καταχωριστεί. Μην καταχωρίσεις ξανά την ίδια απόδειξη.');
+    if(draft.status==='posting')throw new Error('Η οικονομική καταχώριση αυτής της απόδειξης δεν έχει επιβεβαιωθεί. Μην την καταχωρίσεις ξανά πριν ελέγξεις τις κινήσεις.');
+    store.put({...draft,status:'posting',postingPreviousStatus:draft.status,updatedAt:new Date().toISOString()});
+  });
+}
+
+/** Release only for a proven 409 precommit REVISION_CONFLICT. Never unlock
+ * after missing/5xx/postcommit acknowledgement or application restart.
+ */
+export async function releaseReceiptDraftPosting(id:string):Promise<void>{
+  await withStore('readwrite',async store=>{
+    const draft=await requestResult(store.get(id) as LocalRequest<ReceiptDraft|undefined>);
+    if(!draft||draft.status!=='posting')return;
+    store.put({...draft,status:draft.postingPreviousStatus??'pending',postingPreviousStatus:undefined,updatedAt:new Date().toISOString()});
+  });
+}
+
+export async function markReceiptDraftPosted(id: string): Promise<void> {
+  await withStore('readwrite', async (store) => {
+    const draft = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
+    if (!draft) return; // Another tab has already removed the local image.
+    if (draft.status === 'posted') return;
+    store.put({...draft,status:'posted',postingPreviousStatus:undefined,updatedAt:new Date().toISOString()});
+  });
 }
 
 export async function deleteReceiptDraft(id: string) {

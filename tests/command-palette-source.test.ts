@@ -85,6 +85,23 @@ describe('unified command palette source contracts',()=>{
     expect(approved).toContain('[commandScheduledId,commandScheduledKey,view,scheduledLimit,commandTargetPresent,commandTargetIndex]');
     expect(approved).not.toContain('[commandScheduledId,commandScheduledKey,view,scheduledLimit,allScheduled,filteredScheduled]');
     expect(rendered).toContain('visible-state');
+    // The same command key must not steal focus again when catalog/finance
+    // data arrives or pagination/selection changes during the next command.
+    const account=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
+    expect(account).toContain('focusedAccountKey.current===focusKey');
+    expect(account).toContain('focusedAccountKey.current=focusKey;');
+    expect(account).toContain('[focusAccountId,focusKey,accountTargetPresent]');
+    expect(account).not.toContain('[focusAccountId,focusKey,accounts]');
+    for(const [file,ref,key] of [
+      ['LendingPage','focusedPersonKey','commandPersonKey'],
+      ['LoansPage','focusedLoanKey','commandLoanKey'],
+      ['RecurringPage','focusedRecurringKey','commandRecurringKey'],
+      ['PlanningPage','focusedMobileScheduledKey','commandScheduledKey'],
+    ]){
+      const source=readFileSync(new URL('../src/pages/'+file+'.tsx',import.meta.url),'utf8');
+      expect(source).toContain(ref+'.current==='+key);
+      expect(source).toContain(ref+'.current='+key+';');
+    }
   });
   it('stores only recent result ids and excludes sensitive card fields from indexed copy',()=>{
     expect(palette).toContain("sessionStorage.setItem(RECENTS_KEY,JSON.stringify(ids.slice(0,8)))");

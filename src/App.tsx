@@ -1,16 +1,17 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
+
 import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 import { PeriodControl } from './components/PeriodControl';
 
 import type { QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
+import { useReceiptCleanup } from './hooks/useReceiptCleanup';
 import { useDesktopAutoBackup } from './hooks/useDesktopAutoBackup';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
@@ -41,23 +42,34 @@ import type {
   ScheduledTransaction,
 } from './types';
 
-const PersistenceNotice = lazy(() => import('./components/PersistenceNotice').then((module) => ({ default: module.PersistenceNotice })));
-const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
-const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
-const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
-const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
-const SavingsPage = lazy(() => import('./pages/SavingsPage').then((module) => ({ default: module.SavingsPage })));
-const CardsPage = lazy(() => import('./pages/CardsPage').then((module) => ({ default: module.CardsPage })));
-const CreditCardPage = lazy(() => import('./pages/CreditCardPage').then((module) => ({ default: module.CreditCardPage })));
-const LoansPage = lazy(() => import('./pages/LoansPage').then((module) => ({ default: module.LoansPage })));
-const RecurringPage = lazy(() => import('./pages/RecurringPage').then((module) => ({ default: module.RecurringPage })));
-const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({ default: module.LendingPage })));
-const PlanningPage = lazy(() => import('./pages/PlanningPage').then((module) => ({ default: module.PlanningPage })));
-const AttentionPage = lazy(() => import('./pages/AttentionPage').then((module) => ({ default: module.AttentionPage })));
-const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+function namedLazy<Module extends object, Name extends keyof Module>(
+  load:()=>Promise<Module>, name:Name,
+){
+  return lazy(()=>load().then(module=>({
+    default:module[name] as Extract<Module[Name],ComponentType<any>>,
+  })));
+}
 
+const NotFoundPage = namedLazy(() => import('./pages/NotFoundPage'), 'NotFoundPage');
+const PersistenceNotice = namedLazy(() => import('./components/PersistenceNotice'), 'PersistenceNotice');
+const ReceiptCleanupNotice = namedLazy(() => import('./components/ReceiptCleanupNotice'), 'ReceiptCleanupNotice');
+const CommandPalette = namedLazy(() => import('./components/CommandPalette'), 'CommandPalette');
+const ContextualQuickAdd = namedLazy(() => import('./components/ContextualQuickAdd'), 'ContextualQuickAdd');
+const ConfirmDialog = namedLazy(() => import('./components/ConfirmDialog'), 'ConfirmDialog');
+const DashboardPage = namedLazy(() => import('./pages/DashboardPage'), 'DashboardPage');
+const TransactionsPage = namedLazy(() => import('./pages/TransactionsPage'), 'TransactionsPage');
+const SavingsPage = namedLazy(() => import('./pages/SavingsPage'), 'SavingsPage');
+const CardsPage = namedLazy(() => import('./pages/CardsPage'), 'CardsPage');
+const CreditCardPage = namedLazy(() => import('./pages/CreditCardPage'), 'CreditCardPage');
+const LoansPage = namedLazy(() => import('./pages/LoansPage'), 'LoansPage');
+const RecurringPage = namedLazy(() => import('./pages/RecurringPage'), 'RecurringPage');
+const LendingPage = namedLazy(() => import('./pages/LendingPage'), 'LendingPage');
+const PlanningPage = namedLazy(() => import('./pages/PlanningPage'), 'PlanningPage');
+const AttentionPage = namedLazy(() => import('./pages/AttentionPage'), 'AttentionPage');
+const ReportsPage = namedLazy(() => import('./pages/ReportsPage'), 'ReportsPage');
+const SettingsPage = namedLazy(() => import('./pages/SettingsPage'), 'SettingsPage');
+
+const nextFocusKey=(key:number)=>key+1;
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 
 function routeFromLocation() {
@@ -91,6 +103,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
   const [commandAccountId,setCommandAccountId]=useState<string|null>(null);
   const [commandAccountKey,setCommandAccountKey]=useState(0);
+  const [commandRuleId,setCommandRuleId]=useState<string|null>(null);
+  const [commandRuleKey,setCommandRuleKey]=useState(0);
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
   const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
@@ -111,6 +125,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const cleanupInFlight=useRef(new Map<string,Promise<void>>());
   const [cleanupBusy,setCleanupBusy]=useState(false);
   const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
+  const receiptCleanup=useReceiptCleanup();
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -297,14 +312,14 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteSavingsGoal=(id:string)=>finance.updateDurably(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{
     const {applyTaxonomyOperation}=await import('./lib/taxonomyManagement');
-    finance.update(current=>applyTaxonomyOperation(current,operation,today));
+    await finance.updateDurably(current=>applyTaxonomyOperation(current,operation,today));
   };
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
   const focusRecurringPayment=(id:string)=>{
     setCommandRecurringId(id);
-    setCommandRecurringKey(key=>key+1);
+    setCommandRecurringKey(nextFocusKey);
     navigate('recurring');
   };
   const handleAttention = (item: AttentionItem) => {
@@ -320,20 +335,21 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
-    if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(key=>key+1);navigateSettingsTab('accounts');return}
-    if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);navigate('cards');return}
+    if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(nextFocusKey);navigateSettingsTab('accounts');return}
+    if(action.type==='rule_focus'){setCommandRuleId(action.ruleId);setCommandRuleKey(nextFocusKey);navigateSettingsTab('rules');return}
+    if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(nextFocusKey);navigate('cards');return}
     if(action.type==='credit_card_focus'){
-      setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit');return;
+      setCommandCardId(action.cardId);setCommandCardKey(nextFocusKey);navigate('credit');return;
     }
     if(action.type==='loan_focus'){
-      setCommandLoanId(action.loanId);setCommandLoanKey(key=>key+1);navigate('loans');return;
+      setCommandLoanId(action.loanId);setCommandLoanKey(nextFocusKey);navigate('loans');return;
     }
     if(action.type==='lending_person_focus'){
-      setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);navigate('lending');return;
+      setCommandLendingPerson(action.person);setCommandLendingKey(nextFocusKey);navigate('lending');return;
     }
     if(action.type==='recurring_focus'){focusRecurringPayment(action.recurringId);return}
     if(action.type==='transaction_focus'){
-      setCommandFocusKey(key=>key+1);
+      setCommandFocusKey(nextFocusKey);
       setMonth(action.date.slice(0,7));setMonthIsManual(true);
       const url=new URL(location.href);
       url.searchParams.delete('reportSection');
@@ -361,7 +377,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
     if(action.type==='recurring_payment'){focusRecurringPayment(action.recurringId);return}
-    if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);navigate('planning');return}
+    if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(nextFocusKey);navigate('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId});}
   };
 
@@ -373,27 +389,28 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()};
 
   const content = page === 'dashboard'
-    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={(accountId)=>{setDashboardAccountId(accountId??null);setDashboardAccountFocusKey(key=>key+1);navigate('transactions')}} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
+    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={(accountId)=>{setDashboardAccountId(accountId??null);setDashboardAccountFocusKey(nextFocusKey);navigate('transactions')}} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} dashboardAccountId={dashboardAccountId} dashboardAccountFocusKey={dashboardAccountFocusKey} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEventDurably} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
-    : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
+    : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} financeState={finance} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(value=>value+1)}navigate('credit')}}/>
-    : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
+    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onOpenRules={()=>navigateSettingsTab('rules')} onOpenCreditCard={(cardId)=>{if(cardId){setCommandCardId(cardId);setCommandCardKey(nextFocusKey)}navigate('credit')}}/>
+    : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} ruleFocusId={commandRuleId} ruleFocusKey={commandRuleKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} onNavigateHistory={finance.goToHistoryPoint} canUndo={finance.canUndo} canRedo={finance.canRedo} undoDepth={finance.undoDepth} redoDepth={finance.redoDepth} historyAvailable={finance.historyAvailable} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
       {(finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0) ? <Suspense fallback={null}><PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/></Suspense> : null}
+      {receiptCleanup.pending.length>0 ? <Suspense fallback={null}><ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/></Suspense> : null}
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

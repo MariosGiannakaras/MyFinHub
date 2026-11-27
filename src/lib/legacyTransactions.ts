@@ -21,7 +21,12 @@ export function effectiveLegacyTransaction(data: FinanceData, id: string): Legac
 }
 
 function validIsoDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime());
+  // Compare canonical UTC serialization, not merely Date parsing (which
+  // silently rolls 2026-02-30 into March). Keep this small, synchronous
+  // legacy-editor boundary out of the hard-budget eager shared date chunk.
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    && value.slice(0, 4) !== '0000'
+    && new Date(`${value}T00:00:00.000Z`).toJSON()?.slice(0, 10) === value;
 }
 
 function requireKnownAccount(data: FinanceData, id: string | undefined, label: string) {

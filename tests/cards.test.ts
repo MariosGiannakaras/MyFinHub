@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { archiveCardRecord, archivedCardMatch, canPermanentlyDeleteCreditCard, cardBanks, cardDomainBankCount, cardsForBank, cardWorkspaceBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, historicalCardLabel, legacyCreditOwnerId, primaryCreditCard, restoreCard, withCardProfileDeleted } from '../src/lib/cards.js';
+import { archiveCardRecord, archivedCardMatch, canPermanentlyDeleteCreditCard, cardBanks, cardDomainBankCount, cardsForBank, cardWorkspaceBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, historicalCardLabel, legacyCreditOwnerId, primaryCreditCard, restoreCard, withCardProfileDeleted, withCardSecretCleanupPending, withCardSecretCleanupComplete } from '../src/lib/cards.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 
@@ -20,6 +20,33 @@ describe('Cards metadata',()=>{
  it('requires archive before total credit deletion even after full repayment',()=>{const data=fixture();data.state.events=[...(data.state.events??[]),payment('cc1-final','cc1',15)];const card=data.state.cards!.find(item=>item.id==='cc1')!;expect(canPermanentlyDeleteCreditCard(data,'cc1','2026-08-31')).toBe(false);expect(()=>withCardProfileDeleted(data,card,'2026-08-31T12:00:00Z','2026-08-31')).toThrow('CREDIT_CARD_MUST_BE_ARCHIVED')});
  it('blocks archived total credit deletion while debt remains',()=>{const data=fixture();const card=data.state.cards!.find(item=>item.id==='cc1')!;const archived=archiveCardRecord(card,'2026-08-30T12:00:00Z');data.state.cards=data.state.cards!.map(item=>item.id===card.id?archived:item);expect(canPermanentlyDeleteCreditCard(data,'cc1','2026-08-31')).toBe(false);expect(()=>withCardProfileDeleted(data,archived,'2026-08-31T12:00:00Z','2026-08-31')).toThrow('CREDIT_CARD_HAS_OUTSTANDING_BALANCE')});
  it('deletes an archived fully paid credit profile while preserving history through a neutral tombstone',()=>{const data=fixture();data.state.events=[...(data.state.events??[]),payment('cc1-final','cc1',15)];const card=data.state.cards!.find(item=>item.id==='cc1')!;const archived=archiveCardRecord(card,'2026-08-30T12:00:00Z');data.state.cards=data.state.cards!.map(item=>item.id===card.id?archived:item);expect(canPermanentlyDeleteCreditCard(data,'cc1','2026-08-31')).toBe(true);const deleted=withCardProfileDeleted(data,archived,'2026-08-31T12:00:00Z','2026-08-31');expect(deleted.state.cards?.some(item=>item.id==='cc1')).toBe(false);expect(deleted.state.deletedCards).toEqual([{id:'cc1',kind:'credit',createdAt:'2026-08-02T00:00:00Z',deletedAt:'2026-08-31T12:00:00Z'}]);expect(legacyCreditOwnerId(deleted)).toBe('cc1');expect(creditEventsForCard(deleted,'cc1').map(event=>event.id)).toEqual(['old-purchase','linked-payment','cc1-final']);expect(historicalCardLabel(deleted,'cc1')).toBe('Διαγραμμένη κάρτα')});
+ it('stages vault cleanup only for the archived settled credit profile, preserving debt and history until then (#649 I08.06)',()=>{
+   const data=fixture(),asOf='2026-08-31',stamp='2026-08-31T12:00:00Z';
+   const original=data.state.cards!.find(card=>card.id==='cc1')!;
+   const initial=JSON.stringify(data);
+   expect(()=>withCardSecretCleanupPending(data,original,stamp,asOf)).toThrow('CREDIT_CARD_MUST_BE_ARCHIVED');
+   expect(JSON.stringify(data)).toBe(initial);
+   const archived=archiveCardRecord(original,stamp);
+   const archivedData={...data,state:{...data.state,cards:data.state.cards!.map(card=>card.id===archived.id?archived:card)}};
+   const outstanding=JSON.stringify(archivedData);
+   expect(creditDebtForCard(archivedData,archived.id,asOf)).toBe(15);
+   expect(archived.vaultRef).toBe(original.vaultRef);
+   expect(()=>withCardSecretCleanupPending(archivedData,archived,stamp,asOf)).toThrow('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
+   expect(JSON.stringify(archivedData)).toBe(outstanding);
+   const settled={...archivedData,state:{...archivedData.state,events:[...(archivedData.state.events??[]),payment('cc1-final','cc1',15)]}};
+   const pending=withCardSecretCleanupPending(settled,archived,stamp,asOf);
+   expect(pending.state.cards?.some(card=>card.id===archived.id)).toBe(false);
+   expect(pending.state.pendingCardSecretDeletes).toEqual(['cc1']);
+   expect(pending.state.deletedCards).toEqual([{id:'cc1',kind:'credit',createdAt:original.createdAt,deletedAt:stamp}]);
+   expect(pending.state.events).toEqual(settled.state.events);
+   expect(creditEventsForCard(pending,'cc1').map(event=>event.id)).toEqual(['old-purchase','linked-payment','cc1-final']);
+   expect(historicalCardLabel(pending,'cc1')).toBe('Διαγραμμένη κάρτα');
+   expect(creditDebtForCard(pending,'cc2',asOf)).toBe(50);
+   const complete=withCardSecretCleanupComplete(pending,'cc1');
+   expect(complete.state.pendingCardSecretDeletes).toEqual([]);
+   expect(complete.state.deletedCards).toEqual(pending.state.deletedCards);
+   expect(complete.state.events).toEqual(pending.state.events);
+ });
  it('permanently deletes debit/prepaid profiles without creating finance tombstones',()=>{const data=fixture();const card=data.state.cards!.find(item=>item.id==='c1')!;const deleted=withCardProfileDeleted(data,card,'2026-08-31T12:00:00Z','2026-08-31');expect(deleted.state.cards?.some(item=>item.id==='c1')).toBe(false);expect(deleted.state.deletedCards).toEqual([])});
  it('preserves card banks, cards and deleted-card references through the product migration boundary',()=>{const input=fixture();input.state.deletedCards=[{id:'old-credit',kind:'credit',createdAt:'2025-01-01T00:00:00Z',deletedAt:'2026-08-01T00:00:00Z'}];const migrated=migrateProductData(input);expect(migrated.state.cardBanks?.[0]?.id).toBe('custom-bank');expect(migrated.state.cards?.map(card=>card.id)).toEqual(['c1','cc1','cc2']);expect(migrated.state.deletedCards?.[0]?.id).toBe('old-credit')});
 });

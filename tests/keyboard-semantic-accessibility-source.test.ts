@@ -10,6 +10,7 @@ const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const dashboardCharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
@@ -29,6 +30,18 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('focused control has no visible focus indicator');
   });
 
+  it('counts only sequential Tab stops and checks roving Settings Arrow/Home focus (#649)',()=>{
+    expect(settings).toContain('tabIndex={activeTab===tab.id?0:-1}');
+    expect(settings).toContain('rovingTabDestination(event.key,index,SETTINGS_TABS.length)');
+    expect(qa).toContain('el.tabIndex>=0');
+    expect(qa).toContain("!el.matches(':disabled')");
+    expect(qa).toContain("!el.closest('[inert]')");
+    expect(qa).toContain('roving.excluded===6');
+    expect(qa).toContain('Settings ArrowRight focuses and activates next tab');
+    expect(qa).toContain('Settings Home restores first tab and focus');
+    expect(qa).toContain('focused control has no visible focus indicator');
+  });
+
   it('models closed native details descendants as outside the sequential tab order',()=>{
     expect(qa).toContain("details:not([open])");
     expect(qa).toContain("el.matches('summary')&&el.parentElement===closedDetails");
@@ -43,6 +56,8 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect((reports.match(/<ComposedChart accessibilityLayer=\{false\}/g)||[]).length).toBe(3);
     expect(qa).toContain("const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex=\"-1\"])'");
     expect(qa).toContain('root.querySelectorAll(hiddenSelector)');
+    expect(qa).toContain("chartFocus:Boolean(el.closest('.recharts-wrapper'))");
+    expect(qa).toContain('decorative Recharts subtree entered sequential Tab order');
     expect(qa).toContain('if(!(el instanceof Element))return null');
   });
 
@@ -62,9 +77,25 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('Quick Entry focus trap');
     expect(qa).toContain('Command Palette focus trap');
     expect(qa).toContain('mobile More focus trap');
+    expect(qa).toContain('short More labels fully contained');
+    expect(qa).toContain('short narrow More uses complete destination rows');
     expect(qa).toContain('restores focus to opener');
     expect(modalFocus).toContain("event.key !== 'Tab'");
-    expect(modalFocus).toContain('opener.current?.focus');
+    expect(modalFocus).toContain('if(opener.current?.isConnected)opener.current.focus');
+    expect(modalFocus).toContain('const hasDestination=focused instanceof HTMLElement');
+    expect(modalFocus).toContain('requestAnimationFrame(()=>{');
+  });
+
+  it('keeps focused tooltips available on coarse-pointer keyboard devices and checks real clipping',()=>{
+    const css=readFileSync(new URL('../src/styles/ui-hardening-foundations.css',import.meta.url),'utf8');
+    const placement=readFileSync(new URL('../src/lib/tooltipPlacement.ts',import.meta.url),'utf8');
+    expect(css).toContain('@media(pointer:coarse){.app-tooltip:not(:focus-within) .app-tooltip-bubble{display:none}}');
+    expect(placement).toContain('parent!==document.body&&parent!==document.documentElement');
+    expect(placement).toContain('x+parent.clientWidth-gap');
+    expect(placement).toContain('y+parent.clientHeight-gap');
+    expect(qa).toContain("['.top-actions .app-tooltip button','topbar']");
+    expect(qa).toContain('Tooltip geometry failure');
+    expect(qa).toContain('contained and clear of trigger');
   });
 
   it('covers the 404 recovery surface at a 200%-equivalent viewport with reduced motion',()=>{

@@ -31,7 +31,7 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number;destination?:'credit';cardId?:string};
 
-export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onOpenCreditCard}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;onOpenCreditCard?:(cardId?:string)=>void}){
+export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onOpenRules,onOpenCreditCard}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;onOpenRules?:()=>void;onOpenCreditCard?:(cardId?:string)=>void}){
  useEffect(()=>{
    const url=new URL(location.href);
    if(url.searchParams.get('reportSection')!=='budgets')return;
@@ -165,7 +165,29 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  return <div className="page-stack reports-dashboard reports-composite reports-dense">
   <PageHeader id="report-overview" className="report-heading" eyebrow="ΑΝΑΦΟΡΕΣ" title="Αναφορές" description={<p>Οικονομική εικόνα για <span className="report-selected-period" aria-label={`Επιλεγμένη περίοδος ${monthLabel}`}>{monthLabel}</span>, με τάσεις και προϋπολογισμούς από τα canonical δεδομένα της περιόδου.</p>}/>
 
-  <nav className="report-section-nav" aria-label="Ενότητες αναφορών"><a href="#report-overview">Επισκόπηση</a><a href="#report-budget-overview">Προϋπολογισμοί</a><a href="#report-flow">Ροή</a><a href="#report-obligations">Υποχρεώσεις</a><a href="#report-expenses">Έξοδα</a><a href="#report-comparisons">Συγκρίσεις</a><a href="#report-accounts">Λογαριασμοί</a></nav>
+  <nav className="report-section-nav" aria-label="Ενότητες αναφορών" onClick={event=>{
+    const link=(event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-report-section]');
+    if(!link)return;
+    event.preventDefault();
+    const sectionId=link.dataset.reportSection;
+    if(!sectionId)return;
+    if(sectionId==='report-comparisons')setMobileSupportExpanded(true);
+    requestAnimationFrame(()=>{
+      const target=document.getElementById(sectionId);
+      if(!target)return;
+      target.scrollIntoView({block:'start',behavior:'auto'});
+      const navBottom=document.querySelector('.report-section-nav')?.getBoundingClientRect().bottom??0;
+      const delta=navBottom+8-target.getBoundingClientRect().top;
+      if(delta>0)window.scrollBy({top:-delta,behavior:'instant'});
+      target.setAttribute('tabindex','-1');
+      target.focus({preventScroll:true});
+    });
+  }}>{([
+    ['report-overview','Επισκόπηση'],['report-budget-overview','Προϋπολογισμοί'],
+    ['report-flow','Ροή'],['report-obligations','Υποχρεώσεις'],
+    ['report-expenses','Έξοδα'],['report-comparisons','Συγκρίσεις'],
+    ['report-accounts','Λογαριασμοί'],
+  ] as const).map(([id,label])=><a key={id} href="#/reports" data-report-section={id}>{label}</a>)}</nav>
 
   <section className="report-executive report-kpi-strip report-financial-picture" aria-label="Κύρια οικονομική εικόνα περιόδου">
    <Surface as="article" variant="flat" className={`report-headline-card report-executive-main ${netFlow>=0?'positive':'negative'}`}><span>Καθαρή ροή</span><b><AnimatedAmount value={netFlow}/></b><small>{changeLabel(change(netFlow,previousNetFlow))} από τον προηγούμενο μήνα · Έσοδα μείον έξοδα</small></Surface>
@@ -192,6 +214,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
     </div>
    </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό ή ανά κατηγορία όριο μόνο αν θέλεις να παρακολουθείς budget για αυτή την περίοδο.</span></div>}
    <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/></details>
+   {onOpenRules?<Button type="button" variant="secondary" className="report-rules-link" onClick={onOpenRules}>Διαχείριση κανόνων αυτόματης ταξινόμησης στις Ρυθμίσεις</Button>:null}
   </section>
 
 
@@ -205,7 +228,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
   <section className={`report-support-grid report-support-grid-four ${mobileSupportExpanded?'':'mobile-collapsed'}`} id="report-support">
    <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list" data-content-entrance="list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small><Button type="button" variant="ghost" aria-label={row.destination==='credit'?`Άνοιγμα αγοράς ${row.title} στην πιστωτική`:`Προβολή συναλλαγής ${row.title} στην ημερομηνία ${row.date}`} onClick={()=>openActivityTransaction(row)}>{row.destination==='credit'?'Στην πιστωτική':'Άνοιγμα συναλλαγής'}</Button></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
 
-   <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>{month===asOf.slice(0,7)?'Θετικά υπόλοιπα έως σήμερα.':'Θετικά υπόλοιπα στο τέλος της περιόδου.'}</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list" data-content-entrance="list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
+   <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Μεγαλύτερα θετικά υπόλοιπα</span><small>{month===asOf.slice(0,7)?'Θετικά υπόλοιπα έως σήμερα · έως 5 μη πιστωτικοί λογαριασμοί, όχι καθαρή περιουσία.':'Θετικά υπόλοιπα στο τέλος της περιόδου · έως 5 μη πιστωτικοί λογαριασμοί, όχι καθαρή περιουσία.'}</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list" data-content-entrance="list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
 
    <article className="panel surface-raised report-counterparties"><div className="panel-head"><div><span>Μεγαλύτερες δαπάνες / έμποροι</span><small>Top 5 έμποροι / περιγραφές της περιόδου.</small></div></div>{counterparties.length?<div className="report-counterparty-list">{counterparties.map((row,index)=>{const [category,subcategory]=row.category.split(' › ');return <div key={`${row.title}-${row.category}`}><span className="report-counterparty-rank">{index+1}</span><FinanceIcon settings={data.state.settings} kind="expense" category={category} subcategory={subcategory} size={18}/><span className="report-entry-copy"><b>{row.title}</b><small>{row.category} · {row.count===1?'1 κίνηση':`${row.count} κινήσεις`}</small></span><strong>{money.format(row.amount)}<small>{percent(row.share,1)}</small></strong></div>})}</div>:<div className="empty-state">Δεν υπάρχουν καταγεγραμμένες χρεώσεις.</div>}</article>
 

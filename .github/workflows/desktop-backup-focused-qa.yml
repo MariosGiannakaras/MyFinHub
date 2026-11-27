@@ -1,0 +1,86 @@
+name: Desktop Backup Focused Rendered QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+    paths:
+      - 'src/components/DesktopBackupPanel.tsx'
+      - 'src/hooks/useDesktopAutoBackup.ts'
+      - 'src/lib/desktopBackupFreshness.ts'
+      - 'desktop/backup-store.cjs'
+      - 'scripts/desktop-backup-rendered-qa.mjs'
+      - 'tests/desktop-backup-store.test.ts'
+      - 'tests/desktop-backup-freshness.test.ts'
+      - '.github/workflows/desktop-backup-focused-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-backup-focused-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backup-rendered:
+    # Path filters compare the entire cumulative PR diff. On a long-lived
+    # Draft PR the opt-in marker avoids re-rendering 15 states on every commit.
+    # Ready-for-review and manual runs remain mandatory/available.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event.pull_request.draft == false ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+           contains(github.event.pull_request.body, '<!-- run-desktop-backup-focused-qa -->')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Check backup freshness and local retention regressions
+        run: npx vitest run tests/desktop-backup-store.test.ts tests/desktop-backup-freshness.test.ts
+      - name: Build current application
+        run: npm run build
+      - name: Verify focused Chromium QA syntax
+        run: node --check scripts/desktop-backup-rendered-qa.mjs
+      - name: Render desktop backup states with synthetic bridge
+        shell: bash
+        run: |
+          npm run dev:web >/tmp/myfinhub-desktop-backup-vite.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid" || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-desktop-backup-vite.log; exit 1; fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome)"
+          export MYFINHUB_UX_EVIDENCE_DIR="/tmp/myfinhub-desktop-backup-focused"
+          # Retry ONLY a confirmed Chromium bootstrap failure, never a failed
+          # visual assertion, semantic expectation or product regression.
+          for attempt in 1 2; do
+            rm -rf /tmp/myfinhub-desktop-backup-qa-chrome-"$attempt"
+            if MYFINHUB_BACKUP_BROWSER_ATTEMPT="$attempt" node scripts/desktop-backup-rendered-qa.mjs > /tmp/myfinhub-backup-rendered.log 2>&1; then
+              cat /tmp/myfinhub-backup-rendered.log
+              exit 0
+            fi
+            cat /tmp/myfinhub-backup-rendered.log
+            if [ "$attempt" -ne 1 ] || ! grep -q 'Desktop backup Chromium CDP bootstrap failed' /tmp/myfinhub-backup-rendered.log; then
+              exit 1
+            fi
+            echo "Retrying clean Chromium bootstrap once; all actual QA assertions remain mandatory."
+            sleep 1
+          done
+          exit 1
+      - name: Upload focused PNG evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: myfinhub-desktop-backup-focused-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/myfinhub-desktop-backup-focused/*.png
+          if-no-files-found: warn
+          retention-days: 14

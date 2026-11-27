@@ -421,19 +421,24 @@
       "title": "Command focus must target the visible responsive owner without refocusing on unrelated renders",
       "category": "ui-resilience",
       "severity": "high",
-      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again.",
-      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus.",
+      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again. Actual real browser account management reproduced the same class: a second palette autofocus succeeded then the prior account command re-ran after its accounts array changed, moving focus outside the modal.",
+      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus. Apply the existing one-shot key policy to Account Management, Lending, Loans, Recurring and mobile Planning too, preserving pagination/target reachability and repeated explicit new-key commands. Existing actual-browser account sequence must retain autofocus and exact focus across three consecutive same-route commands.",
       "paths": [
         "src/pages/PlanningPage.tsx",
         "src/components/PlanningApprovedDesktop.tsx",
-        "scripts/command-palette-qa.mjs"
+        "scripts/command-palette-qa.mjs",
+        "src/components/AccountManagementSettings.tsx",
+        "src/pages/LendingPage.tsx",
+        "src/pages/LoansPage.tsx",
+        "src/pages/RecurringPage.tsx"
       ],
       "evidence": [
         "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
       ],
       "guards": [
         "tests/command-palette-source.test.ts",
-        "tests/command-scheduled-reachability-source.test.ts"
+        "tests/command-scheduled-reachability-source.test.ts",
+        "tests/real-stack-browser-source.test.ts"
       ]
     },
     {
@@ -453,6 +458,421 @@
       ],
       "guards": [
         "tests/account-metadata.test.ts"
+      ]
+    },
+    {
+      "id": "FP-024",
+      "title": "Unsaved form and receipt review edits must not disappear on modal close or draft switch",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Contextual Quick Entry and the local OCR review had direct close, backdrop and draft-switch routes that discarded edited fields without the explicit confirmation already present in generic QuickAdd.",
+      "prevention": "Route all close/cancel/Escape/backdrop and receipt-selection/manual handoff paths through shared destructive-discard confirmation; keep focus with the active dialog, preserve local unsaved fields when cancelled and do not restart finance writes or overwrite a dirty receipt with capture.",
+      "paths": [
+        "src/components/ContextualQuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "scripts/action-center-context-qa.mjs",
+        "scripts/receipt-local-ocr-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-unsaved-entry-guard.test.ts"
+      ]
+    },
+    {
+      "id": "FP-025",
+      "title": "Clipboard fallback must confirm success and erase temporary copy fields",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Sensitive-card copy treated the legacy execCommand false return as success and did not guarantee cleanup of a transient clipboard textarea on exceptions. Related IBAN copy had the same exception cleanup risk.",
+      "prevention": "Use one explicitly user-triggered clipboard helper, check native or legacy copy acknowledgement, clear/remove temporary fields in finally, never claim success for rejected writes, and announce failure through accessible error semantics without exposing copied contents.",
+      "paths": [
+        "src/lib/copyTextWithFallback.ts",
+        "src/components/CanonicalCreditCardStack.tsx",
+        "src/components/InteractivePaymentCard.tsx",
+        "src/components/AccountIban.tsx",
+        "scripts/account-metadata-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-clipboard-copy.test.ts"
+      ]
+    },
+    {
+      "id": "FP-026",
+      "title": "Direct recurring Storage registration must bind immutable key and MIME in PostgreSQL",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The invoker registration RPC checked public Storage path format and object existence without proving the path belonged to the supplied asset key and MIME; direct owner+AAL2 SQL writes could bypass API validation and misregister another logo.",
+      "prevention": "Use a row-level CHECK binding services/<asset-key>.<MIME-extension> across direct RPC and metadata writes, retain owner+AAL2 RLS, and prove direct PostgREST AAL1/nonowner denials and AAL2 key/MIME mutation rejection in isolated local Supabase.",
+      "paths": [
+        "supabase/migrations/20261120000500_guard_recurring_service_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/recurring-service-assets.test.ts",
+        "tests/production-migration-ledger-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-027",
+      "title": "Direct provider Storage registration must bind owner directory, generated key and MIME",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The authenticated invoker RPC checked only whether a Storage object existed; direct callers could register another provider image under a new key or mismatched MIME, while API readback enforced stricter provenance.",
+      "prevention": "Validate canonical server-issued keys and exact provider/key/MIME Storage paths in the existing SECURITY INVOKER RPC and a forward-only CHECK for generated rows, keep curated legacy assets untouched, and prove direct owner/nonowner/AAL1 negatives on the isolated local stack.",
+      "paths": [
+        "supabase/migrations/20261120001000_guard_provider_asset_path_provenance.sql",
+        "scripts/real-stack-e2e.ts",
+        "scripts/real-stack-receivable-rpc.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-storage-path-provenance.test.ts",
+        "tests/production-migration-ledger-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-028",
+      "title": "Do not purge recurring logo Storage after an unverified finance commit",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "A finance write may commit before its transport/history receipt disappears. The recurring editor deleted a freshly uploaded logo whenever a finance Promise rejected, even if the committed finance reference used it.",
+      "prevention": "Purge only after explicit precommit REVISION_CONFLICT, preserve uncertain Storage references, block repeat upload until finance reload, and preflight pending/conflicted finance state before any Storage write.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/App.tsx",
+        "src/lib/recurringFinanceAssetOutcome.ts",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-finance-asset-partial-commit.test.ts",
+        "tests/recurring-service-assets.test.ts"
+      ]
+    },
+    {
+      "id": "FP-029",
+      "title": "Block repeat Quick Entry submissions after uncertain finance acknowledgment",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Generic and contextual Quick Entry disabled duplicate submissions only while the first promise was pending. A lost finance response after commit left the button enabled to submit a new event ID.",
+      "prevention": "Classify only explicit precommit REVISION_CONFLICT as proven rejection. After an ambiguous post-dispatch response, retain the editor warning and disable Save until the owner closes and reviews persisted state; preserve retries after local validation errors.",
+      "paths": [
+        "src/lib/financeWriteOutcome.ts",
+        "src/components/QuickAdd.tsx",
+        "src/components/ContextualQuickAdd.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-finance-write-receipt-no-replay.test.ts"
+      ]
+    },
+    {
+      "id": "FP-030",
+      "title": "Reject false-positive vault write receipts and protect uncertain encrypted updates",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The card vault accepted any 2xx body as durable save/deletion evidence and told the owner that transport loss could not have changed encrypted card data. The editor allowed a second write after an unknown outcome.",
+      "prevention": "Require an exact saved/deleted response with expected last-four provenance, classify lost 0/408/429/5xx and malformed success receipts as unverified, lock repeated card-secret updates until secure reload and never claim rollback on a lost reply.",
+      "paths": [
+        "src/lib/cardVaultClient.ts",
+        "src/components/CardDetailsDialog.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-card-vault-uncertain-write-receipt.test.ts",
+        "tests/card-vault-client.test.ts",
+        "tests/client-network-boundary.test.ts"
+      ]
+    },
+    {
+      "id": "FP-031",
+      "title": "Same-turn recurring/provider binary uploads must not allocate duplicate Storage keys",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Recurring Save used only asynchronous React editBusy state, and exported recurring/provider binary-upload clients had no synchronous per-target in-flight lock. Two same-task saves or direct client calls could dispatch duplicate PUT requests while the first independently generated Storage key was still unverified.",
+      "prevention": "Acquire a synchronous recurring-item or provider/role/variant slot before dispatching the first binary PUT, reject concurrent same-target calls without issuing a second write, retain independent target concurrency, and clear the lock only for the original auth epoch. Add a RecurringPage save ref guard before any upload or finance writer and keep uncertain-receipt safeguards unchanged.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/lib/recurringServiceAssetClient.ts",
+        "src/lib/financialProviderClient.ts",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-service-upload-uncertainty.test.ts",
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-recurring-finance-asset-partial-commit.test.ts"
+      ]
+    },
+    {
+      "id": "FP-032",
+      "title": "New provider asset receipts must prove the exact generated-key Storage URL",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The browser provider upload accepted an HTTP-200 asset with matching provider-generated key, role, variant, MIME, filename and byte count but any otherwise allowed HTTPS URL. Its full catalog readback validated those metadata fields yet never checked that the returned URL belonged to the generated key's immutable Storage object, allowing a false-green save or broken/foreign image.",
+      "prevention": "Require the server-defined public financial-provider-assets/providers/{provider}/{assetKey}.{MIME-extension} path for newly generated upload receipts and for those exact uploaded keys in the complete catalog. Keep curated legacy provider artwork on its prior compatible URL contract. Use a forged correct-key/wrong-path negative at the actual provider editor, independent unit negatives, and synthetic same-origin Storage-image CDP fixtures rather than weakening a validator to accommodate stale QA URLs.",
+      "paths": [
+        "src/lib/financialProviderClient.ts",
+        "scripts/provider-brand-management-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-provider-storage-path-provenance.test.ts"
+      ]
+    },
+    {
+      "id": "FP-033",
+      "title": "Lost recurring asset release acknowledgement must not trigger a second DELETE",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The recurring browser client treated transport failure or HTTP 408/429/5xx after DELETE as an ordinary retryable error. The server release can deactivate the row before Storage deletion and purge; its public asset catalog reads only active rows, so an empty catalog following an ambiguous response cannot prove the Storage object or inactive registry row was purged.",
+      "prevention": "Synchronous per-key release lock; treat lost/408/429/5xx/invalid-200 receipts as unverified and block same-key replay in the current auth scope without claiming success from an active-only catalog. Accept success only after server {ok:true} (which follows confirmed Storage deletion and row purge) plus a fresh owner-scoped active-catalog absence check. Preserve definite 4xx retry and old-auth-epoch isolation; guard failed Storage cleanup and double DELETE negatives.",
+      "paths": [
+        "src/lib/recurringServiceAssetClient.ts",
+        "tests/649-recurring-service-client-readback.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-recurring-service-client-readback.test.ts"
+      ]
+    },
+    {
+      "id": "FP-034",
+      "title": "RLS-hidden recurring asset purge row cannot count as confirmed deletion",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "The server checked current owner+AAL2 only after ambiguous purge RPC responses and only before the exact-row GET. A normal HTTP-200/void purge result followed by an RLS-hidden empty GET after owner/device revocation could be falsely acknowledged as definitive Storage+registry cleanup. The sibling provider and recurring upload compensation paths also treated an empty exact-key read as absence without checking that the same session retained owner+AAL2 visibility; a masked Storage 404 could be mistaken for confirmed cleanup. The shared metadata error parser also trusted embedded SQLSTATE/message markers before testing the HTTP transport status, allowing a 5xx/408/429 to appear as definite rollback. Ambiguous IBAN and provider metadata writes also checked owner+AAL2 only before the exact-row GET, allowing a matching row to be returned after session retirement during readback.",
+      "prevention": "Keep exact-key inactive-inclusive readback, then independently require a true current owner+AAL2 predicate after that read before reporting success for either ordinary or ambiguous purge receipts. Missing/revoked/nonboolean owner proof fails closed; never reissue Storage DELETE to reconcile a lost receipt. Regression matrix covers normal-200 and postcommit-5xx with RLS-empty, retained/inaccessible rows and bounded release authorization. For definite registration rejection compensation, require fresh original-token owner+AAL2 before each bounded DELETE and after an acknowledged 200/404; never delete on failed/malformed owner proof or return the definite rejection as clean when authorization disappears. Both asset types preserve ambiguous-registration no-delete behavior. Treat upstream HTTP 408/429/5xx as ambiguous before interpreting any PostgreSQL marker. Test both artwork registration paths with contradictory validation, conflict and authorization payloads; do not delete or retry on an empty initial readback. For recovered IBAN and provider metadata receipts, retain the initial owner check and independently require the same original token's true owner+AAL2 predicate after the matching row read; test revoked, malformed and unavailable post-read checks without replay.",
+      "paths": [
+        "server/accountMetadataStore.ts",
+        "tests/recurring-service-assets.test.ts",
+        "tests/provider-brand-management.test.ts",
+        "tests/649-account-metadata-readback.test.ts",
+        "tests/649-provider-write-receipts.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/recurring-service-assets.test.ts",
+        "tests/provider-brand-management.test.ts",
+        "tests/649-account-metadata-readback.test.ts",
+        "tests/649-provider-write-receipts.test.ts"
+      ]
+    },
+    {
+      "id": "FP-035",
+      "title": "Rendered recurring evidence must wait for shared collection entrance completion",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "The actual-browser real-stack screenshot was taken as soon as finance DOM data appeared. The Recurring summary grid, active table and paused list use 170–190ms shared staggered CSS entrance with child delays, so CDP could capture low-opacity content before animation completion.",
+      "prevention": "Before the Recurring persisted-state screenshot, wait for the genuinely visible grid/list/table rows to have no running rh-bank-in/rh-backdrop-in animation and computed opacity >=0.995. Keep production animation and finance state unchanged; reject screenshot evidence with transient invisible rows. Assert helper placement and gate in real-stack browser source tests.",
+      "paths": [
+        "scripts/real-stack-browser-e2e.ts",
+        "tests/real-stack-browser-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/real-stack-browser-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-036",
+      "title": "Report-to-credit navigation evidence must wait for route opacity and collection entrance",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "The actual Chromium Real Stack Reports credit drillthrough screenshot was captured as soon as the destination heading and purchase row appeared. AppShell AnimatePresence motion.div remained at fractional opacity during the 180ms route transition, washing out the entire credit card, numbers and heading despite correct settled content.",
+      "prevention": "After verifying the actual card purchase row on the Credit route, wait for the live AppShell route wrapper, destination page and visible purchase row to reach full computed opacity and for bounded collection entrance animation to finish before capturing evidence. Never replace a valid product transition with global disabled motion or a guessed fixed sleep.",
+      "paths": [
+        "scripts/real-stack-browser-e2e.ts",
+        "tests/real-stack-browser-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/real-stack-browser-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-037",
+      "title": "Read-only receipt status preflight permits concurrent cross-tab finance posting",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Two tabs could both see pending/ready in readonly IndexedDB preflight, then each dispatch a separate finance write before the local receipt was marked posted.",
+      "prevention": "Acquire an atomic IndexedDB readwrite posting claim after input and linked-fee validation but before finance dispatch; retain unknown/crashed posting across reload; restore only on proven precommit finance conflict, preserve posted-before-local-delete and surface posting as non-repostable.",
+      "paths": [
+        "src/lib/receiptDrafts.ts",
+        "src/components/ReceiptAwareQuickAdd.tsx",
+        "src/components/QuickAdd.tsx",
+        "src/components/ReceiptInbox.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/receipt-draft-concurrency.test.ts",
+        "tests/649-receipt-post-save.test.ts"
+      ]
+    },
+    {
+      "id": "FP-038",
+      "title": "Provider image binding clear may treat RLS-hidden [] as confirmed deletion after revoked owner session",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "The server accepted empty exact-slot readback as proof of cleared provider image binding on HTTP 200/void without an owner+AAL2 recheck; ambiguous 5xx checked ownership only before GET, leaving revocation between probe and readback unverified.",
+      "prevention": "For both acknowledged and ambiguous provider-binding RPCs, validate the exact slot readback, then require fresh rheomiq_is_owner_aal2 === true before returning ok. Reject unavailable/false/malformed owner proof as unverified; no duplicate RPC or relaxed RLS.",
+      "paths": [
+        "server/accountMetadataStore.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-write-receipts.test.ts"
+      ]
+    },
+    {
+      "id": "FP-039",
+      "title": "Provider binary upload uncertainty resets on editor close and permits a second same-slot Storage key",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The client guarded concurrent provider binary PUTs only while a single request was in flight. After network loss, HTTP 408/429/5xx or a malformed HTTP 200 registration receipt, finally cleared the slot guard; reopening the provider editor allowed another non-idempotent upload of an independent freshly generated key even when the first Storage/DB write may have committed. All in-memory locks disappear on full browser/server teardown; a generated key held only inside the interrupted server call cannot identify the original upload after restart.",
+      "prevention": "Quarantine the exact provider/role/variant slot for the originating authentication scope after any ambiguous binary upload. Reject new same-slot PUTs even with changed File objects; do not affect independent slots, proved precommit 400/403 rejections or a genuinely new auth scope. Ignore old-scope late outcomes. Explain the hold and safe manual catalog review in the existing provider warning, and cover the desktop/mobile screenshot states. Use same-origin nonblocking Web Locks for provider/recurring binary upload and recurring release when supported; retain the lock on ambiguous outcomes until the initiating live auth scope retires. Unsupported browsers keep existing local guards. Never persist private slot data or claim durable recovery after full browser teardown. Require actual same-origin two-tab native LockManager evidence after ambiguous provider upload and editor close, with zero competing same-slot writes and one independent-slot definite rejection. Release-pending journal foundation adds an owner-scoped pending-target uniqueness constraint and permanent intent/key tombstones; runtime integration and actual restart proof remain separate. Do not treat a terminal disposition as binary/registry/finance success or authorize reuse, cleanup or replay. Verify the actual migration and negative grants in the existing disposable PostgreSQL smoke. Recovery GET uses the exact pending target, validates immutable journal and active registry identity, bounded actual byte hash, unchanged pending reservation and true original-token owner proof after readback. Missing registry/object is unresolved, never authorization for fresh upload or abandonment. Read-only endpoint does not activate reservations or claim binding/finance success. Fresh dispatch requires a plain INSERT with an exact 201 representation and original-token authorization before and after; never dispatch on conflict, ambiguous or previously committed reservation. Staged acknowledgement requires exact intent and asset identity, active registry and streamed byte proof, unchanged pending row and original-token authorization before conditional PATCH, then exact terminal readback and original-token authorization. Acknowledged retries only read the original terminal identity; no replay, arbitrary abandonment, binding or finance success. HTTP activation and legacy concurrency remain separate. A database-controlled monotonic dispatch claim arbitrates with pre-dispatch abandonment; only a fresh exact conditional claim receipt plus original authorization permits Storage dispatch. Claimed reservations cannot be abandoned; direct acknowledgement requires exact active registry and Storage metadata, and the API additionally requires actual byte/hash proof. Missing rows, elapsed time and ambiguous claim receipts are not proof of quiescence. Explicit never-claimed cancellation requires exact intent/key/target, conditional pending/unclaimed terminal transition, exact terminal readback and original-token authorization; a racing claim blocks cancellation. No replay, Storage/catalog mutation, or automatic clearance. Acknowledgement and cancellation share exact identity and claim-state validation. Use one top-level PostgREST eq literal operand helper with URLSearchParams for reservation claim, recovery GET and terminal transitions. PostgREST v16.4 pSingleVal consumes quotes as data, unlike its logical/list parsers; JSON.stringify around a UUID or target breaks equality and can prevent dispatch. Preserve literal punctuation and query separators in recurring IDs; test the decoded filter values, not an incorrect quoted mock contract. A monotonic registration marker commits in the same registry INSERT transaction and serializes with explicit retirement of a claimed never-registered key. Retired known keys reject late registration; any late Storage bytes remain identifiable in read-only operator inventory, not deletion authority. HTTP legacy and explicit paths share durable reservations; explicit browser receipt and exact terminal review must not claim provider binding or finance revision. Preserve older no-identity client compatibility; do not claim full durable recovery for lost legacy successful receipt or unknown unsaved draft target.",
+      "paths": [
+        "src/lib/financialProviderClient.ts",
+        "src/components/FinancialProviderManagementSettings.tsx",
+        "scripts/provider-brand-management-qa.mjs",
+        "src/lib/artworkMutationLock.ts",
+        "src/lib/artworkWebLock.ts",
+        "supabase/migrations/20261125090000_add_artwork_upload_intents.sql",
+        "scripts/app-lock-local-postgres-smoke.sh",
+        "scripts/recovery-fixtures/artwork-upload-intent-owner.sql",
+        "scripts/recovery-fixtures/artwork-upload-intent-denied.sql",
+        "server/accountMetadataStore.ts",
+        "server/accountMetadataHandler.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-provider-catalog-readback.test.ts",
+        "tests/649-bulk-auth-artwork-recovery.test.ts",
+        "tests/production-migration-ledger-source.test.ts",
+        "tests/649-artwork-intent-recovery.test.ts",
+        "tests/649-account-metadata-auth-boundary.test.ts"
+      ]
+    },
+    {
+      "id": "FP-040",
+      "title": "Stale Card Vault read and write responses can cross a newer owner authentication scope",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "Card Vault browser reads and encrypted save/delete mutations did not compare their originating auth epoch against the active scope after transport/body completion. An older successful reveal could populate PAN/CVV in a newer session; an old successful mutation could raise an incorrect new-scope saved receipt, and an old delayed 401 could dispatch auth-expired and invalidate a newer browser session.",
+      "prevention": "Bind each Card Vault request to the global authenticated scope epoch. Check AFTER the response body settles but BEFORE notifyAuthExpired, discard any older response or transport result, and keep late legacy IndexedDB CVV fallback from returning a retired owner's secret. Classify stale write/delete receipts as unverified, never successful; preserve the normal current-scope definite 401/logout behavior. Never log/store PAN/CVV or weaken server owner+AAL2/device/RLS boundaries.",
+      "paths": [
+        "src/lib/cardVaultClient.ts",
+        "scripts/card-vault-runtime-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-card-vault-auth-scope.test.ts"
+      ]
+    },
+    {
+      "id": "FP-041",
+      "title": "Retired write intent can dispatch under a newer authentication scope during preflight or shared progress notification",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "saveAccountMetadata captured its auth epoch only after awaiting refreshAccountMetadata. A previous owner/session save waiting on a slow cold GET could be resumed after logout/reauth by a newer scope's freshly loaded catalog; the old call would then use the new owner revision and issue a PUT under the newer cookie.",
+      "prevention": "Capture auth epoch before trackDatabaseWrite and any asynchronous catalog refresh. After a cold GET and immediately before the PUT, require that the initiating session epoch is still current; reject a retired action as a definitive pre-dispatch abort without classifying a write as committed or using a new owner revision. The shared save tracker must also capture the epoch before publishing progress and reject before invoking the write callback when a synchronous subscriber retires the session; cover provider metadata/binary/binding, recurring upload/release and Card Vault save/delete, as well as fresh explicit retry. Keep real acknowledged writes, revision conflicts, ambiguous post-dispatch receipts, MFA and RLS protections unchanged. Extend provenance to finance FIFO/reload/cursor/import/backup and provider/recurring multi-stage editors; ignore retired shared activity completions, and fence delayed JSON receipts before stale auth/PIN events. No stale operation may dispatch a next stage using a new cookie. Recheck scope after synchronous loading-state subscribers in all three metadata catalogs; recurring upload/release must use an epoch-bound forced readback so waiting for a pre-write GET cannot dispatch a read with newer credentials.",
+      "paths": [
+        "src/lib/accountMetadataClient.ts",
+        "src/lib/databaseSaveActivity.ts",
+        "src/lib/api.ts",
+        "src/hooks/useFinance.ts",
+        "src/components/FinancialProviderManagementSettings.tsx",
+        "src/pages/RecurringPage.tsx",
+        "src/lib/recurringServiceAssetClient.ts",
+        "src/lib/financialProviderClient.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649"
+      ],
+      "guards": [
+        "tests/649-account-metadata-preflight-auth-scope.test.ts",
+        "tests/649-shared-write-preflight-auth-scope.test.ts",
+        "tests/649-bulk-auth-artwork-recovery.test.ts"
+      ]
+    },
+    {
+      "id": "FP-042",
+      "title": "Concurrent device-session touches must preserve monotonic last_seen_at and current authorization",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "Concurrent authenticated API requests can reach the device-session PATCH out of timestamp order; the older request violates the database monotonicity trigger or can overwrite newer metadata. A zero-row guarded PATCH may instead indicate concurrent revocation or removal.",
+      "prevention": "Predicate the timestamp touch atomically on the current owner, session, active row and last_seen_at <= candidate. If no row is returned, reread with the same authenticated token and RLS; require an existing matching owner and non-revoked row, fail closed otherwise. Keep the database monotonicity trigger and owner/AAL2/device checks unchanged. Cover reversed arrival, normal touch and concurrent revocation/removal/owner mismatch.",
+      "paths": [
+        "server/deviceSessionRegistry.ts",
+        "tests/device-access.test.ts",
+        "supabase/migrations/**"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/662",
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/663"
+      ],
+      "guards": [
+        "tests/device-access.test.ts"
+      ]
+    },
+    {
+      "id": "FP-043",
+      "title": "Narrow recurring row passes overflow checks while amount qualifier consumes title width",
+      "category": "ui-resilience",
+      "severity": "medium",
+      "rootCause": "The recurring mobile amount owner changed from a direct strong child to an amount wrapper containing strong and small. Two old direct-child CSS rules no longer matched, leaving amount and mode inline and squeezing a long Greek service name into an excessively narrow column; the centered brand mark also lost its top identity alignment. Geometry checks only tested containment. The same mobile domain stylesheet also retained a three-track KPI layout after the recurring summary became exactly two cards, wasting a third of the usable width at 375px.",
+      "prevention": "Style the actual amount wrapper as a vertical grid with a separate mode row, align the mobile identity to the start, retain the shared semantic-list title and two-column header. At 320/375px with long Greek name require meaningful title width, separate amount/mode rectangles, top brand alignment, containment and exact linked payment identity. Directly inspect actual screenshots; no font shrink or budget relaxation. Keep two equal tracks for the two-card mobile summary and stack both at <=350px; assert both cards occupy the entire grid without an empty third track, and capture both summary and row evidence.",
+      "paths": [
+        "src/pages/RecurringPage.tsx",
+        "src/styles/mobile-finance-presentations.css",
+        "src/styles/mobile-finance-domain-layouts.css",
+        "scripts/recurring-service-brand-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/649",
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/654"
+      ],
+      "guards": [
+        "tests/649-recurring-finance-asset-partial-commit.test.ts"
       ]
     }
   ]

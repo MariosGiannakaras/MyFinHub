@@ -125,7 +125,7 @@
   .semantic-table-wrap:has(.receivables-table){margin-top:7px;border-radius:12px;border:1px solid #dfe7f1;background:#f7faff}
 
   /* Recurring: monthly pulse, active obligations and lifecycle history with progressive visual weight. */
-  .recurring-summary-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:7px}
+  .recurring-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .recurring-summary-grid>article{min-height:94px;border-radius:16px;padding:10px;background:rgba(249,252,255,.84);border:1px solid var(--mobile-border);box-shadow:var(--mobile-shadow-soft)}
   .recurring-summary-grid>article span{font-size:var(--ux-dense-label-size);line-height:1.3}
   .recurring-summary-grid>article b{font-size:15px;line-height:1.15;margin:6px 0 3px}
@@ -133,7 +133,7 @@
   .page-stack>.panel:has(.mobile-recurring-list){padding:12px;border-radius:18px;background:rgba(249,252,255,.78);box-shadow:var(--mobile-shadow-soft)}
   .mobile-recurring-list{gap:8px}
   .mobile-recurring-row{border-radius:17px;padding:11px;background:rgba(251,253,255,.92);box-shadow:none;border:1px solid #dce5ef}
-  .mobile-recurring-head>strong{font-size:12.5px}
+  .mobile-recurring-head .semantic-list-title{align-items:flex-start}
   .mobile-recurring-meta{margin:9px 0;padding:8px;border-radius:11px;background:#f0f5fb;box-shadow:none}
   .mobile-recurring-meta b{font-size:var(--ux-dense-data-size)}
   .mobile-recurring-meta small{font-size:var(--ux-dense-label-size)}
@@ -146,18 +146,17 @@
   .inactive-recurring-list>article>strong{font-size:var(--ux-dense-data-size)}
 
   /* Domain editors share the same bottom-sheet language and thumb-reachable actions. */
-  .editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:var(--surface-elevated)!important}
+  .editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:var(--surface-elevated,var(--surface,#fff))!important}
   .editor-dialog:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:var(--line);margin:-4px auto 10px}
-  .editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:var(--surface-elevated);padding-bottom:8px}
+  .editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:var(--surface-elevated,var(--surface,#fff));padding-bottom:8px}
   .editor-dialog .panel-head>div>span{font-size:13px}
   .editor-dialog .panel-head>div>small{font-size:var(--ux-dense-label-size);line-height:1.35}
-  .editor-dialog .editor-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin:12px -2px -2px;padding:8px 2px 1px;background:linear-gradient(180deg,transparent,var(--surface-elevated) 28%)}
+  .editor-dialog .editor-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin:12px -2px -2px;padding:8px 2px 1px;background:linear-gradient(180deg,transparent,var(--surface-elevated,var(--surface,#fff)) 28%)}
   .editor-dialog .editor-actions button{min-height:46px;width:100%;justify-content:center}
 }
 
 @media(max-width:350px){
-  .recurring-summary-grid{grid-template-columns:1fr 1fr}
-  .recurring-summary-grid>article:first-child{grid-column:1/-1}
+  .recurring-summary-grid{grid-template-columns:1fr}
   .savings-hero{grid-template-columns:82px minmax(0,1fr)}
   .gauge-ring{width:78px!important;height:78px!important}
 }
@@ -165,7 +164,7 @@
 @media(max-width:390px){
   .savings-action{grid-template-columns:38px minmax(0,1fr);align-items:start}
   .savings-action-icon{grid-row:1/3}
-  .savings-action>strong{grid-column:2;justify-self:start;white-space:normal;line-height:1.25}
+  .savings-action>strong{grid-column:2;justify-self:start;display:flex;align-items:center;gap:4px;white-space:nowrap;line-height:1.25}.savings-action>strong svg{width:14px;height:14px;flex:none}
   .saving-route>span{min-width:0;overflow:hidden}
   .saving-route>span b{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 }

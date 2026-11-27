@@ -1,5 +1,6 @@
-import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import {launchQaBrowser} from './qa-browser-cdp-startup.mjs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-savings-remediation-qa';
@@ -7,16 +8,13 @@ mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for Savings remediation QA.');
-const port=9294;
-const profile='/tmp/myfinhub-savings-remediation-qa-chrome';
-rmSync(profile,{recursive:true,force:true,maxRetries:6,retryDelay:150});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:'ignore'});
+let browserSession;
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(120)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime call failed');return result.result.value}close(){this.ws?.close()}}
 const assert=(value,message)=>{if(!value)throw new Error(`Savings remediation QA assertion failed: ${message}`)};
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  browserSession=await launchQaBrowser({binary:chrome,firstPort:9294,profileBase:'/tmp/myfinhub-savings-remediation-qa-chrome'});
+  const {port}=browserSession;
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
@@ -119,5 +117,57 @@ try{
     'August balances and goal progress restored after historical browsing');
   assert(restored.heading==='Αυτός ο μήνας'&&JSON.stringify(restored.routeValues)===JSON.stringify(august.routeValues)&&restored.goalBalance===august.goalBalance&&restored.goalProgress===august.goalProgress,'Savings current-period balances and goal progress restore after historical browsing');
   await screenshot('savings-selected-period-august-restored');
+  // A single page width and an actual chart label gutter at the desktop
+  // breakpoint, ordinary desktop and large monitors.
+  for(const width of [1100,1440,2560]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
+    await waitFor("function(){const page=document.querySelector('.savings-page'),body=page?.querySelector('.savings-desktop-target'),header=page?.querySelector('.page-heading'),actions=page?.querySelector('.savings-action-section');if(!body||!header||!actions)return false;const p=page.getBoundingClientRect(),r=[body,header,actions].map(n=>n.getBoundingClientRect());const svg=body.querySelector('.savings-trend-chart'),labels=[...svg?.querySelectorAll('g>text')||[]],lines=[...svg?.querySelectorAll('g>line')||[]];return r.every(b=>b.width>0&&Math.abs(b.left-p.left)<=1&&Math.abs(b.right-p.right)<=1)&&document.documentElement.scrollWidth<=innerWidth+1&&labels.length>0&&labels.length===lines.length&&new Set(labels.map(n=>n.textContent)).size===labels.length&&labels.every((n,i)=>n.getBBox().x+n.getBBox().width<=Number(lines[i].getAttribute('x1'))-2)}",'aligned Savings width and distinct nonoverlapping axis labels '+width);
+    await screenshot('savings-aligned-axis-'+width);
+  }
+  for(const width of [320,375,768]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height:812,deviceScaleFactor:1,mobile:false});
+    await waitFor("function(){const page=document.querySelector('.savings-page'),body=page?.querySelector('.savings-mobile-legacy'),header=page?.querySelector('.page-heading'),actions=page?.querySelector('.savings-action-section');if(!body||!header||!actions)return false;const p=page.getBoundingClientRect();return [body,header,actions].every(node=>{const b=node.getBoundingClientRect();return b.width>0&&Math.abs(b.left-p.left)<=1&&Math.abs(b.right-p.right)<=1})&&document.documentElement.scrollWidth<=innerWidth+1}",'aligned mobile Savings width '+width);
+    await c.call("function(){window.scrollTo({top:0,behavior:'instant'});return true}");
+    if(width<=390)await waitFor("function(){const actions=[...document.querySelectorAll('.savings-action-section .savings-action')];return actions.length===3&&actions.every(button=>{const cta=button.querySelector('strong'),text=[...cta.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim()),icon=cta.querySelector('svg');if(!text||!icon)return false;const range=document.createRange();range.selectNodeContents(text);const rects=[...range.getClientRects()],b=button.getBoundingClientRect(),c=cta.getBoundingClientRect(),s=icon.getBoundingClientRect();return rects.length===1&&rects[0].width>0&&rects[0].left>=c.left-1&&rects[0].right<=s.left+1&&s.right<=c.right+1&&c.left>=b.left-1&&c.right<=b.right+1&&c.bottom<=b.bottom+1&&s.width>0})}",'narrow Savings action text and arrow share one readable row '+width);
+    await screenshot('savings-aligned-mobile-'+width);
+  }
+  // A malformed goal amount must not create any goal or affect actual balances.
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
+  const beforeGoal=await state();
+  const goalCount=await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}");
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.savings-mobile-legacy .savings-goals button')].find(n=>(n.textContent||'').includes('Νέος στόχος'));button?.click();return Boolean(button)}"),'mobile goal opener');
+  await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'mobile goal editor');
+  const setGoalField=async(label,value)=>assert(await c.call("function(label,value){const row=[...document.querySelectorAll('.savings-dialog label')].find(n=>(n.textContent||'').includes(label));const input=row?.querySelector('input');if(!(input instanceof HTMLInputElement))return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true}",[label,value]),'goal input '+label);
+  const saveGoal=()=>c.call("function(){const button=[...document.querySelectorAll('.savings-dialog button')].find(n=>(n.textContent||'').includes('Αποθήκευση στόχου'));button?.click();return Boolean(button)}");
+  await setGoalField('Όνομα στόχου','Synthetic cent precision goal');
+  for(const invalid of ['1e3','0x10','1.234','0']){
+    await setGoalField('Στόχος ποσού',invalid);
+    assert(await saveGoal(),'goal save control');
+    await waitFor("function(){return (document.querySelector('#savings-goal-editor-error')?.textContent||'').includes('έγκυρο θετικό ποσό')}",'reject malformed goal '+invalid);
+    assert(await c.call("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}"),'invalid goal stays open');
+    assert((await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}"))===goalCount,'invalid goal creates no row');
+  }
+  await waitFor("function(){const dialog=document.querySelector('.savings-dialog[aria-labelledby=savings-goal-editor-title]');if(!dialog||!dialog.getClientRects().length)return false;for(let node=dialog;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}return !dialog.getAnimations({subtree:true}).some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",'invalid Savings goal editor visually settled');
+  await c.call("async function(){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return true}");
+  const readGoalDialogPaint=()=>c.call("function(){const node=document.querySelector('.savings-dialog[aria-labelledby=savings-goal-editor-title]');if(!node)return null;const style=getComputedStyle(node),header=node.querySelector('.panel-head'),footer=node.querySelector('.editor-actions'),canvas=document.createElement('canvas');canvas.width=canvas.height=1;const context=canvas.getContext('2d');if(!context||!header||!footer)return null;const rgba=color=>{context.clearRect(0,0,1,1);context.fillStyle=color;context.fillRect(0,0,1,1);return Array.from(context.getImageData(0,0,1,1).data)};const token=style.getPropertyValue('--surface-elevated').trim(),base=style.getPropertyValue('--surface').trim(),expected=rgba(token||base||'#fff');const pixels=rgba(style.backgroundColor),headerPixels=rgba(getComputedStyle(header).backgroundColor);return {theme:document.documentElement.dataset.theme||null,token,base,background:style.backgroundColor,image:style.backgroundImage,alpha:pixels[3],headerAlpha:headerPixels[3],matches:JSON.stringify(pixels)===JSON.stringify(expected)&&JSON.stringify(headerPixels)===JSON.stringify(expected),footerImage:getComputedStyle(footer).backgroundImage,opacity:Number(style.opacity),ancestors:[...function*(){for(let p=node;p;p=p.parentElement)yield {className:typeof p.className==='string'?p.className:'',opacity:getComputedStyle(p).opacity,filter:getComputedStyle(p).filter,backdropFilter:getComputedStyle(p).backdropFilter}}()]}}");
+  const goalDialogPaint=await readGoalDialogPaint();
+  console.log('Savings goal editor settled paint:',JSON.stringify(goalDialogPaint));
+  assert(goalDialogPaint?.alpha===255&&goalDialogPaint.opacity>=.995&&goalDialogPaint.headerAlpha===255&&goalDialogPaint.matches&&goalDialogPaint.footerImage!=='none','invalid Savings goal editor has an opaque dialog surface');
+  await screenshot('savings-goal-invalid-cent-mobile');
+  // Exercise actual theme owner too, without changing the default fixture for unrelated routes.
+  for(const theme of ['dark','light']){
+    assert(await c.call("async function(pref){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}",[theme])===theme,'Savings editor applies actual '+theme+' theme');
+    // A theme attribute and two frames do not settle CSS color transitions.
+    await waitFor("function(){const dialog=document.querySelector('.savings-dialog[aria-labelledby=savings-goal-editor-title]');if(!dialog||!dialog.getClientRects().length)return false;for(let node=dialog;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>(animation.pending||animation.playState==='running')&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}return !dialog.getAnimations({subtree:true}).some(animation=>(animation.pending||animation.playState==='running')&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",'Savings goal editor settled theme '+theme);
+    await c.call("async function(){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return true}");
+    const paint=await readGoalDialogPaint();
+    assert(paint?.theme===theme&&paint.token&&paint.alpha===255&&paint.headerAlpha===255&&paint.matches&&paint.footerImage!=='none'&&paint.opacity>=.995,'Savings editor solid theme surface '+theme+': '+JSON.stringify(paint));
+    await screenshot('savings-goal-invalid-cent-mobile-'+theme);
+  }
+  await setGoalField('Στόχος ποσού','12,34');assert(await saveGoal(),'corrected goal save control');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')];return !document.querySelector('#savings-goal-editor-title')&&rows.some(n=>(n.textContent||'').includes('Synthetic cent precision goal')&&(n.textContent||'').includes('12,34'))}",'corrected cent-exact goal saved');
+  assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal metadata does not move actual savings money');
+  await waitFor("function(){const row=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')].find(n=>(n.textContent||'').includes('Synthetic cent precision goal'));if(!row)return false;row.scrollIntoView({block:'center',behavior:'instant'});for(let node=row;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}const rect=row.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight+1}",'saved cent-exact Savings goal visible and settled');
+  await screenshot('savings-goal-cent-exact-mobile');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);
-}finally{child.kill('SIGTERM')}
+}finally{await browserSession?.stop()}

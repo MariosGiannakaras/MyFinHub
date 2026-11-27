@@ -11,6 +11,9 @@ const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
 const storageReadMigration=readFileSync('supabase/migrations/20261009190000_allow_recurring_service_asset_storage_owner_read.sql','utf8');
+const pathGuardMigration=readFileSync('supabase/migrations/20261120000500_guard_recurring_service_asset_path_provenance.sql','utf8');
+const directRpcProof=readFileSync('scripts/real-stack-receivable-rpc.ts','utf8');
+const realStackProof=readFileSync('scripts/real-stack-e2e.ts','utf8');
 const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
 const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
@@ -40,6 +43,18 @@ describe('recurring service asset foundation',()=>{
     expect(app).toContain('finance.updateDurably(current=>withRecurring(current,item))');
     expect(recurringPage).toContain('await onUpsertDurably(normalized)');
     expect(recurringPage).toContain('if(uploaded&&!persisted)');
+    expect(recurringPage).toContain('recurringFinanceWriteDefinitelyRejected(reason)');
+    expect(recurringPage).toContain('setFinanceReviewRequired(true)');
+    expect(recurringPage).toContain('disabled={editBusy||financeReviewRequired}');
+    expect(recurringPage).toContain("financeState.saveState!=='saved'||financeState.savePending");
+    expect(app).toContain('financeState={finance}');
+    expect(qaFixture).toContain("mode==='uncertain'");
+    expect(recurringRendered).toContain('recurring-service-brand-finance-receipt-unverified');
+    expect(recurringRendered).toContain("const storagePrefix=origin+'/storage/v1/object/public/recurring-service-assets/services/'");
+    expect(recurringRendered).toContain('Fetch.fulfillRequest');
+    expect(recurringRendered).toContain('Fetch.enable');
+    expect(recurringRendered).not.toContain("const assetUrl=origin+'/brand/icon-512.svg'");
+    expect(recurringRendered).toContain('current.writes===1&&current.deletes===0');
     expect(recurringPage).toContain('oldKeyStillShared');
     expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
     expect(recurringPage).not.toContain('onUpsert(normalized)');
@@ -57,6 +72,18 @@ describe('recurring service asset foundation',()=>{
     expect(migration).toContain('service-asset-[a-f0-9]{24}');
     expect(migration).not.toContain('rheomiq_financial_providers');
     expect(migration).not.toContain('financial-provider-assets');
+  });
+
+  it('requires exact key and MIME storage provenance in PostgreSQL and direct-RPC local QA (#649 I22.02)',()=>{
+    expect(pathGuardMigration).toContain('rheomiq_recurring_asset_exact_storage_path');
+    expect(pathGuardMigration).toContain("storage_path = 'services/' || asset_key");
+    for(const mime of ['image/png','image/jpeg','image/webp','image/svg+xml'])
+      expect(pathGuardMigration).toContain("when '"+mime+"'");
+    expect(pathGuardMigration).toContain('validate constraint rheomiq_recurring_asset_exact_storage_path');
+    expect(pathGuardMigration).not.toMatch(/security definer|drop table|delete from|truncate table/i);
+    for(const name of ['rheomiq_register_recurring_service_asset','rheomiq_release_recurring_service_asset','rheomiq_purge_recurring_service_asset'])
+      expect(directRpcProof).toContain(name);
+    expect(realStackProof).toContain('[real-stack] stage recurring-service-direct-rpc-path-provenance');
   });
 
   it('syncs the relational recurring reference from payload without replacing the ledger/history RPC',()=>{
@@ -110,30 +137,223 @@ describe('recurring service asset foundation',()=>{
     expect(appliedBlock).not.toContain('20261008165700_add_recurring_service_assets.sql');
   });
 
-  it('cleans up Storage when recurring-service metadata registration fails',async()=>{
+  const uploadInput=()=>{
+    const bytes=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>');
+    return {recurringId:'rec-netflix',mimeType:'image/svg+xml',fileName:'netflix.svg',content:bytes};
+  };
+  const recurringAssetRow=(requestBody:Record<string,unknown>)=>({
+    asset_key:requestBody.p_asset_key,recurring_id:requestBody.p_recurring_id,
+    file_name:requestBody.p_file_name,mime_type:requestBody.p_mime_type,
+    storage_bucket:'recurring-service-assets',storage_path:requestBody.p_storage_path,
+    size_bytes:requestBody.p_size_bytes,updated_at:'2026-11-17T12:00:00.000Z',active:true,
+  });
+
+  it('reconciles a committed recurring logo registration despite a 503 without deleting its Storage object',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
     const calls:Array<{url:string;method:string}>=[];
-    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
-      const url=String(input);const method=String(init?.method||'GET');calls.push({url,method});
-      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===2)return new Response(JSON.stringify({message:'temporary registration failure'}),{status:503,headers:{'content-type':'application/json'}});
-      if(calls.length===3)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      throw new Error('unexpected recurring service asset request');
+    let body:Record<string,unknown>={};
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2){
+        body=JSON.parse(String(init?.body)) as Record<string,unknown>;
+        return new Response(JSON.stringify({message:'COMMIT accepted, reply lost'}),{status:503});
+      }
+      if(calls.length===3)return new Response(JSON.stringify([recurringAssetRow(body)]),{status:200});
+      throw new Error('No repeated Storage upload or destructive cleanup after a committed logo');
+    }));
+    const result=await uploadRecurringServiceAsset(uploadInput(),'access-token');
+    expect(result.assetKey).toBe(body.p_asset_key);
+    expect(result.recurringId).toBe('rec-netflix');
+    expect(result.url).toContain('recurring-service-assets/services/');
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET']);
+    expect(calls[2].url).toContain('/rest/v1/rheomiq_recurring_service_assets?select=');
+    expect(calls[2].url).toContain('asset_key=eq.'+body.p_asset_key);
+  });
+
+  it('never deletes a recurring logo after an ambiguous registration 503 and an initially empty read-back',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({message:'Registration status uncertain'}),{status:503});
+      if(calls.length===3)return new Response('[]',{status:200});
+      throw new Error('An empty read during a late COMMIT is not permission to delete Storage');
+    }));
+    await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
+      .rejects.toMatchObject({status:503,code:'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED'});
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET']);
+  });
+
+  it('fails closed without Storage deletion when recurring registration read-back cannot be trusted',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({message:'RPC failed'}),{status:503});
+      if(calls.length===3)return new Response('{}',{status:503});
+      throw new Error('Unverified registry does not authorize Storage deletion');
+    }));
+    await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
+      .rejects.toMatchObject({status:503,code:'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED'});
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET']);
+  });
+
+  it('rejects mismatched committed recurring metadata without deleting a possibly referenced object',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:string[]=[];
+    let body:Record<string,unknown>={};
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const method=String(init?.method||'GET');calls.push(method);
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2){body=JSON.parse(String(init?.body)) as Record<string,unknown>;return new Response('{}',{status:503})}
+      if(calls.length===3)return new Response(JSON.stringify([{...recurringAssetRow(body),recurring_id:'different-recurring'}]),{status:200});
+      throw new Error('Do not delete foreign or mismatched recurring asset');
+    }));
+    await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
+      .rejects.toMatchObject({status:503,code:'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED'});
+    expect(calls).toEqual(['POST','POST','GET']);
+  });
+
+  it('cleans up only a newly uploaded unregistered object after definite validation rejection and confirmed absence',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_RECURRING_SERVICE_ASSET'}),{status:400});
+      if(calls.length===3)return new Response('[]',{status:200});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:200});
+      throw new Error('Only verified unregistered asset may be cleaned up');
+    }));
+    await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
+      .rejects.toMatchObject({status:400,code:'INVALID_RECURRING_SERVICE_ASSET'});
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','POST','DELETE','POST']);
+    expect(calls[4].url).toBe(calls[0].url);
+  });
+
+  it('stops recurring cleanup after two failures and preserves a truthful pending-recovery error',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_RECURRING_SERVICE_ASSET'}),{status:400});
+      if(calls.length===3)return new Response('[]',{status:200});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE'&&calls.filter(c=>c.method==='DELETE').length<=2)return new Response('{}',{status:503});
+      throw new Error('No third destructive cleanup attempt');
+    }));
+    await expect(uploadRecurringServiceAsset(uploadInput(),'access-token'))
+      .rejects.toMatchObject({status:503,code:'RECURRING_SERVICE_ASSET_CLEANUP_PENDING'});
+    expect(calls.map(item=>item.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE']);
+    expect(calls[4].url).toBe(calls[0].url);
+    expect(calls[6].url).toBe(calls[0].url);
+  });
+
+  it.each([
+    ['different asset key','services/service-asset-aaaaaaaaaaaaaaaaaaaaaaaa.svg'],
+    ['unsafe relative path','services/../outside.svg'],
+    ['unrelated nested path','services/other/service-asset-1234567890abcdef12345678.svg'],
+  ])('never deletes Storage after a release response with %s',async(_label,badPath)=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const requests:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      requests.push((init?.method||'GET')+' '+String(input));
+      if(requests.length===1)return new Response(JSON.stringify([{
+        storage_bucket:'recurring-service-assets',storage_path:badPath,
+      }]),{status:200});
+      throw new Error('Unverified release path must never authorize Storage deletion');
+    }));
+    await expect(deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token'))
+      .rejects.toMatchObject({status:500,code:'RECURRING_SERVICE_ASSET_INVALID_RESPONSE'});
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toContain('rpc/rheomiq_release_recurring_service_asset');
+  });
+
+  it('rejects an ambiguous multi-row release receipt before deleting a recurring asset',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const path='services/service-asset-1234567890abcdef12345678.svg';
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push((init?.method||'GET')+' '+String(input));
+      if(calls.length===1)return new Response(JSON.stringify([
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+      ]),{status:200});
+      throw new Error('Duplicate release records must not authorize deletion');
+    }));
+    await expect(deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token'))
+      .rejects.toMatchObject({status:500,code:'RECURRING_SERVICE_ASSET_INVALID_RESPONSE'});
+    expect(calls).toHaveLength(1);
+  });
+
+  it('can retry a partially released recurring asset without purging before Storage confirms deletion',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{method:string;url:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1||calls.length===3)return new Response(JSON.stringify([
+        {storage_bucket:'recurring-service-assets',storage_path:path},
+      ]),{status:200});
+      if(calls.length===2)return new Response('{}',{status:503});
+      if(calls.length===4)return new Response('{}',{status:404});
+      if(calls.length===5)return new Response('null',{status:200});
+      if(calls.length===6)return new Response('[]',{status:200});
+      if(calls.length===7)return new Response('true',{status:200});
+      throw new Error('No speculative extra delete or purge');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,code:'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE',
     });
-    vi.stubGlobal('fetch',fetchMock);
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE']);
+    await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
+    expect(calls.map(x=>x.method)).toEqual(['POST','DELETE','POST','DELETE','POST','GET','POST']);
+    expect(calls[6].url).toContain('rpc/rheomiq_is_owner_aal2');
+    expect(calls[1].url).toBe(calls[3].url);
+    expect(calls[5].url).toContain('asset_key=eq.'+key);
+    expect(calls[4].url).toContain('rpc/rheomiq_purge_recurring_service_asset');
+  });
 
-    const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>');
-    await expect(uploadRecurringServiceAsset({
-      recurringId:'rec-netflix',mimeType:'image/svg+xml',fileName:'netflix.svg',content:svg,
-    },'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
-
-    expect(calls).toHaveLength(3);
-    expect(calls[0]).toMatchObject({method:'POST'});
-    expect(calls[0].url).toContain('/storage/v1/object/recurring-service-assets/services/service-asset-');
-    expect(calls[1].url).toContain('/rest/v1/rpc/rheomiq_register_recurring_service_asset');
-    expect(calls[2]).toMatchObject({method:'DELETE'});
-    expect(calls[2].url).toBe(calls[0].url);
+  it('does not delete Storage on an unconfirmed release response and safely resumes after explicit retry',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response(JSON.stringify({message:'release may have committed'}),{status:503});
+      if(calls.length===2)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(calls.length===3)return new Response('{}',{status:200});
+      if(calls.length===4)return new Response('null',{status:200});
+      if(calls.length===5)return new Response('[]',{status:200});
+      if(calls.length===6)return new Response('true',{status:200});
+      throw new Error('Unexpected duplicate release/delete after retry');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,code:'ACCOUNT_METADATA_UNAVAILABLE',
+    });
+    expect(calls.map(x=>x.method)).toEqual(['POST']);
+    await expect(deleteRecurringServiceAsset(key,'access-token')).resolves.toBeUndefined();
+    expect(calls.map(x=>x.method)).toEqual(['POST','POST','DELETE','POST','GET','POST']);
+    expect(calls[5].url).toContain('rpc/rheomiq_is_owner_aal2');
+    expect(calls[2].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
+    expect(calls[3].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
   });
 
   it('releases metadata before Storage deletion and purges only after Storage succeeds',async()=>{
@@ -146,14 +366,140 @@ describe('recurring service asset foundation',()=>{
       if(calls.length===1)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===2)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       if(calls.length===3)return new Response('null',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===4)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===5)return new Response('true',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected recurring service asset delete request');
     });
     vi.stubGlobal('fetch',fetchMock);
 
     await deleteRecurringServiceAsset('service-asset-1234567890abcdef12345678','access-token');
-    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST']);
+    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET','POST']);
+    expect(calls[4].url).toContain('rpc/rheomiq_is_owner_aal2');
     expect(calls[0].url).toContain('/rest/v1/rpc/rheomiq_release_recurring_service_asset');
     expect(calls[1].url).toContain('/storage/v1/object/recurring-service-assets/'+path);
     expect(calls[2].url).toContain('/rest/v1/rpc/rheomiq_purge_recurring_service_asset');
+    expect(calls[3].url).toContain('/rest/v1/rheomiq_recurring_service_assets?select=asset_key,active&asset_key=eq.service-asset-1234567890abcdef12345678');
+  });
+
+  it.each([
+    ['retained inactive registration',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:false}]],
+    ['retained active registration',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:true}]],
+    ['malformed read-back',200,{assets:[]}],
+    ['duplicate read-back',200,[{asset_key:'service-asset-1234567890abcdef12345678',active:false},{asset_key:'service-asset-1234567890abcdef12345678',active:false}]],
+    ['unavailable read-back',503,{message:'database unavailable'}],
+  ] as const)('does not acknowledge recurring asset purge after %s',async(_label,status,body)=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');
+      calls.push({url,method});
+      if(calls.length===1)return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(calls.length===2)return new Response('{}',{status:200});
+      if(calls.length===3)return new Response('null',{status:200});
+      if(calls.length===4)return new Response(JSON.stringify(body),{status});
+      throw new Error('An uncertain purge cannot cause a repeat Storage DELETE or success');
+    }));
+    await expect(deleteRecurringServiceAsset(key,'access-token')).rejects.toMatchObject({
+      status:503,
+      code:status===503?'ACCOUNT_METADATA_UNAVAILABLE':'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+    });
+    expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET']);
+    expect(calls[3].url).toContain('asset_key=eq.'+key);
+  });
+
+  it.each(['valid-owner','revoked-after-purge','owner-probe-unavailable','malformed-owner-receipt'] as const)(
+    'rejects RLS-empty readback without current owner proof after acknowledged purge: %s',
+    async scenario=>{
+      process.env.SUPABASE_URL='https://project.example.supabase.co';
+      process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+      const key='service-asset-1234567890abcdef12345678';
+      const path='services/'+key+'.svg';
+      const calls:Array<{url:string;method:string}>=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=String(init?.method??'GET');calls.push({url,method});
+        if(url.includes('/rpc/rheomiq_release_recurring_service_asset'))
+          return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+        if(url.includes('/storage/v1/object/recurring-service-assets/'))
+          return new Response('{}',{status:200});
+        if(url.includes('/rpc/rheomiq_purge_recurring_service_asset'))
+          return new Response('null',{status:200});
+        // An RLS-hidden inactive row can look like a successful deletion.
+        if(url.includes('/rheomiq_recurring_service_assets?'))
+          return new Response('[]',{status:200});
+        if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+          if(scenario==='owner-probe-unavailable')return new Response('{}',{status:503});
+          if(scenario==='malformed-owner-receipt')return new Response('{"ok":true}',{status:200});
+          return new Response(scenario==='valid-owner'?'true':'false',{status:200});
+        }
+        throw new Error('No extra Storage/DB request: '+url);
+      }));
+      const outcome=deleteRecurringServiceAsset(key,'access-token');
+      if(scenario==='valid-owner')await expect(outcome).resolves.toBeUndefined();
+      else await expect(outcome).rejects.toMatchObject({
+        status:503,code:'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+      });
+      expect(calls.map(call=>call.method)).toEqual(['POST','DELETE','POST','GET','POST']);
+      expect(calls.filter(call=>call.method==='DELETE')).toHaveLength(1);
+      expect(calls[3]?.url).toContain('asset_key=eq.'+key);
+      expect(calls[4]?.url).toContain('/rpc/rheomiq_is_owner_aal2');
+    }
+  );
+
+  it.each([
+    'postcommit-503','postcommit-network-loss','retained-inactive',
+    'unavailable-readback','malformed-readback','revoked-session',
+    'owner-check-unavailable','definite-denial',
+  ] as const)('reconciles recurring Storage purge $scenario without replay or false-green',async scenario=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const key='service-asset-1234567890abcdef12345678';
+    const path='services/'+key+'.svg';
+    const calls:Array<{method:string;url:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method??'GET');
+      calls.push({url,method});
+      if(url.includes('/rpc/rheomiq_release_recurring_service_asset'))
+        return new Response(JSON.stringify([{storage_bucket:'recurring-service-assets',storage_path:path}]),{status:200});
+      if(url.includes('/storage/v1/object/recurring-service-assets/'))
+        return new Response('{}',{status:200});
+      if(url.includes('/rpc/rheomiq_purge_recurring_service_asset')){
+        if(scenario==='postcommit-network-loss')throw new TypeError('Synthetic lost postcommit acknowledgement');
+        if(scenario==='definite-denial')
+          return new Response(JSON.stringify({code:'42501',message:'FORBIDDEN'}),{status:403});
+        return new Response(JSON.stringify({message:'Purge receipt unavailable'}),{status:503});
+      }
+      if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+        if(scenario==='owner-check-unavailable')return new Response('{}',{status:503});
+        return new Response(scenario==='revoked-session'?'false':'true',{status:200});
+      }
+      if(url.includes('/rheomiq_recurring_service_assets?')){
+        if(scenario==='unavailable-readback')return new Response('{}',{status:503});
+        const body=scenario==='retained-inactive'?[{asset_key:key,active:false}]:
+          scenario==='malformed-readback'?{}:[];
+        return new Response(JSON.stringify(body),{status:200});
+      }
+      throw new Error('Unexpected additional request: '+method+' '+url);
+    }));
+    const action=deleteRecurringServiceAsset(key,'access-token');
+    if(scenario==='postcommit-503'||scenario==='postcommit-network-loss')
+      await expect(action).resolves.toBeUndefined();
+    else await expect(action).rejects.toMatchObject({
+      status:scenario==='definite-denial'?403:503,
+      code:scenario==='definite-denial'?'FORBIDDEN':'RECURRING_SERVICE_ASSET_RELEASE_UNVERIFIED',
+    });
+    const methods=calls.map(call=>call.method);
+    const expected=scenario==='definite-denial'?['POST','DELETE','POST']:
+      ['unavailable-readback','retained-inactive','malformed-readback'].includes(scenario)?
+        ['POST','DELETE','POST','GET']:['POST','DELETE','POST','GET','POST'];
+    expect(methods).toEqual(expected);
+    expect(calls.filter(call=>call.method==='DELETE')).toHaveLength(1);
+    expect(calls[1]?.url).toContain('/storage/v1/object/recurring-service-assets/'+path);
+    expect(calls[2]?.url).toContain('/rpc/rheomiq_purge_recurring_service_asset');
+    if(methods.includes('GET'))expect(calls[3]?.url).toContain('asset_key=eq.'+key);
+    if(methods.at(-1)==='POST'&&scenario!=='definite-denial')
+      expect(calls.at(-1)?.url).toContain('/rpc/rheomiq_is_owner_aal2');
   });
 });

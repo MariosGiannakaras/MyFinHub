@@ -6,7 +6,9 @@ describe('top-edge save feedback ownership',()=>{
   it('uses durable finance queue receipts and guards against queued-race false saved states',()=>{
     const finance=read('src/hooks/useFinance.ts');
     expect(finance).toContain("setCurrentSaveState('saving')");
-    expect(finance).toContain("if(coordinator.hasWork())return;");
+    const settled=finance.slice(finance.indexOf('void idle.then(()=>{'),finance.indexOf('return receipt;'));
+    expect(settled).toContain('if(scope!==authScopeEpoch()||coordinator.hasWork())return;');
+    expect(settled.indexOf('if(scope!==authScopeEpoch()||coordinator.hasWork())return;')).toBeLessThan(settled.indexOf('setSavePending(false)'));
     expect(finance).toContain('setSavePending(false)');
     expect(finance).toContain('setSaveReceiptCount(count=>count+1)');
     expect(finance).toContain('historyMatchesRevision(res.history,res.revision)');
@@ -21,7 +23,7 @@ describe('top-edge save feedback ownership',()=>{
     expect(shell).toContain('<SaveProgressBar saveState={saveState} savePending={savePending} saveReceiptCount={saveReceiptCount} reducedMotion={reduce}/>');
     expect(shell).not.toContain("?'Αποθηκεύτηκε'");
     const app=read('src/App.tsx');
-    expect(app).toContain("const PersistenceNotice = lazy(() => import('./components/PersistenceNotice')");
+    expect(app).toContain("const PersistenceNotice = namedLazy(() => import('./components/PersistenceNotice')");
     expect(app).toContain("finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0");
     expect(notice).not.toContain('persistence-toast saving');
     expect(notice).not.toContain('Αποθηκεύτηκε');
@@ -45,9 +47,37 @@ describe('top-edge save feedback ownership',()=>{
   });
   it('includes real sequential-finance browser probes for pending, success, error, conflict and rapid save sequences',()=>{
     const qa=read('scripts/save-progress-qa.mjs');
+    const browserLaunch=read('scripts/qa-browser-cdp-startup.mjs');
+    const savings=read('scripts/savings-remediation-qa.mjs');
+    expect(browserLaunch).toContain('attempt<=2');
+    expect(browserLaunch).toContain('firstPort+attempt-1');
+    expect(browserLaunch).toContain('await stopChild(child)');
+    expect(browserLaunch).toContain('cleanupProfile(profile)');
+    expect(browserLaunch).toContain("'--disable-dev-shm-usage'");
+    expect(qa).toContain('launchQaBrowser({binary:chrome,firstPort:9287');
+    expect(savings).toContain('launchQaBrowser({binary:chrome,firstPort:9294');
+    expect(qa).not.toContain("const child=spawn(chrome");
+    expect(savings).not.toContain("const child=spawn(chrome");
     const fixtures=read('src/qa.tsx');
     const runner=read('scripts/run-rendered-qa.mjs');
     expect(()=>execFileSync(process.execPath,['--check','scripts/save-progress-qa.mjs'],{stdio:'pipe'})).not.toThrow();
+    expect(qa).toContain("if(name.endsWith('-dark'))");
+    expect(qa).toContain("mod.applyThemePreference('dark')");
+    expect(qa).toContain("theme.colorScheme==='dark'&&theme.canvas===theme.expected");
+    expect(qa).toContain("theme.background.startsWith('linear-gradient(')");
+    const noticeCss=read('src/styles/frontend-audit-remediation.css');
+    expect(noticeCss).toContain('.persistence-notice small{color:inherit;font-size:var(--ux-small-size)}');
+    expect(noticeCss).not.toContain('.persistence-notice small{color:var(--muted)');
+    expect(noticeCss).toContain('align-items:flex-start;flex-direction:column');
+    expect(noticeCss).toContain('.persistence-notice>div{width:100%;min-width:0}');
+    expect(noticeCss).toContain('.persistence-notice .secondary{padding:8px 9px;margin-left:auto}');
+    const noticeProbe=qa.match(/const noticeContrast=await c\.call\("([^"]+)"\)/)?.[1];
+    expect(noticeProbe).toBeDefined();
+    expect(()=>new Function('return ('+noticeProbe+')')()).not.toThrow();
+    expect(qa).toContain('noticeContrast.ratio>=4.5&&noticeContrast.fontSize>=11.5');
+    expect(qa).toContain("name.includes('-375-')");
+    expect(qa).toContain('noticeContrast.textWidth>=260&&noticeContrast.stacked');
+    expect(qa).toContain("await shot('history-rejected-import-'+preCommitFailure+'-375-dark')");
     expect(qa).toContain('save-progress-pending-375-light');
     expect(qa).toContain('save-progress-success-375-light');
     expect(qa).toContain('save-progress-error-1440-dark');
@@ -62,11 +92,29 @@ describe('top-edge save feedback ownership',()=>{
   });
   it('tracks auxiliary independent saves without treating secret reveal or refresh as persistence',()=>{
     const vault=read('src/lib/cardVaultClient.ts');
-    expect(vault).toContain("trackDatabaseWrite(()=>request<{saved:true");
-    expect(vault).toContain("trackDatabaseWrite(()=>request<{deleted:true");
+    expect(vault).toContain("trackDatabaseWrite(()=>requireVaultWriteReceipt('save'");
+    expect(vault).toContain("()=>request<{saved:true");
+    expect(vault).toContain("trackDatabaseWrite(()=>requireVaultWriteReceipt('delete'");
+    expect(vault).toContain("()=>request<{deleted:true");
     expect(vault).toContain("payload=await request<typeof payload>('POST'");
     expect(read('src/lib/accountMetadataClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
     expect(read('src/lib/financialProviderClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
-    expect(read('src/lib/recurringServiceAssetClient.ts')).toContain('return trackDatabaseWrite(async()=>{');
+    const recurring=read('src/lib/recurringServiceAssetClient.ts');
+    // Both operations still await tracked server receipts within their
+    // per-target browser + in-memory locks. Guard the actual operation
+    // boundaries, not the old directly-awaited call spelling.
+    const upload=recurring.slice(recurring.indexOf('export async function uploadRecurringServiceAsset'),recurring.indexOf('export async function deleteRecurringServiceAsset'));
+    const release=recurring.slice(recurring.indexOf('export async function deleteRecurringServiceAsset'),recurring.indexOf('export function recurringServiceAssetByKey'));
+    for(const [source,lock,requestMethod,guard] of [
+      [upload,"return await withArtworkMutationLock('recurring-upload:", "method:'PUT'",'inFlightUploads.delete(input.recurringId)'],
+      [release,"return await withArtworkMutationLock('recurring-release:", "method:'DELETE'",'inFlightReleases.delete(assetKey)'],
+    ]){
+      expect(source).toContain(lock);
+      expect(source.split('()=>trackDatabaseWrite(async()=>{').length-1).toBe(1);
+      expect(source.indexOf(lock)).toBeLessThan(source.indexOf('()=>trackDatabaseWrite(async()=>{'));
+      expect(source.indexOf('()=>trackDatabaseWrite(async()=>{')).toBeLessThan(source.indexOf(requestMethod));
+      expect(source).toContain('if(epoch===authEpoch())'+guard);
+      expect(source.indexOf('}finally{')).toBeGreaterThan(source.indexOf(requestMethod));
+    }
   });
 });

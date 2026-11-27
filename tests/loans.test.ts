@@ -108,6 +108,25 @@ describe('loan payment linkage', () => {
     expect(loanInstallmentPaymentPlan(data,roundedLoan,3)).toEqual({count:2,firstInstallment:5,lastInstallment:6,amount:45});
   });
 
+  it('settles the final forgiven balance exactly, blocks a second payment plan and leaves other loans independent (#649 I09.03)',()=>{
+    const data=financeState(),forgiven={...loan,forgivenAmount:25};
+    const seedEvents=structuredClone(data.state.events);
+    expect(loanOutstanding(data,forgiven)).toBe(50);
+    expect(loanInstallmentPaymentPlan(data,forgiven,3)).toEqual({count:3,firstInstallment:4,lastInstallment:6,amount:50});
+    const closing=createEvent({kind:'expense',date:'2026-08-17',amount:50,note:'Final agreed settlement',accountId:'cash'});
+    closing.loanId=forgiven.id;
+    setLoanPaymentInstallmentCount(closing,3);
+    data.state.events=[closing];
+    expect(loanPaidCount(data,forgiven)).toBe(6);
+    expect(loanOutstanding(data,forgiven)).toBe(0);
+    expect(loanRemainingInstallments(data,forgiven)).toBe(0);
+    expect(loanInstallmentPaymentPlan(data,forgiven,1)).toBeNull();
+    expect(loanPaymentEvents(data,{...forgiven,id:'independent-loan'})).toEqual([]);
+    data.state.events=seedEvents;
+    expect(loanOutstanding(data,forgiven)).toBe(50);
+    expect(loanInstallmentPaymentPlan(data,forgiven,1)).toMatchObject({firstInstallment:4,amount:25});
+  });
+
   it('maps capped visual progress proportionally without showing completion early',()=>{
     expect(loanVisualInstallmentProgress(60,30)).toEqual({segments:60,paidSegments:30});
     expect(loanVisualInstallmentProgress(120,60)).toEqual({segments:60,paidSegments:30});

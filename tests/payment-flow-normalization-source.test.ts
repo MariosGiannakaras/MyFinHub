@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
@@ -14,6 +16,9 @@ const staleHarness=readFileSync(new URL('../src/paymentFlowQa.tsx',import.meta.u
 const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
+  it('preflights the real payment browser runner syntax before Chromium',()=>{
+    expect(()=>execFileSync(process.execPath,['--check',fileURLToPath(new URL('../scripts/payment-flow-normalization-qa.mjs',import.meta.url))],{stdio:'pipe'})).not.toThrow();
+  });
   it('routes page payment entry points through exact shared contexts in production and QA',()=>{
     const production=compact(app);
     const synthetic=compact(qa);
@@ -66,7 +71,7 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('loanInstallmentPaymentPlan');
     expect(contextual).toContain('setLoanPaymentInstallmentCount');
     expect(contextual).toContain('Πόσες δόσεις');
-    expect(contextual).toContain('onValueChange={setAmount}');
+    expect(contextual).toContain("onValueChange={value=>{setAmount(value);setWriteoffConfirmed(false);setDirty(true);setError('')}}");
     expect(contextual).toContain('actualLoanPaymentLabel');
     expect(contextual).toContain('Καλύπτονται οι δόσεις');
   });
@@ -80,6 +85,12 @@ describe('payment flow normalization source contracts',()=>{
     expect(paymentQa).toContain("{state:'empty'}");
     expect(paymentQa).toContain('normal loan amount is editable with exact cents');
     expect(paymentQa).toContain('multi-installment range preview');
+    expect(paymentQa).toContain('discardDirtyLoan()');
+    expect(paymentQa).toContain('dirty loan discard confirmation focused above editor');
+    expect(paymentQa).toContain('cancelling discard retains unsaved loan amount');
+    expect(paymentQa).toContain('confirmed loan discard restores document scroll lock');
+    expect(paymentQa).toContain('Escape closes only installment selector');
+    expect(readFileSync('.github/workflows/fb-focused-rendered-qa.yml','utf8')).toContain("'payment-flow-normalization quick-entry-reference owned-controls'");
     expect(paymentQa).toContain('linked loan payment from Recurring');
     expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
     expect(paymentQa).toContain('δεν είναι πλέον διαθέσιμο');

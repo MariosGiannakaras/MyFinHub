@@ -34,6 +34,13 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(browser).toContain('true top-edge save progress remains the only routine save confirmation');
    expect(browser).toContain('failed finance receipt retains editable variable draft');
    expect(browser).toContain("failureUrl.searchParams.set('recurring-save-failure','1')");
+   const fixture=readFileSync('src/qa.tsx','utf8');
+   const conflict=fixture.match(/if\(mode==='1'\)throw new ApiError\('([^']+)',409,'REVISION_CONFLICT'\);upsertRecurring\(item\)/)?.[1];
+   expect(conflict).toBe('Η δοκιμαστική έκδοση συγκρούστηκε.');
+   expect(browser).toContain("const expectedRejection='"+conflict+"'");
+   expect(browser).toContain("alert?.textContent?.trim()==='"+conflict+"'");
+   expect(browser).toContain("held.estimate==='80'&&held.min==='60'&&held.max==='100'&&held.error.trim()===expectedRejection");
+   expect(browser).toContain('recurring-variable-rejected-save-diagnostic-mobile');
    expect(browser).toContain('responsive recurring list visibly labels the forecast amount as estimate');
  });
 });

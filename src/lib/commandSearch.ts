@@ -24,6 +24,7 @@ type CommandAction=
  | {type:'lending_repayment';person:string;accountId?:string}
  | {type:'recurring_payment';recurringId:string;accountId?:string}
  | {type:'scheduled_complete';scheduledId:string}
+ | {type:'rule_focus';ruleId:string}
  | {type:'budget_management';month:string}
  | {type:'transaction_focus';id:string;source:'legacy'|'event';date:string};
 
@@ -91,6 +92,9 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   if(planned.status!=='pending')continue;
   rows.push(item({id:`scheduled:${planned.id}`,kind:'scheduled',title:planned.note,subtitle:`Προγραμματισμένη κίνηση · ${planned.dueDate}`,keywords:[planned.note,planned.category??'',planned.dueDate,planned.id,accountName(data,planned.accountId??planned.fromAccountId)],action:{type:'scheduled_focus',scheduledId:planned.id},priority:54}));
   rows.push(item({id:`action:scheduled-complete:${planned.id}`,kind:'command',title:`Ολοκλήρωση · ${planned.note}`,subtitle:`Καταχώριση ολοκλήρωσης προγραμματισμένης κίνησης · ${planned.dueDate}`,keywords:[planned.note,'ολοκλήρωση','πληρωμή',planned.dueDate],action:{type:'scheduled_complete',scheduledId:planned.id},priority:85}));
+ }
+ for(const rule of data.state.transactionRules??[]){
+  rows.push(item({id:`rule:${rule.id}`,kind:'command',title:`Επεξεργασία κανόνα · ${rule.name}`,subtitle:'Κανόνες στις Ρυθμίσεις · υπάρχων επεξεργαστής',keywords:[rule.name,rule.id,rule.match.description??'','κανόνας','αυτοματισμός','ρυθμίσεις','επεξεργασία'],action:{type:'rule_focus',ruleId:rule.id},priority:67}));
  }
  for(const budget of data.state.budgets??[]){
   rows.push(item({id:`budget:${budget.id}`,kind:'budget',title:budget.scope==='overall'?'Συνολικό discretionary budget':`Budget · ${budget.category}`,subtitle:`Budget ${budget.month}`,keywords:[budget.category??'','budget','προϋπολογισμός',budget.month],action:{type:'budget_management',month:budget.month},priority:70}));

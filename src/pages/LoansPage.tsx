@@ -1,5 +1,5 @@
 import { ArrowDownUp, CheckCircle2, HandCoins, Info, Landmark, Pencil, Plus, Scale, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -54,22 +54,27 @@ export function LoansPage({data,asOf,commandLoanId=null,commandLoanKey=0,onUpser
   const isComplete=(loan:Loan)=>loanOutstanding(data,loan,asOf)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan,asOf)<=0);
   const activeLoans=sorted.filter(loan=>!isComplete(loan));
   const completedLoans=sorted.filter(isComplete);
+  const focusedLoanKey=useRef(0);
+  const commandActiveIndex=activeLoans.findIndex(loan=>loan.id===commandLoanId);
+  const commandCompletedIndex=completedLoans.findIndex(loan=>loan.id===commandLoanId);
   useEffect(()=>{
-    if(!commandLoanId)return;
-    const activeIndex=activeLoans.findIndex(loan=>loan.id===commandLoanId);
-    const completedIndex=completedLoans.findIndex(loan=>loan.id===commandLoanId);
+    if(!commandLoanId||!commandLoanKey||focusedLoanKey.current===commandLoanKey)return;
+    const activeIndex=commandActiveIndex;
+    const completedIndex=commandCompletedIndex;
     if(activeIndex>=0)setActiveLimit(limit=>Math.max(limit,activeIndex+1));
     if(completedIndex>=0)setHistoryLimit(limit=>Math.max(limit,completedIndex+1));
-  },[commandLoanId,commandLoanKey,activeLoans,completedLoans]);
+  },[commandLoanId,commandLoanKey,commandActiveIndex,commandCompletedIndex]);
   useEffect(()=>{
-    if(!commandLoanId)return;
+    if(!commandLoanId||!commandLoanKey||focusedLoanKey.current===commandLoanKey)return;
     const frame=requestAnimationFrame(()=>{
-      const row=[...document.querySelectorAll<HTMLElement>('.loan-list-row[data-command-loan-id]')].find(node=>node.dataset.commandLoanId===commandLoanId);
-      row?.scrollIntoView({block:'center',behavior:'auto'});
-      row?.focus({preventScroll:true});
+      const row=[...document.querySelectorAll<HTMLElement>('.loan-list-row[data-command-loan-id]')].find(node=>node.dataset.commandLoanId===commandLoanId&&node.getClientRects().length>0);
+      if(!row)return;
+      focusedLoanKey.current=commandLoanKey;
+      row.scrollIntoView({block:'center',behavior:'auto'});
+      row.focus({preventScroll:true});
     });
     return()=>cancelAnimationFrame(frame);
-  },[commandLoanId,commandLoanKey,activeLimit,historyLimit]);
+  },[commandLoanId,commandLoanKey,activeLimit,historyLimit,commandActiveIndex,commandCompletedIndex]);
   const visibleActiveLoans=activeLoans.slice(0,activeLimit);
   const visibleCompletedLoans=completedLoans.slice(0,historyLimit);
   const startNew=(kind:LoanKind='installment')=>{const self=kind==='self-loan';const preferredTarget=selfLoanDestinations.find(account=>account.id===data.state.settings.defaultLoanAccount)?.id||selfLoanDestinations.find(account=>account.id===data.state.settings.defaultExpenseAccount)?.id||selfLoanDestinations.find(account=>account.showInQuickChoices!==false)?.id||selfLoanDestinations[0]?.id||'';setSelfTarget(preferredTarget);setEditError('');setEditTotalText('');setEditInstallmentText('');setEdit({id:`loan-${Date.now()}`,name:self?'ΒΟΗΘΕΙΑ':'',total:0,installment:0,installments:self?1:0,day:'',provider:self?'Αποταμίευση':'',schedule:[],paidCount:0,source:self?'self-loan':'user',kind,accountingMode:'expense-per-installment',expenseCategory:data.state.settings.expenseCategories.includes('Άλλο')?'Άλλο':data.state.settings.expenseCategories[0]||'Άλλο',firstExpectedDate:asOf,defaultAccountId:data.state.settings.defaultLoanAccount,forgivenAmount:0,longTermRecurring:false})};

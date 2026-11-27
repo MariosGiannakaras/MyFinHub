@@ -62,8 +62,8 @@ describe('Savings page action hierarchy',()=>{
     expect(dashboard).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(genericQuick).toContain('savingContributionDraftError(data,');
     expect(genericQuick).toContain('const savingSources=accounts.filter(isSavingContributionSource)');
-    expect(genericQuick).toContain("accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)");
-    expect(genericQuick).toContain("accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)");
+    expect(genericQuick).toContain("accountOptions(from,kind==='withdrawal'?withdrawal.sources:kind==='saving_cash_offset'?savingSources:accounts)");
+    expect(genericQuick).toContain("accountOptions(to,kind==='withdrawal'?withdrawal.targets:kind==='saving_cash_offset'?savingTargets:accounts)");
     expect(genericQuick).toContain("initial?.kind==='saving_cash_offset'");
     expect(loans).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(loans).toContain('const selfLoanDestinations=accounts.filter(account=>!isSavingsAccount(account))');
@@ -108,6 +108,30 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain("selectedMonthIsCurrent?'ΑΥΤΟΣ Ο ΜΗΝΑΣ':selectedMonthLabel.toLocaleUpperCase('el-GR')");
   });
 
+  it('shares desktop width and reserves the real axis label gutter',()=>{
+    expect(composition).toContain('width:min(100%,1500px);margin-inline:auto');
+    expect(composition).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.9fr)');
+    expect(source).toContain('formatFinanceAxisEuro(tick).length');
+    expect(source).toContain('x1={trendLabelGutter}');
+    expect(remediationQa).toContain('aligned Savings width and distinct nonoverlapping axis labels');
+    expect(source).toContain('parseMoneyInputAmount(goalAmountText)');
+    expect(source).toContain('parseMoneyInputAmount(amount)');
+    expect(remediationQa).toContain('invalid goal creates no row');
+    expect(remediationQa).toContain('aligned mobile Savings width');
+    expect(remediationQa).toContain('invalid Savings goal editor visually settled');
+    expect(remediationQa).toContain('invalid Savings goal editor has an opaque dialog surface');
+    const editorCss=readFileSync(new URL('../src/styles/mobile-finance-domain-layouts.css',import.meta.url),'utf8');
+    expect(editorCss).toContain('background:var(--surface-elevated,var(--surface,#fff))!important');
+    expect(editorCss).toContain('background:var(--surface-elevated,var(--surface,#fff));padding-bottom:8px');
+    expect(editorCss).toContain('linear-gradient(180deg,transparent,var(--surface-elevated,var(--surface,#fff)) 28%)');
+    expect(remediationQa).toContain('Savings editor solid theme surface');
+    expect(remediationQa).toContain('paint.alpha===255&&paint.headerAlpha===255&&paint.matches');
+    expect(remediationQa).toContain('narrow Savings action text and arrow share one readable row');
+    const narrowCompletion=readFileSync(new URL('../src/pages/SavingsCompletion.css',import.meta.url),'utf8');
+    expect(narrowCompletion).not.toContain('.savings-action strong{width:30px');
+    expect(remediationQa).toContain('saved cent-exact Savings goal visible and settled');
+  });
+
   it('uses the selected reporting-period end for balances and personal-goal progress',()=>{
     expect(source).toContain("import { reportingPeriodEndDate } from '../lib/reportingPeriod'");
     expect(source).toContain('const periodEndDate=reportingPeriodEndDate(month,asOf)');
@@ -137,6 +161,15 @@ describe('Savings page action hierarchy',()=>{
     expect(remediationQa).toContain("snapshot.goalProgress===august.goalProgress");
     expect(remediationQa).toContain('Savings QA values did not settle');
     expect(remediationQa).not.toContain('const restored=await state();');
+  });
+
+  it('keeps every personal goal tied to one shared, unreserved savings balance (#649 I06.03)',()=>{
+    expect(source).toContain('const savingsBalance=savingsGoalBalance(data,periodEndDate)');
+    expect(source).toContain('const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}))');
+    expect(source).toContain('const combinedGoalTargets=goals.reduce((sum,goal)=>sum+goal.targetAmount,0)');
+    expect(source).toContain('const combinedGoalGap=Math.max(0,combinedGoalTargets-savingsBalance)');
+    expect(source).toContain('Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.');
+    expect(source).toContain('data-shared-goal-gap');
   });
 
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{

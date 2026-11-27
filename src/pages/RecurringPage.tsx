@@ -1,5 +1,5 @@
 import { Archive, CalendarClock, ImagePlus, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Plus, ReceiptText, Trash2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -23,11 +23,15 @@ import { money, shortDate } from '../lib/format';
 import { recurringDraftError } from '../lib/inputSemantics';
 import { activeRecurringItems, inactiveRecurringItems, recurringAccountChoice, recurringAccountError, recurringMonthlyTotal, recurringPayments, recurringStatus, recurringUpcoming, typicalPaymentDay } from '../lib/recurring';
 import { recurringCadenceLabel } from '../lib/recurringCadence';
-import { deleteRecurringServiceAsset, uploadRecurringServiceAsset, type RecurringServiceAsset } from '../lib/recurringServiceAssetClient';
+import { deleteRecurringServiceAsset, refreshRecurringServiceAssets, uploadRecurringServiceAsset, type RecurringServiceAsset } from '../lib/recurringServiceAssetClient';
+import { recurringFinanceWriteDefinitelyRejected } from '../lib/recurringFinanceAssetOutcome';
+import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, RecurringItem, RecurringStatus } from '../types';
 import './RecurringCompletion.css';
+
+const ArtworkIntentReview=lazy(()=>import('../components/ArtworkIntentReview'));
 
 const RECURRING_LOGO_ACCEPT='image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg';
 const RECURRING_LOGO_MAX_BYTES=2*1024*1024;
@@ -39,7 +43,7 @@ function recurringLogoFileError(file:File){
   return null;
 }
 
-export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurringKey=0,onUpsert,onUpsertDurably,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;commandRecurringId?:string|null;commandRecurringKey?:number;onUpsert:(item:RecurringItem)=>void;onUpsertDurably:(item:RecurringItem)=>Promise<void>;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
+export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurringKey=0,financeState,onUpsert,onUpsertDurably,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;commandRecurringId?:string|null;commandRecurringKey?:number;financeState?:{saveState:string;savePending:boolean};onUpsert:(item:RecurringItem)=>void;onUpsertDurably:(item:RecurringItem)=>Promise<void>;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
   const active=activeRecurringItems(data);
   const inactive=inactiveRecurringItems(data);
   const upcoming=recurringUpcoming(data,asOf);
@@ -51,8 +55,13 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const [editAmount,setEditAmount]=useState('');
   const [editError,setEditError]=useState('');
   const [editBusy,setEditBusy]=useState(false);
+  // React state updates after a render; this latch blocks same-turn Save re-entry.
+  const editSaveInFlight=useRef(false);
+  // Never replay an upload while its finance reference may have committed.
+  const [financeReviewRequired,setFinanceReviewRequired]=useState(false);
   const [editLogoFile,setEditLogoFile]=useState<File|null>(null);
   const [editLogoRemoved,setEditLogoRemoved]=useState(false);
+  const [recoveredLogoKey,setRecoveredLogoKey]=useState<string|null>(null);
   const logoInput=useRef<HTMLInputElement|null>(null);
   const [message,setMessage]=useState('');
   const [mobileActiveLimit,setMobileActiveLimit]=useState(12);
@@ -61,8 +70,9 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
   const desktopUpcoming=upcoming.slice(0,desktopActiveLimit);
   const recurringGroups=Array.from(new Set(desktopUpcoming.map(row=>row.item.category))).map(category=>({category,rows:desktopUpcoming.filter(row=>row.item.category===category)}));
   const visibleInactive=inactive.slice(0,inactiveLimit);
+  const focusedRecurringKey=useRef(0);
   useEffect(()=>{
-    if(!commandRecurringKey||!commandRecurringId)return;
+    if(!commandRecurringKey||!commandRecurringId||focusedRecurringKey.current===commandRecurringKey)return;
     const activeIndex=upcoming.findIndex(row=>row.item.id===commandRecurringId);
     const inactiveIndex=inactive.findIndex(item=>item.id===commandRecurringId);
     if(activeIndex<0&&inactiveIndex<0)return;
@@ -78,11 +88,11 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
       }
       const target=[...document.querySelectorAll<HTMLElement>('[data-command-recurring-id]')]
         .find(node=>node.dataset.commandRecurringId===commandRecurringId&&node.getClientRects().length>0);
-      if(target){target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true})}
+      if(target){focusedRecurringKey.current=commandRecurringKey;target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true})}
     });
     return()=>cancelAnimationFrame(frame);
   },[commandRecurringId,commandRecurringKey,desktopActiveLimit,mobileActiveLimit,inactiveLimit]);
-  const resetLogoDraft=()=>{setEditLogoFile(null);setEditLogoRemoved(false);if(logoInput.current)logoInput.current.value=''};
+  const resetLogoDraft=()=>{setEditLogoFile(null);setEditLogoRemoved(false);setRecoveredLogoKey(null);if(logoInput.current)logoInput.current.value=''};
   const releaseEdit=()=>{setEdit(null);setEditAmount('');setEditError('');resetLogoDraft()};
   const closeEdit=()=>{if(!editBusy)releaseEdit()};
   const editRef=useModalFocus<HTMLElement>(Boolean(edit),'input',closeEdit);
@@ -95,55 +105,74 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
     });
     return()=>cancelAnimationFrame(frame);
   },[editError]);
-  const startNew=()=>{resetLogoDraft();setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:defaultCategory(data.state.settings,'expense'),active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
-  const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
-  const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setEditError('')};
-  const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
+  const startNew=()=>{resetLogoDraft();setEditError(financeReviewRequired?'Η προηγούμενη αποθήκευση δεν επιβεβαιώθηκε. Ανανέωσε την εφαρμογή πριν συνεχίσεις.':'');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:defaultCategory(data.state.settings,'expense'),active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
+  const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError(financeReviewRequired?'Η προηγούμενη αποθήκευση δεν επιβεβαιώθηκε. Ανανέωσε την εφαρμογή πριν συνεχίσεις.':'');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
+  const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setRecoveredLogoKey(null);setEditError('')};
+  const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);setRecoveredLogoKey(null);if(logoInput.current)logoInput.current.value=''};
   const save=async()=>{
-    if(!edit||editBusy)return;
+    if(!edit||editBusy||editSaveInFlight.current||financeReviewRequired)return;
+    // Check the finance queue BEFORE uploading independently stored binary data.
+    if(financeState&&(financeState.saveState!=='saved'||financeState.savePending)){setEditError('Υπάρχει εκκρεμής ή μη επιβεβαιωμένη οικονομική αλλαγή. Ανανέωσε την αποθηκευμένη κατάσταση πριν ανεβάσεις εικόνα.');return}
     const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
     const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
     if(error){setEditError(error);return}
+    const scope=authScopeEpoch();
+    editSaveInFlight.current=true;
     setEditBusy(true);setEditError('');
     let uploaded:RecurringServiceAsset|null=null;
     let persisted=false;
     const oldKey=base.logoAssetKey;
     try{
-      let logoAssetKey=editLogoRemoved?undefined:oldKey;
+      assertCurrentAuthScope(scope);
+      let logoAssetKey=editLogoRemoved?undefined:recoveredLogoKey??oldKey;
       if(editLogoFile){
         uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile});
+        assertCurrentAuthScope(scope);
         logoAssetKey=uploaded.assetKey;
       }
       const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined};
       // The editor must not close or report success until this exact finance
       // mutation is persisted with its matching revision and history cursor.
+      assertCurrentAuthScope(scope);
       await onUpsertDurably(normalized);
       persisted=true;
+      assertCurrentAuthScope(scope);
       let cleanupWarning='';
       const oldKeyStillShared=Boolean(oldKey&&[...active,...inactive].some(item=>item.id!==base.id&&item.logoAssetKey===oldKey));
       if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared){
         try{await deleteRecurringServiceAsset(oldKey)}
         catch{cleanupWarning=' Το προηγούμενο λογότυπο δεν ήταν δυνατό να αποδεσμευτεί· η οικονομική αλλαγή έχει αποθηκευτεί.'}
       }
+      if(scope!==authScopeEpoch())return;
       releaseEdit();
       // True server-acknowledged top progress is the sole routine save feedback.
       // Only preserve action status when a logo cleanup issue needs attention.
       setMessage(cleanupWarning.trim());
     }catch(reason){
+      // A retired editor must not dispatch compensating deletion with a newer cookie.
+      if(scope!==authScopeEpoch())return;
       let cleanupWarning='';
       if(uploaded&&!persisted){
-        try{await deleteRecurringServiceAsset(uploaded.assetKey)}
-        catch{cleanupWarning=' Η απομάκρυνση της νέας μη χρησιμοποιούμενης εικόνας απέτυχε· απαιτείται έλεγχος.'}
+        if(recurringFinanceWriteDefinitelyRejected(reason)){
+          // The finance server rejected this stale revision before committing.
+          try{await deleteRecurringServiceAsset(uploaded.assetKey)}
+          catch{cleanupWarning=' Η απομάκρυνση της νέας μη χρησιμοποιούμενης εικόνας απέτυχε· απαιτείται έλεγχος.'}
+        }else{
+          // A missing response or post-commit history mismatch is not rollback proof.
+          setFinanceReviewRequired(true);
+          cleanupWarning=' Η οικονομική εγγραφή ίσως αποθηκεύτηκε. Η εικόνα διατηρήθηκε για ασφάλεια· ανανέωσε την εφαρμογή και έλεγξε την εγγραφή πριν συνεχίσεις.';
+        }
       }
+      if(scope!==authScopeEpoch())return;
       setEditError(userErrorMessage(reason,'Η αποθήκευση του παγίου δεν επιβεβαιώθηκε. Επαναφόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.')+cleanupWarning);
-    }finally{setEditBusy(false)}
+    }finally{editSaveInFlight.current=false;setEditBusy(false)}
   };
   const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>onUpsert({...item,status,active:status==='active'});
   const startPay=(item:RecurringItem)=>onPayRecurring(item.id);
   const mobileUpcoming=upcoming.slice(0,mobileActiveLimit);
   const nextThree=upcoming.slice(0,3);
   const nextPayment=nextThree[0]??null;
-  const editHasLogo=Boolean(edit&&(editLogoFile||(!editLogoRemoved&&edit.logoAssetKey)));
+  const editHasLogo=Boolean(edit&&(editLogoFile||(!editLogoRemoved&&(recoveredLogoKey||edit.logoAssetKey))));
 
   return <div className="page-stack recurring-approved-page">
     <PageHeader className="recurring-approved-heading" eyebrow="ΠΑΓΙΑ & ΣΥΝΔΡΟΜΕΣ" title={<>Πάγια<span className="sr-only"> & Συνδρομές</span></>} description={<p>Διαχειριστείτε τις επαναλαμβανόμενες πληρωμές σας και παρακολουθήστε τις επόμενες υποχρεώσεις.</p>} trailing={<Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέο πάγιο</Button>}/>
@@ -193,6 +222,6 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
     <label><span>Ανώτερη εκτίμηση (€) · προαιρετική</span><MoneyInput value={edit.estimateMax===undefined?'':String(edit.estimateMax)} onValueChange={value=>setEdit({...edit,estimateMax:value===''?undefined:Number(value.replace(',','.'))})}/></label>
     <p className="logic-note compact wide" data-variable-recurring-explainer>Η εκτίμηση και το εύρος δεν δημιουργούν δαπάνη. Όταν πληρώσεις, μπορείς να καταχωρίσεις το ακριβές πραγματικό ποσό ανεξάρτητα από την εκτίμηση.</p>
   </>:null}
-  <label><span>Κάθε</span><AppTextInput type="number" min="1" max="120" step="1" value={edit.recurrenceInterval??1} onChange={event=>setEdit({...edit,recurrenceInterval:Number(event.target.value)||1})}/></label><label><span>Μονάδα επανάληψης</span><AppSelectInput value={edit.recurrenceUnit??'month'} onChange={event=>setEdit({...edit,recurrenceUnit:event.target.value as 'month'|'year'})}><option value="month">Μήνα / μήνες</option><option value="year">Χρόνο / χρόνια</option></AppSelectInput></label><label><span>Συνηθισμένη ημέρα μήνα</span><AppTextInput type="number" min="1" max="31" step="1" value={edit.day??''} onChange={event=>setEdit({...edit,day:event.target.value?Number(event.target.value):null})}/></label><label><span>Πρώτη αναμενόμενη ημερομηνία</span><AppDateInput value={edit.firstExpectedDate??''} onChange={event=>setEdit({...edit,firstExpectedDate:event.target.value||null})}/></label><label><span>Λήξη / ανανέωση (προαιρετικά)</span><AppDateInput value={edit.endDate??''} onChange={event=>setEdit({...edit,endDate:event.target.value||null})}/></label><label><span>Προεπιλεγμένος λογαριασμός</span><AppSelectInput value={edit.accountId} onChange={event=>setEdit({...edit,accountId:event.target.value})}>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Κατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={edit.category} subcategory={edit.subcategory} aria-label="Κατηγορία παγίου" onChange={selection=>setEdit({...edit,category:selection.category,subcategory:selection.subcategory||undefined})}/></label><label><span>Κατάσταση</span><AppSelectInput value={edit.status??(edit.active?'active':'stopped')} onChange={event=>setEdit({...edit,status:event.target.value as RecurringStatus,active:event.target.value==='active'})}><option value="active">Ενεργό</option><option value="paused">Σε παύση</option><option value="stopped">Σταμάτησε</option></AppSelectInput></label></div><section className="recurring-logo-editor" aria-labelledby="recurring-logo-title"><div className="recurring-logo-editor-preview">{editLogoFile?<span className="recurring-brand-mark recurring-brand-local-selection" style={{width:56,height:56,flexBasis:56}} aria-hidden="true" data-recurring-brand-source="local-selection"><ImagePlus size={24}/></span>:<RecurringBrandMark item={editLogoRemoved?{...edit,logoAssetKey:undefined}:edit} settings={data.state.settings} size={56}/>}<div><b id="recurring-logo-title">Λογότυπο <em>προαιρετικό</em></b><small>{editLogoFile?'Νέο αρχείο επιλεγμένο. Θα ελεγχθεί και θα ανέβει μόνο όταν αποθηκεύσεις.':'PNG, JPG, WebP ή SVG έως 2 MB. Το αρχείο ανεβαίνει μόνο όταν αποθηκεύσεις το πάγιο.'}</small></div></div><div className="recurring-logo-editor-actions"><Button type="button" variant="secondary" disabled={editBusy} onClick={()=>logoInput.current?.click()}><ImagePlus size={16}/> {editHasLogo?'Αλλαγή':'Ανέβασμα'}</Button>{editHasLogo?<Button type="button" variant="ghost" disabled={editBusy} onClick={removeLogo}><Trash2 size={15}/> Αφαίρεση</Button>:null}</div></section><div className="editor-actions"><Button type="button" variant="secondary" disabled={editBusy} onClick={closeEdit}>Ακύρωση</Button><Button type="button" variant="primary" disabled={editBusy} onClick={()=>void save()}>{editBusy?'Αποθήκευση…':'Αποθήκευση'}</Button></div></section></div>:null}
+  <label><span>Κάθε</span><AppTextInput type="number" min="1" max="120" step="1" value={edit.recurrenceInterval??1} onChange={event=>setEdit({...edit,recurrenceInterval:Number(event.target.value)||1})}/></label><label><span>Μονάδα επανάληψης</span><AppSelectInput value={edit.recurrenceUnit??'month'} onChange={event=>setEdit({...edit,recurrenceUnit:event.target.value as 'month'|'year'})}><option value="month">Μήνα / μήνες</option><option value="year">Χρόνο / χρόνια</option></AppSelectInput></label><label><span>Συνηθισμένη ημέρα μήνα</span><AppTextInput type="number" min="1" max="31" step="1" value={edit.day??''} onChange={event=>setEdit({...edit,day:event.target.value?Number(event.target.value):null})}/></label><label><span>Πρώτη αναμενόμενη ημερομηνία</span><AppDateInput value={edit.firstExpectedDate??''} onChange={event=>setEdit({...edit,firstExpectedDate:event.target.value||null})}/></label><label><span>Λήξη / ανανέωση (προαιρετικά)</span><AppDateInput value={edit.endDate??''} onChange={event=>setEdit({...edit,endDate:event.target.value||null})}/></label><label><span>Προεπιλεγμένος λογαριασμός</span><AppSelectInput value={edit.accountId} onChange={event=>setEdit({...edit,accountId:event.target.value})}>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Κατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={edit.category} subcategory={edit.subcategory} aria-label="Κατηγορία παγίου" onChange={selection=>setEdit({...edit,category:selection.category,subcategory:selection.subcategory||undefined})}/></label><label><span>Κατάσταση</span><AppSelectInput value={edit.status??(edit.active?'active':'stopped')} onChange={event=>setEdit({...edit,status:event.target.value as RecurringStatus,active:event.target.value==='active'})}><option value="active">Ενεργό</option><option value="paused">Σε παύση</option><option value="stopped">Σταμάτησε</option></AppSelectInput></label></div><section className="recurring-logo-editor" aria-labelledby="recurring-logo-title"><div className="recurring-logo-editor-preview">{editLogoFile?<span className="recurring-brand-mark recurring-brand-local-selection" style={{width:56,height:56,flexBasis:56}} aria-hidden="true" data-recurring-brand-source="local-selection"><ImagePlus size={24}/></span>:<RecurringBrandMark item={editLogoRemoved?{...edit,logoAssetKey:undefined}:recoveredLogoKey?{...edit,logoAssetKey:recoveredLogoKey}:edit} settings={data.state.settings} size={56}/>}<div><b id="recurring-logo-title">Λογότυπο <em>προαιρετικό</em></b><small>{editLogoFile?'Νέο αρχείο επιλεγμένο. Θα ελεγχθεί και θα ανέβει μόνο όταν αποθηκεύσεις.':'PNG, JPG, WebP ή SVG έως 2 MB. Το αρχείο ανεβαίνει μόνο όταν αποθηκεύσεις το πάγιο.'}</small></div></div><div className="recurring-logo-editor-actions"><Button type="button" variant="secondary" disabled={editBusy} onClick={()=>logoInput.current?.click()}><ImagePlus size={16}/> {editHasLogo?'Αλλαγή':'Ανέβασμα'}</Button>{editHasLogo?<Button type="button" variant="ghost" disabled={editBusy} onClick={removeLogo}><Trash2 size={15}/> Αφαίρεση</Button>:null}</div></section><Suspense fallback={null}><ArtworkIntentReview key={edit.id} target={{kind:'recurring',targetId:edit.id}} disabled={editBusy||financeReviewRequired} prepareRecovered={async(assetKey,scope)=>{const catalog=await refreshRecurringServiceAssets(true);assertCurrentAuthScope(scope);if(catalog.error||!catalog.assets.some(asset=>asset.assetKey===assetKey&&asset.recurringId===edit.id))throw new Error('Η εικόνα δεν επιβεβαιώθηκε στον κατάλογο.');return ()=>{setEditLogoFile(null);setEditLogoRemoved(false);setRecoveredLogoKey(assetKey);setEditError('');};}}/></Suspense><div className="editor-actions"><Button type="button" variant="secondary" disabled={editBusy} onClick={closeEdit}>Ακύρωση</Button><Button type="button" variant="primary" disabled={editBusy||financeReviewRequired} onClick={()=>void save()}>{editBusy?'Αποθήκευση…':'Αποθήκευση'}</Button></div></section></div>:null}
   </div>;
 }
