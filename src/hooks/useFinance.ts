@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
+import { ApiError, createBackup, importData, importOutcomeMayBeCommitted, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { reachableHistoryNavigation } from '../lib/historyView';
-import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
+import { SequentialQueue, canAcknowledgeDurableNoop, canApplyFinanceReload, canStartFinanceMaintenance, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
@@ -34,6 +34,8 @@ function publishHistory(items:ChangeHistoryEntry[]){
 function historyMatchesRevision(history:HistoryEnvelope,revision:string){return history.financeRevision===revision}
 
 export function useFinance() {
+  // A mounted authenticated workspace owns its queued and exclusive operations.
+  const scope=useRef(authScopeEpoch()).current;
   const [data, setData] = useState<FinanceData | null>(null);
   const [revision, setRevision] = useState('');
   const [filePath, setFilePath] = useState('');
@@ -96,13 +98,16 @@ export function useFinance() {
   if (!coordinatorRef.current) {
     coordinatorRef.current = new SequentialQueue<QueuedMutation>(async ({data:stamped,label}) => {
       try {
+        assertCurrentAuthScope(scope);
         const res = await saveData(stamped, revisionRef.current, historyGenerationRef.current, label);
+        assertCurrentAuthScope(scope);
         if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την τελευταία αποθήκευση.',409,'HISTORY_CURSOR_CONFLICT');
         revisionRef.current = res.revision;
         setRevision(res.revision);
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
         applyHistory(res.history);
+        assertCurrentAuthScope(scope);
         setSaveReceiptCount(count=>count+1); // Server revision+history receipt confirmed.
         lastSaveFailed.current = false;
         setSaveErrorMessage(null);
@@ -119,7 +124,7 @@ export function useFinance() {
 
   useEffect(()=>{
     const guardUnload = (event: BeforeUnloadEvent) => {
-      if(!shouldWarnBeforeUnload(coordinator.hasWork(),lastSaveFailed.current))return;
+      if(!shouldWarnBeforeUnload(coordinator.hasWork()||exclusiveOperation.current,lastSaveFailed.current))return;
       event.preventDefault();
       event.returnValue='';
     };
@@ -131,9 +136,10 @@ export function useFinance() {
     // A refresh must never replace an optimistic/queued finance write with
     // older server data while that write is awaiting a revision receipt.
     if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false;
+    if(scope!==authScopeEpoch())return false;
     const requestId=++reloadRequestRef.current;
     const requestMutationEpoch=mutationEpochRef.current;
-    const isCurrent=()=>canApplyFinanceReload(
+    const isCurrent=()=>scope===authScopeEpoch()&&canApplyFinanceReload(
       requestMutationEpoch,mutationEpochRef.current,
       requestId,reloadRequestRef.current,
       coordinator.hasWork(),exclusiveOperation.current,saveStateRef.current,
@@ -166,7 +172,7 @@ export function useFinance() {
       setCurrentSaveState('error');
       return false;
     }
-  }, [applyDataEnvelope,applyHistory,coordinator,saveFailureMessage,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory,coordinator,saveFailureMessage,scope,setCurrentSaveState]);
 
   useEffect(() => {
     if(initialLoadStartedRef.current)return;
@@ -203,6 +209,7 @@ export function useFinance() {
   }, [coordinator, reload,setCurrentSaveState]);
 
   const persist = useCallback((next: FinanceData,label:string,requireReceipt=false) => {
+    assertCurrentAuthScope(scope);
     mutationEpochRef.current+=1;
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
@@ -213,48 +220,60 @@ export function useFinance() {
     const receipt=requireReceipt?coordinator.enqueueWithReceipt(mutation):(coordinator.enqueue(mutation),null);
     const idle=coordinator.whenIdle();
     void idle.then(()=>{
-      if(coordinator.hasWork())return; // A newer accepted write extends this save cycle.
+      if(scope!==authScopeEpoch()||coordinator.hasWork())return; // A newer accepted write extends this save cycle.
       setSavePending(false);
       if(saveStateRef.current==='saving'&&!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
     });
     return receipt;
-  }, [assignData, coordinator,setCurrentSaveState]);
+  }, [assignData, coordinator,scope,setCurrentSaveState]);
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
     const state = saveStateRef.current;
-    if (!current || !historyAvailableRef.current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
+    if (scope!==authScopeEpoch() || !current || !historyAvailableRef.current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
     const next = recipe(current);
     if (next === current) return;
     persist(next,financeChangeLabel(current,next));
-  }, [persist]);
+  }, [persist,scope]);
 
   // Only use this for actions that require confirmed, exact-mutation durability
   // before externally visible asset deletion or other non-finance side effects.
   const updateDurably=useCallback(async(recipe:(current:FinanceData)=>FinanceData):Promise<void>=>{
+    assertCurrentAuthScope(scope);
     const current=dataRef.current;
     const state=saveStateRef.current;
     if(!current||!historyAvailableRef.current||state==='conflict'||state==='error'||state==='loading'||exclusiveOperation.current){
       throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
     }
     const next=recipe(current);
-    if(next!==current)await persist(next,financeChangeLabel(current,next),true)!;
-  },[persist]);
+    if(next===current){
+      // A no-op is safe only after earlier writes receive their exact server
+      // revision/history receipt; never release dependent external cleanup early.
+      if(!canAcknowledgeDurableNoop(saveStateRef.current,coordinator.hasWork())){
+        throw new Error('Η προηγούμενη αποθήκευση δεν έχει επιβεβαιωθεί. Περίμενε ή επαναφόρτωσε πριν συνεχίσεις.');
+      }
+      return;
+    }
+    await persist(next,financeChangeLabel(current,next),true)!;
+  },[coordinator,persist,scope]);
 
   const move=useCallback(async(direction:'undo'|'redo')=>{
     const current=dataRef.current;
     const state=saveStateRef.current;
     const allowed=direction==='undo'?undoDepth>0:redoDepth>0;
-    if(!current||!allowed||!historyAvailableRef.current||state!=='saved'||exclusiveOperation.current||coordinator.hasWork())return false;
+    if(scope!==authScopeEpoch()||!current||!allowed||!historyAvailableRef.current||state!=='saved'||exclusiveOperation.current||coordinator.hasWork())return false;
     exclusiveOperation.current=true;
     mutationEpochRef.current+=1;
     setCurrentSaveState('saving');
     try{
       await coordinator.whenIdle();
+      assertCurrentAuthScope(scope);
       const res=await moveHistory(direction,revisionRef.current,historyGenerationRef.current);
+      assertCurrentAuthScope(scope);
       if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την οικονομική κατάσταση.',409,'HISTORY_CURSOR_CONFLICT');
       applyDataEnvelope(res);
       applyHistory(res.history);
+      assertCurrentAuthScope(scope);
       setCurrentSaveState('saved');
       setSaveReceiptCount(count=>count+1); // Acknowledged undo/redo history revision.
       channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
@@ -265,7 +284,7 @@ export function useFinance() {
       else{setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error')}
       return false;
     }finally{exclusiveOperation.current=false}
-  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,scope,setCurrentSaveState,undoDepth]);
 
   const undo=useCallback(()=>move('undo'),[move]);
   const redo=useCallback(()=>move('redo'),[move]);
@@ -275,6 +294,11 @@ export function useFinance() {
   // A jump is NOT an atomic restore: on partial failure, leave the exact confirmed
   // cursor/data visible, mark the save state red/conflicted, and require reload.
   const goToHistoryPoint=useCallback(async(targetId:string):Promise<boolean>=>{
+    // This planner is already needed only by the lazy History dialog.
+    const navigationRevision=revisionRef.current;
+    const navigation=await import('../lib/historyView').catch(()=>null);
+    if(!navigation||scope!==authScopeEpoch()||revisionRef.current!==navigationRevision)return false;
+    const {reachableHistoryNavigation}=navigation;
     if(saveStateRef.current!=='saved'||!historyAvailableRef.current||
        coordinator.hasWork()||exclusiveOperation.current||!dataRef.current)return false;
     const plan=reachableHistoryNavigation(changeHistoryRef.current,undoDepth,redoDepth).get(targetId);
@@ -286,7 +310,9 @@ export function useFinance() {
     try{
       await coordinator.whenIdle();
       for(const expectedPoint of plan.pointIds){
+        assertCurrentAuthScope(scope);
         const res=await moveHistory(plan.direction,revisionRef.current,historyGenerationRef.current);
+        assertCurrentAuthScope(scope);
         if(!historyMatchesRevision(res.history,res.revision)){
           throw new ApiError('Η βάση επέστρεψε ασύμφωνο ιστορικό.',409,'HISTORY_CURSOR_CONFLICT');
         }
@@ -294,6 +320,7 @@ export function useFinance() {
         // changed the path. Never report a target success without matching ID.
         applyDataEnvelope(res);
         applyHistory(res.history);
+        assertCurrentAuthScope(scope);
         if(res.history.currentPointId!==expectedPoint){
           throw new ApiError('Η μετακίνηση δεν έφτασε στο αναμενόμενο σημείο.',409,'HISTORY_CURSOR_CONFLICT');
         }
@@ -311,10 +338,16 @@ export function useFinance() {
       }
       return false;
     }finally{exclusiveOperation.current=false}
-  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,scope,setCurrentSaveState,undoDepth]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
-    if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
+    assertCurrentAuthScope(scope);
+    if (!canStartFinanceMaintenance('import',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      // A queued write may fail and be discarded; never replace its unverified
+      // optimistic state with a destructive import after whenIdle resolves.
+      throw new Error('Η εισαγωγή απαιτεί επιβεβαιωμένη οικονομική κατάσταση χωρίς εκκρεμείς ή αποτυχημένες αποθηκεύσεις. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.');
+    }
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
     mutationEpochRef.current+=1;
@@ -322,33 +355,64 @@ export function useFinance() {
     setCurrentSaveState('saving');
     try {
       await coordinator.whenIdle();
+      assertCurrentAuthScope(scope);
       try {
-        const res = await importData(productData(incoming));
+        const res = await importData(productData(incoming), revisionRef.current);
+        assertCurrentAuthScope(scope);
         applyDataEnvelope(res);
-        const nextHistory=await loadHistory();
-        const consistent=historyMatchesRevision(nextHistory,res.revision);
-        applyHistory(consistent?nextHistory:{...nextHistory,available:false});
-        setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
-        if(consistent&&nextHistory.available)setSaveReceiptCount(count=>count+1);
+        // Import is already committed when the server acknowledges its revision.
+        // A failed history read must not invite a second destructive import.
+        assertCurrentAuthScope(scope);
+        const nextHistory=await loadHistory().catch(()=>null);
+        assertCurrentAuthScope(scope);
+        const consistent=nextHistory!==null&&historyMatchesRevision(nextHistory,res.revision);
+        const verified=Boolean(consistent&&nextHistory?.available);
+        const unavailableHistory:HistoryEnvelope=nextHistory
+          ? {...nextHistory,available:false}
+          : {available:false,generation:historyGenerationRef.current,financeRevision:res.revision,
+            currentPointId:null,canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,points:[]};
+        applyHistory(verified?nextHistory!:unavailableHistory);
+        assertCurrentAuthScope(scope);
+        if(verified){
+          setCurrentSaveState('saved');
+          setSaveReceiptCount(count=>count+1);
+        }else{
+          setSaveErrorMessage('Η εισαγωγή επιβεβαιώθηκε στη βάση, αλλά το ιστορικό δεν επαληθεύτηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
+          setCurrentSaveState('conflict');
+        }
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
+        return verified?{status:'complete' as const}:{status:'committed-history-unverified' as const};
       } catch (error) {
         lastSaveFailed.current = true;
         if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
-        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
+        else if(importOutcomeMayBeCommitted(error)){
+          setSaveErrorMessage('Η έκβαση της εισαγωγής δεν επιβεβαιώθηκε. Μην επαναλάβεις την εισαγωγή· φόρτωσε την τελευταία αποθηκευμένη έκδοση για να ελέγξεις αν πραγματοποιήθηκε.');
+          setCurrentSaveState('error');
+        }else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     } finally {
       exclusiveOperation.current = false;
     }
-  }, [applyDataEnvelope,applyHistory, coordinator,saveFailureMessage,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory, coordinator,saveFailureMessage,scope,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
+    // Unlike import, an ordinary backup may wait for existing FIFO writes,
+    // but only a confirmed saved/history state may authorize the snapshot.
     await coordinator.whenIdle();
-    if (lastSaveFailed.current) {
-      throw new Error('Το backup ακυρώθηκε επειδή υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί επιτυχώς.');
+    assertCurrentAuthScope(scope);
+    if(!canStartFinanceMaintenance('backup',saveStateRef.current,coordinator.hasWork(),
+      exclusiveOperation.current,lastSaveFailed.current,historyAvailableRef.current,Boolean(dataRef.current))){
+      throw new Error('Το backup ακυρώθηκε επειδή η οικονομική κατάσταση δεν έχει επαληθευτεί ή υπάρχει άλλη λειτουργία σε εξέλιξη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση.');
     }
-    return createBackup();
-  }, [coordinator]);
+    // Keep import/cursor/finance mutations out of the snapshot operation.
+    exclusiveOperation.current=true;
+    try{
+      return await createBackup();
+    }finally{
+      exclusiveOperation.current=false;
+    }
+  }, [coordinator,scope]);
 
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();

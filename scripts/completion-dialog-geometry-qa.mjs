@@ -79,13 +79,15 @@ try{
         viewportWidth:innerWidth,viewportHeight:innerHeight,
         left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height,
         scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,
-        rogue,unnamedButtons,unnamedControls,footers
+        rogue,unnamedButtons,unnamedControls,footers,
+        horizontalDetails:[...root.querySelectorAll('*')].filter(node=>{const r=node.getBoundingClientRect();return node.getClientRects().length&&r.right>rect.right+1}).slice(0,12).map(node=>({tag:node.tagName,className:typeof node.className==='string'?node.className:'',right:node.getBoundingClientRect().right,visibility:getComputedStyle(node).visibility})),
+        scrollLeft:root.scrollLeft
       };
     }`,[selector]);
     assert(result,`${label} is not visible`);
     assert(result.left>=-1&&result.right<=result.viewportWidth+1,`${label} escapes viewport horizontally: ${JSON.stringify(result)}`);
     if(vertical)assert(result.top>=-1&&result.bottom<=result.viewportHeight+1,`${label} escapes viewport vertically: ${JSON.stringify(result)}`);
-    assert(result.scrollWidth<=result.clientWidth+1,`${label} has internal horizontal overflow: ${result.scrollWidth}-${result.clientWidth}`);
+    assert(result.scrollWidth<=result.clientWidth+1,`${label} has internal horizontal overflow: ${result.scrollWidth}-${result.clientWidth}; ${JSON.stringify(result.horizontalDetails)}`);
     assert(result.rogue.length===0,`${label} has off-viewport controls: ${JSON.stringify(result.rogue)}`);
     assert(result.unnamedButtons.length===0,`${label} has unnamed buttons: ${result.unnamedButtons.join(' | ')}`);
     assert(result.unnamedControls.length===0,`${label} has unnamed form controls: ${result.unnamedControls.join(' | ')}`);
@@ -165,7 +167,8 @@ try{
     await navigate('dashboard');
     await click('[aria-label="Περισσότερες ενότητες"]','mobile More navigation');
     await waitFor("function(){return Boolean(document.querySelector('.mobile-more-menu'))}",'mobile more menu');
-    await inspect('.mobile-more-menu',`${viewport.name} mobile more menu`);
+    const more=await inspect('.mobile-more-menu',`${viewport.name} mobile more menu`);
+    assert(Math.abs(more.scrollLeft)<=1,`${viewport.name} More opens without horizontal scroll`);
 
     console.log(`${viewport.name}: interaction geometry clean`);
   }

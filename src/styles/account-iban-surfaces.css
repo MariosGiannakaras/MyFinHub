@@ -27,3 +27,6 @@
   .compact-account-row .account-iban{align-items:flex-start}
   .compact-account-row .account-iban-copy{width:40px;height:40px;flex-basis:40px}
 }
+
+/* No geometry shift on a rejected copy: reuse the same icon button. */
+.account-iban .account-iban-copy[data-copy-error="true"]{color:var(--error);border-color:var(--error)}

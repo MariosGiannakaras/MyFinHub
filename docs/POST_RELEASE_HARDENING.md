@@ -28,6 +28,10 @@ The four reported indexes are retained:
 
 At review time each index was 16 kB and the associated tables were small (9 history points, 1 cursor, 10 provider assets, 378 audit rows). A zero scan count at that scale is not evidence that these indexes should be removed.
 
-## Remaining dashboard-only security setting
+## Supabase leaked-password protection review — #649 I22.04 (2026-11-14)
 
-Supabase Auth leaked-password protection remains enabled/disabled outside the repository schema and cannot be changed by the connected Supabase actions available to this project. It must be enabled in the Supabase Auth password-security settings by the owner. This is operational hardening, not a database migration.
+Supabase's current [Password security documentation](https://supabase.com/docs/guides/auth/password-security) confirms that hosted Auth can reject passwords found in the Have I Been Pwned Pwned Passwords dataset. This feature is **available only on Pro and higher plans**. Supabase's [pricing](https://supabase.com/pricing) independently identifies it as unavailable on Free. The configuration lives in the hosted project's **Authentication password-security settings**, not in `supabase/migrations/` or the MyFinHub client; do not simulate it with a client-only check, weaken MFA, or add a privileged custom Auth path.
+
+**Repository review:** complete. **Hosted enablement:** unverified and pending explicit owner authorization and eligible project plan. Current project entitlement, current toggle state and any operational impact have **not** been read or assumed. The prior advisor mention is not evidence that the setting is currently enabled or still disabled. If the owner approves the change, use the supported hosted Auth configuration workflow, record the actual before/after state and safe negative-path sign-in/password-change evidence without collecting any real credentials. Existing email/password + mandatory TOTP and single-owner authorization must remain unchanged. Do not claim production protection, alter the hosted Auth service or count this operational activation as complete from a source-only review.
+
+**2026-11-25 #649 reconciliation:** I22.04 repository review is complete under the original review/approved-only-config scope and #266 Free-plan requirement. The paid hosted feature is not a required new application dependency; any change to tier, Auth setting or production risk acceptance remains separately owner-authorized. No project toggle state, entitlement or hosted activation is claimed.

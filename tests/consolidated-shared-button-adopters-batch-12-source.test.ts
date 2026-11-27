@@ -6,6 +6,7 @@ const root=process.cwd();
 const contextual=fs.readFileSync(path.join(root,'src/components/ContextualQuickAdd.tsx'),'utf8');
 const taxonomy=fs.readFileSync(path.join(root,'src/components/CategoryIconsWorkspace.tsx'),'utf8');
 const receipts=fs.readFileSync(path.join(root,'src/components/ReceiptInbox.tsx'),'utf8');
+const receiptCamera=fs.readFileSync(path.join(root,'src/components/ReceiptQrCamera.tsx'),'utf8');
 
 describe('consolidated Stage 2 shared action adoption',()=>{
   it('moves ContextualQuickAdd generic dialog actions to shared primitives only',()=>{
@@ -15,9 +16,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.match(/<IconButton/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="primary"/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
-    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={onClose}>');
-    expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button>');
-    expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
+    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={requestClose}>');
+    expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
+    expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving||receiptUnverified} onClick={()=>void submit()}>');
     expect(contextual).not.toContain('className="icon-button"');
     expect(contextual).not.toContain('className="secondary"');
     expect(contextual).not.toContain('className="save-button"');
@@ -26,7 +27,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('preserves ContextualQuickAdd focus and finance completion semantics',()=>{
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('onRequestClose={requestClose}');
+    expect(contextual).toContain('focusActive={!discardOpen}');
+    expect(contextual).toContain('onConfirm={()=>{setDiscardOpen(false);onClose()}}');
     expect(contextual).toContain('busy={saving}');
     expect(contextual).toContain('inert={saving}');
     expect(contextual).toContain('if(saving)return;');
@@ -36,7 +39,10 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.indexOf("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);")).toBeLessThan(contextual.indexOf("onClose();return;"));
     expect(contextual).toContain('await onCreate(event);');
     expect(contextual).toContain('setSaving(true);');
-    expect(contextual).toContain('finally{setSaving(false)}');
+    expect(contextual).toContain('if(saving||submitInFlight.current||receiptUnverifiedRef.current)return;');
+    expect(contextual).toContain('financeDispatched&&!financeWriteDefinitelyRejected(reason)');
+    expect(contextual).toContain('submitInFlight.current=true;setSaving(true);');
+    expect(contextual).toContain('finally{submitInFlight.current=false;setSaving(false)}');
     expect(contextual.indexOf('await onCreate(event);')).toBeLessThan(contextual.indexOf('onClose();\n    }catch(reason)'));
     expect(contextual).toContain("event.savingSource=context.savingSource??'manual_transfer'");
   });
@@ -68,15 +74,19 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('keeps ReceiptInbox capture, review and apply actions on shared primitives',()=>{
     expect(receipts).toContain("from './Button'");
     expect(receipts).toContain("from './IconButton'");
-    expect(receipts.match(/<Button/g)).toHaveLength(15);
+    expect(receipts.match(/<Button/g)).toHaveLength(17);
     expect(receipts.match(/<IconButton/g)).toHaveLength(1);
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(10);
+    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(12);
+    expect(receiptCamera).toContain("from './Button'");
+    expect(receiptCamera.match(/<Button/g)).toHaveLength(1);
+    expect(receiptCamera).toContain('variant="secondary" onClick={onCancel}>Κλείσιμο κάμερας</Button>');
+    expect(receiptCamera).not.toContain('<button');
     expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(3);
-    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
-    expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||(purchaseMatches.length>0&&!reviewNewPurchaseConfirmed)}');
+    expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" disabled={reviewSaving||deleting||loading} onClick={requestClose}>');
+    expect(receipts).toContain('variant="primary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
+    expect(receipts).toContain('variant="secondary" disabled={loading || scanning || reviewDirty || reviewSaving || deleting || liveCamera}');
+    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||reviewLinesInvalid||needsEurTotal||Boolean(linkedPurchase)||needsQrReview||needsDuplicateReview}');
     expect(receipts).toContain('onClick={addReviewLine}>Προσθήκη γραμμής</Button>');
     expect(receipts).toContain('onClick={()=>removeReviewLine(item.id)}>Αφαίρεση γραμμής');
     expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
@@ -91,7 +101,12 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(receipts).not.toContain('<button type="button" className="text-button danger"');
     expect(receipts).not.toContain('<button type="button" className="secondary danger"');
     expect(receipts).toContain('className="receipt-draft-open"');
-    expect(receipts).toContain('await module.cancelReceiptOcr()');
+    expect(receipts).toContain('const module=receiptOcrModulePromise;');
+    expect(receipts).toContain('if(module)await module.then(value=>value.cancelReceiptOcr()).catch(()=>{});');
+    expect(receipts).toContain('scanAbort.current?.abort()');
+    expect(receipts).toContain('const needsDuplicateReview=(purchaseMatches.length>0||duplicateQrDraft)&&!reviewNewPurchaseConfirmed;');
+    expect(receipts).toContain('if(apply&&needsQrReview)');
+    expect(receipts).toContain('if(apply&&needsDuplicateReview)');
     expect(receipts).toContain('await saveReceiptProposal(draft.id, proposal)');
     expect(receipts).toContain('await deleteReceiptDrafts(request.ids)');
     expect(receipts).toContain('<ConfirmDialog open={Boolean(deleteRequest)}');

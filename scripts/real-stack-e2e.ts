@@ -1,10 +1,12 @@
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
 import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
+import { runDirectReceivableRpcProof } from './real-stack-receivable-rpc.js';
+import { financeBackupVaultPrivacyRisk } from './real-stack-vault-privacy.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -41,7 +43,9 @@ function statusValue(payload:unknown,candidates:string[]):string{
 }
 
 function readLocalSupabaseStatus(){
-  const raw=execFileSync('npx',['--yes',`supabase@${SUPABASE_CLI_VERSION}`,'status','-o','json'],{
+  const cli=process.env.MYFINHUB_QA_SUPABASE_CLI;
+  if(process.env.CI==='true'&&!cli)fail('Verified local Supabase CLI was not installed.');
+  const raw=execFileSync(cli||'npx',cli?['status','-o','json']:['--yes',`supabase@${SUPABASE_CLI_VERSION}`,'status','-o','json'],{
     encoding:'utf8',
     stdio:['ignore','pipe','pipe'],
   });
@@ -319,15 +323,291 @@ async function main(){
     assert(String(imported.body?.revision||'')==='1','Initial local import did not create revision 1.');
 
     console.log('[real-stack] stage data-read');
+    const importRead=await primary.request('/api/data');
+    expect(importRead,200,undefined,'data-read');
+    assert(importRead.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    // Distinct from the browser's early preview denial: the real API must
+    // still reject malformed payloads on its own, with finance untouched.
+    console.log('[real-stack] stage invalid-import-authoritative-validation');
+    const invalidApiImport=await primary.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(importRead.body?.revision||'')},
+      body:{app:'RheomIQ',schemaVersion:3},
+    });
+    expect(invalidApiImport,400,'INVALID_DATA','invalid-import-authoritative-validation');
+    const afterInvalidApiImport=await primary.request('/api/data');
+    expect(afterInvalidApiImport,200,undefined,'invalid-import-finance-unchanged');
+    assert(afterInvalidApiImport.body?.revision===importRead.body?.revision
+      &&JSON.stringify(afterInvalidApiImport.body?.data)===JSON.stringify(importRead.body?.data),
+      'Authoritatively rejected import mutated confirmed finance.');
+    // Create a real reachable Redo before capturing the immutable direct-RPC
+    // baseline. Do not advance revision/generation inside a denial callback.
+    console.log('[real-stack] stage owner-aal2-history-redo-fixture');
+    const importedHistory=await primary.request('/api/history');
+    expect(importedHistory,200,undefined,'owner-aal2-fixture-before-history');
+    const fixtureRevision=String(importRead.body?.revision||'');
+    const fixtureGeneration=String(importedHistory.body?.generation||'');
+    assert(/^\d+$/.test(fixtureRevision)&&/^\d+$/.test(fixtureGeneration)&&
+      String(importedHistory.body?.financeRevision)===fixtureRevision,
+      'History fixture requires matching current revision and generation.');
+    const fixtureState=structuredClone(importRead.body.data.state);
+    fixtureState.settings={...fixtureState.settings,accountNames:{...fixtureState.settings.accountNames,
+      'qa-cash':'Synthetic reachable history probe'}};
+    assert(JSON.stringify(fixtureState)!==JSON.stringify(importRead.body.data.state),
+      'History fixture requires a non-noop owner save.');
+    validateCompleteFinanceData({...importRead.body.data,state:fixtureState});
+    const fixtureSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':fixtureRevision,'x-rheomiq-history-generation':fixtureGeneration},
+      body:{state:fixtureState,updatedAt:new Date().toISOString(),historyLabel:'Synthetic reachable history probe'},
+    });
+    expect(fixtureSave,200,undefined,'owner-aal2-fixture-save');
+    assert(Number(fixtureSave.body?.revision)>Number(fixtureRevision),
+      'History fixture save did not advance revision.');
+    const fixtureUndo=await primary.request('/api/history',{
+      method:'POST',headers:{'if-match':String(fixtureSave.body?.revision||''),
+        'x-rheomiq-history-generation':String(fixtureSave.body?.history?.generation||'')},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(fixtureUndo,200,undefined,'owner-aal2-fixture-undo');
     const initial=await primary.request('/api/data');
-    expect(initial,200,undefined,'data-read');
-    assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
+    expect(initial,200,undefined,'owner-aal2-fixture-restored-data');
+    assert(Number(initial.body?.revision)>Number(fixtureSave.body?.revision)&&
+      JSON.stringify(initial.body?.data?.state)===JSON.stringify(importRead.body?.data?.state),
+      'History fixture Undo did not restore original canonical finance state.');
     const initialRevision=String(initial.body?.revision||'');
     console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');
     expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
-    assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
+    assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration)&&
+      String(history.body?.financeRevision)===initialRevision&&history.body?.canRedo===true,
+      'Direct RPC baseline requires current revision/generation and reachable Redo.');
+    console.log('[real-stack] PASS owner-aal2-history-redo-fixture');
+    console.log('[real-stack] stage card-vault-write');
+    const vaultSaved=await primary.request('/api/card-secrets',{
+      method:'PUT',
+      body:{cardId:TEST_CARD_ID,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV},
+    });
+    expect(vaultSaved,200,undefined,'card-vault-write');
+    assert(vaultSaved.body?.last4==='4242','Card vault write did not return the synthetic last4.');
+
+    console.log('[real-stack] stage card-vault-read');
+    const vaultRead=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
+    expect(vaultRead,200,undefined,'card-vault-read');
+    assert(vaultRead.body?.pan===TEST_PAN&&vaultRead.body?.expiry===TEST_EXPIRY&&vaultRead.body?.cvv===TEST_CVV,'Card vault round-trip did not preserve the synthetic secret.');
+
+    console.log('[real-stack] stage direct owner/AAL2 PostgREST receivable guard');
+    const directRpcSessions=await runDirectReceivableRpcProof({
+      apiUrl:local.apiUrl,publishable:local.publishable,serviceRole:local.serviceRole,
+      email,password:TEST_PASSWORD,userId,factorId,
+      totpCode:()=>nextTotp(secret,correct),
+      totpCodeForSecret:(factorSecret,previousCode)=>nextTotp(factorSecret,previousCode),
+      data:initial.body.data,revision:initialRevision,generation:initialGeneration,
+      proveHttpDenial:async(identity,accessToken)=>{
+        console.log('[real-stack] stage finance-http-owner-aal2-denial '+identity);
+        // Both genuine non-authorized identities accompany an independently
+        // valid owner cookie. The owner AAL1 token must fail MFA; a nonowner
+        // AAL2 device is invisible to the owner-only device registry and
+        // cannot register through its RLS boundary.
+        const beforeData=await primary.request('/api/data');
+        const beforeHistory=await primary.request('/api/history');
+        expect(beforeData,200,undefined,'owner-aal2-before-data');
+        expect(beforeHistory,200,undefined,'owner-aal2-before-history');
+        const revision=String(beforeData.body?.revision||'');
+        const generation=String(beforeHistory.body?.generation||'');
+        assert(/^\d+$/.test(revision)&&/^\d+$/.test(generation)&&
+          String(beforeHistory.body?.financeRevision)===revision&&beforeHistory.body?.canRedo===true,
+          'HTTP owner/AAL2 proof requires a current finance revision, history generation and reachable Redo.');
+        const snapshotEffects=async()=>({
+          backups:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1',local.serviceRole),
+          audit:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1',local.serviceRole),
+          state:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,updated_at',local.serviceRole),
+        });
+        const beforeDb=await snapshotEffects();
+        const state=structuredClone(beforeData.body.data.state);
+        state.settings={...state.settings,accountNames:{...state.settings.accountNames,
+          'qa-cash':'Unauthorized identity must not save'}};
+        const updatedAt=new Date().toISOString();
+        const importData={...beforeData.body.data,state,updatedAt};
+        validateCompleteFinanceData(importData);
+        assert(JSON.stringify(state)!==JSON.stringify(beforeData.body.data.state),
+          'HTTP owner/AAL2 proof requires a non-noop finance mutation.');
+        const headers={authorization:'Bearer '+accessToken,
+          'if-match':revision,'x-rheomiq-history-generation':generation};
+        const cookies=JSON.stringify([...primary.snapshot()]);
+        for(const [path,options,label] of [
+          ['/api/data',{headers},'data-get'],
+          ['/api/data',{method:'PUT',headers,body:{state,updatedAt,historyLabel:'Unauthorized identity'}},'data-put'],
+          ['/api/history',{headers},'history-get'],
+          ['/api/history',{method:'POST',headers,body:{action:'redo',updatedAt}},'history-redo'],
+          ['/api/backup',{method:'POST',headers,body:{}},'backup-post'],
+          ['/api/import',{method:'POST',headers:{...headers,'x-rheomiq-confirm-import':'replace'},body:importData},'import-post'],
+        ] as const){
+          const denied=await primary.request(path,options);
+          expect(denied,identity==='owner-aal1'?403:401,
+            identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED',identity+'-'+label);
+          assert(JSON.stringify([...primary.snapshot()])===cookies,
+            'Unauthorized bearer changed independent owner cookies: '+identity+'-'+label);
+        }
+        const afterData=await primary.request('/api/data');
+        const afterHistory=await primary.request('/api/history');
+        expect(afterData,200,undefined,'owner-aal2-after-data');
+        expect(afterHistory,200,undefined,'owner-aal2-after-history');
+        assert(afterData.body?.revision===beforeData.body?.revision&&
+          JSON.stringify(afterData.body?.data)===JSON.stringify(beforeData.body?.data),
+          'Unauthorized bearer changed canonical finance or revision: '+identity);
+        assert(JSON.stringify(afterHistory.body)===JSON.stringify(beforeHistory.body),
+          'Unauthorized bearer changed canonical history: '+identity);
+        assert(JSON.stringify(await snapshotEffects())===JSON.stringify(beforeDb),
+          'Unauthorized bearer changed database state, backup or audit rows: '+identity);
+        expect(await primary.request('/api/auth/session'),200,undefined,'owner-aal2-cookie-preserved');
+        console.log('[real-stack] PASS finance-http-owner-aal2-denial '+identity);
+      },
+      proveAssetHttpDenial:async(identity,accessToken,assetFixture)=>{
+        console.log('[real-stack] stage metadata-vault-http-owner-aal2-denial '+identity);
+        const metadataPath='/api/account-metadata';
+        const providerPath=metadataPath+'?resource=financial-providers';
+        const recurringPath=metadataPath+'?resource=recurring-service-assets';
+        const vaultPath='/api/card-secrets';
+        const readVault=()=>primary.request(vaultPath,{method:'POST',body:{cardId:TEST_CARD_ID}});
+        const readCatalogs=async()=>{
+          const results=await Promise.all([primary.request(metadataPath),primary.request(providerPath),primary.request(recurringPath)]);
+          for(const result of results)expect(result,200,undefined,'asset-http-positive-catalog');
+          return {metadata:results[0].body,providers:results[1].body,recurring:results[2].body};
+        };
+
+        // A real pending upload must be visible and resolvable by the active
+        // owner. A nonexistent intent would not prove a denial prevents a
+        // terminal mutation when an ambient owner cookie is also present.
+        const journalTarget='qa-auth-intent-'+identity;
+        const journalId=randomUUID();
+        const journalPath=metadataPath+'?'+new URLSearchParams({
+          resource:'artwork-upload-intents',kind:'recurring',targetId:journalTarget,
+        });
+        const journalUpload=await primary.requestBinary(metadataPath+'?'+new URLSearchParams({
+          resource:'recurring-service-assets',recurringId:journalTarget,fileName:'auth-intent.svg',intentId:journalId,
+        }),{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset});
+        expect(journalUpload,200,undefined,'asset-http-positive-intent-upload');
+        const journalKey=String(journalUpload.body?.asset?.assetKey||'');
+        assert(/^service-asset-[a-f0-9]{24}$/.test(journalKey)&&journalUpload.body?.intentId===journalId,
+          'HTTP journal proof requires a real explicit upload receipt.');
+        const journalBefore=await primary.request(journalPath);
+        expect(journalBefore,200,undefined,'asset-http-positive-intent-read');
+        assert(journalBefore.body?.intent?.intentId===journalId&&journalBefore.body.intent.assetKey===journalKey&&
+          journalBefore.body.intent.registrationRecorded===true&&journalBefore.body.intent.asset?.assetKey===journalKey,
+          'HTTP journal proof requires a pending registered asset with verified bytes.');
+        const journalResolution={intentId:journalId,assetKey:journalKey,action:'acknowledge'};
+        const before=await readCatalogs();
+        const record=before.metadata?.records?.find((row:any)=>row.accountId===assetFixture.accountId);
+        const provider=before.providers?.providers?.find((row:any)=>row.id===assetFixture.providerId);
+        const recurring=before.recurring?.assets?.find((row:any)=>row.assetKey===assetFixture.recurringAssetKey);
+        assert(record?.iban&&record.revision===1&&provider?.assets?.some((row:any)=>row.assetKey===assetFixture.providerAssetKey)&&
+          provider.bindings?.some((row:any)=>row.role==='card-mark'&&row.variant==='dark'&&row.assetKey===assetFixture.providerAssetKey)&&recurring?.recurringId,
+          'HTTP metadata negatives require populated, versioned owner fixtures and real artwork bindings.');
+        const vaultBefore=await readVault();
+        expect(vaultBefore,200,undefined,'asset-http-positive-vault');
+        assert(vaultBefore.body?.pan===TEST_PAN&&vaultBefore.body?.expiry===TEST_EXPIRY&&vaultBefore.body?.cvv===TEST_CVV,
+          'HTTP Card Vault negatives require a real readable encrypted fixture.');
+        const snapshotRows=async()=>({
+          metadata:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_account_metadata?select=*&order=account_id.asc',local.serviceRole),
+          providers:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_providers?select=*&order=id.asc',local.serviceRole),
+          artwork:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?select=*&order=asset_key.asc',local.serviceRole),
+          bindings:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?select=*&order=provider_id.asc,asset_role.asc,variant.asc',local.serviceRole),
+          recurring:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_recurring_service_assets?select=*&order=asset_key.asc',local.serviceRole),
+          intents:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?select=*&order=intent_id.asc',local.serviceRole),
+          vault:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_card_secrets?select=*&card_id=eq.'+TEST_CARD_ID,local.serviceRole),
+          providerObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/'+assetFixture.providerId),
+          recurringObjects:await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets'),
+        });
+        const rowsBefore=await snapshotRows();
+        assert(Array.isArray(rowsBefore.vault)&&rowsBefore.vault.length===1,'HTTP Card Vault proof missing encrypted database row.');
+        const headers={authorization:'Bearer '+accessToken};
+        const cookies=JSON.stringify([...primary.snapshot()]);
+        const reject=(result:ApiResult,label:string)=>{
+          expect(result,identity==='owner-aal1'?403:401,
+            identity==='owner-aal1'?'MFA_REQUIRED':'DEVICE_ACCESS_REVOKED',identity+'-'+label);
+          assert(JSON.stringify([...primary.snapshot()])===cookies,
+            'Unauthorized metadata bearer changed independent owner cookies: '+identity+'-'+label);
+        };
+        const providerWrite={id:provider.id,displayName:'Unauthorized metadata edit',shortName:provider.shortName,
+          providerKind:provider.providerKind,countryCode:provider.countryCode,sortOrder:provider.sortOrder};
+        for(const [path,options,label] of [
+          [metadataPath,{headers},'iban-read'],
+          [metadataPath,{method:'PUT',headers:{...headers,'if-match':String(record.revision)},body:{accountId:record.accountId,iban:null}},'iban-clear'],
+          [providerPath,{headers},'provider-catalog-read'],
+          [providerPath,{method:'POST',headers,body:{...providerWrite,id:'qa-denied-http-provider'}},'provider-create'],
+          [providerPath,{method:'PATCH',headers,body:providerWrite},'provider-update'],
+          [metadataPath+'?resource=financial-provider-asset-binding',{method:'PUT',headers,body:{providerId:provider.id,role:'card-mark',variant:'dark',assetKey:null}},'provider-unbind'],
+          [recurringPath,{headers},'recurring-catalog-read'],
+          [journalPath,{headers},'artwork-intent-read'],
+          [journalPath,{method:'PATCH',headers,body:journalResolution},'artwork-intent-acknowledge'],
+          [recurringPath+'&assetKey='+encodeURIComponent(assetFixture.recurringAssetKey),{method:'DELETE',headers},'recurring-release'],
+          [vaultPath,{method:'POST',headers,body:{cardId:TEST_CARD_ID}},'vault-read'],
+          [vaultPath,{method:'PUT',headers,body:{cardId:TEST_CARD_ID,cvv:'321'}},'vault-write'],
+          [vaultPath,{method:'DELETE',headers,body:{cardId:TEST_CARD_ID}},'vault-delete'],
+        ] as const)reject(await primary.request(path,options),label);
+        const binaryHeaders={...headers,'content-type':'image/svg+xml'};
+        reject(await primary.requestBinary(metadataPath+'?'+new URLSearchParams({
+          resource:'financial-provider-assets',providerId:provider.id,role:'logo',variant:'universal',primary:'0',fileName:'denied.svg',
+        }),{method:'PUT',headers:binaryHeaders,body:guardedAsset}),'provider-upload');
+        reject(await primary.requestBinary(recurringPath+'&'+new URLSearchParams({
+          recurringId:recurring.recurringId,fileName:'denied.svg',
+        }),{method:'PUT',headers:binaryHeaders,body:guardedAsset}),'recurring-upload');
+        assert(JSON.stringify(await readCatalogs())===JSON.stringify(before),
+          'Unauthorized HTTP request changed owner-visible metadata catalog: '+identity);
+        const vaultAfter=await readVault();
+        expect(vaultAfter,200,undefined,'asset-http-vault-preserved');
+        assert(JSON.stringify(vaultAfter.body)===JSON.stringify(vaultBefore.body),
+          'Unauthorized HTTP request changed readable Card Vault fixture: '+identity);
+        assert(JSON.stringify(await snapshotRows())===JSON.stringify(rowsBefore),
+          'Unauthorized HTTP request changed metadata, artwork journal, encrypted vault rows or Storage object inventory: '+identity);
+        const journalAfter=await primary.request(journalPath);
+        expect(journalAfter,200,undefined,'asset-http-intent-preserved');
+        assert(JSON.stringify(journalAfter.body)===JSON.stringify(journalBefore.body),
+          'Unauthorized HTTP request changed the owner-visible pending artwork receipt: '+identity);
+        expect(await primary.request('/api/auth/session'),200,undefined,'asset-http-cookie-preserved');
+        // Prove the same exact resolution was valid (not rejected by an
+        // unrelated precondition) and release only this unreferenced fixture.
+        const journalAck=await primary.request(journalPath,{method:'PATCH',body:journalResolution});
+        expect(journalAck,200,undefined,'asset-http-owner-intent-acknowledgement');
+        assert(journalAck.body?.intentId===journalId&&journalAck.body?.assetKey===journalKey&&
+          journalAck.body?.disposition==='acknowledged','Authorized exact journal resolution was not committed.');
+        const journalResolved=await primary.request(journalPath);
+        expect(journalResolved,200,undefined,'asset-http-owner-intent-terminal-read');
+        assert(journalResolved.body?.intent===null,'Authorized journal resolution left a pending target.');
+        expect(await primary.request(recurringPath+'&assetKey='+encodeURIComponent(journalKey),{method:'DELETE'}),
+          200,undefined,'asset-http-owner-intent-fixture-release');
+        const journalRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?intent_id=eq.'+
+          encodeURIComponent(journalId)+'&select=intent_id,asset_key,disposition',local.serviceRole) as any[];
+        assert(journalRows.length===1&&journalRows[0]?.intent_id===journalId&&journalRows[0]?.asset_key===journalKey&&
+          journalRows[0]?.disposition==='acknowledged','Fixture release must preserve its terminal journal tombstone.');
+        console.log('[real-stack] PASS artwork-intent-http-owner-aal2-denial '+identity);
+        console.log('[real-stack] PASS metadata-vault-http-owner-aal2-denial '+identity);
+      },
+    });
+    const directFinanceAfter=await primary.request('/api/data');
+    const directHistoryAfter=await primary.request('/api/history');
+    expect(directFinanceAfter,200,undefined,'direct-finance-rpc-owner-readback');
+    expect(directHistoryAfter,200,undefined,'direct-history-rpc-owner-readback');
+    assert(directFinanceAfter.body?.revision===initial.body?.revision&&
+      JSON.stringify(directFinanceAfter.body?.data)===JSON.stringify(initial.body?.data)&&
+      JSON.stringify(directHistoryAfter.body)===JSON.stringify(history.body),
+      'Direct RPC authorization proof changed owner-visible finance or durable history.');
+    console.log('[real-stack] PASS direct-finance-rpc-independent-owner-readback');
+    // The direct proof uses a separate synthetic Auth session. Retire only its
+    // session IDs through the existing owner+AAL2 API so the subsequent
+    // two-device lifecycle test retains its original strict count.
+    for(const sessionId of directRpcSessions){
+      const retired=await primary.request('/api/auth/devices',{
+        method:'POST',body:{action:'revoke',sessionId},
+      });
+      expect(retired,200,undefined,'direct-rpc-synthetic-device-retirement');
+    }
+    const afterDirectDevices=await primary.request('/api/auth/devices');
+    expect(afterDirectDevices,200,undefined,'direct-rpc-synthetic-device-count');
+    assert(afterDirectDevices.body?.count===1&&afterDirectDevices.body?.devices?.[0]?.current===true,
+      'Direct RPC proof left synthetic test sessions active.');
+    console.log('[real-stack] PASS direct PostgREST denied AAL1/overpayment/forgery without finance or history commit');
 
     const staleState=structuredClone(initial.body.data.state);
     const nextState=structuredClone(initial.body.data.state);
@@ -395,19 +675,6 @@ async function main(){
     assert((redone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id&&event.receivableDelta===-2.5),
       'Finance Redo did not restore the exact noncash writeoff.');
 
-    console.log('[real-stack] stage card-vault-write');
-    const vaultSaved=await primary.request('/api/card-secrets',{
-      method:'PUT',
-      body:{cardId:TEST_CARD_ID,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV},
-    });
-    expect(vaultSaved,200,undefined,'card-vault-write');
-    assert(vaultSaved.body?.last4==='4242','Card vault write did not return the synthetic last4.');
-
-    console.log('[real-stack] stage card-vault-read');
-    const vaultRead=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
-    expect(vaultRead,200,undefined,'card-vault-read');
-    assert(vaultRead.body?.pan===TEST_PAN&&vaultRead.body?.expiry===TEST_EXPIRY&&vaultRead.body?.cvv===TEST_CVV,'Card vault round-trip did not preserve the synthetic secret.');
-
     console.log('[real-stack] stage backup');
     const backup=await primary.request('/api/backup',{method:'POST',body:{}});
     expect(backup,200,undefined,'backup');
@@ -424,8 +691,12 @@ async function main(){
     assert(Array.isArray(backupRows)&&backupRows.length===1,'Direct database read-back did not find the real backup row.');
     const backupData=backupRows[0]?.data;
     validateCompleteFinanceData(backupData);
-    const serializedBackup=JSON.stringify(backupData);
-    assert(!serializedBackup.includes(TEST_PAN)&&!serializedBackup.includes(TEST_EXPIRY)&&!serializedBackup.includes(TEST_CVV),'Backup unexpectedly contains card-vault plaintext.');
+    // A three-digit CVV can appear coincidentally in legitimate amounts,
+    // timestamps and opaque IDs. Reject real vault fields and long synthetic
+    // secrets, not an unrelated substring like "123" in finance JSON.
+    const vaultPrivacyRisk=financeBackupVaultPrivacyRisk(backupData,TEST_PAN,TEST_EXPIRY);
+    assert(vaultPrivacyRisk===null,
+      'Backup unexpectedly contains card-vault plaintext ('+vaultPrivacyRisk+').');
 
     console.log('[real-stack] stage post-backup-mutation');
     const postBackupHistory=await primary.request('/api/history');
@@ -442,14 +713,54 @@ async function main(){
     });
     expect(postBackupSave,200,undefined,'post-backup-mutation');
 
-    console.log('[real-stack] stage backup-restore');
+    // Exercise the revision-checked RPC through the real API + owner/AAL2 RLS
+    // on disposable local Supabase, not a mocked 409 or production storage.
+    console.log('[real-stack] stage import-stale-revision-denial');
+    const priorImportData=await primary.request('/api/data');
+    expect(priorImportData,200,undefined,'import-stale-prior-finance');
+    const priorImportHistory=await primary.request('/api/history');
+    expect(priorImportHistory,200,undefined,'import-stale-prior-history');
+    const priorImportBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const priorImportAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const staleChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(redone.body?.revision||'')},
+      body:backupData,
+    });
+    expect(staleChecked,409,'REVISION_CONFLICT','import-stale-revision');
+    const malformedChecked=await restored.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':'not-a-revision'},
+      body:backupData,
+    });
+    expect(malformedChecked,400,'INVALID_REVISION','import-malformed-revision');
+    const afterStaleData=await primary.request('/api/data');
+    expect(afterStaleData,200,undefined,'import-stale-no-write');
+    const afterStaleHistory=await primary.request('/api/history');
+    expect(afterStaleHistory,200,undefined,'import-stale-history-unchanged');
+    const afterStaleBackups=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const afterStaleAudit=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1`,local.serviceRole) as any[];
+    assert(afterStaleData.body?.revision===priorImportData.body?.revision
+      &&afterStaleData.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Post-backup mutation',
+      'Stale checked import replaced confirmed finance or advanced its revision.');
+    assert(afterStaleHistory.body?.generation===priorImportHistory.body?.generation
+      &&afterStaleHistory.body?.currentPointId===priorImportHistory.body?.currentPointId,
+      'Stale checked import moved the history cursor.');
+    assert(JSON.stringify(afterStaleBackups)===JSON.stringify(priorImportBackups)
+      &&JSON.stringify(afterStaleAudit)===JSON.stringify(priorImportAudit),
+      'Stale checked import changed pre-import backup or audit history.');
+    console.log('[real-stack] stage backup-restore revision-checked');
     const restoredFromBackup=await primary.request('/api/import',{
       method:'POST',
-      headers:{'x-rheomiq-confirm-import':'replace'},
+      headers:{'x-rheomiq-confirm-import':'replace','if-match':String(postBackupSave.body?.revision||'')},
       body:backupData,
     });
     expect(restoredFromBackup,200,undefined,'backup-restore');
     assert(Number(restoredFromBackup.body?.revision)>Number(postBackupSave.body?.revision),'Backup restore did not advance the canonical revision.');
+    const preImportBackupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?reason=eq.pre-import&order=id.desc&limit=1&select=reason,revision`,local.serviceRole) as any[];
+    assert(Array.isArray(preImportBackupRows)&&preImportBackupRows.length===1
+      &&String(preImportBackupRows[0]?.revision)===String(postBackupSave.body?.revision),
+      'Successful checked import did not atomically back up the prior confirmed revision.');
 
     const recovered=await primary.request('/api/data');
     expect(recovered,200,undefined,'backup-restore-read');
@@ -745,9 +1056,8 @@ async function main(){
       'Final merchant Undo did not leave the actual database history clean.');
     console.log('[real-stack] PASS selected merchant ID, relational payload, stale conflict and Undo/Redo');
 
-    console.log('[real-stack] stage card-vault-delete');
-    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
-
+    // Keep the synthetic Card Vault secret until the revoked-bearer negative
+    // proves an unrelated valid owner browser cookie cannot authorize a purge.
     console.log('[real-stack] stage device-lifecycle');
     const secondary=new CookieClient('QA Browser B');
     let lastCode=await loginAndVerify(secondary,email,TEST_PASSWORD,secret,correct);
@@ -757,6 +1067,11 @@ async function main(){
     const other=devices.body.devices.find((item:any)=>item.current===false);
     assert(other?.sessionId,'Secondary device session was not discoverable.');
 
+    // Preserve the revoked AAL2 bearer for cross-domain endpoint negatives
+    // with an otherwise valid, unrelated owner browser cookie.
+    const revokedDeviceBearer=secondary.snapshot().get('rheomiq_access');
+    assert(typeof revokedDeviceBearer==='string'&&revokedDeviceBearer.length>40,
+      'Revoked device bearer fixture was unavailable before revocation.');
     const revokeOthers=await primary.request('/api/auth/devices',{method:'POST',body:{action:'revoke-others'}});
     expect(revokeOthers,200);
     assert(revokeOthers.body?.count===1,'Revoke-others did not retain only the current device.');
@@ -774,22 +1089,194 @@ async function main(){
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
 
+    console.log('[real-stack] stage revoked-bearer-finance-mutation-history-backup-import');
+    // Use current valid revision/generation and a real reachable Redo, so a
+    // fallback to the unrelated live cookie would actually authorize writes.
+    const rejectedBeforeData=await primary.request('/api/data');
+    const rejectedBeforeHistory=await primary.request('/api/history');
+    expect(rejectedBeforeData,200,undefined,'revoked-mutation-before-data');
+    expect(rejectedBeforeHistory,200,undefined,'revoked-mutation-before-history');
+    assert(rejectedBeforeHistory.body?.canRedo===true,'Revoked history proof requires a reachable Redo.');
+    const rejectedRevision=String(rejectedBeforeData.body?.revision||'');
+    const rejectedGeneration=String(rejectedBeforeHistory.body?.generation||'');
+    assert(/^\d+$/.test(rejectedRevision)&&/^\d+$/.test(rejectedGeneration)&&
+      String(rejectedBeforeHistory.body?.financeRevision)===rejectedRevision,
+      'Revoked mutation proof requires matching current revision and history generation.');
+    const snapshotRejectedSideEffects=async()=>({
+      backups:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1',local.serviceRole),
+      audit:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_audit_log?select=id&order=id.desc&limit=1',local.serviceRole),
+      state:await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,updated_at',local.serviceRole),
+    });
+    const rejectedBeforeDb=await snapshotRejectedSideEffects();
+    const rejectedWriteState=structuredClone(rejectedBeforeData.body.data.state);
+    rejectedWriteState.settings={...rejectedWriteState.settings,
+      accountNames:{...rejectedWriteState.settings.accountNames,'qa-cash':'Revoked device must not save'}};
+    const rejectedUpdatedAt=new Date().toISOString();
+    const rejectedImport={...rejectedBeforeData.body.data,state:rejectedWriteState,updatedAt:rejectedUpdatedAt};
+    validateCompleteFinanceData(rejectedImport);
+    const rejectedHeaders={authorization:'Bearer '+revokedDeviceBearer,
+      'if-match':rejectedRevision,'x-rheomiq-history-generation':rejectedGeneration};
+    const rejectedCookieSnapshot=JSON.stringify([...primary.snapshot()]);
+    for(const [path,options,label] of [
+      ['/api/data',{method:'PUT',headers:rejectedHeaders,body:{state:rejectedWriteState,updatedAt:rejectedUpdatedAt,historyLabel:'Revoked device write'}},'revoked-bearer-finance-put'],
+      ['/api/history',{headers:rejectedHeaders},'revoked-bearer-history-read'],
+      ['/api/history',{method:'POST',headers:rejectedHeaders,body:{action:'redo',updatedAt:rejectedUpdatedAt}},'revoked-bearer-history-redo'],
+      ['/api/backup',{method:'POST',headers:rejectedHeaders,body:{}},'revoked-bearer-backup'],
+      ['/api/import',{method:'POST',headers:{...rejectedHeaders,'x-rheomiq-confirm-import':'replace'},body:rejectedImport},'revoked-bearer-import'],
+    ] as const){
+      const rejected=await primary.request(path,options);
+      expect(rejected,401,'DEVICE_ACCESS_REVOKED',label);
+      assert(JSON.stringify([...primary.snapshot()])===rejectedCookieSnapshot,
+        'Rejected bearer changed unrelated owner cookies: '+label);
+    }
+    const rejectedAfterData=await primary.request('/api/data');
+    const rejectedAfterHistory=await primary.request('/api/history');
+    expect(rejectedAfterData,200,undefined,'revoked-mutation-after-data');
+    expect(rejectedAfterHistory,200,undefined,'revoked-mutation-after-history');
+    assert(rejectedAfterData.body?.revision===rejectedBeforeData.body?.revision&&
+      JSON.stringify(rejectedAfterData.body?.data)===JSON.stringify(rejectedBeforeData.body?.data),
+      'Revoked bearer changed canonical finance data or revision.');
+    assert(JSON.stringify(rejectedAfterHistory.body)===JSON.stringify(rejectedBeforeHistory.body),
+      'Revoked bearer changed durable history or cursor.');
+    assert(JSON.stringify(await snapshotRejectedSideEffects())===JSON.stringify(rejectedBeforeDb),
+      'Revoked bearer changed database revision, backup or audit rows.');
+    expect(await primary.request('/api/auth/session'),200,undefined,'revoked-mutation-valid-cookie-preserved');
+
+    console.log('[real-stack] stage revoked-bearer-finance-vault-no-cookie-fallback');
+    // A revoked native token is authoritative even when a separate, active
+    // owner browser session accompanies the request as an ambient cookie.
+    // Both APIs have their own sensitive read/destructive consequences.
+    expect(await primary.request('/api/data',{
+      headers:{authorization:'Bearer '+revokedDeviceBearer},
+    }),401,'DEVICE_ACCESS_REVOKED','revoked-bearer-finance-read');
+    expect(await primary.request('/api/card-secrets',{
+      method:'DELETE',headers:{authorization:'Bearer '+revokedDeviceBearer},
+      body:{cardId:TEST_CARD_ID},
+    }),401,'DEVICE_ACCESS_REVOKED','revoked-bearer-card-vault-delete');
+    const vaultAfterRevokedBearer=await primary.request('/api/card-secrets',{
+      method:'POST',body:{cardId:TEST_CARD_ID},
+    });
+    expect(vaultAfterRevokedBearer,200,undefined,'card-vault-after-revoked-bearer');
+    assert(vaultAfterRevokedBearer.body?.pan===TEST_PAN&&
+      vaultAfterRevokedBearer.body?.expiry===TEST_EXPIRY&&
+      vaultAfterRevokedBearer.body?.cvv===TEST_CVV,
+      'Revoked bearer deleted or changed the surviving synthetic Card Vault secret.');
+    console.log('[real-stack] stage card-vault-delete');
+    expect(await primary.request('/api/card-secrets',{
+      method:'DELETE',body:{cardId:TEST_CARD_ID},
+    }),200,undefined,'card-vault-delete');
+
     console.log('[real-stack] stage recurring-service-asset-durability');
     const serviceId='real-stack-service-brand-a';
     const serviceSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='#345'/></svg>",'utf8');
     const initialServiceObjects=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
-    const uploadService=async(fileName:string)=>{
-      const uploaded=await primary.requestBinary('/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName}),{
+    const uploadService=async(fileName:string,explicitIntent?:string)=>{
+      const params=new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName});
+      if(explicitIntent)params.set('intentId',explicitIntent);
+      const uploaded=await primary.requestBinary('/api/account-metadata?'+params,{
         method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
       });
       expect(uploaded,200,undefined,'recurring-service-asset-upload');
       const key=String(uploaded.body?.asset?.assetKey||'');
       assert(/^service-asset-[a-f0-9]{24}$/.test(key),'Recurring service upload returned a non-canonical asset key.');
+      if(explicitIntent)assert(uploaded.body?.intentId===explicitIntent,'Explicit upload lost its intent identity.');
+      else assert(uploaded.body?.intentId===undefined,'Legacy upload changed its wire response.');
       return key;
     };
-    const serviceAssetKey=await uploadService('original.svg');
+    const explicitServiceIntent=randomUUID();
+    const serviceAssetKey=await uploadService('original.svg',explicitServiceIntent);
+    const pendingServicePath='/api/account-metadata?'+new URLSearchParams({resource:'artwork-upload-intents',kind:'recurring',targetId:serviceId});
+    // A second independently authenticated owner session observes the durable
+    // pending receipt, not browser-local state; legacy requests share its slot.
+    const pendingService=await restored.request(pendingServicePath);
+    expect(pendingService,200,undefined,'artwork-intent-independent-owner-readback');
+    assert(pendingService.body?.intent?.intentId===explicitServiceIntent&&
+      pendingService.body.intent.assetKey===serviceAssetKey&&pendingService.body.intent.registrationRecorded===true&&
+      pendingService.body.intent.asset?.assetKey===serviceAssetKey,
+      'Durable pending artwork receipt did not verify the exact registry and binary.');
+    const legacyConflict=await restored.requestBinary('/api/account-metadata?'+new URLSearchParams({
+      resource:'recurring-service-assets',recurringId:serviceId,fileName:'duplicate.svg'}),{
+      method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
+    });
+    expect(legacyConflict,503,'ARTWORK_UPLOAD_INTENT_UNVERIFIED','artwork-intent-legacy-same-target-denial');
+    const identity={intentId:explicitServiceIntent,assetKey:serviceAssetKey,action:'acknowledge'};
+    expect(await restored.request(pendingServicePath,{method:'PATCH',body:identity}),200,undefined,'artwork-intent-independent-owner-acknowledgement');
+    const ackRetry=await primary.request(pendingServicePath,{method:'PATCH',body:identity});
+    expect(ackRetry,200,undefined,'artwork-intent-exact-terminal-retry');
+    assert(ackRetry.body?.intentId===explicitServiceIntent&&ackRetry.body?.assetKey===serviceAssetKey&&ackRetry.body?.disposition==='acknowledged',
+      'Exact terminal acknowledgement retry did not preserve journal identity.');
+    const noPending=await primary.request(pendingServicePath);
+    expect(noPending,200,undefined,'artwork-intent-no-pending-after-ack');
+    assert(noPending.body?.intent===null,'Acknowledged reservation still blocked its slot.');
+    console.log('[real-stack] PASS durable artwork pending receipt across active owner sessions, legacy exclusion and exact terminal acknowledgement');
+    console.log('[real-stack] stage recurring-service-direct-rpc-path-provenance');
+    // Test actual local AAL2 PostgREST, bypassing the trusted API parser,
+    // so the database alone must reject cross-key and wrong-MIME metadata.
+    const directToken=primary.snapshot().get('rheomiq_access');
+    assert(typeof directToken==='string'&&directToken.length>40,
+      'Local owner AAL2 JWT was unavailable for direct RPC provenance proof.');
+    const originalPath='services/'+serviceAssetKey+'.svg';
+    const directRequest=async(method:'POST'|'PATCH',path:string,body:unknown)=>{
+      const response=await fetch(local.apiUrl+'/rest/v1/'+path,{
+        method,
+        headers:{apikey:local.publishable,authorization:'Bearer '+directToken,
+          accept:'application/json','content-type':'application/json',
+          prefer:'return=representation'},
+        body:JSON.stringify(body),
+      });
+      return {status:response.status,body:await response.json().catch(()=>null)};
+    };
+    const forgedKey='service-asset-ffffffffffffffffffffffff';
+    const crossKey=await directRequest('POST','rpc/rheomiq_register_recurring_service_asset',{
+      p_recurring_id:serviceId,p_asset_key:forgedKey,p_file_name:'cross-key.svg',
+      p_mime_type:'image/svg+xml',p_storage_path:originalPath,p_size_bytes:serviceSvg.byteLength,
+    });
+    assert(crossKey.status===400&&crossKey.body?.code==='23514',
+      'Direct owner RPC misregistered a different Storage object under a forged key.');
+    const wrongMime=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {mime_type:'image/png'});
+    assert(wrongMime.status===400&&wrongMime.body?.code==='23514',
+      'Direct owner table update accepted a MIME/Storage extension mismatch.');
+    const directRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?select=asset_key,mime_type,storage_path&asset_key=in.('+
+      encodeURIComponent(serviceAssetKey)+','+encodeURIComponent(forgedKey)+')',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string}>;
+    assert(Array.isArray(directRows)&&directRows.length===1&&
+      directRows[0]?.asset_key===serviceAssetKey&&
+      directRows[0]?.mime_type==='image/svg+xml'&&
+      directRows[0]?.storage_path===originalPath,
+      'Rejected direct RPC or MIME update modified persistent logo metadata.');
     const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
+    console.log('[real-stack] stage recurring-unreferenced-asset-revoked-bearer-no-cookie-fallback');
+    // Crucially, this asset has no finance reference yet: a false cookie
+    // fallback would otherwise authorize release and irreversible Storage
+    // deletion rather than merely hitting the in-use 409 guard.
+    const serviceRowUrl=local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?select=asset_key,active,storage_path&asset_key=eq.'+
+      encodeURIComponent(serviceAssetKey);
+    const serviceRowsBeforeRevoked=await upstreamJson(serviceRowUrl,local.serviceRole) as
+      Array<{asset_key:string;active:boolean;storage_path:string}>;
+    assert(serviceRowsBeforeRevoked.length===1&&
+      serviceRowsBeforeRevoked[0]?.asset_key===serviceAssetKey&&
+      serviceRowsBeforeRevoked[0]?.active===true,
+      'Revoked bearer asset test lacks a real active, unreferenced Storage registration.');
+    const rejectedServiceRelease=await primary.request(
+      '/api/account-metadata?'+new URLSearchParams({
+        resource:'recurring-service-assets',assetKey:serviceAssetKey,
+      }),{
+        method:'DELETE',headers:{authorization:'Bearer '+revokedDeviceBearer},
+      });
+    expect(rejectedServiceRelease,401,'DEVICE_ACCESS_REVOKED','revoked-bearer-service-asset-delete');
+    const serviceRowsAfterRevoked=await upstreamJson(serviceRowUrl,local.serviceRole);
+    assert(JSON.stringify(serviceRowsAfterRevoked)===JSON.stringify(serviceRowsBeforeRevoked),
+      'Revoked bearer changed a real recurring service Storage registration.');
+    const serviceObjectsAfterRevoked=await upstreamStorageList(
+      local.apiUrl,local.serviceRole,'services','recurring-service-assets');
+    assert(JSON.stringify(serviceObjectsAfterRevoked.map(o=>o.name).sort())===
+      JSON.stringify(serviceObjectsAfterUpload.map(o=>o.name).sort()),
+      'Revoked bearer deleted or added a recurring service Storage object.');
     const original=await primary.request('/api/data');
     expect(original,200,undefined,'recurring-service-finance-before');
     const originalHistory=await primary.request('/api/history');
@@ -809,6 +1296,41 @@ async function main(){
     const reloadedServices=await restored.request('/api/data');
     expect(reloadedServices,200,undefined,'recurring-service-reload');
     assert(reloadedServices.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'New recurring logo reference failed revisioned save/reload.');
+    // A browser owner+AAL2 JWT is allowed direct PostgREST table DML. It
+    // must NOT bypass the release RPC's finance-reference guard by PATCHing
+    // active=false or deleting an active binary registration outright.
+    const inUseRegistrationUrl=local.apiUrl+
+      '/rest/v1/rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey);
+    const beforeDirectLifecycle=await upstreamJson(inUseRegistrationUrl+
+      '&select=asset_key,recurring_id,active,updated_at,storage_path,mime_type',local.serviceRole);
+    assert(Array.isArray(beforeDirectLifecycle)&&beforeDirectLifecycle.length===1&&
+      beforeDirectLifecycle[0]?.active===true,
+      'Real recurring direct-DML proof is missing its active referenced positive row.');
+    const deniedDirectDeactivate=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {active:false});
+    assert(deniedDirectDeactivate.status===409&&deniedDirectDeactivate.body?.code==='23503',
+      'Direct owner AAL2 recurring asset deactivate bypassed finance reference protection.');
+    const deniedDirectRepoint=await directRequest('PATCH',
+      'rheomiq_recurring_service_assets?asset_key=eq.'+encodeURIComponent(serviceAssetKey),
+      {recurring_id:'qa-repointed-recurring'});
+    assert(deniedDirectRepoint.status===400&&deniedDirectRepoint.body?.code==='23514',
+      'Direct owner AAL2 recurring asset UPDATE changed immutable registration ownership.');
+    const deniedDirectDeleteResponse=await fetch(inUseRegistrationUrl,{
+      method:'DELETE',headers:{
+        apikey:local.publishable,authorization:'Bearer '+directToken,
+        accept:'application/json',prefer:'return=representation',
+      },
+    });
+    const deniedDirectDeleteBody=await deniedDirectDeleteResponse.json().catch(()=>null);
+    assert(deniedDirectDeleteResponse.status===400&&deniedDirectDeleteBody?.code==='23514',
+      'Direct owner AAL2 DELETE bypassed recurring asset two-phase release.');
+    const afterDirectLifecycle=await upstreamJson(inUseRegistrationUrl+
+      '&select=asset_key,recurring_id,active,updated_at,storage_path,mime_type',local.serviceRole);
+    assert(JSON.stringify(afterDirectLifecycle)===JSON.stringify(beforeDirectLifecycle),
+      'Denied direct recurring asset DML changed its row or timestamp.');
+    assert((await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets')).length===
+      initialServiceObjects.length+1,'Denied direct recurring asset DML changed Storage binary presence.');
     const assetPath=(key:string)=>'/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',assetKey:key});
     expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-reference-protection');
     const staleServiceState=structuredClone(original.body.data.state);
@@ -1023,7 +1545,31 @@ async function main(){
     assert(storageAfterFailure.length===0,'Failed provider asset registration left an orphan Storage object.');
     const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
     assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
+    const failedIntentPath='/api/account-metadata?'+new URLSearchParams({resource:'artwork-upload-intents',
+      kind:'provider',targetId:missingProviderId,role:'logo',variant:'universal'});
+    const failedIntent=await primary.request(failedIntentPath);
+    expect(failedIntent,200,undefined,'failed-provider-durable-intent');
+    assert(failedIntent.body?.intent?.dispatchClaimed===true&&failedIntent.body.intent.registrationRecorded===false&&
+      failedIntent.body.intent.asset===null,'Definite provider failure did not retain its unresolved exact key.');
+    const retiredIdentity={intentId:failedIntent.body.intent.intentId,assetKey:failedIntent.body.intent.assetKey,action:'retire'};
+    const retired=await primary.request(failedIntentPath,{method:'PATCH',body:retiredIdentity});
+    expect(retired,200,undefined,'failed-provider-explicit-retirement');
+    assert(retired.body?.disposition==='retired'&&retired.body?.assetKey===retiredIdentity.assetKey,
+      'Exact retirement did not close the never-registered claimed key.');
+    const retiredReadback=await primary.request(failedIntentPath);
+    expect(retiredReadback,200,undefined,'failed-provider-retired-slot-readback');
+    assert(retiredReadback.body?.intent===null,'Retirement did not release the failed provider slot.');
+    console.log('[real-stack] PASS claimed failed provider retirement without additional Storage deletion or registry mutation');
 
+    // Establish the isolated recovery result before a potentially stalled UI runner.
+    if(process.env.MYFINHUB_ISOLATED_RECOVERY==='1'){
+      assert(process.env.CI==='true','Full recovery rehearsal may run only in isolated CI.');
+      console.log('[real-stack] stage isolated-postgresql-storage-restore-before-browser');
+      execFileSync(process.execPath,['scripts/isolated-full-recovery-e2e.mjs'],{
+        stdio:'inherit',env:{...process.env,
+          MYFINHUB_QA_RELEASED_ARTWORK_KEYS:[serviceAssetKey,replacementKey].join(',')},timeout:120_000,
+      });
+    }
     console.log('[real-stack] stage actual-browser-ui');
     let browserPreviousCode=lastCode;
     await runRealStackBrowserProof({
@@ -1041,8 +1587,8 @@ async function main(){
     const browserFinance=await primary.request('/api/data');
     expect(browserFinance,200,undefined,'browser-finance-direct-read');
     const browserEvents=browserFinance.body?.data?.state?.events||[];
-    const expectedQuickIntents=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
-    assert(expectedQuickIntents.every(([note,kind])=>browserEvents.some((event:any)=>event?.note===note&&event?.kind===kind)),'Canonical API read-back is missing one or more generic Quick Entry intents.');
+    const expectedQuickIntents=[['Real Browser Quick Income','income',21.11],['Real Browser Quick Transfer','transfer',5.11],['Real Browser Quick Withdrawal','withdrawal',6.21],['Real Browser Quick Saving','saving_cash_offset',7.31],['Real Browser Quick Refund','refund',8.41],['Real Browser Quick Reconciliation','reconciliation',null],['Real Browser Quick Split','split',8.01]] as const;
+    assert(expectedQuickIntents.every(([note,kind,amount])=>{const matches=browserEvents.filter((event:any)=>event?.note===note);return matches.length===1&&matches[0].kind===kind&&(amount===null||matches[0].amount===amount)}),'Canonical API read-back is missing a unique edited Quick Entry intent or its exact amount.');
     const attentionDismissScheduled=(browserFinance.body?.data?.state?.scheduled||[]).find((item:any)=>item?.note==='Real Browser Attention Dismiss');
     assert(attentionDismissScheduled?.id,'Canonical API read-back is missing the dismissible Attention fixture.');
     const attentionDecision=browserFinance.body?.data?.state?.attentionDecisions?.[`scheduled:${attentionDismissScheduled.id}`];
@@ -1053,12 +1599,152 @@ async function main(){
     const providerAssets=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.real-browser-provider&active=eq.true&select=asset_key,storage_bucket,storage_path,size_bytes,mime_type',local.serviceRole) as any[];
     assert(Array.isArray(providerAssets)&&providerAssets.length===1,'Real browser provider asset metadata was not persisted exactly once.');
     const providerAssetKey=String(providerAssets[0]?.asset_key||'');
+    const providerIntents=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?target_id=eq.real-browser-provider&select=asset_key,disposition,registration_recorded',local.serviceRole) as any[];
+    assert(Array.isArray(providerIntents)&&providerIntents.length===1&&providerIntents[0]?.asset_key===providerAssetKey&&
+      providerIntents[0]?.disposition==='acknowledged'&&providerIntents[0]?.registration_recorded===true,
+      'Actual browser provider upload did not complete its durable journal acknowledgement.');
     assert(providerRows[0]?.logo_asset_key===providerAssetKey&&providerRows[0]?.wordmark_asset_key===providerAssetKey,'Provider primary logo/wordmark do not reference the uploaded asset.');
     assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
     const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];
     assert(Array.isArray(providerBindings)&&providerBindings.length===2&&providerBindings.every(row=>row?.variant==='universal'&&row?.asset_key===providerAssetKey)&&new Set(providerBindings.map(row=>row?.asset_role)).size===2,'Provider reusable logo/wordmark bindings were not persisted.');
+    console.log('[real-stack] stage provider-binding-revoked-bearer-no-cookie-fallback');
+    // The revoked bearer must take precedence over the still-valid primary
+    // owner's HttpOnly cookies. A rejected native request cannot borrow cookie
+    // authorization, clear that browser session, or mutate a real bound slot.
+    const rejectedBinding=await primary.request(
+      '/api/account-metadata?resource=financial-provider-asset-binding',{
+        method:'PUT',headers:{authorization:'Bearer '+revokedDeviceBearer},
+        body:{providerId:'real-browser-provider',role:'logo',variant:'universal',assetKey:null},
+      });
+    expect(rejectedBinding,401,'DEVICE_ACCESS_REVOKED','provider-binding-revoked-bearer');
+    const afterRevokedBinding=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',
+      local.serviceRole) as Array<{asset_role?:string;variant?:string;asset_key?:string}>;
+    assert(Array.isArray(afterRevokedBinding)&&afterRevokedBinding.length===providerBindings.length&&
+      providerBindings.every(row=>afterRevokedBinding.some(after=>
+        after.asset_role===row.asset_role&&after.variant===row.variant&&after.asset_key===row.asset_key)),
+      'Revoked bearer unexpectedly cleared a persisted provider image binding.');
+    expect(await primary.request('/api/auth/session'),200,undefined,'provider-binding-valid-cookie-preserved');
+    console.log('[real-stack] stage provider-direct-rpc-path-provenance');
+    const providerPath=String(providerAssets[0].storage_path);
+    const registerProvider=async(assetKey:string,mimeType:string,storagePath:string)=>directRequest(
+      'POST','rpc/rheomiq_register_financial_provider_asset',{
+        p_provider_id:'real-browser-provider',p_asset_key:assetKey,
+        p_asset_role:'logo',p_variant:'universal',p_file_name:'forged-image.svg',
+        p_mime_type:mimeType,p_storage_path:storagePath,
+        p_size_bytes:Number(providerAssets[0].size_bytes),p_make_primary:false,
+      });
+    const forgedProviderKey='real-browser-provider-asset-ffffffffffff';
+    const differentKey=await registerProvider(forgedProviderKey,'image/svg+xml',providerPath);
+    assert(differentKey.status===400&&differentKey.body?.code==='22023',
+      'Direct owner RPC registered a different provider asset key against an existing Storage object.');
+    const wrongProviderMime=await registerProvider(forgedProviderKey,'image/png',providerPath);
+    assert(wrongProviderMime.status===400&&wrongProviderMime.body?.code==='22023',
+      'Direct owner RPC accepted the wrong provider Storage MIME extension.');
+    const noncanonicalProviderKey=await registerProvider('forged-provider-key','image/svg+xml',providerPath);
+    assert(noncanonicalProviderKey.status===400&&noncanonicalProviderKey.body?.code==='22023',
+      'Direct owner RPC accepted a noncanonical provider asset key.');
+    const modifiedProviderMime=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {mime_type:'image/png'});
+    assert(modifiedProviderMime.status===400&&modifiedProviderMime.body?.code==='23514',
+      'Direct owner table update accepted mismatched provider asset MIME.');
+    // A direct owner UPDATE must not disable an image and erase its Storage
+    // provenance to exploit the SQL three-valued CHECK (NULL is not FALSE).
+    const nulledProviderBucket=await directRequest('PATCH',
+      'rheomiq_financial_provider_assets?asset_key=eq.'+encodeURIComponent(providerAssetKey),
+      {active:false,storage_bucket:null});
+    // Owner PostgREST can deny/omit an UPDATE via grants/RLS before the row
+    // CHECK is exercised. It must not acknowledge a changed row; independently
+    // exercise the immutable CHECK with the disposable local service role.
+    assert(!(nulledProviderBucket.status>=200&&nulledProviderBucket.status<300&&
+      Array.isArray(nulledProviderBucket.body)&&nulledProviderBucket.body.length>0),
+      'Owner update acknowledged changed provider asset provenance.');
+    const serviceGuardPatch=await fetch(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?asset_key=eq.'+
+      encodeURIComponent(providerAssetKey),{
+      method:'PATCH',
+      headers:{apikey:local.serviceRole,authorization:'Bearer '+local.serviceRole,
+        accept:'application/json','content-type':'application/json',prefer:'return=representation'},
+      body:JSON.stringify({active:false,storage_bucket:null}),
+    });
+    const serviceGuardBody=await serviceGuardPatch.json().catch(()=>null) as {code?:string}|null;
+    assert(serviceGuardPatch.status===400&&serviceGuardBody?.code==='23514',
+      'Direct privileged local SQL CHECK did not reject NULL provider Storage provenance (HTTP '+
+      serviceGuardPatch.status+', code '+String(serviceGuardBody?.code||'missing')+').');
+    const forgedProviderRows=await upstreamJson(local.apiUrl+
+      '/rest/v1/rheomiq_financial_provider_assets?select=asset_key,mime_type,storage_path,storage_bucket,active&provider_id=eq.real-browser-provider',
+      local.serviceRole) as Array<{asset_key?:string;mime_type?:string;storage_path?:string;storage_bucket?:string;active?:boolean}>;
+    assert(Array.isArray(forgedProviderRows)&&forgedProviderRows.length===1&&
+      forgedProviderRows[0]?.asset_key===providerAssetKey&&
+      forgedProviderRows[0]?.mime_type==='image/svg+xml'&&
+      forgedProviderRows[0]?.storage_path===providerPath&&
+      forgedProviderRows[0]?.storage_bucket==='financial-provider-assets'&&
+      forgedProviderRows[0]?.active===true,
+      'Rejected direct provider asset mutations changed persistent metadata.');
     const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
     assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');
+    // Clearing an optional presentation slot must never delete the reusable
+    // binary, registry row, primary logo/wordmark or finance history.
+    console.log('[real-stack] stage provider-optional-binding-clear-retention');
+    const bindingPath='/api/account-metadata?resource=financial-provider-asset-binding';
+    const optionalBinding={providerId:'real-browser-provider',role:'card-mark',variant:'dark'};
+    const readProviderProof=async()=>{
+      const [catalog,bindings,assets,intents,objects,bytes,finance,history]=await Promise.all([
+        primary.request('/api/account-metadata?resource=financial-providers'),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key&order=asset_role.asc,variant.asc',local.serviceRole),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.real-browser-provider&select=*&order=asset_key.asc',local.serviceRole),
+        upstreamJson(local.apiUrl+'/rest/v1/rheomiq_artwork_upload_intents?target_id=eq.real-browser-provider&select=*&order=intent_id.asc',local.serviceRole),
+        upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider'),
+        fetch(local.apiUrl+'/storage/v1/object/public/financial-provider-assets/'+providerPath+'?qa='+randomUUID(),{
+          headers:{apikey:local.serviceRole,authorization:'Bearer '+local.serviceRole},
+        }),
+        primary.request('/api/data'),primary.request('/api/history'),
+      ]);
+      expect(catalog,200,undefined,'provider-clear-catalog');
+      expect(finance,200,undefined,'provider-clear-finance');
+      expect(history,200,undefined,'provider-clear-history');
+      assert(bytes.status===200,'Provider clear proof could not read existing Storage bytes.');
+      const content=Buffer.from(await bytes.arrayBuffer());
+      assert(content.length===Number(providerAssets[0].size_bytes)&&content.length>0,
+        'Provider clear proof byte count does not match the registered object.');
+      const provider=catalog.body?.providers?.find((row:any)=>row.id==='real-browser-provider');
+      assert(provider&&Array.isArray(provider.bindings)&&Array.isArray(provider.assets)&&
+        provider.assets.length===1&&provider.assets[0].assetKey===providerAssetKey&&
+        provider.logoAssetKey===providerAssetKey&&provider.wordmarkAssetKey===providerAssetKey,
+        'Provider clear proof lost the original catalog identity or reusable artwork.');
+      assert(Array.isArray(bindings)&&Array.isArray(assets)&&Array.isArray(intents)&&objects.length===1,
+        'Provider clear proof returned an invalid or incomplete durable snapshot.');
+      const {bindings:catalogBindings,...catalogWithoutBindings}=provider;
+      return {catalogWithoutBindings,catalogBindings,bindings,assets,intents,objects:objects.map(row=>row.name),
+        bytes:content.toString('base64'),finance:{revision:finance.body.revision,data:finance.body.data},
+        history:history.body};
+    };
+    const beforeOptional=await readProviderProof();
+    assert(beforeOptional.bindings.length===2&&beforeOptional.catalogBindings.length===2,
+      'Provider optional-clear fixture must start with exactly its two existing primary assignments.');
+    const assignOptional=await primary.request(bindingPath,{method:'PUT',
+      body:{...optionalBinding,assetKey:providerAssetKey}});
+    expect(assignOptional,200,undefined,'provider-optional-bind');
+    assert(assignOptional.body?.ok===true,'Provider optional assignment lacks an exact success receipt.');
+    const assignedOptional=await readProviderProof();
+    const {bindings:assignedDb,catalogBindings:assignedCatalog,...assignedUnchanged}=assignedOptional;
+    const {bindings:beforeDb,catalogBindings:beforeCatalog,...beforeUnchanged}=beforeOptional;
+    assert(assignedDb.length===3&&assignedCatalog.length===3&&
+      assignedDb.some((row:any)=>row.asset_role==='card-mark'&&row.variant==='dark'&&row.asset_key===providerAssetKey)&&
+      assignedCatalog.some((row:any)=>row.role==='card-mark'&&row.variant==='dark'&&row.assetKey===providerAssetKey)&&
+      beforeDb.every((row:any)=>assignedDb.some((after:any)=>JSON.stringify(after)===JSON.stringify(row)))&&
+      beforeCatalog.every((row:any)=>assignedCatalog.some((after:any)=>JSON.stringify(after)===JSON.stringify(row))),
+      'Provider optional assignment did not preserve both primary assignments.');
+    assert(JSON.stringify(assignedUnchanged)===JSON.stringify(beforeUnchanged),
+      'Adding a reusable optional binding mutated binary, registry, journal or finance/history.');
+    const clearOptional=await primary.request(bindingPath,{method:'PUT',
+      body:{...optionalBinding,assetKey:null}});
+    expect(clearOptional,200,undefined,'provider-optional-clear');
+    assert(clearOptional.body?.ok===true,'Provider optional clear lacks an exact success receipt.');
+    const clearedOptional=await readProviderProof();
+    assert(JSON.stringify(clearedOptional)===JSON.stringify(beforeOptional),
+      'Clearing the optional binding failed to preserve exact artwork, primary slots, journal and finance/history.');
+    console.log('[real-stack] PASS provider optional clear retains exact reusable Storage bytes, primary bindings and finance/history');
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;
     assert(providerHealth?.ok===true,'Database health is not clean after provider Storage mutation.');
 

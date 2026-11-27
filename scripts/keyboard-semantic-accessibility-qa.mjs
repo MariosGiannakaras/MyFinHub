@@ -97,7 +97,7 @@ try{
  const tabSweep=async label=>{
    const setup=await c.call(`function(){
      const visible=el=>{const closedDetails=el.closest?.('details:not([open])');if(closedDetails&&!(el.matches('summary')&&el.parentElement===closedDetails))return false;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
-     const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(visible);
+     const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(el=>visible(el)&&el.tabIndex>=0&&!el.matches(':disabled')&&!el.closest('[inert]'));
      const start=document.querySelector('.skip-link')&&visible(document.querySelector('.skip-link'))?document.querySelector('.skip-link'):nodes[0];
      start?.focus();
      return {count:nodes.length,started:Boolean(start)};
@@ -115,9 +115,27 @@ try{
        const hasFocusRing=style=>(style.outlineStyle!=='none'&&parseFloat(style.outlineWidth||'0')>0)||style.boxShadow!=='none';
        const focusOwner=el.closest('.app-input-shell');
        const focusVisible=hasFocusRing(s)||(Boolean(focusOwner&&focusOwner.contains(el))&&hasFocusRing(getComputedStyle(focusOwner)));
-       return {tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,80),visible,focusVisible,positive:Number(el.getAttribute('tabindex')||0)>0};
+       return {tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,80),visible,focusVisible,chartFocus:Boolean(el.closest('.recharts-wrapper')),positive:Number(el.getAttribute('tabindex')||0)>0};
      }`);
+     if(!state||state.tag==='BODY'||!state.visible||!state.focusVisible||state.chartFocus){
+       // Do not reinterpret a missing focus as PASS. Save the actual preceding
+       // tab path, live candidates and screenshot so the missing stop is traceable.
+       const detail=await c.call(`function(){
+         const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+         const active=document.activeElement;
+         const candidates=[...document.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]')].filter(visible).map(el=>({
+           tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,55),
+           tabIndex:el.tabIndex,disabled:el.matches(':disabled'),inert:Boolean(el.closest('[inert]')),
+           ariaHidden:Boolean(el.closest('[aria-hidden=true]')),hiddenDetails:Boolean(el.closest('details:not([open])')),
+           focusable:el.matches(':focus'),outer:el.outerHTML.slice(0,160)
+         })).slice(0,90);
+         return {active:active?.outerHTML?.slice(0,600),chart:active?.closest('.recharts-wrapper')?.outerHTML?.slice(0,600),candidates};
+       }`);
+       console.error('Keyboard Tab failure evidence',JSON.stringify({label,step:i+1,setup,previous:seen.slice(-9),state,liveCandidates:detail}));
+       await shot('keyboard-tab-failure-'+label.replaceAll('/','-')+'-step-'+(i+1));
+     }
      assert(state&&state.visible,`${label}: Tab left the visible focus order at step ${i+1}: ${JSON.stringify(state)}`);
+     assert(!state.chartFocus,`${label}: decorative Recharts subtree entered sequential Tab order at step ${i+1}: ${JSON.stringify(state)}`);
      assert(!state.positive,`${label}: positive tabindex at step ${i+1}`);
      assert(state.focusVisible,`${label}: focused control has no visible focus indicator at step ${i+1}: ${JSON.stringify(state)}`);
      seen.push(state);
@@ -160,6 +178,17 @@ try{
  const settingsTabs=['profile','accounts','categories','icons','rules','data'];
  for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
    await navigate('settings',pages.settings,width,height,mobile);
+   // The six inactive Settings tabs are deliberately removed from sequential
+   // Tab order. Arrow/Home/End navigation must still reach and focus each tab.
+   const roving=await c.call("function(){const tabs=[...document.querySelectorAll('[role=tab][aria-controls^=\"settings-panel-\"]')];return {count:tabs.length,selected:tabs.filter(t=>t.getAttribute('aria-selected')==='true').map(t=>t.id),sequential:tabs.filter(t=>t.tabIndex===0).map(t=>t.id),excluded:tabs.filter(t=>t.tabIndex===-1).length}}");
+   assert(roving.count===7&&roving.selected.length===1&&roving.sequential.length===1&&roving.selected[0]===roving.sequential[0]&&roving.excluded===6,mode+' Settings tablist has one sequential stop, six roving arrow-key stops: '+JSON.stringify(roving));
+   assert(await c.call("function(){const t=document.querySelector('[role=tab][aria-selected=true]');t?.focus();return Boolean(t)}"),mode+' Settings roving current tab focusable');
+   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
+   await waitFor("function(){const t=document.querySelector('[role=tab][aria-selected=true]');return Boolean(t&&t.id==='settings-tab-profile'&&t.tabIndex===0&&document.activeElement===t)}",mode+' Settings ArrowRight focuses and activates next tab');
+   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+   await waitFor("function(){const t=document.querySelector('[role=tab][aria-selected=true]');return Boolean(t&&t.id==='settings-tab-general'&&t.tabIndex===0&&document.activeElement===t)}",mode+' Settings Home restores first tab and focus');
    for(const tab of settingsTabs){
      const clicked=await c.call("function(tab){const node=document.querySelector('[aria-controls=\"settings-panel-'+tab+'\"]');node?.click();return Boolean(node)}",[tab]);
      assert(clicked,`${mode}/settings/${tab}: tab exists`);
@@ -229,17 +258,64 @@ try{
  }
 
  await navigate('dashboard',pages.dashboard,1440,1000,false);
+ // A pre-existing native inert subtree is not owned by the modal coordinator.
+ await c.call("function(){const el=document.createElement('div');el.id='qa-existing-inert';el.inert=true;document.body.append(el);return true}");
  const opener=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=desktop]');button?.focus();button?.click();return button?.getAttribute('aria-label')||button?.textContent||''}");
  assert(opener,'Quick Entry keyboard opener exists');
  await waitFor("function(){return Boolean(document.querySelector('.quick-modal[aria-modal=true]'))}",'Quick Entry modal');
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'Quick Entry initial focus is inside modal');
+ assert(await c.call("function(){const opener=document.querySelector('[data-global-quick-entry=desktop]');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'native inert blocks programmatic focus into Quick Entry background');
+ await c.call("function(){const el=document.createElement('button');el.id='qa-late-background';el.textContent='QA only';el.style.cssText='position:fixed;left:0;top:0;opacity:0';document.body.append(el);return true}");
+ await waitFor("function(){return document.getElementById('qa-late-background')?.inert===true}",'late background subtree becomes inert');
+ assert(await c.call("function(){document.getElementById('qa-late-background')?.focus();return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),'late background cannot receive programmatic focus');
  for(let i=0;i<20;i++){await pressTab(i%7===0);assert(await c.call("function(){return Boolean(document.activeElement?.closest('.quick-modal[aria-modal=true]'))}"),`Quick Entry focus trap step ${i+1}`)}
+ // Exercise the real shared trap with rendered, non-tabbable descendants.
+ // Test-only sentinels model pending inert forms, disabled fieldsets and hidden
+ // controls without changing the finance fixture or product DOM after cleanup.
+ const trapFixture=await c.call(`function(){
+   const modal=document.querySelector('.quick-modal[aria-modal=true]');
+   if(!modal)return false;
+   const fixture=document.createElement('div');fixture.dataset.qaModalTabFixture='true';
+   const button=name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.dataset.qaModalTab=name;return b};
+   const before=button('before'),after=button('after');
+   const inert=document.createElement('div');inert.inert=true;inert.append(button('inert'));
+   const disabled=document.createElement('fieldset');disabled.disabled=true;disabled.append(button('fieldset'));
+   const hidden=button('hidden');hidden.style.visibility='hidden';
+   const ariaHidden=document.createElement('div');ariaHidden.setAttribute('aria-hidden','true');ariaHidden.append(button('aria-hidden'));
+   fixture.append(before,inert,disabled,hidden,ariaHidden,after);modal.prepend(fixture);before.focus({preventScroll:true});
+   return document.activeElement===before&&[inert.firstElementChild,disabled.firstElementChild,hidden,ariaHidden.firstElementChild].every(el=>el.getClientRects().length>0);
+ }`);
+ assert(trapFixture,'modal trap regression fixture has real layout and initial focus');
+ try{
+   await pressTab();
+   assert(await c.call("function(){return document.activeElement?.dataset.qaModalTab==='after'}"),'modal Tab skips inert, disabled-fieldset, hidden and aria-hidden controls');
+   await pressTab(true);
+   assert(await c.call("function(){return document.activeElement?.dataset.qaModalTab==='before'}"),'modal Shift+Tab skips unavailable controls in reverse');
+ }finally{
+   await c.call("function(){document.querySelector('[data-qa-modal-tab-fixture]')?.remove();document.querySelector('.quick-modal [data-autofocus=true]')?.focus({preventScroll:true});return true}");
+ }
+ const dateTrigger=await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.focus({preventScroll:true});return Boolean(input&&document.activeElement===input)}");
+ assert(dateTrigger,'Quick Entry date control accepts keyboard focus');
+ await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+ await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+ await waitFor("function(){const d=document.querySelector('.owned-date-popover[aria-modal=true]');return Boolean(d&&d.contains(document.activeElement))}",'keyboard opens and focuses nested date portal');
+ assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.focus();return Boolean(input?.closest('[inert]')&&document.activeElement?.closest('.owned-date-popover[aria-modal=true]'))}"),'nested body portal makes parent dialog inert');
+ await pressTab();
+ assert(await c.call("function(){return Boolean(document.activeElement?.closest('.owned-date-popover[aria-modal=true]'))}"),'nested date portal owns Tab');
+ await pressEscape();
+ await waitFor("function(){return !document.querySelector('.owned-date-popover')&&document.activeElement===document.querySelector('.quick-modal .owned-date-shell input')}",'nested date Escape restores parent date control');
+ assert(await c.call("function(){return document.body.style.position==='fixed'}"),'nested date Escape retains parent scroll lock');
+ assert(await c.call("function(){return !document.querySelector('.quick-modal')?.closest('[inert]')&&Boolean(document.querySelector('[data-global-quick-entry=desktop]')?.closest('[inert]'))}"),'nested close reactivates only parent dialog');
+ await shot('keyboard-quick-entry-nested-date-restored');
+
  await pressEscape();await waitFor("function(){return !document.querySelector('.quick-modal[aria-modal=true]')}",'Quick Entry Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('[data-global-quick-entry=desktop]')}"),'Quick Entry restores focus to opener');
+ assert(await c.call("function(){const late=document.getElementById('qa-late-background'),existing=document.getElementById('qa-existing-inert');const valid=late?.inert===false&&existing?.inert===true&&!document.querySelector('[data-global-quick-entry=desktop]')?.closest('[inert]');late?.remove();existing?.remove();return valid}"),'final close restores owned inert only and preserves pre-existing inert');
 
  const commandButton=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναζήτηση και εντολές\"]');button?.focus();button?.click();return Boolean(button)}");
  assert(commandButton,'Command Palette opener exists');await waitFor("function(){return Boolean(document.querySelector('.command-palette[role=dialog]'))}",'Command Palette');
  assert(await c.call("function(){return Boolean(document.activeElement?.closest('.command-palette[role=dialog]'))}"),'Command Palette initial focus is inside dialog');
+ assert(await c.call("function(){const opener=document.querySelector('.top-action-command');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.command-palette[role=dialog]'))}"),'Command Palette background is inert');
  for(let i=0;i<14;i++){await pressTab();assert(await c.call("function(){return Boolean(document.activeElement?.closest('.command-palette[role=dialog]'))}"),`Command Palette focus trap step ${i+1}`)}
  await pressEscape();await waitFor("function(){return !document.querySelector('.command-palette[role=dialog]')}",'Command Palette Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('.top-actions button[aria-label=\"Αναζήτηση και εντολές\"]')}"),'Command Palette restores focus to opener');
@@ -247,10 +323,39 @@ try{
  await navigate('dashboard',pages.dashboard,375,812,true);
  const more=await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}");
  assert(more,'mobile More opener exists');await waitFor("function(){return Boolean(document.querySelector('.mobile-more-menu[role=dialog]'))}",'mobile More dialog');
+ assert(await c.call("function(){const opener=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');opener?.focus();return Boolean(opener?.closest('[inert]')&&document.activeElement?.closest('.mobile-more-menu[role=dialog]'))}"),'inline mobile More background is inert');
  for(let i=0;i<12;i++){await pressTab();assert(await c.call("function(){return Boolean(document.activeElement?.closest('.mobile-more-menu[role=dialog]'))}"),`mobile More focus trap step ${i+1}`)}
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'mobile More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'mobile More restores focus to opener');
  await shot('keyboard-semantic-mobile-dashboard');
+
+ // Actual shared period and topbar tooltip geometry with fine-pointer
+ // keyboard focus, and the short sheet's last keyboard destination.
+ await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ for(const [width,height] of [[1440,1000],[768,600],[320,500]]){
+   await navigate('dashboard',pages.dashboard,width,height,false);
+   // Test both period and global action tooltips with a real keyboard focus modality.
+   await pressTab();
+   for(const [selector,name] of [['.period-control button','period'],['.top-actions .app-tooltip button','topbar']]){
+     const focusTip=await c.call("function(selector){const button=[...document.querySelectorAll(selector)].find(node=>!node.disabled&&node.getClientRects().length);button?.focus();return Boolean(button&&document.activeElement===button)}",[selector]);
+     assert(focusTip,name+' tooltip focus '+width);
+     const tipGeometry=`function(){const button=document.activeElement,ids=(button?.getAttribute('aria-describedby')||'').split(/\\s+/),bubble=ids.map(id=>document.getElementById(id)).find(node=>node?.matches('.app-tooltip-bubble'));if(!bubble)return {ok:false,ids,active:button?.outerHTML?.slice(0,500)};const r=bubble.getBoundingClientRect(),a=button.getBoundingClientRect(),s=getComputedStyle(bubble),clips=[];for(let node=bubble.parentElement;node&&node!==document.body&&node!==document.documentElement;node=node.parentElement){const style=getComputedStyle(node),rect=node.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(style.overflowX+' '+style.overflowY))clips.push({className:node.className,overflowX:style.overflowX,overflowY:style.overflowY,rect:rect.toJSON(),clientWidth:node.clientWidth,clientHeight:node.clientHeight})}const contained=clips.every(n=>(!/auto|scroll|hidden|clip/.test(n.overflowX)||(r.left>=n.rect.left-1&&r.right<=n.rect.right+1))&&(!/auto|scroll|hidden|clip/.test(n.overflowY)||(r.top>=n.rect.top-1&&r.bottom<=n.rect.bottom+1)));return {ok:s.visibility==='visible'&&Number(s.opacity)>.95&&r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&contained&&(r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1),bubble:r.toJSON(),anchor:a.toJSON(),positioned:bubble.dataset.positioned,display:s.display,visibility:s.visibility,opacity:s.opacity,coarse:matchMedia('(pointer:coarse)').matches,focusWithin:bubble.parentElement.matches(':focus-within'),clips}}`;
+     try{await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip contained and clear of trigger '+width)}
+     catch(error){console.error('Tooltip geometry failure',JSON.stringify(await c.call(tipGeometry)));await shot('keyboard-'+name+'-tooltip-failure-'+width);throw error}
+     await shot('keyboard-'+name+'-tooltip-'+width);
+   }
+ }
+ await navigate('dashboard',pages.dashboard,320,420,false);
+ assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}"),'short viewport More opener exists');
+ await waitFor("function(){const menu=document.querySelector('.mobile-more-menu');const r=menu?.getBoundingClientRect();return Boolean(r&&r.width>0&&r.top>=0&&r.bottom<=innerHeight&&menu.scrollHeight>menu.clientHeight)}",'short More sheet contained and scrollable');
+ for(let index=0;index<8;index++)await pressTab();
+ await waitFor("function(){const menu=document.querySelector('.mobile-more-menu'),button=document.activeElement;const r=menu.getBoundingClientRect(),b=button.getBoundingClientRect();return button===menu.querySelector('nav button:last-child')&&b.top>=r.top-1&&b.bottom<=r.bottom+1&&b.left>=r.left-1&&b.right<=r.right+1}",'last More destination scrolls into visible sheet');
+ const moreLabels=await c.call("function(){return [...document.querySelectorAll('.mobile-more-menu nav button')].flatMap(button=>{const b=button.getBoundingClientRect(),label=button.querySelector('span');if(!label)return ['missing label'];const range=document.createRange();range.selectNodeContents(label);return [...range.getClientRects()].some(r=>r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1)||label.scrollWidth>label.clientWidth+1?[label.textContent]:[]})}");
+ assert(moreLabels.length===0,'short More labels fully contained: '+JSON.stringify(moreLabels));
+ assert(await c.call("function(){const nav=document.querySelector('.mobile-more-menu nav');if(!nav)return false;const r=nav.getBoundingClientRect(),buttons=[...nav.querySelectorAll('button')];return buttons.length>0&&buttons.every(button=>{const b=button.getBoundingClientRect();return Math.abs(b.left-r.left)<=1&&Math.abs(b.right-r.right)<=1&&b.height>=44})}"),'short narrow More uses complete destination rows');
+ await shot('keyboard-more-short-last-destination');
+ await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'short More Escape close');
+ assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'short More restores focus');
 
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});

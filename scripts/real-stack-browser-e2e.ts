@@ -1,6 +1,9 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { accountBalances } from '../src/lib/domain.js';
+import { moneyToCents } from '../src/lib/money.js';
+import type { FinanceData, FinanceEvent } from '../src/types.js';
 
 type BrowserProofOptions={origin:string;email:string;password:string;nextTotp:()=>Promise<string>};
 
@@ -10,25 +13,74 @@ class Cdp{
   private listeners=new Map<string,Array<(params:any)=>void>>();
   private ws?:WebSocket;
   constructor(private readonly url:string){}
-  async open(){await new Promise<void>((resolve,reject)=>{
-    const ws=new WebSocket(this.url);this.ws=ws;
-    ws.onopen=()=>resolve();ws.onerror=()=>reject(new Error('Browser CDP connection failed.'));
-    ws.onmessage=event=>{const message=JSON.parse(String(event.data));
-      if(message.id){const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);return}
-      for(const listener of this.listeners.get(message.method)||[])listener(message.params);
-    };
-  })}
-  send(method:string,params:Record<string,unknown>={}){const id=++this.id;return new Promise<any>((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws?.send(JSON.stringify({id,method,params}))})}
-  on(method:string,listener:(params:any)=>void){const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list)}
+  private rejectAll(error:Error){for(const entry of this.pending.values())entry.reject(error);this.pending.clear()}
+  async open(){
+    await new Promise<void>((resolve,reject)=>{
+      const ws=new WebSocket(this.url);this.ws=ws;
+      let settled=false;
+      let timer:ReturnType<typeof setTimeout>;
+      const finish=(error?:Error)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        error?reject(error):resolve();
+      };
+      timer=setTimeout(()=>{
+        finish(new Error('Browser CDP WebSocket handshake timed out after 15s.'));
+        ws.close();
+      },15_000);
+      ws.onopen=()=>finish();
+      ws.onerror=()=>finish(new Error('Browser CDP WebSocket connection failed.'));
+      ws.onclose=()=>{
+        const error=new Error('Browser CDP connection closed.');
+        this.rejectAll(error);
+        finish(error);
+      };
+      ws.onmessage=event=>{
+        let message:any;
+        try{message=JSON.parse(String(event.data))}
+        catch{this.rejectAll(new Error('Invalid Browser CDP message.'));ws.close();return}
+        if(message.id){
+          const pending=this.pending.get(message.id);
+          if(!pending)return;
+          this.pending.delete(message.id);
+          message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result);
+          return;
+        }
+        for(const listener of this.listeners.get(message.method)||[])listener(message.params);
+      };
+    });
+  }
+  send(method:string,params:Record<string,unknown>={}):Promise<any>{
+    if(!this.ws||this.ws.readyState!==WebSocket.OPEN){
+      return Promise.reject(new Error('Browser CDP is not connected: '+method));
+    }
+    const id=++this.id;
+    return new Promise<any>((resolve,reject)=>{
+      const timer=setTimeout(()=>{
+        this.pending.delete(id);
+        reject(new Error('Browser CDP command timed out after 25s: '+method));
+      },25_000);
+      this.pending.set(id,{
+        resolve:value=>{clearTimeout(timer);resolve(value)},
+        reject:error=>{clearTimeout(timer);reject(error)},
+      });
+      try{this.ws!.send(JSON.stringify({id,method,params}))}
+      catch(error){
+        this.pending.delete(id);clearTimeout(timer);
+        reject(error instanceof Error?error:new Error(String(error)));
+      }
+    });
+  }
+  on(method:string,listener:(params:any)=>void){
+    const list=this.listeners.get(method)||[];list.push(listener);this.listeners.set(method,list);
+  }
   async call<T=any>(fn:string,args:any[]=[]):Promise<T>{
     const root=await this.send('Runtime.evaluate',{expression:'globalThis'});
     const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});
     if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Browser function call failed.');
     return result.result.value as T;
   }
-  close(){this.ws?.close()}
+  close(){this.rejectAll(new Error('Browser CDP closed by test harness.'));this.ws?.close()}
 }
-
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
 function trimDiagnostics(value:string){const text=value.trim();if(!text)return '(no Chromium diagnostics captured)';return text.length>6000?text.slice(-6000):text}
 async function stopBrowser(child:ReturnType<typeof spawn>|undefined){
@@ -79,11 +131,12 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
   try{
     const launched=await launchBrowser(chrome,baseProfile);
     child=launched.child;profile=launched.profile;const port=launched.port;
-    const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(origin+'/#/transactions')}`,{method:'PUT'}).then(response=>response.json()) as any;
+    // Create a deterministic blank CDP target; Chromium can acknowledge CDP
+    // before /json/new?URL has actually navigated under CI runner pressure.
+    const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json()) as any;
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     const runtimeErrors:string[]=[];const apiFailures:string[]=[];const apiResponses:string[]=[];
-    let expectedInvalidImport=false;
     c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));
     c.on('Network.responseReceived',params=>{
       const url=String(params.response?.url||'');const status=Number(params.response?.status||0);
@@ -91,14 +144,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       const pathname=new URL(url).pathname;apiResponses.push(`${status} ${pathname}`);
       if(status<400)return;
       if(status===401&&pathname==='/api/auth/session')return;
-      if(status===400&&pathname==='/api/import'&&expectedInvalidImport)return;
       apiFailures.push(`${status} ${pathname}`);
     });
     const waitFor=async(fn:string,label:string,args:any[]=[])=>{for(let i=0;i<160;i++){if(await c!.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
     const setSelector=async(selector:string,value:string)=>{const ok=await c!.call<boolean>("function(selector,value){const input=document.querySelector(selector);if(!(input instanceof HTMLInputElement||input instanceof HTMLTextAreaElement))return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[selector,value]);assert(ok,'Missing input '+selector)};
     const setByLabel=async(label:string,value:string)=>{const ok=await c!.call<boolean>("function(label,value){const visible=node=>{if(!(node instanceof HTMLElement))return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&rect.width>0&&rect.height>0};const direct=[...document.querySelectorAll('input,textarea,select')].find(node=>visible(node)&&node.getAttribute('aria-label')===label);const wrapper=[...document.querySelectorAll('label')].find(node=>visible(node)&&(node.textContent||'').replace(/\\s+/g,' ').includes(label));const control=direct??wrapper?.querySelector('input,textarea,select')??wrapper?.parentElement?.querySelector('input,textarea,select');if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}if(!(control instanceof HTMLInputElement||control instanceof HTMLTextAreaElement))return false;const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(control,value);control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,'Missing field '+label)};
     const clickText=async(selector:string,text:string)=>{const ok=await c!.call<boolean>("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>item.getClientRects().length>0&&(item.textContent||'').trim().includes(text));if(!(node instanceof HTMLElement))return false;node.click();return true}",[selector,text]);assert(ok,'Missing control '+text)};
-    const selectOwnedOption=async(label:string,optionText:string)=>{const opened=await c!.call<boolean>("function(label){const row=[...document.querySelectorAll('label')].find(node=>node.getClientRects().length>0&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);assert(opened,'Missing owned selector '+label);await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",label+' options');const selected=await c!.call<boolean>("function(optionText){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>(node.textContent||'').trim()===optionText&&node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}",[optionText]);assert(selected,'Missing owned option '+optionText)};
+    // Bind selection to the actual control and its own portalled listbox,
+    // never an identically named background control or exiting dialog.
+    const selectOwnedOption=async(label:string,optionText:string)=>{
+      const controlId=await c!.call<string>("function(label){const visible=node=>node instanceof HTMLElement&&node.getClientRects().length>0&&!node.closest('[inert],[hidden],[aria-hidden=true]');const root=[...document.querySelectorAll('.quick-modal')].find(visible)||document;const controls=[...root.querySelectorAll('input[role=combobox]')].filter(visible);const direct=controls.find(node=>node.getAttribute('aria-label')===label);const labels=[...root.querySelectorAll('label')].filter(visible);const name=node=>(node.querySelector(':scope > span')?.textContent||'').trim();const row=labels.find(node=>name(node)===label)||labels.find(node=>name(node).includes(label));const input=direct||row?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement)||!visible(input)||input.disabled)return '';const id=input.getAttribute('aria-controls')||'';input.click();return id}",[label]);
+      assert(controlId,'Missing active owned selector '+label);
+      await waitFor("function(id){const list=document.getElementById(id);return Boolean(list&&list.getClientRects().length>0&&!list.closest('[inert]'))}",label+' own options',[controlId]);
+      const selected=await c!.call<boolean>("function(id,optionText){const list=document.getElementById(id);const option=[...list?.querySelectorAll('[role=option]:not(:disabled)')||[]].find(node=>(node.textContent||'').trim()===optionText&&node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}",[controlId,optionText]);
+      assert(selected,'Missing owned option '+label+' → '+optionText);
+      await waitFor("function(id,optionText){const input=[...document.querySelectorAll('input[role=combobox]')].find(node=>node.getAttribute('aria-controls')===id);return Boolean(input&&input.value===optionText&&input.getAttribute('aria-expanded')==='false'&&!document.getElementById(id))}",label+' committed selected value '+optionText,[controlId,optionText]);
+    };
     const chooseOwnedDateOffset=async(label:string,days:number)=>{
       const opened=await c!.call<boolean>("function(label){const visible=node=>Boolean(node instanceof HTMLElement&&node.getClientRects().length>0);const row=[...document.querySelectorAll('label')].find(node=>visible(node)&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('.owned-date-shell input[aria-haspopup=dialog]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);
       assert(opened,'Missing owned date selector '+label);
@@ -113,6 +174,21 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const waitExpenseCategory=async(name:string,subcategory:string|null=null,present=true)=>waitFor("async function(name,subcategory,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const tree=payload.data?.state?.settings?.expenseCategoryTree||[];const category=tree.find(item=>item.name===name);if(!present)return !category;if(!category)return false;return subcategory?Array.isArray(category.subcategories)&&category.subcategories.includes(subcategory):true}",present?'persisted category '+name:'retired category '+name,[name,subcategory,present]);
     const waitIconChoice=async(choice:string)=>waitFor("async function(choice){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return Object.values(payload.data?.state?.settings?.categoryIcons||{}).includes(choice)}",'persisted icon '+choice,[choice]);
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
+    // Legacy fixture is dated October 2026. Search honors selected reporting
+    // month, whereas modern Quick Entry uses today's actual month.
+    const readPeriod=()=>c!.call<string>("function(){return document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||''}");
+    const selectPeriod=async(label:string,direction:'previous'|'next')=>{
+      for(let step=0;step<120;step++){
+        const current=await readPeriod();
+        assert(Boolean(current),'Reporting month selector is missing.');
+        if(current===label)return;
+        const moved=await c!.call<boolean>("function(direction){const wanted=direction==='previous'?'Προηγούμενος μήνας':'Επόμενος μήνας';const button=[...document.querySelectorAll('.period-control button')].find(node=>node.getAttribute('aria-label')?.startsWith(wanted));if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}",[direction]);
+        assert(moved,'Could not navigate reporting month from '+current+' to '+label);
+        await waitFor("function(previous){return (document.querySelector('.period-control>span:not(.app-tooltip)')?.textContent?.trim()||'')!==previous}",'reporting period navigation',[current]);
+      }
+      throw new Error('Could not reach reporting month '+label+' within 120 calendar steps');
+    };
+    const seedPeriod=(()=>{const label=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date('2026-10-01T00:00:00.000Z'));return label.charAt(0).toUpperCase()+label.slice(1)})();
     const waitApiEvent=async(note:string,present:boolean)=>waitFor("async function(note,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=(payload.data?.state?.events||[]).some(item=>item.note===note);return present?exists:!exists}",'persisted event '+note,[note,present]);
     const waitApiEventKind=async(note:string,kind:string)=>waitFor("async function(note,kind){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.events||[]).some(item=>item.note===note&&item.kind===kind)}",'persisted '+kind+' event '+note,[note,kind]);
     const waitAttentionDecision=async(id:string,status:string|null)=>waitFor("async function(id,status){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const decision=payload.data?.state?.attentionDecisions?.[id];return status===null?!decision:decision?.status===status}",status===null?'cleared attention decision '+id:'persisted '+status+' attention decision '+id,[id,status]);
@@ -131,19 +207,30 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const waitRule=async(name:string)=>waitFor("async function(name){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.transactionRules||[]).some(item=>item.name===name&&item.enabled!==false)}",'rule '+name,[name]);
     const waitApiEventCategory=async(note:string,category:string)=>waitFor("async function(note,category){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.events||[]).some(item=>item.note===note&&item.category===category)}",'categorized event '+note,[note,category]);
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+    // Finance screenshots must show the settled rendered state, not an
+    // opacity/transformation intermediate from the route or modal entrance.
+    const settledIntentShot=async(name:string,modal:boolean)=>{
+      await waitFor("function(modal){const root=modal?document.querySelector('.quick-modal'):document.querySelector('#main-workspace');if(!(root instanceof HTMLElement)||!root.getClientRects().length)return false;if(!modal&&document.querySelector('.quick-modal'))return false;for(let node=root;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}const items=modal?[...root.querySelectorAll('header,.entry-body,footer')]:[root.firstElementChild,...root.querySelectorAll('.transactions-approved-table tbody tr')].filter(Boolean);return items.length>0&&items.every(node=>Number(getComputedStyle(node).opacity)>=.995)&&!root.getAnimations({subtree:true}).some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",name+' visually settled',[modal]);
+      await shot(name);
+    };
 
     console.log('[real-browser] stage login');
-    // A headless Chromium CDP endpoint can become ready before its first tab
-    // finishes navigating under CI runner pressure. Never skip login or MFA:
-    // diagnose the first paint, then allow one real navigation retry.
+    const loginUrl=origin+'/#/transactions';
+    const navigateLogin=async()=>{
+      const navigation=await c!.send('Page.navigate',{url:loginUrl});
+      if(navigation.errorText)throw new Error('Real browser login navigation failed: '+navigation.errorText);
+    };
+    // Explicitly navigate the CDP tab; reloading an about:blank bootstrap tab
+    // cannot reach login and hides real app/transport failures.
+    await navigateLogin();
     try{
-      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
+      await waitFor("function(){return location.protocol!=='about:'&&Boolean(document.querySelector('#login-title'))}",'login screen');
     }catch(error){
-      const state=await c.call("function(){return {ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
-      console.warn('[real-browser] initial login paint unavailable; bounded navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
+      const state=await c.call("function(){return {url:location.href,ready:document.readyState,path:location.pathname,hash:location.hash,title:document.title,login:Boolean(document.querySelector('#login-title')),mfa:Boolean(document.querySelector('#mfa-title')),workspace:Boolean(document.querySelector('#main-workspace'))}}").catch(()=>null);
+      console.warn('[real-browser] initial login paint unavailable; bounded explicit-navigation retry',JSON.stringify({page:state,apiResponses:apiResponses.slice(-8),runtimeExceptionCount:runtimeErrors.length,reason:error instanceof Error?error.message:String(error)}));
       try{await shot('login-bootstrap-first-paint')}catch{}
-      await c.send('Page.reload',{ignoreCache:true});
-      await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
+      await navigateLogin();
+      await waitFor("function(){return location.protocol!=='about:'&&Boolean(document.querySelector('#login-title'))}",'login screen after navigation retry');
     }
     await setSelector('#login-email',email);await setSelector('#login-password',password);await clickText('.login-submit','Σύνδεση');
     await waitFor("function(){return document.querySelector('#mfa-title')?.textContent==='Επαλήθευση'}",'MFA challenge');
@@ -163,12 +250,28 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const addQuickIntent=async(label:string,note:string,kind:string,amount:string|null,configure?:()=>Promise<void>)=>{await openQuickEntry();await clickText('.generic-kind-grid button',label);if(amount!==null)await setByLabel('Ποσό',amount);if(configure)await configure();await setByLabel('Σχόλιο',note);await submitQuickEntry();await waitApiEventKind(note,kind)};
     await addQuickIntent('Έσοδο','Real Browser Quick Income','income','21.10');
     await addQuickIntent('Μεταφορά','Real Browser Quick Transfer','transfer','5.10',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
-    await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Local Real Stack QA')});
+    await addQuickIntent('Ανάληψη','Real Browser Quick Withdrawal','withdrawal','6.20',async()=>{
+      // The isolated fixture deliberately defaults expenses to its cash wallet.
+      // A withdrawal must default to bank→cash without manual correction.
+      const pair=await c!.call<string[]>("function(){return ['Από','Προς'].map(label=>[...document.querySelectorAll('.quick-modal label')].find(row=>row.querySelector(':scope > span')?.textContent===label)?.querySelector('input[role=combobox]')?.value||'')}");
+      assert(pair[0]==='Synthetic QA Bank Account'&&pair[1]==='Local Real Stack QA','Withdrawal defaults must use bank-to-cash roles, not the expense default.');
+      for(const [label,expected] of [['Από','Synthetic QA Bank Account'],['Προς','Local Real Stack QA']]){
+        const opened=await c!.call<boolean>("function(label){const input=[...document.querySelectorAll('.quick-modal label')].find(row=>row.querySelector(':scope > span')?.textContent===label)?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);
+        assert(opened,'Withdrawal selector missing '+label);
+        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=option]'))}",'withdrawal role-filtered options');
+        const options=await c!.call<string[]>("function(){return [...document.querySelectorAll('.owned-select-popover [role=option]:not(:disabled)')].map(node=>node.textContent?.trim()||'')}");
+        assert(options.includes(expected)&&!options.includes('Synthetic QA Savings')&&!options.includes(label==='Από'?'Local Real Stack QA':'Synthetic QA Bank Account'),'Withdrawal exposes an incompatible account role.');
+        await clickText('.owned-select-popover button[role=option]',expected);
+        await waitFor("function(){return !document.querySelector('.owned-select-popover')}",'withdrawal role selector close');
+      }
+      await settledIntentShot('quick-entry-withdrawal-bank-to-cash',true);
+    });
     await addQuickIntent('Αποταμίευση','Real Browser Quick Saving','saving_cash_offset','7.30',async()=>{await selectOwnedOption('Από','Synthetic QA Bank Account');await selectOwnedOption('Προς','Synthetic QA Savings')});
     await addQuickIntent('Επιστροφή','Real Browser Quick Refund','refund','8.40');
     await addQuickIntent('Διόρθωση','Real Browser Quick Reconciliation','reconciliation',null,async()=>{
       await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');
       await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45');
+      await waitFor("function(){const modal=document.querySelector('.quick-modal');const row=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Λογαριασμός');return row?.querySelector('input[role=combobox]')?.value==='Synthetic QA Bank Account'}",'reconciliation bank selected after editing verified balance');
       // Verify that the real browser cannot persist a correction silently.
       const review=await c!.call<boolean>("function(){const modal=document.querySelector('.quick-modal');if(!modal)return false;const candidates=[...modal.querySelectorAll('[aria-label]')].some(node=>node.getAttribute('aria-label')==='Κινήσεις προς σύγκριση');return Boolean(candidates&&modal.querySelector('.reconcile-preview')?.textContent?.includes('Υπολογισμένο υπόλοιπο στις')&&modal.querySelector('input[type=checkbox]'))}");
       assert(review,'Reconciliation must compare dated canonical movements and require owner review.');
@@ -177,13 +280,172 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       assert(Boolean(await c!.call("function(){return Boolean(document.querySelector('.quick-modal'))}")),'Unconfirmed bank correction unexpectedly closed the real editor.');
       const confirmed=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
       assert(confirmed,'Real owner review checkbox could not be confirmed.');
+      await waitFor("function(){return !document.querySelector('.quick-modal #quick-add-error')}",'confirmed reconciliation create clears stale confirmation error');
+      await waitFor("function(){const modal=document.querySelector('.quick-modal');const row=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Λογαριασμός');return row?.querySelector('input[role=combobox]')?.value==='Synthetic QA Bank Account'&&Boolean(modal?.querySelector('input[type=checkbox]:checked'))}",'reconciliation confirmed on intended bank before write');
+      await settledIntentShot('quick-entry-bank-reconciliation-create',true);
     });
+    const originalCorrectionData=await c!.call<FinanceData|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});return response.ok?(await response.json()).data:null}");
+    assert(originalCorrectionData,'Original reconciliation readback unavailable.');
+    const originalCorrectionMatches=(originalCorrectionData.state.events??[]).filter(event=>event.note==='Real Browser Quick Reconciliation');
+    const originalCorrection=originalCorrectionMatches[0];
+    assert(originalCorrectionMatches.length===1&&originalCorrection.kind==='reconciliation'&&originalCorrection.accountId==='qa-bank-account'
+      &&originalCorrection.legs.length===1&&originalCorrection.legs[0].accountId==='qa-bank-account'
+      &&moneyToCents(accountBalances(originalCorrectionData,originalCorrection.date)['qa-bank-account'])===12345,
+      'Reconciliation create must settle the intended bank to 123.45: '+JSON.stringify({event:originalCorrection,bankBalance:originalCorrection?accountBalances(originalCorrectionData,originalCorrection.date)['qa-bank-account']:null}));
     await addQuickIntent('Σύνθετη αγορά','Real Browser Quick Split','split',null,async()=>{await setByLabel('Περιγραφή μέρους 1','Real Browser Part A');await setByLabel('Ποσό μέρους 1','3.25');await setByLabel('Περιγραφή μέρους 2','Real Browser Part B');await setByLabel('Ποσό μέρους 2','4.75')});
     const quickIntentMatrix=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after Quick Entry intent matrix');
     await waitFor("async function(expected){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=payload.data?.state?.events||[];return expected.every(([note,kind])=>events.some(item=>item.note===note&&item.kind===kind))}",'persisted Quick Entry intent matrix',[quickIntentMatrix]);
     await search('Real Browser Quick');await waitFor("function(){const text=document.querySelector('#main-workspace')?.textContent||'';return ['Real Browser Quick Income','Real Browser Quick Transfer','Real Browser Quick Withdrawal','Real Browser Quick Saving','Real Browser Quick Refund','Real Browser Quick Reconciliation','Real Browser Quick Split'].every(note=>text.includes(note))}",'Quick Entry intent matrix rows');
-    await shot('quick-entry-intents-persisted');
+    await settledIntentShot('quick-entry-intents-persisted',false);
+    console.log('[real-browser] stage withdrawal-edit-exact-legs');
+    const withdrawalBefore=await c!.call<{id:string;createdAt:string;date:string;source:string}|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return null;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];if(events.length!==1||event?.kind!=='withdrawal'||event.amount!==6.2||event.fromAccountId!=='qa-bank-account'||event.toAccountId!=='qa-cash'||event.legs?.length!==2||!event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.2)||!event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.2))return null;return {id:event.id,createdAt:event.createdAt,date:event.date,source:event.source}}");
+    assert(withdrawalBefore,'Persisted withdrawal must have exact bank debit and cash credit.');
+    await search('Real Browser Quick Withdrawal');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal'))}",'withdrawal row');
+    const editWithdrawal=await c!.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>(item.textContent||'').includes('Real Browser Quick Withdrawal'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(editWithdrawal,'Withdrawal edit action is missing.');
+    await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'withdrawal editor');
+    await setByLabel('Ποσό','6.21');
+    await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+    await waitFor("function(){return !document.querySelector('.quick-modal')}",'withdrawal edit close');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after withdrawal edit');
+    await waitFor("async function(before){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=(payload.data?.state?.events||[]).filter(item=>item.note==='Real Browser Quick Withdrawal');const event=events[0];return events.length===1&&event?.id===before.id&&event.createdAt===before.createdAt&&event.date===before.date&&event.source===before.source&&event.kind==='withdrawal'&&event.amount===6.21&&event.fromAccountId==='qa-bank-account'&&event.toAccountId==='qa-cash'&&event.legs?.length===2&&event.legs.some(leg=>leg.accountId==='qa-bank-account'&&leg.amount===-6.21)&&event.legs.some(leg=>leg.accountId==='qa-cash'&&leg.amount===6.21)}",'withdrawal same-ID exact legs after edit and reload',[withdrawalBefore]);
+    await search('Real Browser Quick Withdrawal');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Quick Withdrawal')&&(row.textContent||'').includes('6,21'))}",'edited withdrawal row');
+    await settledIntentShot('quick-entry-withdrawal-edit-persisted',false);
+
+    // Reuse the actual create fixtures. Prove the remaining six generic
+    // editors on the same real authenticated stack, not a second harness.
+    console.log('[real-browser] stage remaining-quick-intent-edit-exact-legs');
+    const readIntentData=async()=>{
+      const data=await c!.call<FinanceData|null>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return null;return (await response.json()).data||null}");
+      assert(data,'Canonical intent data unavailable.');
+      return data;
+    };
+    const findIntent=(data:FinanceData,note:string)=>{
+      const matches=(data.state.events??[]).filter(event=>event.note===note);
+      assert(matches.length===1,'Expected exactly one persisted intent: '+note);
+      return matches[0];
+    };
+    type ExpectedLeg=readonly [accountId:string,cents:number];
+    const assertIntentLegs=(event:FinanceEvent,amountCents:number,legs:readonly ExpectedLeg[])=>{
+      assert(moneyToCents(event.amount)===amountCents&&event.legs.length===legs.length
+        &&legs.every(([id,cents])=>event.legs.filter(leg=>leg.accountId===id&&moneyToCents(leg.amount)===cents&&Math.abs(leg.amount*100-cents)<1e-6).length===1),
+        'Unexpected persisted amount/account legs for '+event.note+': '+JSON.stringify(event.legs));
+    };
+    const assertIntentIdentity=(before:FinanceEvent,after:FinanceEvent)=>{
+      assert(after.id===before.id&&after.kind===before.kind&&after.createdAt===before.createdAt&&after.date===before.date&&after.source===before.source,
+        'Edited intent lost identity/date/source: '+before.note);
+    };
+    const openIntentEdit=async(before:FinanceEvent)=>{
+      await search(before.note);
+      const rowPredicate="function(id){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>row.getClientRects().length>0&&row.getAttribute('data-transaction-id')===id)}";
+      await waitFor(rowPredicate,before.note+' exact row',[before.id]);
+      const opened=await c!.call<boolean>("function(id){const row=[...document.querySelectorAll('.transactions-approved-table [data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&item.getAttribute('data-transaction-id')===id);if(!(row instanceof HTMLElement))return false;row.click();return true}",[before.id]);
+      assert(opened,'Missing visible transaction row: '+before.note);
+      await waitFor("function(id,note){const row=[...document.querySelectorAll('.transactions-approved-table [data-transaction-id]')].find(item=>item.getAttribute('data-transaction-id')===id);const panel=document.querySelector('.transactions-detail-panel');const edit=panel?.querySelector('button.edit');return row?.getAttribute('aria-selected')==='true'&&panel?.querySelector('.transactions-detail-hero b')?.textContent===note&&Boolean(edit&&edit.getClientRects().length>0&&!edit.closest('[hidden],[inert]'))}",before.note+' visible selected detail editor',[before.id,before.note]);
+      await clickText('.transactions-detail-panel button.edit','Επεξεργασία');
+      await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",before.note+' editor');
+    };
+    const saveIntentEdit=async()=>{
+      await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+      await waitFor("function(){return !document.querySelector('.quick-modal')}",'durable intent edit close');
+    };
+    const initialIntents=await readIntentData();
+    const beforeIncome=findIntent(initialIntents,'Real Browser Quick Income');
+    const beforeTransfer=findIntent(initialIntents,'Real Browser Quick Transfer');
+    const beforeSaving=findIntent(initialIntents,'Real Browser Quick Saving');
+    const beforeRefund=findIntent(initialIntents,'Real Browser Quick Refund');
+    const beforeSplit=findIntent(initialIntents,'Real Browser Quick Split');
+    const beforeReconciliation=findIntent(initialIntents,'Real Browser Quick Reconciliation');
+    assertIntentLegs(beforeIncome,2110,[['qa-cash',2110]]);
+    assertIntentLegs(beforeTransfer,510,[['qa-bank-account',-510],['qa-savings',510]]);
+    assertIntentLegs(beforeSaving,730,[['qa-bank-account',-730],['qa-savings',730]]);
+    assertIntentLegs(beforeRefund,840,[['qa-cash',840]]);
+    assertIntentLegs(beforeSplit,800,[['qa-cash',-800]]);
+    assert(beforeIncome.kind==='income'&&beforeIncome.accountId==='qa-cash'&&beforeRefund.kind==='refund'&&beforeRefund.accountId==='qa-cash'
+      &&beforeTransfer.kind==='transfer'&&beforeTransfer.fromAccountId==='qa-bank-account'&&beforeTransfer.toAccountId==='qa-savings'
+      &&beforeSaving.kind==='saving_cash_offset'&&beforeSaving.fromAccountId==='qa-bank-account'&&beforeSaving.toAccountId==='qa-savings'&&moneyToCents(beforeSaving.savingAmount??0)===730
+      &&beforeSplit.kind==='split'&&beforeSplit.accountId==='qa-cash'&&beforeSplit.parts?.length===2
+      &&beforeSplit.parts[0].label==='Real Browser Part A'&&moneyToCents(beforeSplit.parts[0].amount)===325
+      &&beforeSplit.parts[1].label==='Real Browser Part B'&&moneyToCents(beforeSplit.parts[1].amount)===475,
+      'Original generic intent account/part contract differs from the fixture.');
+    // The earlier withdrawal edit reduced this day's verified bank balance
+    // by exactly one cent. The correction itself has not yet been edited.
+    assert(beforeReconciliation.kind==='reconciliation'&&beforeReconciliation.accountId==='qa-bank-account'&&beforeReconciliation.legs.length===1
+      &&moneyToCents(accountBalances(initialIntents,beforeReconciliation.date)['qa-bank-account'])===12344,
+      'Original reconciliation must preserve the verified as-of balance minus the earlier one-cent withdrawal edit: '+JSON.stringify({event:beforeReconciliation,withdrawalDate:withdrawalBefore.date,bankBalance:accountBalances(initialIntents,beforeReconciliation.date)['qa-bank-account']}));
+    assertIntentLegs(beforeReconciliation,Math.abs(moneyToCents(beforeReconciliation.legs[0].amount)),[['qa-bank-account',moneyToCents(beforeReconciliation.legs[0].amount)]]);
+
+    await openIntentEdit(beforeIncome);
+    await setByLabel('Ποσό','21.11');await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');await saveIntentEdit();
+    await openIntentEdit(beforeTransfer);
+    await setByLabel('Ποσό','5.11');await selectOwnedOption('Από','Local Real Stack QA');await saveIntentEdit();
+    await openIntentEdit(beforeSaving);
+    await setByLabel('Ποσό','7.31');await saveIntentEdit();
+    await openIntentEdit(beforeRefund);
+    await setByLabel('Ποσό','8.41');await saveIntentEdit();
+    await openIntentEdit(beforeSplit);
+    await setByLabel('Ποσό μέρους 1','3,26');
+    await selectOwnedOption('Κατηγορία ή υποκατηγορία μέρους 1','Rule Applied');
+    await settledIntentShot('quick-entry-split-shared-edit',true);
+    await saveIntentEdit();
+
+    // Reconciliation excludes its original leg, and must require owner
+    // confirmation again even though this is an existing event.
+    const beforeCorrectionData=await readIntentData();
+    const currentBankCents=moneyToCents(accountBalances(beforeCorrectionData,beforeReconciliation.date)['qa-bank-account']);
+    const withoutCorrection={...beforeCorrectionData,state:{...beforeCorrectionData.state,events:(beforeCorrectionData.state.events??[]).filter(event=>event.id!==beforeReconciliation.id)}};
+    const baseBankCents=moneyToCents(accountBalances(withoutCorrection,beforeReconciliation.date)['qa-bank-account']);
+    const correctionTargetCents=12346;
+    const correctionDeltaCents=correctionTargetCents-baseBankCents;
+    assert(Number.isSafeInteger(correctionDeltaCents)&&correctionDeltaCents!==0,'Synthetic reconciliation needs a nonzero exact adjustment.');
+    await openIntentEdit(beforeReconciliation);
+    const prefilledBankCents=await c!.call<number>("function(){const label=[...document.querySelectorAll('.quick-modal label')].find(row=>(row.textContent||'').includes('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία'));const field=label?.querySelector('input');return field?Math.round(Number(field.value.replace(',','.'))*100):NaN}");
+    assert(prefilledBankCents===currentBankCents,'Reconciliation edit must prefill the current historical as-of balance.');
+    const preRejectedRevision=await currentRevision();
+    await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.46');
+    await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+    await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Επιβεβαίωσε')}",'edited reconciliation rejects unconfirmed adjustment');
+    assert(await currentRevision()===preRejectedRevision,'Unconfirmed reconciliation edit changed the canonical revision.');
+    const confirmedEdit=await c!.call<boolean>("function(){const checkbox=document.querySelector('.quick-modal input[type=checkbox]');if(!(checkbox instanceof HTMLInputElement))return false;checkbox.click();return checkbox.checked}");
+    assert(confirmedEdit,'Reconciliation edit confirmation unavailable.');
+    await waitFor("function(){return !document.querySelector('.quick-modal #quick-add-error')}",'confirmed reconciliation edit clears stale confirmation error');
+    await settledIntentShot('quick-entry-reconciliation-confirmed-edit',true);
+    await saveIntentEdit();
+
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after remaining six intent edits');
+    const editedIntents=await readIntentData();
+    const income=findIntent(editedIntents,beforeIncome.note),transfer=findIntent(editedIntents,beforeTransfer.note);
+    const saving=findIntent(editedIntents,beforeSaving.note),refund=findIntent(editedIntents,beforeRefund.note);
+    const split=findIntent(editedIntents,beforeSplit.note),correction=findIntent(editedIntents,beforeReconciliation.note);
+    for(const [before,after] of [[beforeIncome,income],[beforeTransfer,transfer],[beforeSaving,saving],[beforeRefund,refund],[beforeSplit,split],[beforeReconciliation,correction]])assertIntentIdentity(before,after);
+    assertIntentLegs(income,2111,[['qa-bank-account',2111]]);
+    assertIntentLegs(transfer,511,[['qa-cash',-511],['qa-savings',511]]);
+    assertIntentLegs(saving,731,[['qa-bank-account',-731],['qa-savings',731]]);
+    assertIntentLegs(refund,841,[['qa-cash',841]]);
+    assertIntentLegs(split,801,[['qa-cash',-801]]);
+    assertIntentLegs(correction,Math.abs(correctionDeltaCents),[['qa-bank-account',correctionDeltaCents]]);
+    assert(income.accountId==='qa-bank-account'&&transfer.fromAccountId==='qa-cash'&&transfer.toAccountId==='qa-savings'
+      &&saving.fromAccountId==='qa-bank-account'&&saving.toAccountId==='qa-savings'&&moneyToCents(saving.savingAmount??0)===731&&saving.savingSource===beforeSaving.savingSource
+      &&refund.accountId==='qa-cash'&&split.accountId==='qa-cash'&&correction.accountId==='qa-bank-account',
+      'Edited generic intent lost its actual account/source/target/result metadata.');
+    assert(split.parts?.length===2&&beforeSplit.parts?.length===2
+      &&split.parts[0].id===beforeSplit.parts[0].id&&split.parts[0].label===beforeSplit.parts[0].label
+      &&split.parts[0].category==='Rule Applied'&&moneyToCents(split.parts[0].amount)===326
+      &&split.parts[1].id===beforeSplit.parts[1].id&&split.parts[1].label===beforeSplit.parts[1].label
+      &&split.parts[1].category===beforeSplit.parts[1].category&&split.parts[1].subcategory===beforeSplit.parts[1].subcategory
+      &&moneyToCents(split.parts[1].amount)===475,
+      'Split edit changed an unrelated part or failed to persist exact cents/category.');
+    assert(moneyToCents(accountBalances(editedIntents,correction.date)['qa-bank-account'])===correctionTargetCents,
+      'Edited reconciliation failed to settle the exact verified as-of bank balance after reload.');
+    await search('Real Browser Quick');
+    await waitFor("function(expected){const rows=[...document.querySelectorAll('[data-transaction-source=event]')].filter(row=>row.getClientRects().length>0);return expected.every(id=>rows.some(row=>row.getAttribute('data-transaction-id')===id))}",'six same-ID edited intent rows after reload',[[income.id,transfer.id,saving.id,refund.id,split.id,correction.id]]);
+    await settledIntentShot('quick-entry-six-edits-persisted',false);
+
     await search('Real Browser Expense');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense'))}",'modern expense row after intent matrix');
 
     console.log('[real-browser] stage modern-edit-delete-undo');
@@ -198,16 +460,19 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after undo');await search('Real Browser Expense Edited');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Expense Edited'))}",'modern undo persisted');await shot('modern-transaction-persisted');
 
     console.log('[real-browser] stage legacy-edit-delete-undo');
+    const previousPeriod=await readPeriod();
+    await selectPeriod(seedPeriod,'previous');
     await search('Synthetic real-stack seed income');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income'))}",'legacy seed row');
     const editLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(editLegacy,'Legacy edit action is missing.');
     await waitFor("function(){return Boolean(document.querySelector('.legacy-transaction-editor[role=dialog]'))}",'legacy editor');await setByLabel('Ποσό ιστορικής κίνησης','101.25');await setByLabel('Περιγραφή ιστορικής κίνησης','Synthetic real-stack seed income override');await clickText('.legacy-transaction-editor button','Αποθήκευση override');await waitLegacy('Synthetic real-stack seed income override',false);
-    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy edit');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy override after reload');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy edit');await selectPeriod(seedPeriod,'previous');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy override after reload');
     const deleteLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income override'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(deleteLegacy,'Legacy delete action is missing.');
     await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'legacy delete confirm');await clickText('[role=alertdialog] button','Διαγραφή');await waitLegacy('Synthetic real-stack seed income override',true);
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy delete');
     const undoLegacy=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}");assert(undoLegacy,'Durable legacy undo is unavailable after reload.');await waitLegacy('Synthetic real-stack seed income override',false);
-    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy undo');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy undo persisted');await shot('legacy-transaction-persisted');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy undo');await selectPeriod(seedPeriod,'previous');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy undo persisted');await shot('legacy-transaction-persisted');
 
+    await selectPeriod(previousPeriod,'next');
     console.log('[real-browser] stage credit-purchase-payment-reload');
     await clickText('.sidebar nav button','Πιστωτική');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit workspace');
@@ -234,6 +499,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     assert(openedCredit,'Credit purchase must link to the Credit workspace, not hidden Transactions.');
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit domain from report');
     await waitFor("function(){return [...document.querySelectorAll('.credit-purchases-table tbody tr')].some(row=>(row.textContent||'').includes('Real Browser Credit Purchase'))}",'correct credit card and original purchase in drilldown');
+    // AppShell's AnimatePresence route wrapper can still be partly transparent
+    // after the Credit DOM and finance rows are complete. Capturing at this
+    // stage produces a washed-out false visual regression from Reports.
+    await waitFor("function(){const workspace=document.querySelector('#main-workspace');const route=workspace?.firstElementChild;const credit=route?.querySelector('.credit-card-redesign-page');const purchase=credit?.querySelector('.credit-purchases-table tbody tr');if(!(route instanceof HTMLElement)||!(credit instanceof HTMLElement)||!(purchase instanceof HTMLElement)||purchase.getClientRects().length===0)return false;const entranceRunning=route.getAnimations({subtree:true}).some(anim=>anim.playState==='running'&&(anim.animationName==='rh-bank-in'||anim.animationName==='rh-backdrop-in'));return !entranceRunning&&Number(getComputedStyle(route).opacity)>=.995&&Number(getComputedStyle(credit).opacity)>=.995&&Number(getComputedStyle(purchase).opacity)>=.995}",'credit drillthrough route transition and purchase row visually settled');
     await shot('reports-credit-drillthrough');
 
     console.log('[real-browser] stage savings-goal-transfer-reload');
@@ -297,6 +566,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'recurring reload after pause');
     const openInactive=await c.call<boolean>("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!(root instanceof HTMLDetailsElement))return false;root.open=true;return true}");assert(openInactive,'Inactive recurring history is unavailable.');
     await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
+    // A data-complete Recurring route can still be mid-frame in the shared
+    // staggered collection entrance. Screenshots must prove painted content,
+    // not the transient 0-opacity start of a valid normal-motion animation.
+    await waitFor("function(){const root=document.querySelector('.recurring-approved-page');if(!(root instanceof HTMLElement))return false;const items=[...root.querySelectorAll('[data-content-entrance=grid] > *,[data-content-entrance=list] > *,[data-content-entrance=table] > tr')].filter(node=>node.getClientRects().length>0);const running=root.getAnimations({subtree:true}).some(anim=>anim.playState==='running'&&(anim.animationName==='rh-bank-in'||anim.animationName==='rh-backdrop-in'));return items.length>=3&&!running&&items.every(node=>Number(getComputedStyle(node).opacity)>=.995)}",'recurring screenshot content entrance visually settled');
     await shot('recurring-domain-persisted');
 
     console.log('[real-browser] stage recurring-pay-edit-linked-reload');
@@ -480,6 +753,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     console.log('[real-browser] stage provider-storage-create-bind-reload');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for provider');
     await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return Boolean(document.querySelector('.provider-management'))}",'provider management');
+    // A mounted provider section can still be loading its owner-scoped catalog.
+    // A disabled create button silently ignores .click(); wait for a verified
+    // catalog instead of reporting a misleading missing-editor timeout.
+    await waitFor("function(){const button=[...document.querySelectorAll('.provider-management button')].find(node=>(node.textContent||'').includes('Νέος πάροχος'));return button instanceof HTMLButtonElement&&!button.disabled}",'verified provider catalog enables new provider');
     await clickText('.provider-management button','Νέος πάροχος');await waitFor("function(){return Boolean(document.querySelector('.provider-editor-modal'))}",'new provider editor');
     await setByLabel('Όνομα','Real Browser Provider');await setByLabel('Σύντομο όνομα','RB Provider');
     await waitFor("function(){const input=document.querySelector('.provider-id-field input');return input instanceof HTMLInputElement&&input.value==='real-browser-provider'}",'provider slug');
@@ -525,15 +802,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return (globalThis.__myfinhubQaDownloads||[]).some(name=>/^MyFinHub-backup-.*\\.json$/.test(name))}",'JSON export download');
     assert(apiResponses.includes('200 /api/backup'),'Backup action did not reach the real API successfully.');
 
+    // Deliberately malformed JSON must fail in the preview BEFORE opening
+    // the destructive confirmation and BEFORE a network import attempt.
+    // A separate real API test still proves authoritative server-side 400.
     const beforeInvalid=await currentRevision();assert(beforeInvalid,'Could not read the pre-validation revision.');
-    expectedInvalidImport=true;await importFile('invalid');
-    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'invalid import confirmation');
-    const priorMessage=await c.call<string>("function(){return document.querySelector('.logic-note[role=status]')?.textContent||''}");
-    await clickText('.app-confirm-dialog button','Εισαγωγή');
-    await waitFor("function(previous){const text=document.querySelector('.logic-note[role=status]')?.textContent||'';return Boolean(text&&text!==previous)}",'invalid import rejection',[priorMessage]);
-    const afterInvalid=await currentRevision();expectedInvalidImport=false;
-    assert(afterInvalid===beforeInvalid,'Rejected import changed the canonical revision.');
-    assert(apiResponses.includes('400 /api/import'),'Invalid import did not exercise the real validation rejection.');
+    const importResponsesBefore=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    await importFile('invalid');
+    await waitFor("function(){const feedback=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');return !document.querySelector('.app-confirm-dialog[role=alertdialog]')&&Boolean(feedback&&feedback.textContent?.includes('Δεν έγινε εισαγωγή'))}",'invalid import rejected in client preview before destructive confirmation');
+    const alertVisible=await c.call<boolean>("function(){const alert=document.querySelector('.operation-feedback[data-feedback-tone=error][role=alert]');if(!(alert instanceof HTMLElement))return false;alert.scrollIntoView({block:'center',behavior:'instant'});const rect=alert.getBoundingClientRect();return rect.width>220&&rect.height>20&&rect.top>=0&&rect.bottom<=window.innerHeight&&getComputedStyle(alert).visibility==='visible'}");
+    assert(alertVisible,'Malformed import rejection must be visibly painted within the screenshot viewport.');
+    await sleep(160);
+    await shot('data-management-invalid-import-preview-rejected');
+    const afterInvalid=await currentRevision();
+    const importResponsesAfter=apiResponses.filter(item=>item.endsWith(' /api/import')).length;
+    assert(afterInvalid===beforeInvalid,'Malformed preview changed the canonical finance revision.');
+    assert(importResponsesAfter===importResponsesBefore,'Malformed client preview contacted destructive import API.');
+    assert(await c.call<boolean>("function(){return !document.querySelector('.settings-import-preview')&&!document.querySelector('.app-confirm-dialog[role=alertdialog]')}"),'Malformed preview exposed an actionable import confirmation.');
 
     await importFile('valid');
     await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'valid import confirmation');
@@ -546,7 +830,61 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const historyButton=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");assert(historyButton,'Change History action is missing.');
     await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν αναιρείται μέσω Undo/Redo'))}",'import history point');
     assert(await c.call<boolean>("function(){const b=[...document.querySelectorAll('button[aria-label]')].find(n=>n.getAttribute('aria-label')==='Αναίρεση τελευταίας αλλαγής');return Boolean(b&&b.disabled)}"),'Import boundary must disable unsafe history Undo.');
+    // DOM/text readiness alone can capture the 160ms History entrance at
+    // intermediate opacity, producing misleading proof of visual contrast.
+    // Wait for both modal and backdrop to be fully painted before screenshot.
+    await waitFor("function(){const dialog=document.querySelector('.change-history-dialog'),backdrop=dialog?.closest('.command-backdrop');if(!(dialog instanceof HTMLElement)||!(backdrop instanceof HTMLElement))return false;const animations=backdrop.getAnimations({subtree:true}).filter(item=>item.playState==='running');return animations.length===0&&Number(getComputedStyle(dialog).opacity)>=.995&&Number(getComputedStyle(backdrop).opacity)>=.995}",'history dialog visually settled after import');
     await shot('data-management-import-history-persisted');
+
+    // Exercise actual App.tsx lazy adapters and same-route focus tokens, not
+    // the independent synthetic /qa.html route owner. No finance mutation.
+    console.log('[real-browser] stage app-route-focus-and-not-found');
+    const routeRevision=await currentRevision();
+    assert(routeRevision,'Missing finance revision before read-only navigation proof.');
+    // The previous History screenshot intentionally retains the open dialog.
+    // A hard reload closes it without writing or fabricating client state.
+    await c.send('Page.reload',{ignoreCache:true});
+    await c.send('Page.bringToFront');
+    await waitFor("function(){const route=document.querySelector('#main-workspace')?.firstElementChild;return route instanceof HTMLElement&&Boolean(route.querySelector('h1'))&&Number(getComputedStyle(route).opacity)>=.995&&!document.querySelector('[aria-modal=true]')}",'real app after history reload and settled route');
+    // Observe actual focus transitions without moving focus or reading field values.
+    await c.call("function(){const trace=[];globalThis.__routeFocusTrace=trace;document.addEventListener('focusin',event=>{const node=event.target;if(!(node instanceof HTMLElement))return;trace.push({tag:node.tagName,id:node.id,commandInput:node.hasAttribute('data-command-input'),accountRow:node.matches('.account-management-row'),inModal:Boolean(node.closest('[aria-modal=true]'))});if(trace.length>24)trace.shift()})}");
+    const selectAccountCommand=async(title:string,id:string)=>{
+      console.log('[real-browser] account command '+id);
+      // Use real pointer activation on the actual topbar control, not an
+      // artificial .click() that skips the browser's launcher focus behavior.
+      const point=await c!.call<{x:number;y:number}|null>("function(){const button=document.querySelector('.topbar button[aria-label=\"Αναζήτηση και εντολές\"]');if(!(button instanceof HTMLButtonElement)||button.disabled)return null;const rect=button.getBoundingClientRect();const x=rect.left+rect.width/2,y=rect.top+rect.height/2;return rect.width>0&&rect.height>0&&button.contains(document.elementFromPoint(x,y))?{x,y}:null}");
+      assert(point,'Actual command launcher is not visible and pointer-reachable.');
+      await c!.send('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
+      await c!.send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
+      try{
+        await waitFor("function(){const input=document.querySelector('[data-command-input=true]');return input instanceof HTMLInputElement&&document.activeElement===input}",'actual command palette autofocus '+id);
+      }catch(error){
+        const diagnostic=await c!.call("function(){const input=document.querySelector('[data-command-input=true]'),active=document.activeElement,modal=document.querySelector('.command-palette');return {hash:location.hash,documentFocused:document.hasFocus(),palette:Boolean(modal),inputPresent:Boolean(input),inputRects:input?.getClientRects().length??0,activeTag:active?.tagName,activeId:active?.id,activeInModal:Boolean(active?.closest('[aria-modal=true]')),focusTrace:globalThis.__routeFocusTrace||[]}}");
+        console.error('[real-browser] command autofocus diagnostic',JSON.stringify({id,diagnostic,runtimeExceptionCount:runtimeErrors.length}));
+        await shot('app-command-autofocus-failure-'+id);
+        throw error;
+      }
+      await c!.call("function(){const input=document.querySelector('[data-command-input=true]');if(input instanceof HTMLInputElement)input.select()}");
+      await c!.send('Input.insertText',{text:title});
+      await waitFor("function(title){return [...document.querySelectorAll('#command-results [role=option]')].some(row=>(row.querySelector('.command-result-copy b')?.textContent||'').trim()==='Διαχείριση · '+title)}",'exact actual account command',[title]);
+      const selected=await c!.call<boolean>("function(title){const row=[...document.querySelectorAll('#command-results [role=option]')].find(node=>(node.querySelector('.command-result-copy b')?.textContent||'').trim()==='Διαχείριση · '+title);if(!(row instanceof HTMLButtonElement))return false;row.click();return true}",[title]);
+      assert(selected,'Could not activate exact account management command.');
+      await waitFor("function(id){const row=document.activeElement;const route=document.querySelector('#main-workspace')?.firstElementChild;return location.hash==='#/settings/accounts'&&!document.querySelector('.command-palette')&&row instanceof HTMLElement&&row.matches('.account-management-row')&&row.dataset.accountId===id&&row.getClientRects().length>0&&route instanceof HTMLElement&&Number(getComputedStyle(route).opacity)>=.995}",'actual same-route account focus '+id,[id]);
+    };
+    await selectAccountCommand('Imported QA Cash','qa-cash');
+    await selectAccountCommand('Synthetic QA Bank Account','qa-bank-account');
+    await selectAccountCommand('Imported QA Cash','qa-cash');
+    await shot('app-command-account-same-route-focus');
+    await c.call("function(){location.hash='#/qa-nonexistent-route'}");
+    await waitFor("function(){const heading=document.querySelector('#not-found-title');return heading instanceof HTMLElement&&document.activeElement===heading&&!document.querySelector('.app-shell')&&!document.querySelector('#main-workspace')}",'actual lazy not-found privacy and heading focus');
+    await shot('app-not-found-desktop');
+    await c.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await waitFor("function(){const root=document.querySelector('.not-found-screen');return innerWidth===390&&root instanceof HTMLElement&&root.getClientRects().length>0&&document.documentElement.scrollWidth<=innerWidth+1}",'actual mobile not-found containment');
+    await shot('app-not-found-mobile');
+    await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+    await clickText('.not-found-actions button','Dashboard');
+    await waitFor("function(){return location.hash==='#/dashboard'&&Boolean(document.querySelector('#main-workspace h1')?.textContent?.includes('λογαριασμοί'))&&!document.querySelector('.not-found-screen')}",'actual lazy not-found return to Dashboard');
+    assert(await currentRevision()===routeRevision,'Read-only route/focus proof changed canonical finance revision.');
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));

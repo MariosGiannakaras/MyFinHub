@@ -27,7 +27,7 @@ if (process.env.RHEOMIQ_DESKTOP === '1') {
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()');
+    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     next();
@@ -200,7 +200,11 @@ app.post('/api/import', (req, res) => void handleApi(res, async () => {
   assertMutationSessionOrigin(req, session);
   if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
   validateCompleteFinanceData(req.body);
-  sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
+  // Keep the Express/Windows API identical to the serverless import boundary:
+  // browser If-Match opts into the atomic checked RPC, while header-less
+  // approved native clients retain their backwards-compatible import path.
+  const revision=requestHeader(req,'if-match');
+  sendJson(res, 200, await writeStore(req.body, revision||undefined, true, session.accessToken));
 }));
 
 app.post('/api/backup', (req, res) => void handleApi(res, async () => {

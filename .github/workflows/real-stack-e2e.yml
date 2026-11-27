@@ -3,13 +3,20 @@ name: Real Stack E2E
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
       - '.github/workflows/real-stack-e2e.yml'
       - 'scripts/real-stack-e2e.ts'
       - 'scripts/real-stack-browser-e2e.ts'
       - 'scripts/real-stack-fixture.ts'
       - 'scripts/migration-recovery-e2e.ts'
+      - 'scripts/isolated-full-recovery-e2e.mjs'
+      - 'tests/649-isolated-recovery-source.test.ts'
+      - 'supabase/migrations/20261105204000_guard_stale_import_revision.sql'
+      - 'server/index.ts'
+      - 'api/import.ts'
+      - 'server/storage.ts'
+      - 'src/lib/api.ts'
       - 'scripts/recovery-fixtures/**'
       - 'tests/real-stack-e2e-source.test.ts'
       - 'tests/real-stack-browser-source.test.ts'
@@ -27,6 +34,14 @@ concurrency:
 jobs:
   isolated-local-supabase:
     name: isolated-local-supabase
+    # Never pay the full Supabase+Chromium startup cost for every draft-only
+    # change in a PR whose original cumulative diff touched this workflow.
+    # Always run when review-ready; explicit trusted draft opt-in is supported.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event.pull_request.draft == false ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+           contains(github.event.pull_request.body, '<!-- run-real-stack-e2e -->')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,13 +54,39 @@ jobs:
             package-lock.json
             api/package-lock.json
       - run: npm ci --prefer-offline --no-audit --no-fund
-      - name: Verify pinned Supabase CLI
-        run: npx --yes supabase@2.119.0 --version
+      - name: Install and verify pinned Supabase CLI
+        # Use the official release binary, not the unpinned transitive npm
+        # installer graph. The version and exact Linux archive digest are pinned.
+        run: |
+          set -euo pipefail
+          cli_dir="$RUNNER_TEMP/myfinhub-supabase-cli"
+          mkdir -p "$cli_dir"
+          archive="$cli_dir/supabase.tar.gz"
+          curl --fail --silent --show-error --location --retry 2 --max-time 120 \
+            'https://github.com/supabase/cli/releases/download/v2.119.0/supabase_2.119.0_linux_amd64.tar.gz' --output "$archive"
+          printf '%s  %s\n' 'bf1c3ae93be98533eb8a3105dbf4564bd0b2d9dc24690d8a920f980ef975c1b4' "$archive" | sha256sum --check --strict
+          tar -xzf "$archive" -C "$cli_dir" supabase
+          test "$("$cli_dir/supabase" --version)" = '2.119.0'
+          echo "MYFINHUB_QA_SUPABASE_CLI=$cli_dir/supabase" >> "$GITHUB_ENV"
+      - name: Restrict CI-only local services (no Studio or SMTP ports)
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          config=Path('supabase/config.toml')
+          data=config.read_text()
+          old='[studio]\nenabled = true'
+          assert data.count(old)==1, 'Unexpected Supabase local Studio configuration'
+          assert '[local_smtp]' not in data, 'CI local SMTP section was already configured'
+          config.write_text(data.replace(old,'[studio]\nenabled = false',1)
+                            +'\n[local_smtp]\nenabled = false\n')
+          PY
       - name: Start isolated local Supabase
-        run: npx --yes supabase@2.119.0 start
+        run: '"$MYFINHUB_QA_SUPABASE_CLI" start'
       - name: Build real application bundle
         run: npm run build
-      - name: Run MyFinHub real-stack proof
+      - name: Run MyFinHub real-stack proof and isolated restore before Chromium
+        env:
+          MYFINHUB_ISOLATED_RECOVERY: '1'
         run: npm run qa:real-stack
       - name: Rehearse forward-only migration recovery
         run: npm run qa:migration-recovery
@@ -58,4 +99,7 @@ jobs:
           if-no-files-found: ignore
       - name: Stop and discard local Supabase data
         if: always()
-        run: npx --yes supabase@2.119.0 stop --no-backup
+        run: |
+          if [ -n "${MYFINHUB_QA_SUPABASE_CLI:-}" ]; then
+            "$MYFINHUB_QA_SUPABASE_CLI" stop --no-backup
+          fi

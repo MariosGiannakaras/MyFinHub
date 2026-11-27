@@ -55,7 +55,9 @@ describe('theme architecture source contract',()=>{
     expect(rendered).toContain('dark high-fidelity surface parity');
     expect(rootCompat).not.toContain("dark-theme-surfaces.css");
     expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
-    expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
+    expect(qaHtml).toContain("import '/src/styles/workspace-compat.css';");
+    expect(qaHtml.indexOf("import '/src/styles.css';")).toBeLessThan(qaHtml.indexOf("import '/src/styles/workspace-compat.css';"));
+    expect(qaHtml).not.toContain("await import('/src/styles/dark-theme-surfaces.css');");
     expect(reportsStyles).toContain('.report-financial-picture{grid-template-columns:');
     expect(reportsStyles).toContain('background:var(--surface)!important');
     expect(reportsStyles).toContain('background:var(--success-bg)');

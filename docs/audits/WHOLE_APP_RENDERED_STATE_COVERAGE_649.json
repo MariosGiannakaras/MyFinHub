@@ -1,0 +1,171 @@
+{
+  "schema": "myfinhub-649-rendered-state-coverage-v1",
+  "purpose": "Executable requirements/inventory, not evidence of executed or passing browser tests",
+  "authority": [
+    "src/lib/routing.ts",
+    "scripts/run-rendered-qa.mjs",
+    "docs/audits/WHOLE_APP_REMEDIATION_649_PLAN.md"
+  ],
+  "status": "pending-final-ready-qa",
+  "routeIds": [
+    "dashboard",
+    "transactions",
+    "savings",
+    "cards",
+    "credit",
+    "loans",
+    "lending",
+    "recurring",
+    "planning",
+    "attention",
+    "reports",
+    "settings"
+  ],
+  "settingsTabIds": [
+    "general",
+    "profile",
+    "accounts",
+    "categories",
+    "icons",
+    "rules",
+    "data"
+  ],
+  "routeMatrix": {
+    "requiredViewports": [
+      {
+        "id": "small-mobile",
+        "width": 320,
+        "height": 740
+      },
+      {
+        "id": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      {
+        "id": "tablet",
+        "width": 768,
+        "height": 1024
+      },
+      {
+        "id": "desktop",
+        "width": 1440,
+        "height": 1000
+      }
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "requirement": "Each route × viewport × theme is a target matrix cell, not proof of a completed capture",
+    "baselineRunner": "scripts/ui-ux-visual-evidence-qa.mjs",
+    "baselineActuallyAutomated": "12 routes × desktop 1440 and mobile 375; other required cells remain a distinct final coverage gap",
+    "status": "pending-final-ready-qa"
+  },
+  "namedSurfaces": [
+    {
+      "id": "login",
+      "requirement": "login, invalid credentials, service unavailable, retry, keyboard focus",
+      "runner": "scripts/session-runtime-qa.mjs"
+    },
+    {
+      "id": "mfa",
+      "requirement": "AAL2 OTP valid/invalid, expiry, back, focus, safe retry",
+      "runner": "scripts/session-runtime-qa.mjs"
+    },
+    {
+      "id": "settings-seven-tabs",
+      "requirement": "all seven deep-linked tabs with roving arrows/Home/End and viewport geometry",
+      "runner": "scripts/settings-tabs-qa.mjs"
+    },
+    {
+      "id": "dialogs",
+      "requirement": "open, close, focus trap/return, overflow, mobile geometry",
+      "runner": "scripts/completion-dialog-geometry-qa.mjs"
+    },
+    {
+      "id": "quick-entry",
+      "requirement": "modal, dirty close, save failure and pending no-double-submit",
+      "runner": "scripts/quick-entry-reference-qa.mjs"
+    },
+    {
+      "id": "local-receipt",
+      "requirement": "independent local OCR, finance receipt, post-save cleanup/reload safety",
+      "runner": "scripts/receipt-local-ocr-qa.mjs"
+    },
+    {
+      "id": "desktop-shell",
+      "requirement": "desktop titlebar, recovery, runtime first-run/loopback geometry",
+      "runner": "scripts/desktop-host-visual-qa.mjs"
+    }
+  ],
+  "requiredStates": [
+    {
+      "id": "populated",
+      "runner": "scripts/ui-ux-visual-evidence-qa.mjs"
+    },
+    {
+      "id": "empty",
+      "runner": "scripts/shell-dashboard-hierarchy-qa.mjs"
+    },
+    {
+      "id": "loading",
+      "runner": "scripts/save-progress-qa.mjs"
+    },
+    {
+      "id": "pending",
+      "runner": "scripts/save-progress-qa.mjs"
+    },
+    {
+      "id": "error",
+      "runner": "scripts/mutation-validation-qa.mjs"
+    },
+    {
+      "id": "conflict",
+      "runner": "scripts/save-progress-qa.mjs"
+    },
+    {
+      "id": "offline",
+      "runner": "scripts/save-progress-qa.mjs"
+    },
+    {
+      "id": "privacy-masked",
+      "runner": "scripts/ui-ux-visual-evidence-qa.mjs"
+    },
+    {
+      "id": "privacy-visible",
+      "runner": "scripts/ui-ux-visual-evidence-qa.mjs"
+    },
+    {
+      "id": "keyboard-focus",
+      "runner": "scripts/keyboard-semantic-accessibility-qa.mjs"
+    },
+    {
+      "id": "reduced-motion",
+      "runner": "scripts/content-entrance-qa.mjs"
+    },
+    {
+      "id": "dark-theme",
+      "runner": "scripts/theme-system-qa.mjs"
+    },
+    {
+      "id": "session-expired",
+      "runner": "scripts/session-runtime-qa.mjs"
+    }
+  ],
+  "acceptance": {
+    "rule": "Source-path ownership is NOT runtime acceptance. Require actual matching head SHA, QA fixtures and viewport/theme/privacy metadata, PASS of required final gates, and direct screenshot/log artifact inspection.",
+    "finalGates": [
+      "CI validate",
+      "CodeQL",
+      "Unified",
+      "Chromium",
+      "WebKit",
+      "Lighthouse",
+      "Windows host/installer",
+      "security/real-stack where applicable",
+      "visual evidence inspection"
+    ],
+    "unresolved": "Do not represent unexecuted cross-product states as passing. Any missing final route/theme/viewport/state combination remains a documented gap."
+  }
+}

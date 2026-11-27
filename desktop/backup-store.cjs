@@ -103,7 +103,11 @@ function createDesktopBackupStore({ userData, documents }) {
       try { checkedEntry(entry); valid = true; } catch { /* preserve failed entry */ }
       return { name: entry.name, createdAt: entry.createdAt, revision: entry.revision, bytes: entry.size, valid };
     });
-    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups, lastValidBackupAt: backups.find(item => item.valid)?.createdAt ?? null, lastFailureAt: typeof index.lastFailureAt === 'string' ? index.lastFailureAt : null };
+    const latestValid = backups.find(item => item.valid);
+    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups,
+      lastValidBackupAt: latestValid?.createdAt ?? null,
+      lastValidBackupRevision: latestValid?.revision ?? null,
+      lastFailureAt: typeof index.lastFailureAt === 'string' ? index.lastFailureAt : null };
   }
   function save(snapshot) {
     if (busy) throw new Error('Άλλο backup βρίσκεται σε εξέλιξη.');

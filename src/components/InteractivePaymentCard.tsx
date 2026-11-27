@@ -5,6 +5,8 @@ import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
+import { copyTextWithFallback } from '../lib/copyTextWithFallback';
+import { OperationFeedback, type OperationFeedbackTone } from './OperationFeedback';
 import { CARD_TILT_REST, cardPointerTiltAllowed, cardPointerTiltTransform } from '../lib/cardPointerTilt';
 import type { CardBank, PaymentCard } from '../types';
 import './InteractivePaymentCard.css';
@@ -71,12 +73,19 @@ export function InteractivePaymentCard({
 }){
   const [revealed,setRevealed]=useState<Secrets>({});
   const [busy,setBusy]=useState(false);
+  const [copyBusy,setCopyBusy]=useState(false);
   const [message,setMessage]=useState('');
+  const [messageTone,setMessageTone]=useState<OperationFeedbackTone>('success');
   const [deleteOpen,setDeleteOpen]=useState(false);
   const [deleteProgress,setDeleteProgress]=useState(0);
   const [deleteOffset,setDeleteOffset]=useState(0);
   const cardRef=useRef<HTMLElement>(null);
   const archivingRef=useRef(false);
+  const copyInFlight=useRef(false);
+  const mountedRef=useRef(false);
+  const activeCardIdRef=useRef(card.id);
+  activeCardIdRef.current=card.id;
+  const isActiveCard=(id:string)=>mountedRef.current&&activeCardIdRef.current===id&&!archivingRef.current;
   const deleteProgressRef=useRef(0);
   const archivePointerIdRef=useRef<number|null>(null);
   const archiveDragCleanupRef=useRef<(()=>void)|null>(null);
@@ -85,26 +94,53 @@ export function InteractivePaymentCard({
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
   const tiltRectRef=useRef<DOMRect|null>(null);
   const tiltFrameRef=useRef<number|null>(null);
+  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false}},[]);
 
   const loadSecrets=async()=>{
+    const requestedId=card.id;
     setBusy(true);setMessage('');
     try{
       // A missing server vault entry is not a successful reveal.
-      const server=await revealCardSecret(card.id);
+      const server=await revealCardSecret(requestedId);
+      if(!isActiveCard(requestedId))return null;
       if(!server.pan&&!server.expiry&&!server.cvv){
-        setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
+        setMessageTone('error');setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
         setRevealed({});
         return null;
       }
       setRevealed(server);return server;
-    }catch(error){setRevealed({});setMessage(cardVaultErrorMessage(error));return null}
-    finally{setBusy(false)}
+    }catch(error){
+      if(!isActiveCard(requestedId))return null;
+      setRevealed({});setMessageTone('error');setMessage(cardVaultErrorMessage(error));return null;
+    }finally{if(isActiveCard(requestedId))setBusy(false)}
   };
 
   const toggleReveal=async()=>{if(visible){setRevealed({});return}await loadSecrets()};
   const copy=async(field:keyof Secrets,label:string)=>{
-    const current=revealed[field]||(await loadSecrets())?.[field];if(!current)return;
-    try{await navigator.clipboard.writeText(current);setMessage(`${label} αντιγράφηκε.`)}catch{setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    const requestedId=card.id;
+    if(busy||copyInFlight.current||!isActiveCard(requestedId))return;
+    // The DOM can dispatch two clicks before React repaints disabled buttons.
+    // Lock before either the vault read or the clipboard promise is awaited.
+    copyInFlight.current=true;setCopyBusy(true);setMessage('');
+    try{
+      const available=revealed[field]?revealed:await loadSecrets();
+      if(!available)return; // Preserve an actual vault error from loadSecrets.
+      // Route unmount, replacement or archive may happen during vault retrieval.
+      // A stale sensitive value must never reach the system clipboard.
+      if(!isActiveCard(requestedId))return;
+      const current=available[field];
+      if(!current){
+        setMessageTone('error');setMessage('Δεν υπάρχει αποθηκευμένη τιμή για αντιγραφή.');
+        return;
+      }
+      await copyTextWithFallback(current);
+      if(isActiveCard(requestedId)){setMessageTone('success');setMessage(`${label} αντιγράφηκε.`)}
+    }catch{
+      if(isActiveCard(requestedId)){setMessageTone('error');setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
+    }finally{
+      copyInFlight.current=false;
+      if(mountedRef.current&&activeCardIdRef.current===requestedId)setCopyBusy(false);
+    }
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
   const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
@@ -115,9 +151,9 @@ export function InteractivePaymentCard({
     try{
       if(cardRef.current)await playArchiveShred(cardRef.current);
       await onArchive(card);
-      setRevealed({});resetDelete();setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
+      setRevealed({});resetDelete();setMessageTone('success');setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
     }catch{
-      setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
+      setMessageTone('error');setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
       resetDelete();
     }finally{archivingRef.current=false;setBusy(false)}
   };
@@ -239,10 +275,10 @@ export function InteractivePaymentCard({
           </div>
         </header>
         <div className="card-body">
-          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
+          <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
           <div className="card-fields">
-            <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
-            <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
+            <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
+            <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
@@ -250,6 +286,6 @@ export function InteractivePaymentCard({
         </>
       </div>
     </article>}
-    {message?<div className="r-card-status" role="alert" aria-live="assertive">{message}</div>:null}
+    {message?<OperationFeedback className="r-card-status" tone={messageTone}>{message}</OperationFeedback>:null}
   </div>;
 }

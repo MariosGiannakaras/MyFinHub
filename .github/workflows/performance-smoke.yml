@@ -51,8 +51,10 @@ jobs:
             cat /tmp/myfinhub-performance-vite.log
             exit 1
           fi
-          node scripts/performance-audit.mjs
-          node scripts/loading-shift-audit.mjs
+          failures=0
+          node scripts/performance-audit.mjs || failures=$((failures+1))
+          node scripts/loading-shift-audit.mjs || failures=$((failures+1))
+          if [ "$failures" -gt 0 ]; then exit 1; fi
       - name: Upload Lighthouse evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

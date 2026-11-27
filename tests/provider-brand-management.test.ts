@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { rovingTabDestination } from '../src/lib/rovingTabDestination.js';
 import { ApiError, copyBoundedBinaryValue } from '../server/http.js';
 import {
   parseFinancialProviderWrite,
@@ -7,7 +8,7 @@ import {
   parseProviderAssetUpload,
   validateProviderAssetContent,
 } from '../server/accountMetadataHandler.js';
-import { uploadFinancialProviderAsset } from '../server/accountMetadataStore.js';
+import { uploadFinancialProviderAsset, uploadRecurringServiceAsset } from '../server/accountMetadataStore.js';
 import { cardBrandSurfaceTone } from '../src/lib/cardDesigns.js';
 import { providerBrandUrl } from '../src/lib/providerBrandAssets.js';
 import type { FinancialProvider } from '../src/lib/financialProviders.js';
@@ -17,11 +18,14 @@ const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.
 const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+const accountManager=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const settingsStyles=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.css',import.meta.url),'utf8');
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
 const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
 const financialProviderClientSource=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const providerBrandingQaSource=readFileSync(new URL('../scripts/provider-brand-management-qa.mjs',import.meta.url),'utf8');
+const focusedQaWorkflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+const receiptQaSource=readFileSync(new URL('../scripts/receipt-local-ocr-qa.mjs',import.meta.url),'utf8');
 
 function provider():FinancialProvider{
   return {
@@ -51,6 +55,77 @@ function provider():FinancialProvider{
 }
 
 describe('provider branding management',()=>{
+  it('serializes provider metadata and asset binding attempts before state repaint (#649 I19.04)',()=>{
+    expect(settings).toContain('const mutationInFlight=useRef(false)');
+    expect(settings).toContain('if(!editor||busy||mutationInFlight.current||requiresCatalogReview||catalogUnavailable||!validateDetails())return;');
+    expect(settings).toContain('disabled={busy||requiresCatalogReview||catalogUnavailable}');
+    expect(settings).toContain('if(error instanceof UnverifiedFinancialProviderWrite)');
+    expect(settings).toContain('mutationInFlight.current=true;setBusy(true)');
+    expect(settings).toContain('finally{mutationInFlight.current=false;setBusy(false)}');
+    expect(providerBrandingQaSource).toContain('Provider save single-flight blocks same-tick double click');
+    expect(providerBrandingQaSource).toContain('button.click();button.click()');
+    expect(providerBrandingQaSource).toContain('partialFailure.creates===1&&partialFailure.uploads===1&&partialFailure.bindings===2');
+  });
+
+  it('keeps Accounts and Providers on one shared input/action/feedback ownership contract (#649 I16.06)',()=>{
+    for(const owner of [accountManager,settings]){
+      for(const primitive of ['<AppSelectInput','<AppTextInput','<Button','<IconButton','<OperationFeedback']){
+        expect(owner).toContain(primitive);
+      }
+      expect(owner).toContain('useModalFocus');
+      expect(owner).not.toMatch(/<select(?:\s|>)/);
+    }
+    // The provider artwork grid and the account bank-radio card have unique
+    // interaction semantics; neither may fork the generic select/input owner.
+    expect(accountManager).toContain('role="radiogroup"');
+    expect(settings).toContain('className="provider-asset-picker"');
+    expect(accountManager).toContain('rovingRadioTypeaheadDestination');
+    expect(settings).toContain('rovingTabDestination');
+    expect(providerBrandingQaSource).toContain('Provider editor keyboard arrows wrap');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
+  });
+
+  it('uses shared Arrow/Home/End roving tabs and guards incomplete provider creation (#649 I02.02/I16.05/I23.03)',()=>{
+    expect(rovingTabDestination('ArrowRight',0,2)).toBe(1);
+    expect(rovingTabDestination('ArrowRight',1,2)).toBe(0);
+    expect(rovingTabDestination('ArrowLeft',0,2)).toBe(1);
+    expect(rovingTabDestination('Home',1,2)).toBe(0);
+    expect(rovingTabDestination('End',0,2)).toBe(1);
+    expect(rovingTabDestination('Tab',0,2)).toBeNull();
+    expect(rovingTabDestination('ArrowRight',0,0)).toBeNull();
+    expect(settings).toContain('onKeyDown={event=>onEditorTabKeyDown(event,0)}');
+    expect(settings).toContain('onKeyDown={event=>onEditorTabKeyDown(event,1)}');
+    expect(settings).toContain("tabIndex={editor.tab==='details'?0:-1}");
+    expect(settings).toContain("tabIndex={editor.tab==='branding'?0:-1}");
+    expect(settings).toContain('aria-controls="provider-editor-panel-details"');
+    expect(settings).toContain('aria-controls="provider-editor-panel-branding"');
+    expect(settings).toContain('aria-labelledby="provider-editor-tab-details"');
+    expect(settings).toContain('aria-labelledby="provider-editor-tab-branding"');
+    expect(settings).toContain("if(tab==='branding'&&editor.source==='new'&&!validateDetails())return");
+    expect(settings).toContain('disabled={busy} onKeyDown={event=>onEditorTabKeyDown');
+    expect(providerBrandingQaSource).toContain('Provider editor keyboard arrows wrap and preserve labelled panels');
+    expect(providerBrandingQaSource).toContain('new provider cannot bypass validation by keyboard');
+  });
+  it('separates Provider ID label/value/help and untruncates long bank names (#649 I16.01/I02.04)',()=>{
+    expect(settingsStyles).toContain('.provider-details-grid label,.provider-id-field{display:grid;gap:5px}');
+    expect(settingsStyles).toContain('.provider-id-field{min-width:0;overflow-wrap:anywhere}');
+    const pickerCss=readFileSync(new URL('../src/components/AccountManagementProvider.css',import.meta.url),'utf8');
+    expect(pickerCss).toContain('.account-management-provider-picker button b,.account-management-provider-picker button small{overflow-wrap:anywhere}');
+    expect(providerBrandingQaSource).toContain('Provider ID label, read-only key and help are separate readable rows');
+    expect(providerBrandingQaSource).toContain('provider-editor-details-light-mobile');
+    const settingsTabsQa=readFileSync(new URL('../scripts/settings-tabs-qa.mjs',import.meta.url),'utf8');
+    expect(settingsTabsQa).toContain('Long bank/provider names are legible and wrap within 375px mobile picker');
+  });
+  it('keeps compact owned finance filters legible and external MoneyInput aria-invalid intact',()=>{
+    const css=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
+    const density=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');
+    expect(css).toContain('min-height:32px;border-radius:8px;font-size:12px');
+    expect(density).toContain('padding:0 30px 0 8px;font-size:12px');
+    const field=readFileSync(new URL('../src/components/MoneyInput.tsx',import.meta.url),'utf8');
+    expect(field).toContain("aria-invalid={invalid||inputProps['aria-invalid']||undefined}");
+    expect(providerBrandingQaSource).toContain('compact Transactions filters remain at least 12px');
+  });
+
   const originalUrl=process.env.SUPABASE_URL;
   const originalKey=process.env.SUPABASE_PUBLISHABLE_KEY;
   afterEach(()=>{
@@ -101,6 +176,40 @@ describe('provider branding management',()=>{
       .toEqual({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'});
     expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:null}).assetKey).toBeNull();
     expect(()=>parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'blue',assetKey:'demo-shared'})).toThrow(ApiError);
+  });
+
+
+  it('rejects coercible provider order and malformed primary upload intent before mutating metadata (#649 I19.04)',()=>{
+    for(const invalid of ['900','',null,undefined,false,true,[],{},1.5,-1,100001,Number.MAX_SAFE_INTEGER]){
+      expect(()=>parseFinancialProviderWrite({
+        id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',
+        providerKind:'bank',countryCode:'GR',sortOrder:invalid,
+      })).toThrowError(ApiError);
+    }
+    for(const valid of [0,900,100000]){
+      expect(parseFinancialProviderWrite({
+        id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',
+        providerKind:'bank',countryCode:'GR',sortOrder:valid,
+      }).sortOrder).toBe(valid);
+    }
+    const query={providerId:'demo-bank',role:'logo',variant:'light',fileName:'logo.png'};
+    const headers={'content-type':'image/png'};
+    expect(parseProviderAssetUpload({query,headers}).makePrimary).toBe(false);
+    for(const primary of ['0','1']){
+      expect(parseProviderAssetUpload({query:{...query,primary},headers}).makePrimary)
+        .toBe(primary==='1');
+    }
+    for(const primary of ['true','false','yes','2','',null,true,1,['0','1']]){
+      expect(()=>parseProviderAssetUpload({query:{...query,primary},headers})).toThrowError(ApiError);
+    }
+    // A forbidden primary card mark remains rejected instead of coercing its
+    // primary flag away; an explicit variant card mark is still valid.
+    expect(()=>parseProviderAssetUpload({
+      query:{...query,role:'card-mark',primary:'1'},headers,
+    })).toThrowError(ApiError);
+    expect(parseProviderAssetUpload({
+      query:{...query,role:'card-mark',primary:'0'},headers,
+    }).makePrimary).toBe(false);
   });
 
   it('checks image signatures and rejects active SVG content',()=>{
@@ -161,7 +270,9 @@ describe('provider branding management',()=>{
     ]));
     expect(qaFinancialProviderSource).toContain("https://ahsukppxwaiagampsuzb.supabase.co");
     expect(financialProviderClientSource).toContain('QA_FINANCIAL_PROVIDERS');
-    expect(financialProviderClientSource).toContain('providers:QA_MODE?QA_PROVIDERS:FALLBACK');
+    expect(financialProviderClientSource).toContain("QA_MODE&&new URLSearchParams(location.search).has('qaProviderCatalogFallback')");
+    expect(financialProviderClientSource).toContain('providers:QA_CATALOG_FAILURE?FALLBACK:QA_MODE?QA_PROVIDERS:FALLBACK');
+    expect(financialProviderClientSource).toContain('if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null})');
   });
 
   it('uses one edit/create provider editor with a visual asset library instead of native-file-input UX',()=>{
@@ -192,6 +303,144 @@ describe('provider branding management',()=>{
     expect(settingsStyles).toContain('font-size:var(--ux-tiny-size)');
   });
 
+  it('refuses a malformed metadata HTTP 200 receipt before claiming provider/asset persistence (#649 I19.04)',()=>{
+    const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
+    expect(client).toContain('const rows:unknown[]|null=Array.isArray(payload?.providers)?payload.providers:null');
+    expect(client).toContain('parsed.some(item=>!item)');
+    expect(client).toContain('new Set(parsed.map(item=>item?.id)).size!==parsed.length');
+    expect(client).toContain('const acknowledged=parseProvider(payload?.provider)');
+    expect(client).toContain('acknowledged.id!==input.id');
+    expect(client).toContain('acknowledged.displayName!==input.displayName.trim()');
+    expect(client).toContain('acknowledged.kind!==input.providerKind');
+    expect(client).toContain('acknowledged.sortOrder!==input.sortOrder');
+    expect(client).toContain("throw new UnverifiedFinancialProviderWrite('metadata')");
+    expect(settings).toContain("setEditorWarning(error.operation==='metadata'");
+    expect(settings).toContain('setRequiresCatalogReview(true)');
+    expect(providerBrandingQaSource).toContain('Provider save HTTP 200 without a valid matching receipt cannot show success');
+    expect(providerBrandingQaSource).toContain('Provider upload HTTP 200 with an invalid binary receipt cannot silently succeed');
+    expect(providerBrandingQaSource).toContain('invalid provider HTTP 200 receipt cannot trigger upload');
+    expect(providerBrandingQaSource).toContain('provider-create-invalid-200-receipt-warning-desktop');
+    expect(providerBrandingQaSource).toContain('metadata 200 without matching receipt disables the unsafe repeat POST');
+    expect(providerBrandingQaSource).toContain('disabled metadata 200 Save never repeats POST');
+    expect(providerBrandingQaSource).toContain('explicitly close unverified metadata editor before a new attempt');
+    expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-unverified-asset-warning-mobile');
+    expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-stale-catalog-warning-mobile');
+    expect(providerBrandingQaSource).toContain('[data-save-progress=error]');
+  });
+
+  it('keeps acknowledged provider metadata and uploaded binaries retryable after later failures',()=>{
+    expect(settings).toContain('let metadataCommitted=false;');
+    expect(settings).toContain('metadataCommitted=true;');
+    expect(settings).toContain('pendingAssets:current.pendingAssets.map(item=>item.ref===pending.ref?{...item,uploadedKey:asset.assetKey}:item)');
+    expect(settings).not.toContain('pending.uploadedKey=asset.assetKey');
+    expect(settings).toContain('originalAssignments:{...current.originalAssignments,[slot.id]:finalKey}');
+    expect(settings).toContain('if(metadataCommitted){');
+    expect(settings).toContain('const confirmedCatalog=providerCatalogMatchesWrite(');
+    expect(settings).toContain('markDatabaseSaveUnverified()');
+    expect(settings).toContain('if(!confirmedCatalog){');
+    expect(settings).toContain('setEditorWarning(');
+    expect(settings).toContain('<OperationFeedback tone="warning"');
+    expect(settings).toContain('Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.');
+    expect(providerBrandingQaSource).toContain('partial provider metadata commit must not look like a failed initial write');
+    expect(providerBrandingQaSource).toContain('acknowledged upload and logo binding are not duplicated after later wordmark failure');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-desktop');
+    expect(providerBrandingQaSource).toContain('provider-create-partial-binding-warning-mobile');
+    expect(providerBrandingQaSource).toContain('only rejected wordmark binding is retried');
+    expect(providerBrandingQaSource).toContain('settled.creates===1&&settled.updates===0&&settled.uploads===1&&settled.bindings===3');
+    expect(providerBrandingQaSource).toContain('deliberate provider metadata change before retry');
+    expect(providerBrandingQaSource).toContain('staleRetry.creates===1&&staleRetry.updates===1&&staleRetry.uploads===1&&staleRetry.bindings===2');
+    expect(settings).toContain('<div className="provider-editor-body provider-editor-feedback">');
+    expect(focusedQaWorkflow).toContain('<!-- run-649-provider-receipt-qa -->');
+    expect(focusedQaWorkflow).toContain("'provider-brand-management receipt-local-ocr'");
+    expect(focusedQaWorkflow).toContain('PASS after Chromium bootstrap retry: $suite');
+    expect(focusedQaWorkflow).toContain('Provider Chromium CDP bootstrap failed|Settings Chromium CDP bootstrap failed|Timed out waiting for http://127[.]0[.]0[.]1:[0-9]+/json/version');
+    expect(providerBrandingQaSource).toContain("'--remote-debugging-port=0'");
+    expect(providerBrandingQaSource).toContain('DevToolsActivePort');
+    expect(providerBrandingQaSource).toContain(String.raw`raw.split(/\r?\n/,1)`);
+    expect(providerBrandingQaSource).not.toContain(String.raw`raw.split(/\\r?\\n/,1)`);
+    expect(providerBrandingQaSource).toContain('const port=await waitForChromiumCdp()');
+    expect(providerBrandingQaSource).toContain('if(response.ok)return port');
+    expect(providerBrandingQaSource).not.toContain("listener.listen(0,'127.0.0.1'");
+    expect(providerBrandingQaSource).toContain('rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});');
+    expect(providerBrandingQaSource).toContain("child.stderr?.on('data'");
+    expect(providerBrandingQaSource).toContain("if(child.exitCode!==null)throw new Error");
+    expect(receiptQaSource).toContain("const port = 9253;");
+    expect(receiptQaSource).toContain("'receipt switch confirmation has settled at full opacity'");
+    expect(receiptQaSource).toContain("Number(getComputedStyle(dialog).opacity)>=.995");
+  });
+
+  it.each(['503','408','429','network-loss'] as const)(
+    'reconciles provider Storage %s only after exact public bytes before one registration',async scenario=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const requests:Array<{url:string;method:string}>=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=init?.method||'GET';
+      requests.push({url,method});
+      if(requests.length===1){
+        if(scenario==='network-loss')throw new Error('Lost Storage POST response');
+        return new Response('{}',{status:Number(scenario)});
+      }
+      if(requests.length===2){
+        expect(method).toBe('GET');
+        expect(url).toContain('/storage/v1/object/public/financial-provider-assets/providers/demo-bank/');
+        return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':String(bytes.byteLength)}});
+      }
+      if(requests.length===3){
+        const path=new URL(requests[0].url).pathname.split('/financial-provider-assets/')[1];
+        const assetKey=path.split('/').at(-1)!.replace(/\.png$/,'');
+        return new Response(JSON.stringify([{asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',
+          variant:'light',file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+          storage_path:path,size_bytes:bytes.byteLength,updated_at:'2026-11-22T20:00:00Z',active:true}]),{status:200});
+      }
+      throw new Error('Upload reconciliation must not perform another POST or cleanup DELETE');
+    }));
+    const result=await uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',
+      mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:bytes},'owner-aal2-token');
+    expect(result.assetKey).toMatch(/^demo-bank-asset-[a-f0-9]{12}$/);
+    expect(requests.map(row=>row.method)).toEqual(['POST','GET','POST']);
+    expect(requests[2].url).toContain('/rpc/rheomiq_register_financial_provider_asset');
+    expect(requests.every(row=>!row.url.includes('/storage/v1/object/list/'))).toBe(true);
+  });
+
+  it.each(['missing','mismatch','oversized','timeout','declared-size-mismatch','invalid-content-length','truncated'] as const)(
+    'never registers, retries or deletes uncertain provider Storage when byte readback is %s',async scenario=>{
+      process.env.SUPABASE_URL='https://project.example.supabase.co';
+      process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+      const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+      const calls:Array<{url:string;method:string}>=[];
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=init?.method||'GET';
+        calls.push({url,method});
+        if(calls.length===1){
+          if(scenario==='timeout')throw new Error('lost Storage POST response');
+          return new Response('{}',{status:503});
+        }
+        if(calls.length===2){
+          expect(method).toBe('GET');
+          if(scenario==='missing')return new Response('{}',{status:404});
+          if(scenario==='oversized')return new Response(new Uint8Array(bytes.length+1),{status:200});
+          if(scenario==='declared-size-mismatch')return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':String(bytes.length+1)}});
+          if(scenario==='invalid-content-length')return new Response(Uint8Array.from(bytes),{status:200,headers:{'content-length':'invalid'}});
+          if(scenario==='truncated')return new Response(Uint8Array.from(bytes.slice(0,-1)),{status:200});
+          return new Response(Uint8Array.from([...bytes.slice(0,-1),42]),{status:200});
+        }
+        throw new Error('Unsafe provider Storage replay, deletion or registration');
+      }));
+      const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+      try{
+        await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',
+          mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:bytes},'owner-aal2-token'))
+          .rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_UPLOAD_UNVERIFIED'});
+        expect(calls.map(c=>c.method)).toEqual(['POST','GET']);
+        expect(log).toHaveBeenCalledWith('[RheomIQ provider artwork upload]',
+          expect.objectContaining({status:'storage-receipt-unverified'}));
+      }finally{log.mockRestore()}
+    });
+
   it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
     process.env.SUPABASE_URL='https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
@@ -199,8 +448,10 @@ describe('provider branding management',()=>{
     const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=String(input);const method=String(init?.method||'GET');calls.push({url,method});
       if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
-      if(calls.length===2)return new Response(JSON.stringify({message:'temporary registration failure'}),{status:503,headers:{'content-type':'application/json'}});
-      if(calls.length===3)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
       throw new Error('unexpected provider asset request');
     });
     vi.stubGlobal('fetch',fetchMock);
@@ -208,15 +459,274 @@ describe('provider branding management',()=>{
     await expect(uploadFinancialProviderAsset({
       providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:true,
       content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
-    },'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
+    },'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
 
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(6);
     expect(calls[0]).toMatchObject({method:'POST'});
     expect(calls[0].url).toContain('/storage/v1/object/financial-provider-assets/providers/demo-bank/');
     expect(calls[1]).toMatchObject({method:'POST'});
     expect(calls[1].url).toContain('/rest/v1/rpc/rheomiq_register_financial_provider_asset');
-    expect(calls[2]).toMatchObject({method:'DELETE'});
-    expect(calls[2].url).toBe(calls[0].url);
+    expect(calls[2]).toMatchObject({method:'GET'});
+    expect(calls[2].url).toContain('/rheomiq_financial_provider_assets?select=');
+    expect(calls[3].url).toContain('/rpc/rheomiq_is_owner_aal2');
+    expect(calls[4]).toMatchObject({method:'DELETE'});
+    expect(calls[4].url).toBe(calls[0].url);
+    expect(calls[5].url).toContain('/rpc/rheomiq_is_owner_aal2');
+  });
+
+
+  it('reconciles a committed registration after a 503 response without deleting its Storage object',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'upstream response lost after commit'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3){
+        const assetKey=decodeURIComponent(url.match(/asset_key=eq\.([^&]+)/)?.[1]||'');
+        const storagePath=new URL(calls[0].url).pathname.split('/financial-provider-assets/')[1];
+        return new Response(JSON.stringify([{asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',variant:'light',file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',storage_path:storagePath,size_bytes:10,updated_at:'2026-11-10T00:00:00Z',active:true}]),{status:200,headers:{'content-type':'application/json'}});
+      }
+      throw new Error('unexpected destructive provider asset request');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const asset=await uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token');
+    expect(asset.assetKey).toContain('demo-bank-asset-');
+    expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+    expect(calls.some(call=>call.method==='DELETE')).toBe(false);
+  });
+
+  it.each([
+    {label:'file name',field:'file_name',wrongValue:'different.png'},
+    {label:'MIME type',field:'mime_type',wrongValue:'image/webp'},
+    {label:'byte length',field:'size_bytes',wrongValue:9},
+  ])('never acknowledges a committed provider asset with a mismatched $label',async({field,wrongValue})=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const bytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');
+      calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200});
+      if(calls.length===2)return new Response(JSON.stringify({message:'RPC committed but response lost'}),{status:503});
+      if(calls.length===3){
+        const assetKey=decodeURIComponent(url.match(/asset_key=eq\.([^&]+)/)?.[1]||'');
+        const storagePath=new URL(calls[0].url).pathname.split('/financial-provider-assets/')[1];
+        const row={
+          asset_key:assetKey,provider_id:'demo-bank',asset_role:'logo',variant:'light',
+          file_name:'logo.png',mime_type:'image/png',storage_bucket:'financial-provider-assets',
+          storage_path:storagePath,size_bytes:bytes.byteLength,
+          updated_at:'2026-11-17T12:00:00Z',active:true,
+          [field]:wrongValue,
+        };
+        return new Response(JSON.stringify([row]),{status:200});
+      }
+      throw new Error('Mismatched provider receipt must never trigger Storage cleanup or retry');
+    }));
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,content:bytes,
+      },'access-token')).rejects.toMatchObject({
+        status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED',
+      });
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+      expect(calls[2].url).toContain('asset_key=eq.');
+    }finally{log.mockRestore()}
+  });
+
+  it('never deletes after an ambiguous 503 despite an initially empty registry read (late commit race)',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'timeout or gateway error before response'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('ambiguous transaction must not trigger Storage DELETE');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET']);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset reconciliation]',expect.objectContaining({status:'ambiguous-register-response'}));
+    }finally{log.mockRestore()}
+  });
+
+  it('never deletes after a malformed successful registration reply with an empty read-back',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push(String(init?.method||'GET'));
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('invalid registration reply must not authorize DELETE');
+    }));
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls).toEqual(['POST','POST','GET']);
+    }finally{log.mockRestore()}
+  });
+
+  it('does not delete a possibly committed provider asset when registry read-back is unavailable',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:string[]=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      calls.push(String(init?.method||'GET'));
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      return new Response(JSON.stringify({message:'metadata temporarily unavailable'}),{status:503,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_REGISTRATION_UNVERIFIED'});
+      expect(calls).toEqual(['POST','POST','GET']);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset reconciliation]',expect.objectContaining({status:'unverified'}));
+    }finally{log.mockRestore()}
+  });
+
+  it('retries bounded cleanup of a confirmed unregistered provider object without touching provider bindings',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE')return new Response('{}',{status:calls.filter(c=>c.method==='DELETE').length===1?503:200});
+      throw new Error('unexpected third cleanup attempt');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0])},'access-token')).rejects.toMatchObject({status:400,code:'INVALID_PROVIDER_DATA'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE','POST']);
+      expect(calls[4].url).toBe(calls[0].url);
+      expect(calls[6].url).toBe(calls[0].url);
+    }finally{log.mockRestore()}
+  });
+
+
+  it.each(['provider','recurring'] as const)('fails closed on RLS-hidden %s registration absence and lost cleanup authorization',async kind=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const content=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const registration=kind==='provider'?'INVALID_PROVIDER_ASSET':'INVALID_RECURRING_SERVICE_ASSET';
+    const code=kind==='provider'?'PROVIDER_ASSET_CLEANUP_PENDING':'RECURRING_SERVICE_ASSET_CLEANUP_PENDING';
+    const upload=()=>kind==='provider'
+      ?uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,content},'access-token')
+      :uploadRecurringServiceAsset({recurringId:'service-one',mimeType:'image/png',fileName:'logo.png',content},'access-token');
+    for(const scenario of ['revoked-before','malformed-before','unavailable-before','revoked-before-retry','revoked-after-200','revoked-after-404'] as const){
+      const calls:Array<{url:string;method:string}>=[];
+      let probes=0;
+      vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+        const url=String(input),method=String(init?.method||'GET');
+        calls.push({url,method});
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer access-token');
+        if(calls.length===1)return new Response('{}',{status:200});
+        if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:registration}),{status:400});
+        if(calls.length===3)return new Response('[]',{status:200});
+        if(url.includes('/rpc/rheomiq_is_owner_aal2')){
+          probes++;
+          if(scenario==='malformed-before')return new Response('"true"',{status:200});
+          if(scenario==='unavailable-before')return new Response('{}',{status:503});
+          return new Response(scenario==='revoked-before'||probes>1?'false':'true',{status:200});
+        }
+        if(method==='DELETE'){
+          expect(url).toBe(calls[0].url);
+          return new Response('{}',{status:scenario==='revoked-before-retry'?503:scenario==='revoked-after-404'?404:200});
+        }
+        throw new Error('Unexpected compensation operation');
+      }));
+      const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+      try{
+        await expect(upload()).rejects.toMatchObject({status:503,code});
+        const attemptedDelete=scenario==='revoked-before-retry'||scenario.startsWith('revoked-after-');
+        expect(calls.map(c=>c.method)).toEqual(attemptedDelete
+          ?['POST','POST','GET','POST','DELETE','POST']:['POST','POST','GET','POST']);
+        expect(calls[3].url).toContain('/rpc/rheomiq_is_owner_aal2');
+        if(attemptedDelete)expect(calls[5].url).toContain('/rpc/rheomiq_is_owner_aal2');
+      }finally{log.mockRestore();vi.unstubAllGlobals()}
+    }
+  });
+
+  it.each(['provider','recurring'] as const)('does not trust embedded SQLSTATE in ambiguous %s registration HTTP failures',async kind=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const content=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+    const code=kind==='provider'?'PROVIDER_ASSET_REGISTRATION_UNVERIFIED':'RECURRING_SERVICE_ASSET_REGISTRATION_UNVERIFIED';
+    const registration=kind==='provider'?'INVALID_PROVIDER_ASSET':'INVALID_RECURRING_SERVICE_ASSET';
+    const upload=()=>kind==='provider'
+      ?uploadFinancialProviderAsset({providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:false,content},'access-token')
+      :uploadRecurringServiceAsset({recurringId:'service-one',mimeType:'image/png',fileName:'logo.png',content},'access-token');
+    for(const status of [408,429,500,503,504]){
+      for(const payload of [{code:'22023',message:registration},{code:'42501',message:'FORBIDDEN'},{code:'23505',message:'ASSET_KEY_CONFLICT'}]){
+        const calls:Array<{url:string;method:string}>=[];
+        vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+          const url=String(input),method=String(init?.method||'GET');
+          calls.push({url,method});
+          expect(new Headers(init?.headers).get('authorization')).toBe('Bearer access-token');
+          if(calls.length===1)return new Response('{}',{status:200});
+          if(calls.length===2)return new Response(JSON.stringify(payload),{status});
+          if(calls.length===3)return new Response('[]',{status:200});
+          throw new Error('Ambiguous registration must not authorize cleanup or retry');
+        }));
+        const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+        try{
+          await expect(upload()).rejects.toMatchObject({status:503,code});
+          expect(calls.map(c=>c.method)).toEqual(['POST','POST','GET']);
+          expect(calls[2].url).toContain('asset_key=eq.');
+        }finally{log.mockRestore();vi.unstubAllGlobals()}
+      }
+    }
+  });
+
+  it('stops after two failed cleanup attempts and reports the unregistered object as pending recovery',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input),method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({code:'22023',message:'INVALID_PROVIDER_ASSET'}),{status:400,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('[]',{status:200,headers:{'content-type':'application/json'}});
+      if(url.includes('/rpc/rheomiq_is_owner_aal2'))return new Response('true',{status:200});
+      if(method==='DELETE'&&calls.filter(c=>c.method==='DELETE').length<=2)return new Response('{}',{status:503});
+      throw new Error('unexpected unbounded or unrelated Storage cleanup');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+    try{
+      await expect(uploadFinancialProviderAsset({
+        providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',
+        fileName:'logo.png',makePrimary:false,
+        content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+      },'access-token')).rejects.toMatchObject({status:503,code:'PROVIDER_ASSET_CLEANUP_PENDING'});
+      expect(calls.map(call=>call.method)).toEqual(['POST','POST','GET','POST','DELETE','POST','DELETE']);
+      expect(calls[4].url).toBe(calls[0].url);
+      expect(calls[6].url).toBe(calls[0].url);
+      expect(log).toHaveBeenCalledWith('[RheomIQ provider asset cleanup]',expect.objectContaining({status:503,attempt:2}));
+    }finally{log.mockRestore()}
   });
 
 });

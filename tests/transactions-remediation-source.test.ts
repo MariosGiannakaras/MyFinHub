@@ -60,6 +60,30 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.transactions-detail-comment-row b{white-space:pre-line;color:var(--text-secondary)}');
   });
 
+  it('proves first full-page screenshot row count equals the actually painted ledger (#649 I05.04)',()=>{
+    const visual=readFileSync(new URL('../scripts/ui-ux-visual-evidence-qa.mjs',import.meta.url),'utf8');
+    const probe=readFileSync(new URL('../scripts/transaction-paint-probe.mjs',import.meta.url),'utf8');
+    expect(probe).toContain('rows.length===expected&&painted===rows.length');
+    expect(probe).toContain('opacity*=value');
+    expect(probe).toContain('overlapping===0&&footerAfterRows');
+    // A CDP capture of the larger page can rasterize offscreen animated table
+    // layers as blank despite DOM opacity=1; neutralize only settled entrance
+    // motion during capture, never force content opacity or change product CSS.
+    expect(probe).toContain("style.dataset.transactionCaptureOnly='true'");
+    expect(probe).toContain('animation:none!important');
+    expect(probe).not.toContain('opacity:1!important');
+    expect(visual).toContain('await c.call(settleTransactionCapture.toString())');
+    expect(visual).toContain('await c.call(releaseTransactionCapture.toString())');
+    expect(qa).toContain('await c.call(settleTransactionCapture.toString())');
+    expect(qa).toContain('await c.call(releaseTransactionCapture.toString())');
+    expect(visual).toContain("lastPaint=await c.call(transactionPaintState.toString())");
+    expect(visual).toContain("page!=='transactions'||lastPaint?.ready");
+    expect(qa).toContain("await waitForFirstPaint('desktop')");
+    expect(qa).toContain("await waitForFirstPaint('mobile')");
+    expect(qa).toContain('transactions-first-20-painted-desktop');
+    expect(qa).toContain('transactions-first-20-painted-mobile');
+  });
+
   it('renders a progressive continuous ledger without numeric pages or page-size controls',()=>{
     expect(page).toContain('const LEDGER_RENDER_BATCH=28');
     expect(page).toContain('const LEDGER_INITIAL_ROWS=20');
@@ -75,10 +99,103 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('continuous ledger reveals additional rows on scroll');
   });
 
+  it('locks actual browser end-date/category filters and aligned semantic/footer counts (#649 I05.05)',()=>{
+    expect(qa).toContain('Transactions QA: dated and categorized ledger filters');
+    expect(qa).toContain('end-date filter preserves exact filtered/semantic rows');
+    expect(qa).toContain('exact persisted category option selected');
+    expect(qa).toContain('transactions-date-range-filter-desktop');
+    expect(qa).toContain('transactions-category-filter-desktop');
+    expect(qa).toContain("'category filter reset'");
+    const workflow=readFileSync(new URL('../.github/workflows/fb-focused-rendered-qa.yml',import.meta.url),'utf8');
+    expect(workflow).toContain('<!-- run-649-transactions-filter-qa -->');
+    expect(workflow).toContain("'transactions-scanability command-palette' ||");
+    expect(page).toContain('Εμφανίζονται {visibleRows.length} από {rows.length} συναλλαγές');
+  });
+
+  it('shares category/date controls across desktop and mobile with reset and narrow-screen QA (#649 I05.05)',()=>{
+    expect(page).toContain('const categoryControl=()=>');
+    expect(page).toContain('const datePicker=(boundary:');
+    expect(page).toContain('dateRangeControl(true)');
+    const ownedDate=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
+    expect(ownedDate).toContain("displayFormat='short'");
+    expect(ownedDate).toContain("displayFormat==='numeric'?compactGreekDate:greekDate");
+    expect(page).toContain("displayFormat={compact?'numeric':'short'}");
+    expect(page).toContain("datePicker('start',true)");
+    expect(page).toContain("gridTemplateColumns:'repeat(auto-fit,minmax(min(158px,100%),1fr))'");
+    expect(page).toContain('<span>Από</span>');
+    expect(page).toContain('<span>Έως</span>');
+    expect(qa).toContain("Transactions QA 320px date text:");
+    expect(qa).toContain("narrowMobile.controls.every(item=>item.fits)");
+    expect(page).toContain('dateRangeControl(false)');
+    expect(page).toContain('mobile-transaction-filter-reset');
+    expect(page).toContain("if(dateEnd&&next>dateEnd)setDateEnd(next)");
+    expect(page).toContain("if(dateStart&&next<dateStart)setDateStart(next)");
+    expect(page).toContain('className="mobile-transaction-date" role="group"');
+    expect(page).toContain('className="transactions-approved-date"');
+    expect(page).toContain("'--ux-dense-label-size':'16px'");
+    expect(qa).toContain('mobileDate.fonts.length===2&&mobileDate.fonts.every(size=>size>=15.9)');
+    expect(qa).toContain('narrowMobile.fonts.length===2&&narrowMobile.fonts.every(size=>size>=15.9)');
+    expect(css).toContain('.transactions-approved-date{height:42px;');
+    expect(qa).toContain('Transactions QA: mobile category/date parity and explicit reset');
+    expect(qa).toContain('transactions-mobile-category-filter-375');
+    expect(qa).toContain('transactions-mobile-date-filter-375');
+    expect(qa).toContain('transactions-mobile-date-filter-320');
+    expect(qa).toContain('320px date controls remain readable without horizontal overflow');
+  });
+
+  it('restores keyboard focus on the exact visible command-selected transaction on desktop and mobile',()=>{
+    expect(page).toContain('const [pendingCommandFocus,setPendingCommandFocus]');
+    expect(page).toContain('setPendingCommandFocus({id:focusId,source:focusSource})');
+    expect(page).toContain('target.focus({preventScroll:true})');
+    expect(page).toContain("target.scrollIntoView({block:'center',inline:'nearest'})");
+    expect(page).toContain('data-transaction-id={r.id}');
+    expect(page).toContain('role="listitem" tabIndex={-1}');
+    const commandQa=readFileSync(new URL('../scripts/command-palette-qa.mjs',import.meta.url),'utf8');
+    expect(commandQa).toContain('exact historic transaction receives keyboard focus');
+    expect(commandQa).toContain('exact historic mobile transaction receives keyboard focus');
+    expect(commandQa).toContain('command-exact-transaction-focus-mobile');
+    expect(commandQa).toContain('focused mobile transaction clears persistent bottom navigation');
+  });
+
+  it('keeps canonical modern and historical transaction deletes receipt-aware (#649 I05.06)',()=>{
+    const lifecycle=readFileSync(new URL('../scripts/legacy-transaction-management-qa.mjs',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const synthetic=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(app).toContain('const deleteEventDurably=(id:string)=>finance.updateDurably');
+    expect(app).toContain('withoutEventGroup(current,id)');
+    expect(page).toContain("if(target.source==='event')await onDeleteEvent(target.id)");
+    expect(page).toContain('else await onDeleteLegacy(target.id)');
+    expect(page).toContain('setDeleteError(userErrorMessage(reason');
+    expect(synthetic).toContain("params.get('transaction-save-failure')==='1'");
+    expect(synthetic).toContain("params.get('transaction-save-pending')==='1'");
+    expect(lifecycle).toContain('rejected override preserves draft but never the ledger mutation');
+    expect(lifecycle).toContain('pending tombstone does not change history or close');
+    expect(lifecycle).toContain('failed modern deletion retains the original canonical event');
+    expect(lifecycle).toContain('pending modern deletion retains original event');
+    expect(lifecycle).toContain('modern deletion applied only after receipt');
+    expect(lifecycle).toContain('transactions-modern-delete-failed-mobile');
+    expect(lifecycle).toContain('transactions-modern-delete-pending-mobile');
+  });
+
   it('keeps transaction-count month-over-month movement neutral',()=>{
     expect(page).toContain('<span className="neutral">{countDelta===0?');
     expect(page).not.toContain("countDelta<=0?'positive':'negative'");
     expect(css).toContain('.transactions-summary-copy span.neutral{color:var(--text-secondary)}');
+  });
+
+  it('exercises 200% mobile zoom, long Greek notes and keyboard reachable action geometry (#649 I05.03)',()=>{
+    expect(qa).toContain('Transactions QA: 200% zoom, long Greek notes and keyboard-reachable mobile actions');
+    expect(qa).toContain("document.documentElement.style.zoom='200%'");
+    expect(qa).toContain("zoom200.clipped.length===0&&!zoom200.overlap&&zoom200.overflow<=1");
+    expect(qa).toContain('zoom200.focused');
+    expect(qa).toContain('transactions-extreme-200pct-zoom-mobile');
+    expect(qa).toContain('zoomHeader.actionContained&&zoomHeader.buttonOrder');
+    expect(qa).toContain('zoomHeader.separate&&zoomHeader.mark?.width>=25');
+    expect(qa).toContain('transactions-shell-header-');
+    const mobileShell=readFileSync(new URL('../src/styles/mobile-app-shell.css',import.meta.url),'utf8');
+    expect(mobileShell).toContain('.mobile-brand{min-width:0;container-type:inline-size}');
+    expect(mobileShell).toContain('@container (max-width:165px){.mobile-brand .brand-mark-copy{display:none}}');
+    expect(mobileShell).not.toContain('.mobile-brand b{font-size:15px;');
   });
 
   it('raises dense desktop metadata through shared semantic tokens',()=>{

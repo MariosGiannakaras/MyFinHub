@@ -1,11 +1,16 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState, type KeyboardEvent } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
+import { markDatabaseSaveUnverified } from '../lib/databaseSaveActivity';
+import { authScopeEpoch, assertCurrentAuthScope } from '../lib/authScopedCache';
 import { useModalFocus } from '../hooks/useModalFocus';
 import {
   refreshFinancialProviders,
+  providerCatalogMatchesWrite,
+  providerMetadataMatchesInput,
   saveFinancialProvider,
+  UnverifiedFinancialProviderWrite,
   setFinancialProviderAssetBinding,
   updateFinancialProvider,
   uploadFinancialProviderAsset,
@@ -15,10 +20,14 @@ import type { FinancialProvider, FinancialProviderAssetRole, FinancialProviderKi
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
 import { BankBrandMark } from './BankBrandMark';
+import { OperationFeedback } from './OperationFeedback';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
 import './FinancialProviderManagementSettings.css';
 import { userErrorMessage } from '../lib/userMessage';
+import { rovingTabDestination } from '../lib/rovingTabDestination';
+
+const ArtworkIntentReview=lazy(()=>import('./ArtworkIntentReview'));
 
 type SlotVariant='universal'|'light'|'dark';
 type SlotId=
@@ -54,6 +63,7 @@ type ProviderEditor={
   sortOrder:number;
   assignments:AssignmentMap;
   originalAssignments:AssignmentMap;
+  acknowledgedMetadata:FinancialProviderWriteInput|null;
   pendingAssets:PendingAsset[];
   pickerSlot:SlotId|null;
 };
@@ -123,16 +133,22 @@ export function FinancialProviderManagementSettings(){
   const reduce=useReducedMotion();
   const catalog=useFinancialProviders();
   const providers=catalog.providers;
+  // The built-in fallback keeps ordinary bank marks readable, but is not an
+  // authoritative editable catalog after a failed GET.
+  const catalogUnavailable=!catalog.loaded||catalog.loading||Boolean(catalog.error);
   const[editor,setEditor]=useState<ProviderEditor|null>(null);
   const[busy,setBusy]=useState(false);
+  const mutationInFlight=useRef(false);
   const[message,setMessage]=useState('');
   const[editorError,setEditorError]=useState('');
+  const[editorWarning,setEditorWarning]=useState('');
+  const[requiresCatalogReview,setRequiresCatalogReview]=useState(false);
   const fileInput=useRef<HTMLInputElement|null>(null);
   const objectUrls=useRef(new Set<string>());
   const releaseEditor=()=>{
     for(const url of objectUrls.current)URL.revokeObjectURL(url);
     objectUrls.current.clear();
-    setEditor(null);setEditorError('');
+    setEditor(null);setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     if(fileInput.current)fileInput.current.value='';
   };
   const closeEditor=()=>{if(!busy)releaseEditor()};
@@ -140,21 +156,25 @@ export function FinancialProviderManagementSettings(){
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
   const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'[data-picker-autofocus="true"]',closePicker);
   const openNew=()=>{
-    setMessage('');setEditorError('');
+    setMessage('');setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     const assignments=emptyAssignments();
     setEditor({
       source:'new',tab:'details',id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',
       sortOrder:Math.max(1000,...providers.map(provider=>provider.sortOrder+10)),
-      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+      assignments,originalAssignments:{...assignments},acknowledgedMetadata:null,pendingAssets:[],pickerSlot:null,
     });
   };
   const openEdit=(provider:FinancialProvider)=>{
-    setMessage('');setEditorError('');
+    setMessage('');setEditorError('');setEditorWarning('');setRequiresCatalogReview(false);
     const assignments=assignmentsForProvider(provider);
     setEditor({
       source:'existing',tab:'details',id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
       providerKind:provider.kind,countryCode:provider.countryCode??'',sortOrder:provider.sortOrder,
-      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+      assignments,originalAssignments:{...assignments},
+      acknowledgedMetadata:{
+        id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
+        providerKind:provider.kind,countryCode:provider.countryCode??null,sortOrder:provider.sortOrder,
+      },pendingAssets:[],pickerSlot:null,
     });
   };
   const updateName=(displayName:string)=>{
@@ -215,21 +235,42 @@ export function FinancialProviderManagementSettings(){
     if(!validateDetails())return;
     setEditorError('');setEditor(current=>current?{...current,tab:'branding'}:current);
   };
+  const onEditorTabKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+    if(!editor||busy)return;
+    const next=rovingTabDestination(event.key,index,2);
+    if(next===null)return;
+    event.preventDefault();
+    const tab=next===0?'details':'branding';
+    if(tab==='branding'&&editor.source==='new'&&!validateDetails())return;
+    if(tab!==editor.tab){setEditor({...editor,tab,pickerSlot:null});setEditorError('')}
+    requestAnimationFrame(()=>document.getElementById(`provider-editor-tab-${tab}`)?.focus());
+  };
   const save=async()=>{
-    if(!editor||busy||!validateDetails())return;
+    if(!editor||busy||mutationInFlight.current||requiresCatalogReview||catalogUnavailable||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
       setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
     }
-    setBusy(true);setEditorError('');
-    let created=editor.source==='existing';
+    const scope=authScopeEpoch();
+    mutationInFlight.current=true;setBusy(true);setEditorError('');setEditorWarning('');
+    let metadataCommitted=false;
     try{
+      assertCurrentAuthScope(scope);
       const payload:FinancialProviderWriteInput={
         id:editor.id,displayName:editor.displayName.trim(),shortName:editor.shortName.trim(),providerKind:editor.providerKind,
         countryCode:editor.countryCode.trim().toUpperCase()||null,sortOrder:editor.sortOrder,
       };
-      if(editor.source==='new'){await saveFinancialProvider(payload,false);created=true}
-      else await updateFinancialProvider(payload,false);
+      if(!providerMetadataMatchesInput(editor.acknowledgedMetadata,payload)){
+        if(editor.source==='new')await saveFinancialProvider(payload,false);
+        else await updateFinancialProvider(payload,false);
+        assertCurrentAuthScope(scope);
+        // Save the confirmed receipt before independently fallible asset writes.
+        // An acknowledged new provider must not be created twice on retry.
+        setEditor(current=>current?.id===editor.id?{
+          ...current,source:'existing',acknowledgedMetadata:payload,
+        }:current);
+      }
+      metadataCommitted=true;
 
       const uploaded=new Map<string,string>();
       const referencedPending=new Set(Object.values(editor.assignments).filter((ref):ref is string=>Boolean(ref?.startsWith('pending:'))));
@@ -237,11 +278,17 @@ export function FinancialProviderManagementSettings(){
         if(!referencedPending.has(pending.ref))continue;
         if(pending.uploadedKey){uploaded.set(pending.ref,pending.uploadedKey);continue}
         const origin=SLOT_BY_ID.get(pending.originSlot)!;
+        assertCurrentAuthScope(scope);
         const asset=await uploadFinancialProviderAsset({
           providerId:editor.id,role:origin.role,variant:origin.variant,file:pending.file,makePrimary:false,refreshCatalog:false,
         });
+        assertCurrentAuthScope(scope);
         uploaded.set(pending.ref,asset.assetKey);
-        pending.uploadedKey=asset.assetKey;
+        // Keep acknowledged uploads in React state so a failed later binding
+        // can be retried without sending the already persisted binary again.
+        setEditor(current=>current?.id===editor.id?{
+          ...current,pendingAssets:current.pendingAssets.map(item=>item.ref===pending.ref?{...item,uploadedKey:asset.assetKey}:item),
+        }:current);
       }
 
       for(const slot of SLOTS){
@@ -249,16 +296,79 @@ export function FinancialProviderManagementSettings(){
         const finalKey=ref?.startsWith('pending:')?(uploaded.get(ref)??editor.pendingAssets.find(item=>item.ref===ref)?.uploadedKey??null):ref;
         const original=editor.originalAssignments[slot.id];
         if(finalKey!==original){
+          assertCurrentAuthScope(scope);
           await setFinancialProviderAssetBinding({providerId:editor.id,role:slot.role,variant:slot.variant,assetKey:finalKey,refreshCatalog:false});
+          assertCurrentAuthScope(scope);
+          // Commit the per-slot acknowledgement to the retry snapshot. If a
+          // subsequent slot fails, the already written slot must not repeat.
+          setEditor(current=>current?.id===editor.id?{
+            ...current,originalAssignments:{...current.originalAssignments,[slot.id]:finalKey},
+          }:current);
         }
       }
-      await refreshFinancialProviders(true);
+      assertCurrentAuthScope(scope);
+      const reloaded=await refreshFinancialProviders(true);
+      assertCurrentAuthScope(scope);
+      // A syntactically valid HTTP-200 catalog can still be stale. Match all
+      // metadata and nine intended slots against its actual durable readback.
+      const intendedSlots=SLOTS.map(slot=>{
+        const ref=editor.assignments[slot.id];
+        const assetKey=ref?.startsWith('pending:')
+          ?uploaded.get(ref)??editor.pendingAssets.find(item=>item.ref===ref)?.uploadedKey??null
+          :ref;
+        return {role:slot.role,variant:slot.variant,assetKey};
+      });
+      const verifiedUploads=editor.pendingAssets
+        .filter(asset=>referencedPending.has(asset.ref))
+        .map(asset=>{
+          const origin=SLOT_BY_ID.get(asset.originSlot)!;
+          return {
+            assetKey:uploaded.get(asset.ref)??asset.uploadedKey??'',
+            role:origin.role,variant:origin.variant,
+            fileName:asset.file.name,mimeType:asset.file.type,sizeBytes:asset.file.size,
+          };
+        });
+      const confirmedCatalog=providerCatalogMatchesWrite(reloaded,payload,intendedSlots,[...uploaded.values()],verifiedUploads);
+      if(!confirmedCatalog){
+        markDatabaseSaveUnverified();
+        // All writes were acknowledged, but the read-back is not verified.
+        // Do not report a fully refreshed catalog or hide the editor.
+        if(editor.source==='new')setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
+        setEditorWarning('Οι εγγραφές έγιναν δεκτές, αλλά η λίστα παρόχων δεν επιβεβαίωσε ακόμη όλα τα στοιχεία, τις εικόνες και τις αναθέσεις τους. Το παράθυρο παραμένει ανοικτό για ασφαλή επανάληψη χωρίς εκ νέου μεταφόρτωση ήδη επιβεβαιωμένων εικόνων.');
+        return;
+      }
       setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
       releaseEditor();
     }catch(error){
-      if(created&&editor.source==='new')setEditor(current=>current?{...current,source:'existing'}:current);
-      setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του παρόχου.'));
-    }finally{setBusy(false)}
+      if(scope!==authScopeEpoch())return;
+      if(error instanceof UnverifiedFinancialProviderWrite){
+        // An ambiguous metadata/asset/binding response is not a confirmed rollback.
+        // Re-read once without replaying any of the independently committed writes.
+        setRequiresCatalogReview(true);
+        if(editor.source==='new'&&metadataCommitted)
+          setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
+        const readback=await refreshFinancialProviders(true);
+        if(scope!==authScopeEpoch())return;
+        setEditorWarning(error.operation==='metadata'
+          ?(readback.error
+            ?'Η αποθήκευση στοιχείων παρόχου έχει αβέβαιο αποτέλεσμα και η λίστα δεν επιβεβαιώθηκε. Μην επαναλάβεις την εγγραφή πριν ελέγξεις τη διαρκή κατάσταση.'
+            :'Η αποθήκευση στοιχείων παρόχου έχει αβέβαιο αποτέλεσμα. Έλεγξε τον πάροχο στη λίστα και άνοιξέ τον ξανά πριν συνεχίσεις· η τυφλή επανάληψη απενεργοποιήθηκε.')
+          :error.operation==='asset'
+            ?(readback.error
+              ?'Η απόκριση μεταφόρτωσης εικόνας είναι αβέβαιη και η λίστα παρόχων δεν επιβεβαιώθηκε. Η ίδια θέση δεν δέχεται δεύτερη μεταφόρτωση στην τρέχουσα συνεδρία. Έλεγξε τις εικόνες πριν από νέα σύνδεση.'
+              :'Η απόκριση μεταφόρτωσης εικόνας είναι αβέβαιη. Η ίδια θέση δεν δέχεται δεύτερη μεταφόρτωση στην τρέχουσα συνεδρία. Κλείσε το παράθυρο, έλεγξε τις υπάρχουσες εικόνες και επανασυνδέσου μόνο αν απαιτείται νέα μεταφόρτωση.')
+            :readback.error
+              ?'Η απόκριση ανάθεσης εικόνας είναι αβέβαιη και η λίστα παρόχων δεν επιβεβαιώθηκε. Έλεγξε τη διαρκή κατάσταση πριν από νέα ανάθεση.'
+              :'Η απόκριση ανάθεσης εικόνας είναι αβέβαιη. Έλεγξε τις υπάρχουσες αναθέσεις στη λίστα πριν συνεχίσεις.');
+      }else if(metadataCommitted){
+        // The provider metadata may already be durable. A later asset/binding
+        // rejection is partial success, never a blanket "nothing was saved".
+        if(editor.source==='new')setEditor(current=>current?.id===editor.id?{...current,source:'existing'}:current);
+        setEditorWarning('Τα στοιχεία του παρόχου αποθηκεύτηκαν, αλλά δεν ολοκληρώθηκαν όλες οι εικόνες ή οι αναθέσεις τους. Μπορείς να επαναλάβεις την ολοκλήρωση· εικόνες που ανέβηκαν επιτυχώς δεν θα μεταφορτωθούν δεύτερη φορά.');
+      }else{
+        setEditorError(userErrorMessage(error,'Δεν επιβεβαιώθηκε η αποθήκευση του παρόχου.'));
+      }
+    }finally{mutationInFlight.current=false;setBusy(false)}
   };
 
   const pickerSlot=editor?.pickerSlot?SLOT_BY_ID.get(editor.pickerSlot):undefined;
@@ -272,9 +382,13 @@ export function FinancialProviderManagementSettings(){
     <input ref={fileInput} type="file" accept={ACCEPT} hidden onChange={event=>handleUpload(event.target.files?.[0])}/>
     <header className="provider-management-head">
       <div><span className="provider-management-kicker">ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ</span><h2 id="provider-management-title">Τράπεζες & πάροχοι</h2><p>Τα στοιχεία και οι εικόνες κάθε παρόχου διαχειρίζονται από την ίδια επεξεργασία.</p></div>
-      <Button type="button" variant="secondary" onClick={openNew}><Plus/> Νέος πάροχος</Button>
+      <Button type="button" variant="secondary" disabled={busy||catalogUnavailable} onClick={openNew}><Plus/> Νέος πάροχος</Button>
     </header>
 
+    {catalog.error?<OperationFeedback tone="error" className="logic-note compact provider-catalog-error">
+      Η λίστα παρόχων δεν επιβεβαιώθηκε. Η δημιουργία και επεξεργασία έχουν απενεργοποιηθεί ώσπου να φορτωθούν ξανά τα πραγματικά στοιχεία.
+      <Button type="button" variant="secondary" disabled={busy||catalog.loading} onClick={()=>void refreshFinancialProviders(true)}>Επανάληψη φόρτωσης</Button>
+    </OperationFeedback>:null}
     {message?<div className="provider-management-message" role="status" aria-live="polite">{message}</div>:null}
 
     <div className="provider-list">{providers.map(provider=>{
@@ -286,7 +400,7 @@ export function FinancialProviderManagementSettings(){
           <span>{bindings.length} χρήσεις</span>
           <div className="provider-list-thumbs">{assets.slice(0,3).map(asset=><span key={asset.assetKey}><img src={asset.url} alt="" draggable={false}/></span>)}</div>
         </div>
-        <Button type="button" variant="secondary" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</Button>
+        <Button type="button" variant="secondary" className="provider-edit-action" disabled={busy||catalogUnavailable} onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</Button>
       </article>;
     })}</div>
 
@@ -298,12 +412,12 @@ export function FinancialProviderManagementSettings(){
         </header>
 
         <div className="provider-editor-tabs" role="tablist" aria-label="Επεξεργασία παρόχου">
-          <button type="button" role="tab" aria-selected={editor.tab==='details'} className={editor.tab==='details'?'active':''} onClick={()=>setEditor({...editor,tab:'details',pickerSlot:null})}>Στοιχεία</button>
-          <button type="button" role="tab" aria-selected={editor.tab==='branding'} className={editor.tab==='branding'?'active':''} onClick={()=>{if(editor.source==='new'&&!validateDetails())return;setEditor({...editor,tab:'branding',pickerSlot:null});setEditorError('')}}>Εικόνες</button>
+          <button type="button" role="tab" id="provider-editor-tab-details" aria-controls="provider-editor-panel-details" aria-selected={editor.tab==='details'} tabIndex={editor.tab==='details'?0:-1} disabled={busy} onKeyDown={event=>onEditorTabKeyDown(event,0)} className={editor.tab==='details'?'active':''} onClick={()=>setEditor({...editor,tab:'details',pickerSlot:null})}>Στοιχεία</button>
+          <button type="button" role="tab" id="provider-editor-tab-branding" aria-controls="provider-editor-panel-branding" aria-selected={editor.tab==='branding'} tabIndex={editor.tab==='branding'?0:-1} disabled={busy} onKeyDown={event=>onEditorTabKeyDown(event,1)} className={editor.tab==='branding'?'active':''} onClick={()=>{if(editor.source==='new'&&!validateDetails())return;setEditor({...editor,tab:'branding',pickerSlot:null});setEditorError('')}}>Εικόνες</button>
         </div>
 
         <div className="provider-editor-body">
-          {editor.tab==='details'?<div className="provider-details-panel" role="tabpanel">
+          {editor.tab==='details'?<div id="provider-editor-panel-details" aria-labelledby="provider-editor-tab-details" className="provider-details-panel" role="tabpanel">
             <div className="provider-details-grid">
               <label><span>Όνομα</span><AppTextInput data-autofocus="true" value={editor.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
               <label><span>Σύντομο όνομα</span><AppTextInput value={editor.shortName} onChange={event=>setEditor({...editor,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
@@ -311,7 +425,7 @@ export function FinancialProviderManagementSettings(){
               <label><span>Χώρα (ISO)</span><AppTextInput maxLength={2} value={editor.countryCode} onChange={event=>setEditor({...editor,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
             </div>
             <div className="provider-id-field"><span>Provider ID</span>{editor.source==='new'?<AppTextInput value={editor.id} onChange={event=>setEditor({...editor,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/>:<code>{editor.id}</code>}<small>{editor.source==='new'?'Σταθερό τεχνικό αναγνωριστικό. Μετά τη δημιουργία δεν αλλάζει.':'Το Provider ID παραμένει σταθερό ώστε να μη σπάνε λογαριασμοί και κάρτες.'}</small></div>
-          </div>:<div className="provider-branding-panel" role="tabpanel">
+          </div>:<div id="provider-editor-panel-branding" aria-labelledby="provider-editor-tab-branding" className="provider-branding-panel" role="tabpanel">
             <div className="provider-branding-intro"><div><h3>Εικόνες παρόχου</h3><p>Ανέβασε κάθε αρχείο μία φορά και χρησιμοποίησέ το σε όσες θέσεις χρειάζεται. Οι ειδικές εικόνες ανά θέμα ή κάρτα είναι προαιρετικές.</p></div><span className="provider-library-count"><Images size={15}/>{library.length} στη βιβλιοθήκη</span></div>
 
             {GROUPS.map(group=><section className="provider-brand-group" key={group.title}>
@@ -326,19 +440,31 @@ export function FinancialProviderManagementSettings(){
             {library.length?<section className="provider-library"><header><div><h4>Βιβλιοθήκη εικόνων</h4><p>Όλα τα ήδη ανεβασμένα assets του παρόχου. Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.</p></div></header><div className="provider-library-strip">{library.map(asset=><div className="provider-library-item" key={asset.ref}><span><img src={asset.url} alt="" draggable={false}/></span><div><b title={asset.name}>{asset.name}</b><small>{usageCount(asset.ref)} {usageCount(asset.ref)===1?'χρήση':'χρήσεις'}</small></div></div>)}</div></section>:null}
           </div>}
 
-          {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
         </div>
 
+        {editorError||editorWarning?<div className="provider-editor-body provider-editor-feedback">
+          {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
+          {editorWarning?<OperationFeedback tone="warning" className="logic-note compact provider-editor-warning">{editorWarning}</OperationFeedback>:null}
+        </div>:null}
         <footer className="provider-editor-footer">
           <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
           {editor.source==='new'&&editor.tab==='details'
             ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
-            :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+            :<Button type="button" variant="primary" disabled={busy||requiresCatalogReview||catalogUnavailable} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>
           <section ref={pickerRef} className="provider-asset-picker" role="dialog" aria-modal="true" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
             <header><div><span>ΕΠΙΛΟΓΗ ΕΙΚΟΝΑΣ</span><h3>{pickerSlot.label}</h3><p>Διάλεξε από τη βιβλιοθήκη ή ανέβασε νέο αρχείο.</p></div><IconButton type="button" aria-label="Κλείσιμο επιλογής εικόνας" onClick={()=>setEditor({...editor,pickerSlot:null})}><X/></IconButton></header>
+            <Suspense fallback={null}><ArtworkIntentReview key={editor.id+':'+pickerSlot.id}
+              target={{kind:'provider',targetId:editor.id,role:pickerSlot.role,variant:pickerSlot.variant}}
+              disabled={busy} prepareRecovered={async(assetKey,scope)=>{
+                const catalog=await refreshFinancialProviders(true);
+                assertCurrentAuthScope(scope);
+                if(catalog.error||!catalog.providers.find(item=>item.id===editor.id)?.assets?.some(asset=>asset.assetKey===assetKey))
+                  throw new Error('Η εικόνα δεν επιβεβαιώθηκε στη βιβλιοθήκη.');
+                return ()=>setEditor(current=>current?.id===editor.id?{...current,assignments:{...current.assignments,[pickerSlot.id]:assetKey},pickerSlot:null}:current);
+              }}/></Suspense>
             <div className="provider-asset-picker-grid">
               <button type="button" data-picker-autofocus="true" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
               {!pickerSlot.required?<button type="button" className={!pickerCurrent?'provider-picker-none selected':'provider-picker-none'} onClick={()=>assign(pickerSlot.id,null)}><span><ImagePlus/></span><b>Χωρίς override</b><small>Χρήση της προεπιλεγμένης εικόνας</small>{!pickerCurrent?<Check className="provider-picker-check"/>:null}</button>:null}

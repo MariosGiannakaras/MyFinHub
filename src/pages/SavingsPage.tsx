@@ -18,6 +18,8 @@ import { calendarMonthRange, dateOnlyToUtcDate, monthOnlyToUtcDate } from '../li
 import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { defaultSavingContributionPair, savingContributionDraftError } from '../lib/ledgerFoundations';
 import { money, shortDate } from '../lib/format';
+import { parseMoneyInputAmount } from '../lib/moneyInput';
+import { formatFinanceAxisEuro, zeroAnchoredFinanceAxis } from '../lib/financeChartAxis';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
 import { reportingPeriodEndDate } from '../lib/reportingPeriod';
 import { savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../lib/savingsGoals';
@@ -31,8 +33,6 @@ const ACTIONS:Array<{source:SavingSource;title:string;description:string;icon:ty
   {source:'manual_transfer',title:'Μεταφορά στην άκρη',description:'Χειροκίνητη μεταφορά ποσού από λογαριασμό προς τον αποταμιευτικό.',icon:Repeat2},
   {source:'cash_offset',title:'Σύνθετη αποταμίευση',description:'Η συμφωνημένη κίνηση μετρητών και ψηφιακής μεταφοράς ως μία ενέργεια, χωρίς διπλομέτρηση.',icon:BanknoteArrowDown},
 ];
-
-const euroCompact=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
 
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
@@ -65,10 +65,13 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const targetTotal=target>0&&flow.income>0?flow.income*target:0;
   const actualSeries=trendDays.map(day=>breakdown.rows.reduce((sum,row)=>sum+(Number(row.date.slice(8,10))<=day?row.amount:0),0));
   const targetSeries=trendDays.map(day=>targetTotal*(day/daysInMonth));
-  const trendMax=Math.max(1,targetTotal,flow.saving,...actualSeries);
+  const trendAxis=zeroAnchoredFinanceAxis([targetTotal,flow.saving,...actualSeries,...targetSeries]);
+  const trendLabelGutter=Math.min(260,Math.max(60,...trendAxis.ticks.map(tick=>formatFinanceAxisEuro(tick).length*10+10)));
+  const trendY=(value:number)=>145-trendAxis.ratio(value)*112;
+  const trendZeroY=trendY(0);
   const trendPoint=(value:number,index:number)=>{
-    const x=28+(trendDays.length===1?0:(index/(trendDays.length-1))*414);
-    const y=145-(value/trendMax)*112;
+    const x=trendLabelGutter+(trendDays.length===1?0:(index/(trendDays.length-1))*(442-trendLabelGutter));
+    const y=trendY(value);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   };
   const actualPoints=actualSeries.map(trendPoint).join(' ');
@@ -137,10 +140,10 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const saveGoal=async()=>{
     if(!goalEdit||goalSavingRef.current)return;
     const name=goalEdit.name.trim();
-    const targetAmount=Number(goalAmountText.replace(',','.'));
-    if(!name){setGoalError('Δώσε ένα όνομα στον στόχο.');return}
-    if(!Number.isFinite(targetAmount)||targetAmount<=0){setGoalError('Ο στόχος ποσού πρέπει να είναι μεγαλύτερος από μηδέν.');return}
     const priorGoal=goals.find(goal=>goal.id===goalEdit.id);
+    const targetAmount=priorGoal&&goalAmountText===String(priorGoal.targetAmount)?priorGoal.targetAmount:parseMoneyInputAmount(goalAmountText);
+    if(!name){setGoalError('Δώσε ένα όνομα στον στόχο.');return}
+    if(targetAmount===null||!Number.isFinite(targetAmount)||targetAmount<=0){setGoalError('Συμπλήρωσε έγκυρο θετικό ποσό στόχου σε ευρώ και λεπτά.');return}
     if(!validSavingsGoalDeadline(goalEdit.targetDate,asOf,priorGoal?.targetDate)){setGoalError('Η νέα προθεσμία δεν μπορεί να είναι πριν από σήμερα.');return}
     goalSavingRef.current=true;setGoalBusy(true);setGoalError('');
     try{
@@ -188,8 +191,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const close=()=>{if(entrySavingRef.current)return;setOpen(false);setError('')};
   const submit=async()=>{
     if(entrySavingRef.current)return;
-    const numeric=Number(amount.replace(',','.'));
-    if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
+    const numeric=parseMoneyInputAmount(amount);
+    if(numeric===null||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν, σε ευρώ και λεπτά.');return}
     if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}
     if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός αποταμίευσης. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
     if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}
@@ -232,8 +235,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
           <h2>Εξέλιξη αποταμίευσης</h2>
           <div className="savings-chart-legend"><span><i className="actual"/>Πραγματική αποταμίευση</span><span><i className="goal"/>Στόχος ({Math.round(target*100)}% εσόδων)</span></div>
           <svg className="savings-trend-chart" viewBox="0 0 470 172" role="img" aria-label="Σωρευτική πραγματική αποταμίευση και ρυθμός προς τον μηνιαίο στόχο">
-            {[0,.5,1].map(step=><g key={step}><line className="grid" x1="28" x2="442" y1={145-step*112} y2={145-step*112}/><text x="0" y={149-step*112}>{euroCompact.format(trendMax*step)}</text></g>)}
-            <polygon className="actual-area" points={`28,145 ${actualPoints} 442,145`}/>
+            {trendAxis.ticks.map(tick=><g key={tick}><line className="grid" x1={trendLabelGutter} x2="442" y1={trendY(tick)} y2={trendY(tick)}/><text x="0" y={trendY(tick)+4}>{formatFinanceAxisEuro(tick)}</text></g>)}
+            <polygon className="actual-area" points={`${trendLabelGutter},${trendZeroY} ${actualPoints} 442,${trendZeroY}`}/>
             <polyline className="goal-line" points={targetPoints}/>
             <polyline className="actual-line" points={actualPoints}/>
             {actualSeries.map((value,index)=><circle className="actual-dot" key={trendDays[index]} cx={Number(trendPoint(value,index).split(',')[0])} cy={Number(trendPoint(value,index).split(',')[1])} r={index===actualSeries.length-1?4:2.2}/>)}

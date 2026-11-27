@@ -33,3 +33,8 @@
 .desktop-backup-panel{display:flex;flex-direction:column;gap:12px}
 
 .settings-data-tab>.logic-note.is-error{color:var(--error);border-color:currentColor}
+
+/* Import metadata is a bounded local preview, never proof of database validity. */
+.settings-import-preview{display:grid;gap:4px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-inset);font-size:var(--ux-small-size);line-height:1.45;overflow-wrap:anywhere}
+.settings-import-preview>strong{font-size:var(--ux-body-size)}
+.settings-import-preview>span,.settings-import-preview>small{color:var(--ink-2)}

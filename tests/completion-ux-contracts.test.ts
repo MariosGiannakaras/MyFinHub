@@ -115,7 +115,15 @@ describe('completion UX contracts',()=>{
   it('keeps Savings action copy usable at narrow phone widths',()=>{
     const css=read('src/pages/SavingsCompletion.css');
     expect(css).toContain('@media(max-width:380px)');
-    expect(css).toContain('.savings-action strong{width:30px;font-size:0');
+    const mobile=read('src/styles/mobile-finance-domain-layouts.css');
+    const qa=read('scripts/savings-remediation-qa.mjs');
+    expect(css).not.toContain('.savings-action strong{width:30px');
+    expect(mobile).toContain('.savings-action{grid-template-columns:38px minmax(0,1fr);align-items:start}');
+    expect(mobile).toContain('.savings-action>strong{grid-column:2;justify-self:start;display:flex;align-items:center;gap:4px;white-space:nowrap;line-height:1.25}');
+    expect(mobile).toContain('.savings-action>strong svg{width:14px;height:14px;flex:none}');
+    expect(qa).toContain('narrow Savings action text and arrow share one readable row');
+    expect(qa).toContain('rects.length===1&&rects[0].width>0');
+    expect(qa).toContain('rects[0].right<=s.left+1&&s.right<=c.right+1');
     expect(css).toContain('.savings-action small{-webkit-line-clamp:3}');
   });
 
@@ -125,7 +133,8 @@ describe('completion UX contracts',()=>{
     const cardVault=read('src/lib/cardVaultClient.ts');
     const metadata=read('src/lib/accountMetadataClient.ts');
     expect(helper).toContain("code==='AUTH_REQUIRED'||code==='DEVICE_ACCESS_REVOKED'");
-    expect(helper).toContain("window.dispatchEvent(new Event('rheomiq:auth-expired'))");
+    expect(helper).toContain("'rheomiq:auth-expired'");
+    expect(helper).toContain("if(event)window.dispatchEvent(new Event(event))");
     expect(api).toContain('notifyAuthExpired(response.status, details.code)');
     expect(cardVault).toContain('notifyAuthExpired(response.status,code)');
     expect(metadata).toContain('notifyAuthExpired(response.status,code)');
@@ -175,11 +184,25 @@ describe('completion UX contracts',()=>{
     const more=read('src/styles/mobile-more-navigation.css');
     const shell=read('src/styles/root-responsive-coordination.css');
     expect(more).toContain('.mobile-more-backdrop{display:block;position:fixed;inset:0;z-index:80');
-    expect(more).toContain('.mobile-more-menu>header button{width:40px;height:40px;min-width:40px;min-height:40px');
+    expect(more).toContain('.mobile-more-menu>header button{width:44px;height:44px;min-width:44px;min-height:44px');
+    expect(more).toContain('max-height:calc(100dvh - 90px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;overscroll-behavior:contain');
     expect(shell).toContain('.mobile-nav{display:grid;position:fixed;z-index:70');
     const appShell=read('src/components/AppShell.tsx');
-    expect(appShell).toContain('className="mobile-more-menu surface-raised" role="dialog" aria-modal="true"');
-    expect(appShell).toContain('aria-label="Κλείσιμο μενού"');
+    // Scope the assertions to the actual dialog, not adjacency of JSX props.
+    const dialog=appShell.match(/<motion\.section ref=\{menuRef\} className="mobile-more-menu surface-raised"[\s\S]*?<\/motion\.section>/)?.[0]??'';
+    expect(dialog).toContain('role="dialog" aria-modal="true" aria-labelledby="mobile-more-title"');
+    expect(dialog).toContain('id="mobile-more-title"');
+    expect(dialog).toContain('onFocusCapture={');
+    expect(dialog).toContain("target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'})");
+    expect(dialog).toContain('aria-label="Κλείσιμο μενού"');
+    expect(appShell).toContain("const menuRef=useModalFocus<HTMLElement>(mobileMenuOpen,'button',()=>setMobileMenuOpen(false))");
+    expect(appShell).toContain("matchMedia('(max-width:680px)')");
+    expect(appShell).toContain('if(!query.matches)setMobileMenuOpen(false)');
+    const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(keyboard).toContain('mobile More focus trap step');
+    expect(keyboard).toContain('short More sheet contained and scrollable');
+    expect(keyboard).toContain('last More destination scrolls into visible sheet');
+    expect(keyboard).toContain('short More Escape close');
   });
 
 

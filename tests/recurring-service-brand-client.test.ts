@@ -13,12 +13,32 @@ describe('recurring service brand client and shared renderer',()=>{
     expect(parseRecurringServiceAsset({
       assetKey:'service-asset-1234567890abcdef12345678',
       recurringId:'rec-netflix',
-      url:'https://project.example/storage/v1/object/public/recurring-service-assets/services/logo.svg',
+      url:'https://project.example/storage/v1/object/public/recurring-service-assets/services/service-asset-1234567890abcdef12345678.svg',
       fileName:'netflix.svg',
       mimeType:'image/svg+xml',
       sizeBytes:512,
       updatedAt:'2026-10-08T00:00:00.000Z',
     })?.recurringId).toBe('rec-netflix');
+    expect(parseRecurringServiceAsset({
+      assetKey:'service-asset-1234567890abcdef12345678',
+      recurringId:'rec-netflix',
+      url:'https://project.example/storage/v1/object/public/recurring-service-assets/services/service-asset-1234567890abcdef12345678.svg',
+      fileName:'netflix.svg',
+      mimeType:'image/svg+xml',
+      sizeBytes:'512',
+      updatedAt:'2026-10-08T00:00:00.000Z',
+    })).toBeNull();
+    // A valid-looking HTTPS URL for an unregistered filename is never
+    // interchangeable with the exact immutable Storage key.
+    expect(parseRecurringServiceAsset({
+      assetKey:'service-asset-1234567890abcdef12345678',
+      recurringId:'rec-netflix',
+      url:'https://project.example/storage/v1/object/public/recurring-service-assets/services/logo.svg',
+      fileName:'netflix.svg',
+      mimeType:'image/svg+xml',
+      sizeBytes:512,
+      updatedAt:'2026-10-08T00:00:00.000Z',
+    })).toBeNull();
     expect(parseRecurringServiceAsset({
       assetKey:'provider-logo',
       recurringId:'rec-netflix',
@@ -67,4 +87,11 @@ describe('recurring service brand client and shared renderer',()=>{
     expect(urlGuard).toContain('export function publicAssetUrlAllowed');
     expect(urlGuard).toContain('export const providerAssetUrlAllowed=publicAssetUrlAllowed');
   });
+  it('uses canonical 24-hex Storage references in every synthetic browser QA image',()=>{
+    const fixture=readFileSync(new URL('../scripts/recurring-service-brand-qa.mjs',import.meta.url),'utf8');
+    const keys=[...fixture.matchAll(/service-asset-([a-f0-9]+)/g)].map(match=>match[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys.every(suffix=>suffix.length===24)).toBe(true);
+  });
+
 });

@@ -48,7 +48,13 @@ function redactDiagnosticText(value, secrets = []) {
     .replace(/Bearer\s+[^\s'"`]+/gi, 'Bearer [redacted]')
     .replace(/\bsb_(?:publishable|secret)_[A-Za-z0-9._-]+\b/g, '[redacted-supabase-key]')
     .replace(/\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b/g, '[redacted-jwt]')
-    .replace(/\b[0-9a-f]{64}\b/gi, '[redacted-64hex]');
+    .replace(/\b[0-9a-f]{64}\b/gi, '[redacted-64hex]')
+    // A failed desktop bootstrap can include driver/CLI connection errors.
+    // Hide the ENTIRE credentialed PostgreSQL DSN, not just its password.
+    .replace(/\bpostgres(?:ql)?:\/\/[^\s'"\`<>]+/gi, '[redacted-db-url]')
+    // Unknown query parameters or JSON fields must not leak to the owner-
+    // copyable setup diagnostics even when they were not in the known-secrets list.
+    .replace(/(\b(?:access_token|refresh_token|password|passphrase|apikey|x-myfinhub-app-unlock|totp_code|otp|pin|pan|cvv)\b["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s&;,}\]\r\n]+)/gi, '$1[redacted]');
   if (text.length > MAX_DIAGNOSTIC_CHARS) text = text.slice(-MAX_DIAGNOSTIC_CHARS);
   return text;
 }

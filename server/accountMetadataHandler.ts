@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson, strictQueryValue } from './http.js';
 import { isOwner } from './storage.js';
-import { MAX_PROVIDER_ASSET_BYTES, MAX_RECURRING_SERVICE_ASSET_BYTES, deleteRecurringServiceAsset, readAccountMetadata, readFinancialProviders, readRecurringServiceAssets, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, uploadRecurringServiceAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
+import { MAX_PROVIDER_ASSET_BYTES, MAX_RECURRING_SERVICE_ASSET_BYTES, abandonUndispatchedArtworkUploadIntent, acknowledgeArtworkUploadIntent, retireUnregisteredArtworkUploadIntent, deleteRecurringServiceAsset, readAccountMetadata, readFinancialProviders, readRecurringServiceAssets, readPendingArtworkUploadIntent, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, uploadRecurringServiceAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
@@ -25,10 +26,13 @@ export function parseFinancialProviderWrite(value:unknown){
   const shortName=typeof body.shortName==='string'?body.shortName.trim():'';
   const providerKind=typeof body.providerKind==='string'?body.providerKind.trim():'';
   const countryCode=body.countryCode===null||body.countryCode===undefined||body.countryCode===''?null:typeof body.countryCode==='string'?body.countryCode.trim().toUpperCase():'';
-  const sortOrder=Number(body.sortOrder);
+  // Browser and native clients must send a JSON number, not a coercible
+  // string, null or boolean. Silent Number(...) coercion can turn an invalid
+  // direct write into a committed sort_order=0 metadata mutation.
+  const sortOrder=body.sortOrder;
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80||
     !['bank','fintech','wallet','payment'].includes(providerKind)||countryCode!==null&&!/^[A-Z]{2}$/.test(countryCode)||
-    !Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000){
+    typeof sortOrder!=='number'||!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000){
     throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
   }
   return {id,displayName,shortName,providerKind:providerKind as 'bank'|'fintech'|'wallet'|'payment',countryCode,sortOrder};
@@ -38,13 +42,20 @@ export function parseProviderAssetUpload(req:any){
   const providerId=strictQueryValue(req,'providerId');
   const role=strictQueryValue(req,'role');
   const variant=strictQueryValue(req,'variant');
-  const makePrimary=strictQueryValue(req,'primary')==='1';
+  const primary=strictQueryValue(req,'primary');
+  const rawPrimary=req&&typeof req==='object'&&req.query&&typeof req.query==='object'
+    ?(req.query as Record<string,unknown>).primary:undefined;
+  // Omitted means false for the legacy caller. A supplied malformed value
+  // must not silently downgrade an intended primary image into a variant.
+  const validPrimary=rawPrimary===undefined||
+    typeof rawPrimary==='string'&&(primary==='0'||primary==='1');
+  const makePrimary=primary==='1';
   const fileName=strictQueryValue(req,'fileName');
   const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(providerId)||!['logo','wordmark','card-mark'].includes(role)||
     !/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!PROVIDER_ASSET_MIME_TYPES.has(mimeType)||
     !fileName||fileName.length>160||/[\u0000-\u001f\u007f]/.test(fileName)||
-    (role==='card-mark'&&makePrimary)){
+    !validPrimary||(role==='card-mark'&&makePrimary)){
     throw new ApiError(400,'INVALID_PROVIDER_ASSET','Μη έγκυρα στοιχεία εικόνας παρόχου.');
   }
   return {providerId,role:role as 'logo'|'wordmark'|'card-mark',variant,mimeType,fileName,makePrimary};
@@ -111,6 +122,41 @@ export function parseAccountMetadataWrite(value:unknown){
   try{return {accountId,iban:assertValidIban(body.iban as string|null|undefined)}}catch{throw new ApiError(400,'INVALID_IBAN','Το IBAN δεν είναι έγκυρο.');}
 }
 
+export function parseArtworkIntentTarget(req:any){
+  const kind=strictQueryValue(req,'kind');
+  const targetId=strictQueryValue(req,'targetId');
+  const role=strictQueryValue(req,'role');
+  const variant=strictQueryValue(req,'variant');
+  if(kind==='provider'&&/^[a-z][a-z0-9-]{0,63}$/.test(targetId)&&
+    ['logo','wordmark','card-mark'].includes(role)&&/^[a-z][a-z0-9-]{0,63}$/.test(variant))
+    return {kind,targetId,role:role as 'logo'|'wordmark'|'card-mark',variant} as const;
+  // Recurring queries do not accept provider slot parameters, including
+  // malformed repeated query values silently normalized by strictQueryValue.
+  if(kind==='recurring'&&targetId&&targetId.length<=200&&!/[\u0000-\u001f\u007f]/.test(targetId)&&
+    req.query.role===undefined&&req.query.variant===undefined)
+    return {kind,targetId,role:'',variant:''} as const;
+  throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT_TARGET','Μη έγκυρη αναφορά μεταφόρτωσης εικόνας.');
+}
+
+function parseArtworkUploadIntentId(req:any){
+  if(req.query?.intentId===undefined)return undefined;
+  const intentId=strictQueryValue(req,'intentId');
+  if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(intentId))
+    throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Μη έγκυρη αναφορά μεταφόρτωσης εικόνας.');
+  return intentId;
+}
+
+function parseArtworkIntentResolution(value:unknown){
+  if(!value||typeof value!=='object'||Array.isArray(value))
+    throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Μη έγκυρη αναφορά μεταφόρτωσης εικόνας.');
+  const body=value as Record<string,unknown>;
+  if(Object.keys(body).some(key=>!['intentId','assetKey','action'].includes(key))||
+    typeof body.intentId!=='string'||typeof body.assetKey!=='string'||
+    (body.action!=='acknowledge'&&body.action!=='cancel'&&body.action!=='retire'))
+    throw new ApiError(400,'INVALID_ARTWORK_UPLOAD_INTENT','Μη έγκυρη αναφορά μεταφόρτωσης εικόνας.');
+  return {intentId:body.intentId,assetKey:body.assetKey,action:body.action};
+}
+
 export async function handleAccountMetadataRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
@@ -122,10 +168,17 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     if(method==='GET'){
       if(resource==='financial-providers')return sendJson(res,200,{providers:await readFinancialProviders(session.accessToken)});
       if(resource==='recurring-service-assets')return sendJson(res,200,{assets:await readRecurringServiceAssets(session.accessToken)});
+      if(resource==='artwork-upload-intents')return sendJson(res,200,await readPendingArtworkUploadIntent(parseArtworkIntentTarget(req),session.accessToken));
       if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
       return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
     }
     assertMutationSessionOrigin(req,session);
+    if(method==='PATCH'&&resource==='artwork-upload-intents'){
+      const target=parseArtworkIntentTarget(req);
+      const {action,...identity}=parseArtworkIntentResolution(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
+      const resolve=action==='acknowledge'?acknowledgeArtworkUploadIntent:action==='cancel'?abandonUndispatchedArtworkUploadIntent:retireUnregisteredArtworkUploadIntent;
+      return sendJson(res,200,await resolve(target,identity,session.accessToken));
+    }
     if((method==='POST'||method==='PATCH')&&resource==='financial-providers'){
       const body=parseFinancialProviderWrite(await readJsonBody(req,MAX_FINANCIAL_PROVIDER_BODY_BYTES));
       if(method==='POST')await writeFinancialProvider(body,session.accessToken);
@@ -137,14 +190,26 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     if(method==='PUT'&&resource==='financial-provider-assets'){
       const input=parseProviderAssetUpload(req);
       const content=validateProviderAssetContent(input.mimeType,await readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES));
-      const asset=await uploadFinancialProviderAsset({...input,content},session.accessToken);
-      return sendJson(res,200,{asset});
+      const explicitIntent=parseArtworkUploadIntentId(req);
+      const intentId=explicitIntent??randomUUID();
+      const asset=await uploadFinancialProviderAsset({...input,content,intentId},session.accessToken);
+      // Legacy native/older web wire shape stays unchanged. These requests
+      // still share the same durable slot reservation; acknowledge only after
+      // the server proves exact registration and bytes. New clients explicitly
+      // acknowledge their own receipt after independent catalog review.
+      if(!explicitIntent)await acknowledgeArtworkUploadIntent(
+        {kind:'provider',targetId:input.providerId,role:input.role,variant:input.variant},{intentId,assetKey:asset.assetKey},session.accessToken);
+      return sendJson(res,200,explicitIntent?{asset,intentId}:{asset});
     }
     if(method==='PUT'&&resource==='recurring-service-assets'){
       const input=parseRecurringServiceAssetUpload(req);
       const content=validateProviderAssetContent(input.mimeType,await readBinaryBody(req,MAX_RECURRING_SERVICE_ASSET_BYTES));
-      const asset=await uploadRecurringServiceAsset({...input,content},session.accessToken);
-      return sendJson(res,200,{asset});
+      const explicitIntent=parseArtworkUploadIntentId(req);
+      const intentId=explicitIntent??randomUUID();
+      const asset=await uploadRecurringServiceAsset({...input,content,intentId},session.accessToken);
+      if(!explicitIntent)await acknowledgeArtworkUploadIntent(
+        {kind:'recurring',targetId:input.recurringId,role:'',variant:''},{intentId,assetKey:asset.assetKey},session.accessToken);
+      return sendJson(res,200,explicitIntent?{asset,intentId}:{asset});
     }
     if(method==='DELETE'&&resource==='recurring-service-assets'){
       const assetKey=parseRecurringServiceAssetKey(req);

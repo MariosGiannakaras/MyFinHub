@@ -74,6 +74,38 @@ describe('shared owner app privacy PIN',()=>{
     expect(sql).not.toContain('SUPABASE_SECRET_KEY');
   });
 
+  it('preserves the measured device-session RLS initplan optimization without weakening authorization (#649 I22.03)',()=>{
+    const hardening=read('supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql');
+    const policy=hardening.split('create policy myfinhub_device_sessions_owner_insert')[1]?.split(';',1)[0];
+    expect(policy).toBeDefined();
+    expect(policy).toContain('to authenticated');
+    expect(policy).toContain('user_id = (select auth.uid())');
+    expect(policy).toContain("session_id::text = coalesce(((select auth.jwt()) ->> 'session_id'), '')");
+    expect(policy).toContain('revoked_at is null');
+    expect(policy).toContain('(select public.rheomiq_is_owner())');
+    expect(policy).toContain('(select public.rheomiq_has_aal2())');
+    expect(policy).not.toContain('to anon');
+
+    // Historical advisor warning was evaluated against a plan-only EXPLAIN.
+    // The actual PG InitPlans were present; do not relax row ownership/AAL2.
+    const assessment=read('docs/POST_RELEASE_HARDENING.md');
+    expect(assessment).toContain('auth_rls_initplan');
+    expect(assessment).toContain('myfinhub_device_sessions_owner_insert');
+    expect(assessment).toContain('four separate `InitPlan` nodes');
+
+    const appLock=read('supabase/migrations/20261024160000_shared_owner_app_lock.sql');
+    const grantSql=appLock.replace(/\s+/g,' ').replace(/public,\s*anon/g,'public, anon');
+    for(const signature of [
+      'public.myfinhub_app_lock_action(text,text,text,integer)',
+      'public.myfinhub_app_lock_ticket(text,text)',
+      'public.myfinhub_app_lock_recover(text)',
+    ]){
+      expect(grantSql).toContain('revoke all on function '+signature+' from public, anon;');
+      expect(grantSql).toContain('grant execute on function '+signature+' to authenticated;');
+    }
+    expect(appLock).toContain('and private.myfinhub_app_lock_session_unlocked()');
+  });
+
   it('exposes an authenticated, same-origin, bounded web and Windows PIN contract',()=>{
     const api=read('server/appLockHandler.ts');
     const vercel=JSON.parse(read('vercel.json')) as {rewrites:Array<{source:string;destination:string}>};

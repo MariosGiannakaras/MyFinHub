@@ -1,6 +1,10 @@
 import {describe,expect,it} from 'vitest';
 import {cashFlowScenario} from '../src/lib/forecastScenarios.js';
 import {cashFlowForecast} from '../src/lib/forecast.js';
+import {accountBalances, createEvent, monthlyFlow, netWorth} from '../src/lib/domain.js';
+import {creditDebtForCard} from '../src/lib/cards.js';
+import {lendingOutstandingFor} from '../src/lib/lending.js';
+import {operationalReportSnapshot} from '../src/lib/reports.js';
 import type {FinanceData} from '../src/types.js';
 
 function fixture():FinanceData{
@@ -81,6 +85,70 @@ describe('isolated 30/60/90-day what-if scenarios (#588 #7)',()=>{
     expect(JSON.stringify(d)).toBe(snapshot);
     expect(d.state.events).toEqual([]);
   });
+  it('keeps booked cash/receivables/credit separate from future due and estimates (#649 I22.06)',()=>{
+    const data=fixture(),asOf='2026-08-17';
+    const stamp='2026-08-01T00:00:00.000Z';
+    data.state.cards=[{
+      id:'qa-credit',bankId:'qa',nickname:'Test credit',kind:'credit',network:'visa',
+      creditLimit:200,active:true,createdAt:stamp,updatedAt:stamp,
+    }];
+    data.seed.recurring=[{
+      id:'variable-power',name:'Metered power',amount:80,amountMode:'variable',
+      estimateMin:60,estimateMax:100,firstExpectedDate:'2026-08-21',
+      recurrenceUnit:'month',recurrenceInterval:1,accountId:'bank',category:'Άλλο',active:true,
+    }];
+    data.state.events=[
+      createEvent({kind:'expense',date:'2026-08-16',amount:10,note:'Actually paid',accountId:'bank'}),
+      createEvent({kind:'card_purchase',date:'2026-08-16',amount:40,note:'Credit purchase',cardId:'qa-credit'}),
+      createEvent({kind:'lending',date:'2026-08-17',amount:100,note:'Receivable created',person:'Alex',accountId:'bank'}),
+      createEvent({kind:'repayment',date:'2026-08-17',amount:20,note:'Receivable repaid',person:'Alex',accountId:'bank'}),
+      createEvent({kind:'card_payment',date:'2026-08-17',amount:15,note:'Liability settlement',cardId:'qa-credit',fromAccountId:'bank'}),
+      createEvent({kind:'expense',date:'2026-08-19',amount:30,note:'Future dated real booking',accountId:'bank'}),
+    ];
+    const immutable=JSON.stringify(data);
+
+    // Booked totals use actual events, not scheduled obligations or variable estimates.
+    expect(monthlyFlow(data,'2026-08',asOf)).toMatchObject({income:0,expense:50,net:-50});
+    expect(monthlyFlow(data,'2026-08').expense).toBe(80);
+    expect(accountBalances(data,asOf)).toMatchObject({bank:895,cash:100,'credit-card':-25});
+    expect(lendingOutstandingFor(data,'Alex',asOf)).toBe(80);
+    expect(creditDebtForCard(data,'qa-credit',asOf)).toBe(25);
+    expect(netWorth(data,asOf)).toBe(1050);
+    const reports=operationalReportSnapshot(data,'2026-08',asOf);
+    expect(reports.flow.expense).toBe(50);
+    expect(reports.receivables).toBe(80);
+    expect(reports.creditDebt).toBe(25);
+
+    // Reports' positive-only noncredit account composition is NOT net worth:
+    // the receivable is an asset, while the card debt is a liability.
+    const balances=accountBalances(data,asOf);
+    const positiveAccountTotal=[balances.bank,balances.cash].filter(value=>value>0).reduce((sum,value)=>sum+value,0);
+    expect(positiveAccountTotal).toBe(995);
+    expect(netWorth(data,asOf)-positiveAccountTotal).toBe(55);
+
+    // A due €60 bill and estimated €80 recurring charge affect only the
+    // forward-looking cash projection, alongside a separate dated real event.
+    const projected=cashFlowForecast(data,asOf,30);
+    expect(projected.currentPortfolio).toBe(995);
+    expect(projected.projectedPortfolio).toBe(825);
+    expect(projected.sourceCounts).toEqual({scheduled:1,recurring:1,loan:0,dated_event:1});
+    expect(projected.movements).toEqual(expect.arrayContaining([
+      expect.objectContaining({date:'2026-08-18',source:'scheduled',portfolioDelta:-60}),
+      expect.objectContaining({date:'2026-08-19',source:'dated_event',portfolioDelta:-30}),
+      expect.objectContaining({date:'2026-08-21',source:'recurring',label:'Εκτίμηση: Metered power',portfolioDelta:-80}),
+    ]));
+    expect(projected.points.find(point=>point.date==='2026-08-18')?.portfolio).toBe(935);
+    expect(projected.points.find(point=>point.date==='2026-08-21')?.portfolio).toBe(825);
+    const hypothetical=cashFlowScenario(data,asOf,30,[
+      {id:'what-if',date:'2026-08-22',accountId:'bank',kind:'extra_expense',amount:25},
+    ]);
+    expect(hypothetical.evidence).toMatchObject({declared:2,estimated:1,hypothetical:1,omitted:0});
+    expect(hypothetical.projectedPortfolio).toBe(800);
+    expect(monthlyFlow(data,'2026-08',asOf).expense).toBe(50);
+    expect(accountBalances(data,'2026-08-21').bank).toBe(865);
+    expect(JSON.stringify(data)).toBe(immutable);
+  });
+
   it('supports an empty scenario as unchanged read-only forecast across all horizons',()=>{
     const d=fixture();
     for(const horizon of [30,60,90] as const){

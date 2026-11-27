@@ -1,6 +1,7 @@
 import type { FinanceData } from '../types.js';
 import { mutableSavePayload } from './persistencePayload.js';
 import { notifyAuthExpired } from './authExpiry.js';
+import { authScopeEpoch } from './authScopedCache.js';
 import { getAppUnlockToken, clearAppUnlockToken } from './appUnlockToken.js';
 
 interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
@@ -56,8 +57,22 @@ export class ApiError extends Error {
   }
 }
 
+// Transport loss, timeout, rate limit or 5xx does not prove a write never committed.
+export function importOutcomeMayBeCommitted(error:unknown):boolean {
+  return error instanceof ApiError&&(error.status===0||error.status===408||error.status===429||error.status>=500);
+}
+
+/** A lost backup RPC response is uncertain, not proof of rollback. */
+export function backupOutcomeMayBeCommitted(error:unknown):boolean {
+  return importOutcomeMayBeCommitted(error);
+}
+
+const responseScopes=new WeakMap<Response,number>();
 async function json<T>(response: Response): Promise<T> {
+  const scope=responseScopes.get(response);
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
+  // Check after body settlement, before data or auth/PIN events escape.
+  if(scope!==authScopeEpoch())throw new ApiError('Η συνεδρία άλλαξε κατά την επαλήθευση της απόκρισης.',0,'AUTH_SCOPE_CHANGED');
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
     notifyAuthExpired(response.status, details.code);
@@ -70,6 +85,7 @@ async function json<T>(response: Response): Promise<T> {
 export const API_REQUEST_TIMEOUT_MS = 30_000;
 
 export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS) {
+  const scope=authScopeEpoch();
   const controller = new AbortController();
   const callerSignal = init.signal;
   let timedOut = false;
@@ -92,12 +108,14 @@ export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {
         headers.set('x-myfinhub-app-unlock',token);
       }
     }
-    return await fetch(input, {
+    const response=await fetch(input, {
       credentials: 'same-origin',
       ...init,
       headers,
       signal: controller.signal,
     });
+    responseScopes.set(response,scope);
+    return response;
   } catch (error) {
     if (timedOut) throw new ApiError('Η σύνδεση με το MyFinHub άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_TIMEOUT');
     if (callerSignal?.aborted) throw new ApiError('Το αίτημα ακυρώθηκε.', 0, 'REQUEST_ABORTED');
@@ -240,14 +258,22 @@ export async function moveHistory(direction:'undo'|'redo',revision:string,histor
   }));
 }
 
-export async function importData(data: FinanceData): Promise<DataEnvelope> {
+export async function importData(data: FinanceData, revision: string): Promise<DataEnvelope> {
   return json(await apiRequest('/api/import', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace' },
+    headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace', 'if-match': revision },
     body: JSON.stringify(data),
   }));
 }
 
 export async function createBackup(): Promise<{ path: string }> {
-  return json(await apiRequest('/api/backup', { method: 'POST' }));
+  const receipt=await json<unknown>(await apiRequest('/api/backup', { method: 'POST' }));
+  // HTTP 200 alone is not a verified backup receipt. An invalid response may
+  // follow an already committed RPC; do not invite a duplicate write.
+  const path=receipt&&typeof receipt==='object'&&!Array.isArray(receipt)
+    ?(receipt as {path?:unknown}).path:null;
+  if(typeof path!=='string'||!path.trim()){
+    throw new ApiError('Δεν επιβεβαιώθηκε η δημιουργία αντιγράφου ασφαλείας.',503,'BACKUP_RECEIPT_UNVERIFIED');
+  }
+  return {path};
 }

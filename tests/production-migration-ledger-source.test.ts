@@ -63,12 +63,129 @@ const releasePending=[
   "20261022213500_expand_budget_scope_to_subcategories.sql",
   "20261024150000_add_device_details_and_nicknames.sql",
   "20261024160000_shared_owner_app_lock.sql",
+  "20261105204000_guard_stale_import_revision.sql",
+  "20261112220000_guard_mutable_receivable_chronology.sql",
+  "20261119081500_guard_changed_event_cent_precision.sql",
+  "20261120000500_guard_recurring_service_asset_path_provenance.sql",
+  "20261120001000_guard_provider_asset_path_provenance.sql",
+  "20261122080000_restrict_provider_catalog_to_owner_aal2.sql",
+  "20261122211000_guard_provider_binding_cross_provider.sql",
+  "20261122214000_guard_recurring_asset_direct_lifecycle.sql",
+  "20261122225000_guard_bound_provider_artwork_active.sql",
+  "20261125090000_add_artwork_upload_intents.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
   it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
+  });
+
+
+  it('preserves owner-scoped durable artwork reservation identity and local PostgreSQL proof',()=>{
+    const migration='supabase/migrations/20261125090000_add_artwork_upload_intents.sql';
+    const sql=readFileSync(migration,'utf8');
+    const smoke=readFileSync('scripts/app-lock-local-postgres-smoke.sh','utf8');
+    const owner=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-owner.sql','utf8');
+    const denied=readFileSync('scripts/recovery-fixtures/artwork-upload-intent-denied.sql','utf8');
+    expect(releasePending).toContain('20261125090000_add_artwork_upload_intents.sql');
+    // A literal replacement string can collapse a paired SQL dollar quote.
+    // Check the surrounding smoke driver as well as the included SQL files.
+    for(const source of [sql,smoke,owner,denied]){
+      expect(source.split('\n').filter(line=>/\b(?:do|as)\s+[$](?![$])(?:\s|$)|^\s*(?:end\s+)?[$];\s*$/i.test(line))).toEqual([]);
+      expect((source.match(/[$][$]/g)??[]).length%2).toBe(0);
+    }
+    expect(sql).toContain('asset_key text not null unique');
+    expect(sql).toContain("where disposition='pending'");
+    expect(sql).toContain('on public.rheomiq_artwork_upload_intents(owner_user_id,kind,target_id,role,variant)');
+    expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(4);
+    expect(sql).toContain('grant update (disposition,dispatch_claimed,registration_recorded)');
+    expect(sql).toContain('ARTWORK_UPLOAD_REGISTRATION_FENCED');
+    expect(sql).toContain('ARTWORK_UPLOAD_RETIREMENT_FORBIDDEN');
+    expect(sql).toContain('where asset_key=new.asset_key for update');
+    expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_UNRESOLVED');
+    expect(sql).toContain('ARTWORK_UPLOAD_ACK_UNPROVEN');
+    expect(sql).toContain('ARTWORK_UPLOAD_DISPATCH_INVALID');
+    expect(sql).toContain('ARTWORK_UPLOAD_INTENT_TERMINAL');
+    expect(sql).toContain('ARTWORK_UPLOAD_INTENT_IMMUTABLE');
+    expect(sql).not.toMatch(/security\s+definer|grant\s+delete|on delete cascade|delete\s+from|truncate\s/i);
+    expect(smoke).toContain('\\i '+migration);
+    expect(smoke).toContain('\\i scripts/recovery-fixtures/artwork-upload-intent-owner.sql');
+    expect(smoke.split('\\i scripts/recovery-fixtures/artwork-upload-intent-denied.sql')).toHaveLength(4);
+    for(const marker of [
+      'Artwork intent unavailable to independently active owner session',
+      'Second pending artwork intent for same slot was accepted',
+      'Retired artwork asset key was reused',
+      'Retired artwork intent ID was reused',
+      'Terminal artwork intent reopened',
+      'Owner deleted artwork intent tombstone',
+      'Artwork intent fingerprint rewritten',
+      'Undispatched artwork intent acknowledged',
+      'Artwork claim and terminal transition combined',
+      'Artwork dispatch claim replay accepted',
+      'Artwork dispatch claim reset',
+      'Claimed artwork intent abandoned',
+      'Claimed artwork without registry or object acknowledged',
+      'Abandoned artwork intent claimed',
+      'Registration marker forged without matching registry',
+      'Retired recurring registration was accepted',
+      'Retired provider registration was accepted',
+      'Mismatched claimed provider registration accepted',
+      'Registration marker did not commit with registry',
+      'Registration marker reset',
+      'Registered intent retired',
+    ])expect(owner).toContain(marker);
+    for(const marker of ['Unauthorized session read artwork intents','Unauthorized session reserved artwork intent',
+      'Unauthorized session closed artwork intent','Unauthorized session claimed artwork dispatch','Unauthorized session recorded artwork registration','Unauthorized session deleted artwork intent'])expect(denied).toContain(marker);
+  });
+
+  it('keeps new cents guard inside the existing authorized revision/history RPC',()=>{
+    const sql=readFileSync('supabase/migrations/20261119081500_guard_changed_event_cent_precision.sql','utf8');
+    expect(sql).toContain('security invoker');
+    // Every helper delimiter must remain a PostgreSQL paired dollar quote.
+    expect(sql.split('\n').filter(line=>/ as [$]$/i.test(line))).toEqual([]);
+    expect(sql.split('\n').filter(line=>line.trim()==='$;')).toEqual([]);
+    const isolatedSql=readFileSync('scripts/recovery-fixtures/finance-event-cents-local.sql','utf8');
+    expect(isolatedSql.split('\n').filter(line=>/ as [$]$/i.test(line))).toEqual([]);
+    expect(isolatedSql).not.toContain('DO $ BEGIN');
+    expect(isolatedSql).not.toContain('END $;');
+    expect((isolatedSql.match(/[$][$]/g)??[]).length%2).toBe(0);
+    expect((sql.match(/[$][$]/g)??[]).length%2).toBe(0);
+    expect(sql).not.toContain('security definer');
+    expect(sql).toContain('perform public.rheomiq_history_ensure_cursor();');
+    expect(sql).toContain('perform private.rheomiq_guard_mutable_receivable_chronology(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_event_cents(');
+    expect(sql).toContain('perform private.rheomiq_guard_changed_draft_cents(');
+    expect(sql).toContain("v_current.data->'seed',v_current_full_state,p_state");
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_draft_cents(jsonb,jsonb,jsonb) from public,anon;');
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_draft_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
+    expect(sql.indexOf('perform private.rheomiq_guard_changed_event_cents(')).toBeLessThan(sql.indexOf('perform private.rheomiq_ledger_apply_state('));
+    expect(sql).toContain('revoke all on function private.rheomiq_guard_changed_event_cents(jsonb,jsonb) from public,anon;');
+  });
+
+  it('guards legacy provider SELECT policies without mutating finance records or removing owner access',()=>{
+    const sql=readFileSync('supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql','utf8');
+    const smoke=readFileSync('scripts/app-lock-local-postgres-smoke.sh','utf8');
+    expect(releasePending).toContain('20261122080000_restrict_provider_catalog_to_owner_aal2.sql');
+    for(const name of ['rheomiq_financial_providers','rheomiq_financial_provider_assets']){
+      expect(sql).toContain('drop policy if exists '+name+'_authenticated_read');
+      expect(sql).toContain('on public.'+name);
+      expect(sql).toContain('create policy '+name+'_owner_aal2_select');
+    }
+    expect(sql.match(/for select to authenticated/g)).toHaveLength(2);
+    expect(sql.match(/select public\.rheomiq_is_owner_aal2\(\)/g)).toHaveLength(2);
+    expect(sql).toContain('using (active = true and (select public.rheomiq_is_owner_aal2()))');
+    expect(sql).not.toMatch(/delete\s+from|truncate\s+|drop\s+table|security\s+definer|revoke\s+select/i);
+    expect(smoke).toContain('\\i supabase/migrations/20261122080000_restrict_provider_catalog_to_owner_aal2.sql');
+    for(const marker of [
+      'Owner AAL2 provider catalog RLS positive control failed',
+      'Owner AAL2 provider asset RLS positive control failed',
+      'Locked owner read provider catalog',
+      'Owner unlocked provider registry read failed',
+      'AAL1 read the protected provider catalog',
+      'Non-owner AAL2 read protected provider catalog records',
+      'Revoked owner AAL2 read protected provider catalog records',
+    ])expect(smoke).toContain(marker);
   });
 
   it('tracks the relational cutover and provider management as production-applied history',()=>{
@@ -83,6 +200,12 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261022213500_expand_budget_scope_to_subcategories.sql');
     expect(releasePending).toContain('20261024150000_add_device_details_and_nicknames.sql');
     expect(releasePending).toContain('20261024160000_shared_owner_app_lock.sql');
+    expect(releasePending).toContain('20261105204000_guard_stale_import_revision.sql');
+    expect(releasePending).toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(releasePending).toContain('20261119081500_guard_changed_event_cent_precision.sql');
+    expect(productionApplied).not.toContain('20261119081500_guard_changed_event_cent_precision.sql');
+    expect(productionApplied).not.toContain('20261112220000_guard_mutable_receivable_chronology.sql');
+    expect(productionApplied).not.toContain('20261105204000_guard_stale_import_revision.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

@@ -14,6 +14,60 @@ afterEach(()=>{
 });
 
 describe('connected device access',()=>{
+  it('keeps device registry revocation and error/success announcements in their correct receipt order (#649 I18.05)',()=>{
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    const action=ui.slice(ui.indexOf('const confirm=async()=>'),ui.indexOf('const saveName=async()=>'));
+    expect(action).toContain('await revokeOtherConnectedDevices()');
+    expect(action).toContain('await revokeConnectedDevice(pending.device.sessionId)');
+    expect(action.indexOf('setDevices(result.devices)')).toBeGreaterThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
+    expect(action.lastIndexOf("setMessageTone('status');setMessage(")).toBeGreaterThan(action.indexOf('setDevices(result.devices)'));
+    expect(action).toContain("}catch(error){setMessageTone('error')");
+    expect(action).toContain("setMessage(pending.kind==='others'?");
+    expect(action).not.toContain("setMessage(pending.kind='others'?");
+    expect(action).toContain("finally{mutationInFlight.current=false;setBusy(false)}");
+    expect(action).toContain("if(!pending||busy||mutationInFlight.current)return;");
+    expect(action).toContain("mutationInFlight.current=true;");
+    expect(action.indexOf("mutationInFlight.current=true")).toBeLessThan(action.indexOf('await revokeConnectedDevice(pending.device.sessionId)'));
+    expect(ui).toContain("const generation=++readGeneration.current;");
+    expect(ui).toContain("if(generation===readGeneration.current&&!mutationInFlight.current){setDevices(result.devices);setListVerified(true)}");
+    expect(ui).toContain("readGeneration.current+=1;");
+    expect(ui).toContain("if(!renaming||busy||mutationInFlight.current)return;");
+    expect(ui).toContain("finally{mutationInFlight.current=false;setBusy(false)}");
+    const qa=read('scripts/settings-tabs-qa.mjs');
+    const fixture=read('qa.html');
+    expect(fixture).toContain("window.__myfinhubQaDevicePostCount=()=>devicePostCalls;");
+    expect(qa).toContain("device revoke double confirm triggers only one HTTP POST");
+    expect(qa).toContain("device revoke green receipt after one completed remote mutation");
+    expect(qa).toContain("device GET failure displays unknown, never zero confirmed active");
+    expect(fixture).toContain("window.__myfinhubQaNextDevicePostOk=false;");
+    expect(fixture).toContain("window.__myfinhubQaNextDeviceGetError=false;");
+    expect(ui).toContain("const[listVerified,setListVerified]=useState(false)");
+    expect(ui).toContain("setDevices([]);setListVerified(false)");
+    expect(ui).toContain("setDevices(result.devices);setListVerified(true)");
+    expect(ui).toContain("'άγνωστη κατάσταση'");
+    expect(ui).toContain("'Η λίστα συσκευών δεν επιβεβαιώθηκε'");
+    expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
+    expect(ui).toContain("aria-live={messageTone==='error'?'assertive':'polite'}");
+    expect(ui).toContain('disabled={busy}');
+    expect(ui).toContain('<ConfirmDialog open={Boolean(pending)}');
+    expect(ui).toContain('tone="destructive" busy={busy}');
+  });
+
+  it('keeps failed revocation visible inside the open confirmation and scopes all-device wording (#649 I18.05/I20.02)',()=>{
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    const action=ui.slice(ui.indexOf('const confirm=async()=>'),ui.indexOf('const saveName=async()=>'));
+    expect(ui).toContain("const[confirmationError,setConfirmationError]=useState('')");
+    expect(ui).toContain("const requestRevoke=(target:Exclude<PendingAction,null>)=>{setConfirmationError('');setPending(target)}");
+    expect(ui).toContain('error={confirmationError}');
+    expect(ui).toContain("pending?.kind==='others'?'Θα ανακληθεί η πρόσβαση σε όλες τις άλλες συσκευές.");
+    expect(ui).toContain('Καθεμία θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA.');
+    expect(action).toContain('setConfirmationError(failureMessage)');
+    expect(action).toContain("setConfirmationError('');setPending(null)");
+    expect(action.indexOf('setPending(null)')).toBeLessThan(action.indexOf('}catch(error)'));
+    expect(action.slice(action.indexOf('}catch(error)'))).not.toContain('setPending(null)');
+    expect(ui).toContain("onCancel={()=>{if(!busy){setConfirmationError('');setPending(null)}}}");
+  });
+
   it('accepts only exact device revoke payloads with canonical session ids',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});
