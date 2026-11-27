@@ -103,7 +103,10 @@ describe('#649 I18.02 isolated PostgreSQL+Storage independent checkpoint proof',
     expect(flow).toContain("MYFINHUB_ISOLATED_RECOVERY: '1'");
     expect(flow).toContain('npm run qa:real-stack');
     expect(read('scripts/real-stack-e2e.ts')).toContain('stage isolated-postgresql-storage-restore-before-browser');
-    expect(flow).toContain('npx --yes supabase@2.119.0 start');
+    expect(flow).toContain('"$MYFINHUB_QA_SUPABASE_CLI" start');
+    expect(script).toContain('process.env.MYFINHUB_QA_SUPABASE_CLI');
+    expect(script).toContain("execFileSync(cli,['status','-o','json']");
+    expect(script).not.toContain("execFileSync('npx'");
     expect(flow).toContain('stop --no-backup');
     expect(doc).toContain('production');
     expect(doc).toContain('PostgreSQL');

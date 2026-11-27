@@ -25,6 +25,6 @@ describe('large-state Reports calculation contract (#588 performance regression)
     expect(latencySuites).toContain("'scripts/large-data-boundaries-qa.mjs'");
     expect(latencySuites).toContain("'scripts/transactions-scanability-qa.mjs'");
     expect(runner).toContain('parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path))');
-    expect(runner).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
+    expect(runner).toContain('for(const item of isolatedScripts)await runAndCollect(item)');
   });
 });

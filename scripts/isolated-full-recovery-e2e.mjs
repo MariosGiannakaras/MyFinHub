@@ -14,7 +14,9 @@ if(projectId!=='rheomiq')throw new Error('Refusing recovery against an unexpecte
 const container='supabase_db_'+projectId;
 const localContainers=execFileSync('docker',['ps','--format','{{.Names}}'],{encoding:'utf8'}).split(/\r?\n/);
 if(!localContainers.includes(container))throw new Error('Expected disposable local Supabase database is not running.');
-const status=JSON.parse(execFileSync('npx',['--yes','supabase@2.119.0','status','-o','json'],{encoding:'utf8',stdio:['ignore','pipe','pipe']}));
+const cli=process.env.MYFINHUB_QA_SUPABASE_CLI;
+if(!cli)throw new Error('Verified local Supabase CLI was not installed.');
+const status=JSON.parse(execFileSync(cli,['status','-o','json'],{encoding:'utf8',stdio:['ignore','pipe','pipe']}));
 function statusValue(value,keys){
   const wanted=new Set(keys.map(x=>x.replace(/[^a-z0-9]/gi,'').toUpperCase()));
   let found='';

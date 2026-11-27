@@ -43,7 +43,9 @@ function statusValue(payload:unknown,candidates:string[]):string{
 }
 
 function readLocalSupabaseStatus(){
-  const raw=execFileSync('npx',['--yes',`supabase@${SUPABASE_CLI_VERSION}`,'status','-o','json'],{
+  const cli=process.env.MYFINHUB_QA_SUPABASE_CLI;
+  if(process.env.CI==='true'&&!cli)fail('Verified local Supabase CLI was not installed.');
+  const raw=execFileSync(cli||'npx',cli?['status','-o','json']:['--yes',`supabase@${SUPABASE_CLI_VERSION}`,'status','-o','json'],{
     encoding:'utf8',
     stdio:['ignore','pipe','pipe'],
   });
