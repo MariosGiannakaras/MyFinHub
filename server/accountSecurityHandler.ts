@@ -1,4 +1,5 @@
-import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
+import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession, signInWithPassword } from './auth.js';
+import { accessTokenSessionId } from './deviceSessionRegistry.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
 import { isOwner } from './storage.js';
 import { fetchUpstream } from './upstream.js';
@@ -41,6 +42,41 @@ async function updateAuthenticatedUser(accessToken: string, attributes: Record<s
   if (response.status === 429) throw new ApiError(429, 'AUTH_RATE_LIMITED', 'Έγιναν πολλές προσπάθειες. Δοκίμασε ξανά αργότερα.');
   if (response.status >= 500) throw new ApiError(503, 'AUTH_UNAVAILABLE', 'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη.');
   throw new ApiError(response.status, 'ACCOUNT_CHANGE_REJECTED', 'Η αλλαγή απορρίφθηκε από την υπηρεσία σύνδεσης. Έλεγξε τα στοιχεία και τις απαιτήσεις ασφαλείας.');
+}
+
+// GoTrue versions may accept a password update without enforcing current_password.
+// Prove possession independently using a new password-grant session, never the
+// caller's AAL2 session. Retire that temporary session locally before updating.
+async function verifyCurrentPassword(session: Awaited<ReturnType<typeof requireSession>>, currentPassword: string) {
+  const activeSessionId = accessTokenSessionId(session.accessToken).toLowerCase();
+  const email = session.user.email;
+  if (!activeSessionId || !email) throw new ApiError(403, 'ACCOUNT_CHANGE_REJECTED', 'Δεν είναι δυνατή η επαλήθευση του λογαριασμού.');
+
+  let proof: Awaited<ReturnType<typeof signInWithPassword>>;
+  try {
+    proof = await signInWithPassword(email, currentPassword);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'AUTH_REJECTED') {
+      throw new ApiError(400, 'INVALID_CURRENT_PASSWORD', 'Ο τρέχων κωδικός δεν είναι έγκυρος.');
+    }
+    throw error;
+  }
+  const proofToken = proof?.access_token;
+  const proofSessionId = typeof proofToken === 'string' ? accessTokenSessionId(proofToken).toLowerCase() : '';
+  if (!proofToken || !proofSessionId || proofSessionId === activeSessionId) {
+    throw new ApiError(503, 'AUTH_UNAVAILABLE', 'Δεν είναι δυνατή η ασφαλής επαλήθευση του κωδικού.');
+  }
+  const { url, publishable } = authConfig();
+  const logout = await fetchUpstream(`${url}/auth/v1/logout?scope=local`, {
+    method: 'POST',
+    headers: { apikey: publishable, authorization: `Bearer ${proofToken}` },
+  }, 'AUTH');
+  if (logout.status === 429) throw new ApiError(429, 'AUTH_RATE_LIMITED', 'Έγιναν πολλές προσπάθειες. Δοκίμασε ξανά αργότερα.');
+  if (!logout.ok) throw new ApiError(503, 'AUTH_UNAVAILABLE', 'Δεν είναι δυνατή η ασφαλής επαλήθευση του κωδικού.');
+
+  if (proof.user?.id !== session.user.id || accessTokenAal(proofToken) !== 'aal1') {
+    throw new ApiError(403, 'ACCOUNT_CHANGE_REJECTED', 'Δεν είναι δυνατή η επαλήθευση του λογαριασμού.');
+  }
 }
 
 export function parseAccountSecurityWrite(value: unknown): AccountSecurityWrite {
@@ -87,6 +123,7 @@ export async function handleAccountSecurityRequest(req: any, res: any) {
         pendingEmail: updated.new_email ?? (updated.email === change.email ? null : change.email),
       });
     }
+    await verifyCurrentPassword(session, change.currentPassword);
     await updateAuthenticatedUser(session.accessToken, {
       current_password: change.currentPassword,
       password: change.newPassword,

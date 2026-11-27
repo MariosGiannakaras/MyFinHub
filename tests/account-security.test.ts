@@ -37,6 +37,9 @@ describe('account security settings',()=>{
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');
+    expect(handler).toContain('await verifyCurrentPassword(session, change.currentPassword)');
+    expect(handler).toContain('signInWithPassword(email, currentPassword)');
+    expect(handler).toContain('/auth/v1/logout?scope=local');
     expect(handler).toContain("current_password: change.currentPassword");
     expect(handler).toContain("`${url}/auth/v1/user`");
     expect(route).toContain('handleAccountSecurityRequest');
