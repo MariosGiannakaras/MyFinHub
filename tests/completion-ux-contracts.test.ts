@@ -115,7 +115,15 @@ describe('completion UX contracts',()=>{
   it('keeps Savings action copy usable at narrow phone widths',()=>{
     const css=read('src/pages/SavingsCompletion.css');
     expect(css).toContain('@media(max-width:380px)');
-    expect(css).toContain('.savings-action strong{width:30px;font-size:0');
+    const mobile=read('src/styles/mobile-finance-domain-layouts.css');
+    const qa=read('scripts/savings-remediation-qa.mjs');
+    expect(css).not.toContain('.savings-action strong{width:30px');
+    expect(mobile).toContain('.savings-action{grid-template-columns:38px minmax(0,1fr);align-items:start}');
+    expect(mobile).toContain('.savings-action>strong{grid-column:2;justify-self:start;display:flex;align-items:center;gap:4px;white-space:nowrap;line-height:1.25}');
+    expect(mobile).toContain('.savings-action>strong svg{width:14px;height:14px;flex:none}');
+    expect(qa).toContain('narrow Savings action text and arrow share one readable row');
+    expect(qa).toContain('rects.length===1&&rects[0].width>0');
+    expect(qa).toContain('rects[0].right<=s.left+1&&s.right<=c.right+1');
     expect(css).toContain('.savings-action small{-webkit-line-clamp:3}');
   });
 
