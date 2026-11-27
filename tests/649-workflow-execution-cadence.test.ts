@@ -89,7 +89,12 @@ describe('#649 whole-implementation CI workflow cost and safety cadence',()=>{
     expect(real).toContain('<!-- run-real-stack-e2e -->');
     expect(real).toContain('npm run qa:real-stack');
     expect(real).toContain('npm run qa:migration-recovery');
-    expect(real).toContain('supabase@2.119.0 stop --no-backup');
+    expect(real).toContain('supabase_2.119.0_linux_amd64.tar.gz');
+    expect(real).toContain('sha256sum --check --strict');
+    expect(real).toContain('"$MYFINHUB_QA_SUPABASE_CLI" start');
+    expect(real).toContain('if [ -n "${MYFINHUB_QA_SUPABASE_CLI:-}" ]; then');
+    expect(real).toContain('"$MYFINHUB_QA_SUPABASE_CLI" stop --no-backup');
+    expect(real).not.toContain('npx --yes supabase@');
     expect(real).not.toMatch(/secrets\./);
   });
   it('requires actual backup rendering, failing visual assertions and artifact capture on review',()=>{
