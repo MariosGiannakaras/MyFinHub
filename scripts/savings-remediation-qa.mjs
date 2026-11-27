@@ -157,6 +157,9 @@ try{
   // Exercise actual theme owner too, without changing the default fixture for unrelated routes.
   for(const theme of ['dark','light']){
     assert(await c.call("async function(pref){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}",[theme])===theme,'Savings editor applies actual '+theme+' theme');
+    // A theme attribute and two frames do not settle CSS color transitions.
+    await waitFor("function(){const dialog=document.querySelector('.savings-dialog[aria-labelledby=savings-goal-editor-title]');if(!dialog||!dialog.getClientRects().length)return false;for(let node=dialog;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>(animation.pending||animation.playState==='running')&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}return !dialog.getAnimations({subtree:true}).some(animation=>(animation.pending||animation.playState==='running')&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",'Savings goal editor settled theme '+theme);
+    await c.call("async function(){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return true}");
     const paint=await readGoalDialogPaint();
     assert(paint?.theme===theme&&paint.token&&paint.alpha===255&&paint.headerAlpha===255&&paint.matches&&paint.footerImage!=='none'&&paint.opacity>=.995,'Savings editor solid theme surface '+theme+': '+JSON.stringify(paint));
     await screenshot('savings-goal-invalid-cent-mobile-'+theme);

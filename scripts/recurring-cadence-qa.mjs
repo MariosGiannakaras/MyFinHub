@@ -100,11 +100,20 @@ try{
   await fillAmount('Εκτιμώμενο ποσό','80');
   await fillAmount('Κατώτερη εκτίμηση','60');
   await fillAmount('Ανώτερη εκτίμηση','100');
-  const attempt=await c.call("function(){const item=[...document.querySelectorAll('[role=dialog] button')].find(item=>(item.textContent||'').trim()==='Αποθήκευση');item?.click();return Boolean(item)}");
+  const attempt=await c.call("function(){const item=[...document.querySelectorAll('[role=dialog] button')].find(item=>(item.textContent||'').trim()==='Αποθήκευση');if(!item||item.disabled)return false;item.click();return true}");
   assert(attempt,'rejected save action was submitted');
-  await waitFor("function(){return (document.querySelector('#recurring-editor-error')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected durable recurring receipt');
-  const held=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const error=document.querySelector('#recurring-editor-error')?.textContent||'';const inputs=[...dialog?.querySelectorAll('label')||[]];const val=label=>inputs.find(x=>(x.querySelector('span')?.textContent||'').includes(label))?.querySelector('input')?.value;return {open:!!dialog,min:val('Κατώτερη εκτίμηση'),max:val('Ανώτερη εκτίμηση'),error,storedText:document.querySelector('[data-active-recurring]')?.textContent||''}}");
-  assert(held.open&&held.min==='60'&&held.max==='100'&&held.error.includes('δοκιμαστική')&&!held.storedText.includes('Εκτίμηση'),'failed finance receipt retains editable variable draft without mutating the persisted recurring baseline');
+  // The fixture now rejects with a typed 409 before commit, not a generic Error.
+  const expectedRejection='Η δοκιμαστική έκδοση συγκρούστηκε.';
+  try{
+    await waitFor("function(){const alert=document.querySelector('#recurring-editor-error[role=alert]');return alert?.textContent?.trim()==='Η δοκιμαστική έκδοση συγκρούστηκε.'}",'rejected durable recurring receipt');
+  }catch(error){
+    const diagnostic=await c.call("function(){const modal=document.querySelector('.recurring-editor-dialog');return {url:location.href,open:!!modal,busy:modal?.getAttribute('aria-busy'),error:document.querySelector('#recurring-editor-error')?.textContent||'',storedText:document.querySelector('[data-active-recurring]')?.textContent||''}}");
+    console.error('Recurring rejected-receipt diagnostic:',JSON.stringify(diagnostic));
+    await shot('recurring-variable-rejected-save-diagnostic-mobile');
+    throw error;
+  }
+  const held=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const error=document.querySelector('#recurring-editor-error')?.textContent||'';const inputs=[...dialog?.querySelectorAll('label')||[]];const val=label=>inputs.find(x=>(x.querySelector('span')?.textContent||'').includes(label))?.querySelector('input')?.value;return {open:!!dialog,estimate:val('Εκτιμώμενο ποσό'),min:val('Κατώτερη εκτίμηση'),max:val('Ανώτερη εκτίμηση'),error,storedText:document.querySelector('[data-active-recurring]')?.textContent||''}}");
+  assert(held.open&&held.estimate==='80'&&held.min==='60'&&held.max==='100'&&held.error.trim()===expectedRejection&&!held.storedText.includes('Εκτίμηση'),'failed finance receipt retains editable variable draft without mutating the persisted recurring baseline');
   await waitFor("function(){const node=document.querySelector('#recurring-editor-error'),modal=document.querySelector('.recurring-editor-dialog'),actions=modal?.querySelector('.editor-actions');if(!node||!modal||!actions)return false;const r=node.getBoundingClientRect(),a=actions.getBoundingClientRect(),m=modal.getBoundingClientRect();return r.height>=22&&r.top>=m.top+4&&r.bottom<=Math.min(innerHeight,a.top)-8}",'rejected save error fully visible above sticky footer at 375px');
   await sleep(160);
   await shot('recurring-variable-rejected-save-mobile');
