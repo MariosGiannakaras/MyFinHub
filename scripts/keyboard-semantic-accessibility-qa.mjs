@@ -350,6 +350,8 @@ try{
  await waitFor("function(){const menu=document.querySelector('.mobile-more-menu');const r=menu?.getBoundingClientRect();return Boolean(r&&r.width>0&&r.top>=0&&r.bottom<=innerHeight&&menu.scrollHeight>menu.clientHeight)}",'short More sheet contained and scrollable');
  for(let index=0;index<8;index++)await pressTab();
  await waitFor("function(){const menu=document.querySelector('.mobile-more-menu'),button=document.activeElement;const r=menu.getBoundingClientRect(),b=button.getBoundingClientRect();return button===menu.querySelector('nav button:last-child')&&b.top>=r.top-1&&b.bottom<=r.bottom+1&&b.left>=r.left-1&&b.right<=r.right+1}",'last More destination scrolls into visible sheet');
+ const moreLabels=await c.call("function(){return [...document.querySelectorAll('.mobile-more-menu nav button')].flatMap(button=>{const b=button.getBoundingClientRect(),label=button.querySelector('span');if(!label)return ['missing label'];const range=document.createRange();range.selectNodeContents(label);return [...range.getClientRects()].some(r=>r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1)||label.scrollWidth>label.clientWidth+1?[label.textContent]:[]})}");
+ assert(moreLabels.length===0,'short More labels fully contained: '+JSON.stringify(moreLabels));
  await shot('keyboard-more-short-last-destination');
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'short More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'short More restores focus');

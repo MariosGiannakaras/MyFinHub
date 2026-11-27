@@ -117,6 +117,7 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('parseMoneyInputAmount(goalAmountText)');
     expect(source).toContain('parseMoneyInputAmount(amount)');
     expect(remediationQa).toContain('invalid goal creates no row');
+    expect(remediationQa).toContain('aligned mobile Savings width');
     expect(remediationQa).toContain('invalid Savings goal editor visually settled');
     expect(remediationQa).toContain('saved cent-exact Savings goal visible and settled');
   });

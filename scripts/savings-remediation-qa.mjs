@@ -124,6 +124,12 @@ try{
     await waitFor("function(){const page=document.querySelector('.savings-page'),body=page?.querySelector('.savings-desktop-target'),header=page?.querySelector('.page-heading'),actions=page?.querySelector('.savings-action-section');if(!body||!header||!actions)return false;const p=page.getBoundingClientRect(),r=[body,header,actions].map(n=>n.getBoundingClientRect());const svg=body.querySelector('.savings-trend-chart'),labels=[...svg?.querySelectorAll('g>text')||[]],lines=[...svg?.querySelectorAll('g>line')||[]];return r.every(b=>b.width>0&&Math.abs(b.left-p.left)<=1&&Math.abs(b.right-p.right)<=1)&&document.documentElement.scrollWidth<=innerWidth+1&&labels.length>0&&labels.length===lines.length&&new Set(labels.map(n=>n.textContent)).size===labels.length&&labels.every((n,i)=>n.getBBox().x+n.getBBox().width<=Number(lines[i].getAttribute('x1'))-2)}",'aligned Savings width and distinct nonoverlapping axis labels '+width);
     await screenshot('savings-aligned-axis-'+width);
   }
+  for(const width of [320,375,768]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height:812,deviceScaleFactor:1,mobile:false});
+    await waitFor("function(){const page=document.querySelector('.savings-page'),body=page?.querySelector('.savings-mobile-legacy'),header=page?.querySelector('.page-heading'),actions=page?.querySelector('.savings-action-section');if(!body||!header||!actions)return false;const p=page.getBoundingClientRect();return [body,header,actions].every(node=>{const b=node.getBoundingClientRect();return b.width>0&&Math.abs(b.left-p.left)<=1&&Math.abs(b.right-p.right)<=1})&&document.documentElement.scrollWidth<=innerWidth+1}",'aligned mobile Savings width '+width);
+    await c.call("function(){window.scrollTo({top:0,behavior:'instant'});return true}");
+    await screenshot('savings-aligned-mobile-'+width);
+  }
   // A malformed goal amount must not create any goal or affect actual balances.
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
   const beforeGoal=await state();

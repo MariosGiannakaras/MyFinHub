@@ -19,6 +19,8 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 
 ## Checkpoint
 
+2026-11-27: `a834b85` ordinary CI #45922225208 PASS (2655 tests), focused #45951987389 5/6 passed. Receipt suite reached foreign line safety after existing successful split handoff; stale text check failed despite current explicit foreign-line warning. Strengthen actual no-EUR-subtotal/no-split/foreign-provenance proof; repair observed mobile capture label clipping and add 320/375 geometry. QR-specific acceptance still pending.
+
 2026-11-27: `287ce51` CI #45921198953 failed sole stale dynamic tooltip source label guard; 2654/2655 tests, CodeQL PASS. Reconcile assertion and add positive actual live-camera QR fixture, exact fields, every-track cleanup, one local draft/no finance write, explicit-review guard; negative pending permission resolves all StrictMode requests. No runtime changes. Browser acceptance pending; combined focused batch after ordinary green.
 
 2026-11-27: exact `a036fbd` mandatory CI #45914940018 and isolated Real Stack #45916783264 PASS; combined focused #45916783311 failed before QR-specific cases at legacy two-button capture guard. Candidate updates precise capability-dependent count and both file input locks, alongside shared tooltip and settled Savings evidence corrections. No QR browser acceptance yet; new ordinary CI followed by consolidated focused run. See #649 plan for full evidence.

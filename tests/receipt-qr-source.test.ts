@@ -26,6 +26,10 @@ describe('#666 receipt QR safety boundary',()=>{
     expect(qa).toContain("typeof navigator.mediaDevices?.getUserMedia==='function'?3:2");
     expect(qa).toContain('buttons.length===expected&&buttons.every(button=>button.disabled)&&files.length===2');
     expect(qa).toContain("capture.length===(typeof navigator.mediaDevices?.getUserMedia==='function'?3:2)");
+    expect(qa).toContain('receipt capture labels fully contained');
+    expect(qa).toContain('foreign OCR lines are never silently denominated in EUR');
+    expect(qa).toContain("foreignLines.splitBlocked");
+    expect(qa).toContain("persistedReview?.itemsCurrency==='USD'");
     expect(qa).toContain('late camera stream is stopped after cancellation');
     expect(qa).toContain("window.__qaLateCameraTracks.every(track=>track.readyState==='ended')");
     expect(qa).toContain('actual live camera QR exact fields');

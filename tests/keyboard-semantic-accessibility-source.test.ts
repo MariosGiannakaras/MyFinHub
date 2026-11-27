@@ -77,6 +77,7 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('Quick Entry focus trap');
     expect(qa).toContain('Command Palette focus trap');
     expect(qa).toContain('mobile More focus trap');
+    expect(qa).toContain('short More labels fully contained');
     expect(qa).toContain('restores focus to opener');
     expect(modalFocus).toContain("event.key !== 'Tab'");
     expect(modalFocus).toContain('if(opener.current?.isConnected)opener.current.focus');

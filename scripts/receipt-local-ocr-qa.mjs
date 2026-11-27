@@ -271,6 +271,15 @@ try {
   await sleep(120);
   const itemMobile=await c.call("function(){const parent=document.querySelector('.receipt-inbox'),rows=[...document.querySelectorAll('.receipt-item-row')],rect=parent?.getBoundingClientRect();return {rows:rows.length,cssWidth:innerWidth,visualWidth:visualViewport?.width??null,overlap:rows.some(row=>{const r=row.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>376)}),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,modal:rect?{left:rect.left,right:rect.right}:null}}");
   assert(itemMobile.rows===2&&!itemMobile.overlap&&itemMobile.overflow<=1&&itemMobile.modal?.left>=-1&&itemMobile.modal?.right<=376,`375px item editor remains contained: ${JSON.stringify(itemMobile)}`);
+  const captureGeometry=async width=>{
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height:812,deviceScaleFactor:1,mobile:true});
+    await waitFor("function(width){return innerWidth===width}",'receipt mobile viewport',[width]);
+    const bounds=await c.call("function(){const root=document.querySelector('.receipt-capture-actions'),outer=root.getBoundingClientRect();return [...root.querySelectorAll('button')].map(button=>{const b=button.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(button);return {label:button.textContent.trim(),ok:b.width>0&&b.height>=44&&b.left>=outer.left-1&&b.right<=outer.right+1&&button.scrollWidth<=button.clientWidth+1&&[...range.getClientRects()].every(r=>r.left>=b.left-1&&r.right<=b.right+1&&r.top>=b.top-1&&r.bottom<=b.bottom+1)}})}");
+    assert(bounds.length===(await c.call("function(){return typeof navigator.mediaDevices?.getUserMedia==='function'?3:2}"))&&bounds.every(row=>row.ok),'receipt capture labels fully contained '+width+': '+JSON.stringify(bounds));
+  };
+  await captureGeometry(320);
+  await screenshot('receipt-capture-labels-320');
+  await captureGeometry(375);
   await screenshot('receipt-local-reviewed-items-mobile');
   await c.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
   // Deterministic browser negative-path: hold only the next local receipt DB open
@@ -408,7 +417,8 @@ try {
   await waitFor("function(){return Boolean(document.querySelector('.receipt-currency-warning'))}",'foreign OCR guard warning');
   const foreignBlocked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(button?.disabled)&&!document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')}");
   assert(foreignBlocked,'foreign source requires explicit EUR correction and never offers currency selector');
-  assert((await c.call("function(){return (document.querySelector('.receipt-item-balance')?.textContent||'').includes('άλλο νόμισμα')}")),'foreign OCR lines are never silently denominated in EUR');
+  const foreignLines=await c.call("function(){const balance=document.querySelector('.receipt-item-balance');const split=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση ως επιμερισμένη δαπάνη'));return {message:balance?.textContent||'',splitBlocked:Boolean(split?.disabled)}}");
+  assert(foreignLines.message.includes('δεν έχει επιβεβαιωθεί ως EUR')&&foreignLines.message.includes('Δεν υπολογίζονται ως ευρώ')&&!foreignLines.message.includes('Σύνολο γραμμών:')&&foreignLines.splitBlocked,'foreign OCR lines are never silently denominated in EUR: '+JSON.stringify(foreignLines));
   await screenshot('receipt-foreign-currency-safety');
 
   console.log('Receipt OCR QA: user corrections persist locally and reviewed proposal owns the Quick Entry prefill');
@@ -420,6 +430,7 @@ try {
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'local OCR correction persistence');
   const persistedReview=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
   assert(persistedReview?.currency==='EUR','explicit EUR amount correction normalizes previously foreign OCR proposal');
+  assert(persistedReview?.itemsCurrency==='USD','EUR total correction preserves foreign line currency provenance');
   assert(persistedReview?.merchant==='QA CORRECTED MARKET'&&Number(persistedReview?.total)===31.75,`corrected OCR proposal not persisted locally: ${JSON.stringify(persistedReview)}`);
   await screenshot('receipt-local-ocr-reviewed');
 
