@@ -75,10 +75,10 @@ describe('#649 whole-implementation CI workflow cost and safety cadence',()=>{
     expect(ci).toContain('require_success webkit "$WEBKIT"');
     expect(ci).toContain('require_success windows "$WINDOWS"');
   });
-  it('avoids a second PR-triggered standalone CodeQL while preserving scheduled and reusable scans',()=>{
+  it('preserves direct protected-PR CodeQL compatibility alongside scheduled and reusable scans',()=>{
     expect(codeql).toContain('workflow_call:');
     expect(codeql).toContain('schedule:');
-    expect(codeql).not.toMatch(/^\s*pull_request:/m);
+    expect(codeql).toMatch(/^  pull_request:\n    branches: \[main, develop\]$/m);
     expect(codeql).toContain('github/codeql-action/analyze');
   });
   it('requires real Supabase/Storage/Chromium proof on non-draft review heads but opts into costly draft checks',()=>{

@@ -34,18 +34,19 @@ describe('CI workflow optimization contracts',()=>{
     expect(ci).toContain('if [ "$failures" -gt 0 ]; then exit 1; fi');
   });
 
-  it('keeps pinned CodeQL reusable in CI and weekly standalone without duplicating PR scans',()=>{
+  it('keeps pinned reusable, direct protected-PR and scheduled CodeQL scans while avoiding other duplicated workflows',()=>{
     expect(ci).toContain('uses: ./.github/workflows/codeql.yml');
     expect(ci).toContain('uses: ./.github/workflows/cross-engine-smoke.yml');
     expect(ci).toContain('uses: ./.github/workflows/performance-smoke.yml');
     expect(codeql).toContain('workflow_call:');
     expect(codeql).toContain("cron: '17 4 * * 1'");
     expect(codeql).toContain('security-events: write');
-    // The develop/main rulesets require CodeQL code scanning; the mandatory
-    // CI workflow calls this reusable scanner on every PR head already.
-    // A second direct PR event would duplicate the same security analysis.
-    expect(codeql).not.toMatch(/^\s*pull_request:/m);
-    expect(codeql).not.toContain('    branches: [main, develop]');
+    // Protected merging rejected reusable-only analysis despite a green job.
+    // Restore the proven direct PR compatibility trigger, not a rule bypass.
+    expect(codeql).toMatch(/^  pull_request:\n    branches: \[main, develop\]$/m);
+    expect(codeql).toContain('github/codeql-action/init@');
+    expect(codeql).toContain('github/codeql-action/analyze@');
+    expect(agents).toContain('Retain the direct PR CodeQL compatibility scan');
     for(const reusable of [cross,performance]){
       expect(reusable).toContain('workflow_call:');
       expect(reusable).not.toContain('  pull_request:');
