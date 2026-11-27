@@ -140,10 +140,12 @@ try{
     assert(await c.call("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}"),'invalid goal stays open');
     assert((await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}"))===goalCount,'invalid goal creates no row');
   }
+  await waitFor("function(){const dialog=document.querySelector('.savings-dialog[aria-labelledby=savings-goal-editor-title]');if(!dialog||!dialog.getClientRects().length)return false;for(let node=dialog;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}return !dialog.getAnimations({subtree:true}).some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime))}",'invalid Savings goal editor visually settled');
   await screenshot('savings-goal-invalid-cent-mobile');
   await setGoalField('Στόχος ποσού','12,34');assert(await saveGoal(),'corrected goal save control');
   await waitFor("function(){const rows=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')];return !document.querySelector('#savings-goal-editor-title')&&rows.some(n=>(n.textContent||'').includes('Synthetic cent precision goal')&&(n.textContent||'').includes('12,34'))}",'corrected cent-exact goal saved');
   assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal metadata does not move actual savings money');
+  await waitFor("function(){const row=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')].find(n=>(n.textContent||'').includes('Synthetic cent precision goal'));if(!row)return false;row.scrollIntoView({block:'center',behavior:'instant'});for(let node=row;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}const rect=row.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight+1}",'saved cent-exact Savings goal visible and settled');
   await screenshot('savings-goal-cent-exact-mobile');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);
 }finally{await browserSession?.stop()}

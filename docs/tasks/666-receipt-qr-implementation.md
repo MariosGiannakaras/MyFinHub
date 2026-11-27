@@ -9,7 +9,7 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 - [x] QR-first scan before local OCR, source evidence and explicit review, foreign-currency handling, duplicate warning and unchanged canonical finance handoff. OCR and manual fallback preserved; normalized evidence stays in the existing local receipt draft. No raw payload persistence or uploads.
 - [x] Supported Web browser live camera flow, explicit activation, video-only permission and track/worker cleanup; same-origin camera policy with microphone still denied. Existing Electron media denial retained, local file/OCR fallback supported. No new native integration.
 - [x] Initial parser, image, source-contract and real browser regression coverage prepared; actual QR-only/multi/link/malformed/product fixtures, QR/OCR disagreement, responsive review and pre-save no-write assertions added to receipt QA.
-- [ ] Execute mandatory ordinary CI including clean npm install, typecheck/tests, lint, dependency/security and hard bundle budgets; inspect actual results. Dependency/lock entries are pinned from matching upstream metadata; local registry unavailable here.
+- [x] Execute mandatory ordinary CI including clean npm install, typecheck/tests, lint, dependency/security and hard bundle budgets; inspect actual results. Dependency/lock entries are pinned from matching upstream metadata; local registry unavailable here.
 - [ ] Run consolidated focused browser QA and inspect desktop/mobile/keyboard evidence; cover live camera permission denial/cancel and QR-specific duplicate and explicit save/cancel, including finance receipt protection, local draft durability and offline failure paths. Correct any defects; retain established acceptance gates.
 - [ ] Reconcile acceptance with the issue, final review-head gates and designated integration PR. Issue stays open until evidence establishes completion.
 
@@ -18,6 +18,8 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 [AADE A.1112/2025](https://www.aade.gr/sites/default/files/2025-07/a_1112_2025.pdf) describes electronic-invoicing provider receipt QR references. No universal verified, authorized public retrieval API has been established. The feature identifies an external receipt link without opening it or transmitting it; local OCR/manual review remain the safe fallback. A QR is evidence, not authentication. Conflicting evidence requires explicit owner choice; canonical receipt save remains the only finance write boundary. No provider scraping, third-party network decoder, raw QR storage, automatic receipt booking or Android changes.
 
 ## Checkpoint
+
+2026-11-27: exact `a036fbd` mandatory CI #45914940018 and isolated Real Stack #45916783264 PASS; combined focused #45916783311 failed before QR-specific cases at legacy two-button capture guard. Candidate updates precise capability-dependent count and both file input locks, alongside shared tooltip and settled Savings evidence corrections. No QR browser acceptance yet; new ordinary CI followed by consolidated focused run. See #649 plan for full evidence.
 
 2026-11-27: parent `79891c0` CI #45912676309 passed hygiene and CodeQL; all 11 QR tests (including 5 actual WASM fixture decodes) passed. Six outdated source guards and stale desktop linked root manifest metadata failed, repaired together. Full build, rendered QA and real-stack acceptance remain pending; no completion claim.
 

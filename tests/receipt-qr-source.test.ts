@@ -23,6 +23,9 @@ describe('#666 receipt QR safety boundary',()=>{
     expect(camera).toContain("video:{facingMode:{ideal:'environment'}},audio:false");
     expect(camera).toContain('track.stop()');
     expect(inbox).toContain('liveCameraTriggerRef.current?.focus()');
+    expect(qa).toContain("typeof navigator.mediaDevices?.getUserMedia==='function'?3:2");
+    expect(qa).toContain('buttons.length===expected&&buttons.every(button=>button.disabled)&&files.length===2');
+    expect(qa).toContain("capture.length===(typeof navigator.mediaDevices?.getUserMedia==='function'?3:2)");
     expect(qa).toContain('late camera stream is stopped after cancellation');
     expect(qa).toContain('QR review alone cannot bypass independent duplicate confirmation');
     expect(qa).toContain('cancelled QR handoff preserves draft without finance write');

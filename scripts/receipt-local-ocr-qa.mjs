@@ -249,7 +249,7 @@ try {
   await waitFor("function(){const save=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));return Boolean(save?.disabled&&document.querySelector('#receipt-review-items-error'))}",'sub-cent receipt item save guard');
   assert((await receiptCount())===1,'invalid OCR item edit never deletes its local receipt');
   await editReviewField('Διόρθωση ποσού γραμμής 2','4.25');
-  const captureLocked=await c.call("function(){const buttons=[...document.querySelectorAll('.receipt-capture-actions button')];return buttons.length===2&&buttons.every(button=>button.disabled)}");
+  const captureLocked=await c.call("function(){const buttons=[...document.querySelectorAll('.receipt-capture-actions button')];const expected=typeof navigator.mediaDevices?.getUserMedia==='function'?3:2;const files=[...document.querySelectorAll('.receipt-capture-actions input[type=file]')];return buttons.length===expected&&buttons.every(button=>button.disabled)&&files.length===2&&files.every(input=>input.disabled)}");
   assert(captureLocked,'dirty review cannot silently replace selected receipt via new capture');
   const closeRequested=await c.call("function(){const button=document.querySelector('.receipt-inbox-header button');button?.click();return Boolean(button)}");
   assert(closeRequested,'receipt review close exists');
@@ -312,7 +312,7 @@ try {
       const before=editor?.value;
       editor?.focus();
       return {busy:layout?.getAttribute('aria-busy'),inert:layout?.inert,
-        headerCloseDisabled:close?.disabled,captureDisabled:capture.every(x=>x.disabled)&&capture.length===2,
+        headerCloseDisabled:close?.disabled,captureDisabled:capture.every(x=>x.disabled)&&capture.length===(typeof navigator.mediaDevices?.getUserMedia==='function'?3:2),
         nativeFileInputsDisabled:files.length===2&&files.every(x=>x.disabled),
         focusBlocked:document.activeElement!==editor,unchanged:editor?.value===before,
         progress:[...document.querySelectorAll('.receipt-live-state[role=status]')].some(x=>(x.textContent||'').includes('Αποθήκευση διορθώσεων απόδειξης'))};

@@ -8,10 +8,12 @@ export function observeTooltip(node:HTMLSpanElement,side:TooltipSide){
     if(!bubble.getClientRects().length)return;
     const a=node.getBoundingClientRect(),gap=8;
     let left=gap,top=gap,right=document.documentElement.clientWidth-gap,bottom=document.documentElement.clientHeight-gap;
-    for(let parent=node.parentElement;parent;parent=parent.parentElement){
+    // The viewport already represents root scrolling; only real inner scrollports clip this anchor.
+    for(let parent=node.parentElement;parent&&parent!==document.body&&parent!==document.documentElement;parent=parent.parentElement){
       const style=getComputedStyle(parent),r=parent.getBoundingClientRect();
-      if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,r.left+gap);right=Math.min(right,r.right-gap)}
-      if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,r.top+gap);bottom=Math.min(bottom,r.bottom-gap)}
+      const x=r.left+parent.clientLeft,y=r.top+parent.clientTop;
+      if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,x+gap);right=Math.min(right,x+parent.clientWidth-gap)}
+      if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,y+gap);bottom=Math.min(bottom,y+parent.clientHeight-gap)}
     }
     if(right-left<36||bottom-top<20)return;
     bubble.style.maxWidth=Math.min(260,right-left)+'px';

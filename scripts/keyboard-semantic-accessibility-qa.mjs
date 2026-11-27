@@ -334,10 +334,16 @@ try{
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  for(const [width,height] of [[1440,1000],[768,600],[320,500]]){
    await navigate('dashboard',pages.dashboard,width,height,false);
-   const focusTip=await c.call("function(){const button=[...document.querySelectorAll('.period-control button')].find(node=>!node.disabled&&node.getClientRects().length);button?.focus();return Boolean(button&&document.activeElement===button)}");
-   assert(focusTip,'reporting-period tooltip focus '+width);
-   await waitFor("function(){const button=document.activeElement,bubble=document.getElementById(button?.getAttribute('aria-describedby')||'');if(!bubble)return false;const r=bubble.getBoundingClientRect(),a=button.getBoundingClientRect(),s=getComputedStyle(bubble);return s.visibility==='visible'&&Number(s.opacity)>.95&&r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&(r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1)}",'period tooltip contained and clear of trigger '+width);
-   await shot('keyboard-period-tooltip-'+width);
+   // Test both period and global action tooltips with a real keyboard focus modality.
+   await pressTab();
+   for(const [selector,name] of [['.period-control button','period'],['.top-actions .app-tooltip button','topbar']]){
+     const focusTip=await c.call("function(selector){const button=[...document.querySelectorAll(selector)].find(node=>!node.disabled&&node.getClientRects().length);button?.focus();return Boolean(button&&document.activeElement===button)}",[selector]);
+     assert(focusTip,name+' tooltip focus '+width);
+     const tipGeometry=`function(){const button=document.activeElement,ids=(button?.getAttribute('aria-describedby')||'').split(/\\s+/),bubble=ids.map(id=>document.getElementById(id)).find(node=>node?.matches('.app-tooltip-bubble'));if(!bubble)return {ok:false,ids,active:button?.outerHTML?.slice(0,500)};const r=bubble.getBoundingClientRect(),a=button.getBoundingClientRect(),s=getComputedStyle(bubble),clips=[];for(let node=bubble.parentElement;node&&node!==document.body&&node!==document.documentElement;node=node.parentElement){const style=getComputedStyle(node),rect=node.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(style.overflowX+' '+style.overflowY))clips.push({className:node.className,overflowX:style.overflowX,overflowY:style.overflowY,rect:rect.toJSON(),clientWidth:node.clientWidth,clientHeight:node.clientHeight})}const contained=clips.every(n=>(!/auto|scroll|hidden|clip/.test(n.overflowX)||(r.left>=n.rect.left-1&&r.right<=n.rect.right+1))&&(!/auto|scroll|hidden|clip/.test(n.overflowY)||(r.top>=n.rect.top-1&&r.bottom<=n.rect.bottom+1)));return {ok:s.visibility==='visible'&&Number(s.opacity)>.95&&r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&contained&&(r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1),bubble:r.toJSON(),anchor:a.toJSON(),positioned:bubble.dataset.positioned,display:s.display,visibility:s.visibility,opacity:s.opacity,coarse:matchMedia('(pointer:coarse)').matches,focusWithin:bubble.parentElement.matches(':focus-within'),clips}}`;
+     try{await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip contained and clear of trigger '+width)}
+     catch(error){console.error('Tooltip geometry failure',JSON.stringify(await c.call(tipGeometry)));await shot('keyboard-'+name+'-tooltip-failure-'+width);throw error}
+     await shot('keyboard-'+name+'-tooltip-'+width);
+   }
  }
  await navigate('dashboard',pages.dashboard,320,420,false);
  assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}"),'short viewport More opener exists');

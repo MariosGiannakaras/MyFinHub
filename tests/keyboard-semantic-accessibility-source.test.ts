@@ -84,6 +84,18 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(modalFocus).toContain('requestAnimationFrame(()=>{');
   });
 
+  it('keeps focused tooltips available on coarse-pointer keyboard devices and checks real clipping',()=>{
+    const css=readFileSync(new URL('../src/styles/ui-hardening-foundations.css',import.meta.url),'utf8');
+    const placement=readFileSync(new URL('../src/lib/tooltipPlacement.ts',import.meta.url),'utf8');
+    expect(css).toContain('@media(pointer:coarse){.app-tooltip:not(:focus-within) .app-tooltip-bubble{display:none}}');
+    expect(placement).toContain('parent!==document.body&&parent!==document.documentElement');
+    expect(placement).toContain('x+parent.clientWidth-gap');
+    expect(placement).toContain('y+parent.clientHeight-gap');
+    expect(qa).toContain("['.top-actions .app-tooltip button','topbar']");
+    expect(qa).toContain('Tooltip geometry failure');
+    expect(qa).toContain('contained and clear of trigger');
+  });
+
   it('covers the 404 recovery surface at a 200%-equivalent viewport with reduced motion',()=>{
     expect(qa).toContain("notFoundUrl.searchParams.set('screen','404')");
     expect(qa).toContain("prefers-reduced-motion");
