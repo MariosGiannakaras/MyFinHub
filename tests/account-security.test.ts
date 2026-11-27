@@ -33,7 +33,7 @@ describe('account security settings',()=>{
     const handler=read('server/accountSecurityHandler.ts');
     const route=read('api/auth/session.ts');
     const config=JSON.parse(read('vercel.json')) as {rewrites?:Array<{source:string;destination:string}>};
-    expect(handler).toContain('requireSession(req, res)');
+    expect(handler).toContain('requireSession(req, res, { allowBearer: true })');
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');

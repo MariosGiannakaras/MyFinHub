@@ -70,7 +70,7 @@ export async function handleAccountSecurityRequest(req: any, res: any) {
   await handleApi(res, async () => {
     const method = String(req.method || '').toUpperCase();
     if (method !== 'PATCH') return methodNotAllowed(res, ['PATCH']);
-    const session = await requireSession(req, res);
+    const session = await requireSession(req, res, { allowBearer: true });
     if (!(await isOwner(session.accessToken))) {
       clearSessionCookiesIfCookie(req, res, session);
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
