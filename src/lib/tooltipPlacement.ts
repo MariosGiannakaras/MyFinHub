@@ -6,7 +6,7 @@ export function observeTooltip(node:HTMLSpanElement,side:TooltipSide){
   const place=()=>{
     delete bubble.dataset.positioned;
     delete bubble.dataset.placedSide;
-    if(!bubble.getClientRects().length)return;
+    if(node.dataset.tooltipDismissed||!bubble.getClientRects().length)return;
     const a=node.getBoundingClientRect(),gap=8;
     let left=gap,top=gap,right=document.documentElement.clientWidth-gap,bottom=document.documentElement.clientHeight-gap;
     // The viewport already represents root scrolling; only real inner scrollports clip this anchor.
@@ -31,8 +31,37 @@ export function observeTooltip(node:HTMLSpanElement,side:TooltipSide){
     bubble.dataset.placedSide=chosen;
     bubble.dataset.positioned='true';
   };
+  // Supplementary content stays dismissible without moving focus or
+  // intercepting the enclosing dialog's own Escape handling. Keep this
+  // lifecycle in the already lazy placement chunk, not the eager shell.
+  const dismiss=(event:KeyboardEvent)=>{
+    if(event.key!=='Escape')return;
+    node.dataset.tooltipDismissed='true';
+    delete bubble.dataset.positioned;
+    delete bubble.dataset.placedSide;
+  };
+  const activate=()=>{delete node.dataset.tooltipDismissed;place()};
+  const stopClick=(event:MouseEvent)=>event.stopPropagation();
+  node.addEventListener('mouseenter',activate);
+  node.addEventListener('focusin',activate);
+  bubble.addEventListener('click',stopClick);
+  window.addEventListener('keydown',dismiss,true);
   place();
   const observer=new ResizeObserver(place);observer.observe(node);observer.observe(bubble);
   window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
-  return()=>{delete bubble.dataset.positioned;delete bubble.dataset.placedSide;bubble.style.removeProperty('left');bubble.style.removeProperty('top');bubble.style.removeProperty('max-width');observer.disconnect();window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true)};
+  return()=>{
+    observer.disconnect();
+    node.removeEventListener('mouseenter',activate);
+    node.removeEventListener('focusin',activate);
+    bubble.removeEventListener('click',stopClick);
+    window.removeEventListener('keydown',dismiss,true);
+    window.removeEventListener('resize',place);
+    window.removeEventListener('scroll',place,true);
+    delete node.dataset.tooltipDismissed;
+    delete bubble.dataset.positioned;
+    delete bubble.dataset.placedSide;
+    bubble.style.removeProperty('left');
+    bubble.style.removeProperty('top');
+    bubble.style.removeProperty('max-width');
+  };
 }

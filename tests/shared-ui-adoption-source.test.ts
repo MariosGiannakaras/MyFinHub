@@ -218,10 +218,21 @@ describe('shared finance UI adoption contracts',()=>{
     expect(hardening).toContain('.app-tooltip-bubble[data-positioned]::before');
     for(const side of ['top','bottom','left','right'])expect(hardening).toContain('data-placed-side="'+side+'"');
     const owner=read('src/components/Tooltip.tsx');
-    expect(owner).toContain("if(event.key==='Escape')setDismissed(true)");
-    expect(owner).toContain("window.removeEventListener('keydown',dismiss,true)");
-    expect(owner).toContain('setDismissed(false);setActive(true)');
-    expect(read('src/components/Tooltip.tsx')).toContain("import('../lib/tooltipPlacement')");
+    expect(tooltip).toContain("if(event.key!=='Escape')return;");
+    expect(tooltip).toContain("node.dataset.tooltipDismissed='true'");
+    expect(tooltip).toContain('if(node.dataset.tooltipDismissed||!bubble.getClientRects().length)return;');
+    expect(tooltip).toContain("const activate=()=>{delete node.dataset.tooltipDismissed;place()}");
+    for(const event of ['mouseenter','focusin']){
+      expect(tooltip).toContain("node.addEventListener('"+event+"',activate)");
+      expect(tooltip).toContain("node.removeEventListener('"+event+"',activate)");
+    }
+    expect(tooltip).toContain("window.addEventListener('keydown',dismiss,true)");
+    expect(tooltip).toContain("window.removeEventListener('keydown',dismiss,true)");
+    expect(tooltip).toContain("bubble.removeEventListener('click',stopClick)");
+    expect(tooltip).not.toContain('preventDefault');
+    expect(owner).not.toContain('tooltipDismissed');
+    expect(owner).not.toContain('setDismissed');
+    expect(owner).toContain("import('../lib/tooltipPlacement')");
     expect(read('src/styles/reporting-period-controls.css')).not.toContain('.period-control span');
     expect(read('src/styles/mobile-more-navigation.css')).toContain('max-height:calc(100dvh');
     expect(read('scripts/keyboard-semantic-accessibility-qa.mjs')).toContain('last More destination scrolls into visible sheet');

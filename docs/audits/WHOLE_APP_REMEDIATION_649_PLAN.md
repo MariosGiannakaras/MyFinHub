@@ -1,3 +1,9 @@
+## M2 checkpoint — eager bundle regression corrected in lazy tooltip owner
+
+**Implementations 8/23 completed · Sub-implementations 95/132 completed (72.0%).** Draft review head `f1382b36`: CI #46060053825 validate failed only hard raw main JS size (528.1 KiB vs 528.0 KiB); 2665/2665 tests, 350/350 files, typecheck and build compilation passed, nested and direct CodeQL #46060053858 passed. No rendered gate executed. CSS soft warning remains; no budget increase. Move all new Escape, fresh focus/hover, noninteractive click suppression and lifecycle cleanup into the existing lazy placement module. Restore exact accepted develop Tooltip.tsx bytes, preserving eager shell import boundary and React activation. Keep measured bridge CSS and existing rendered assertions unchanged. Source preflight checks and a lazy lifecycle regression lock; actual bundle output and browser proof pending. M2 I01.03/I20.05 remain partial. Use one coherent review cycle for required gates when candidate ready, not separate broad matrices. No new scope or production/Android action.
+
+---
+
 ## 2026-11-27 — M2 shared supplementary-content accessibility
 
 **Implementations 8/23 completed · Sub-implementations 95/132 completed (72.0%).** #668/#667 integrated into [develop `05395ed3`](https://github.com/MariosGiannakaras/MyFinHub/commit/05395ed3a0d4b119619d7f0672c508a0e6ec6cb8); exact review head fb688179 CI #46053238745 (2665 tests, 350 files, 56 Chromium suites, 908 PNGs, Windows, WebKit, performance and Unified), direct CodeQL #46053238634, Real Stack #46053238690 SUCCESS. Actual wrong current password denied, valid rotation accepted, original AAL2 session preserved, old password rejected/new password MFA required; inspected eight auth/device PNGs. #667 closed. No production or Android changes. Develop push-run conclusion unavailable via PR-only connector, not claimed PASS.
