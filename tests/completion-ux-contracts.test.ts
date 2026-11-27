@@ -180,8 +180,21 @@ describe('completion UX contracts',()=>{
     expect(more).toContain('max-height:calc(100dvh - 90px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;overscroll-behavior:contain');
     expect(shell).toContain('.mobile-nav{display:grid;position:fixed;z-index:70');
     const appShell=read('src/components/AppShell.tsx');
-    expect(appShell).toContain('className="mobile-more-menu surface-raised" role="dialog" aria-modal="true"');
-    expect(appShell).toContain('aria-label="Κλείσιμο μενού"');
+    // Scope the assertions to the actual dialog, not adjacency of JSX props.
+    const dialog=appShell.match(/<motion\.section ref=\{menuRef\} className="mobile-more-menu surface-raised"[\s\S]*?<\/motion\.section>/)?.[0]??'';
+    expect(dialog).toContain('role="dialog" aria-modal="true" aria-labelledby="mobile-more-title"');
+    expect(dialog).toContain('id="mobile-more-title"');
+    expect(dialog).toContain('onFocusCapture={');
+    expect(dialog).toContain("target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'})");
+    expect(dialog).toContain('aria-label="Κλείσιμο μενού"');
+    expect(appShell).toContain("const menuRef=useModalFocus<HTMLElement>(mobileMenuOpen,'button',()=>setMobileMenuOpen(false))");
+    expect(appShell).toContain("matchMedia('(max-width:680px)')");
+    expect(appShell).toContain('if(!query.matches)setMobileMenuOpen(false)');
+    const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(keyboard).toContain('mobile More focus trap step');
+    expect(keyboard).toContain('short More sheet contained and scrollable');
+    expect(keyboard).toContain('last More destination scrolls into visible sheet');
+    expect(keyboard).toContain('short More Escape close');
   });
 
 
