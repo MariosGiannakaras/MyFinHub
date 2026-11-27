@@ -65,7 +65,9 @@ describe('CI workflow optimization contracts',()=>{
     expect(cross).toContain('scripts/webkit-smoke.mjs');
     expect(performance).toContain('lighthouse@13.4.1');
     expect(performance).toContain('node scripts/performance-audit.mjs');
-    expect(performance).toContain('node scripts/loading-shift-audit.mjs');
+    expect(performance).toContain('node scripts/loading-shift-audit.mjs || failures=$((failures+1))');
+    expect(performance).toContain('node scripts/performance-audit.mjs || failures=$((failures+1))');
+    expect(performance).toContain('if [ "$failures" -gt 0 ]; then exit 1; fi');
   });
 
   it('runs one opt-in draft focused browser batch for #649 without triggering the full review matrix',()=>{

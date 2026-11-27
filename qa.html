@@ -12,6 +12,11 @@
   <body>
     <div id="root"></div>
     <script type="module">
+      // Load the canonical ordered CSS once. Static imports remove the four
+      // sequential CSS requests; the actual lazy workspace boundary still
+      // owns route rendering, and synthetic bridges are installed before QA.
+      import '/src/styles.css';
+      import '/src/styles/workspace-compat.css';
       const params=new URLSearchParams(location.search);
       const settingsApproval=params.get('page')==='settings'&&params.get('state')==='settings-tabs';
       const desktopLockScreen=params.get('screen')==='desktop-lock';
@@ -97,10 +102,6 @@
           return nativeFetch(input,init);
         };
       }
-      await import('/src/styles.css');
-      await import('/src/styles/approved-workspace-targets.css');
-      await import('/src/styles/account-iban-surfaces.css');
-      await import('/src/styles/dark-theme-surfaces.css');
       await import('/src/qa.tsx');
       for(let attempt=0;attempt<120&&!document.querySelector('#root>*');attempt+=1){
         await new Promise(resolve=>setTimeout(resolve,16));

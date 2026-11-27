@@ -113,7 +113,7 @@ let preflightError=null;for(let attempt=1;attempt<=2;attempt+=1){try{await prefl
 const evidenceContext=visualEvidenceContext();let primaryBootstrapRetries=0,fallbackActivations=0,persistedScreenshots=0;
 const parallelism=Math.max(1,Math.min(4,Number(process.env.MYFINHUB_QA_PARALLELISM||3)||3));
 const activePorts=new Set();
-function scriptPort(path){try{const source=readFileSync(path,'utf8');const match=source.match(/\\bport\\s*=\\s*(\\d+)/);return match?Number(match[1]):null}catch{return null}}
+function scriptPort(path){try{const source=readFileSync(path,'utf8');const match=source.match(/\bport\s*=\s*(\d+)/);return match?Number(match[1]):null}catch{return null}}
 async function acquirePort(port){if(!port)return;while(activePorts.has(port))await sleep(100);activePorts.add(port)}
 function releasePort(port){if(port)activePorts.delete(port)}
 async function runRenderedItem(item){
@@ -146,8 +146,14 @@ const resourceIsolatedSuites=new Set([
 ]);
 const parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path));
 const isolatedScripts=scripts.filter(item=>resourceIsolatedSuites.has(item.path));
+const failures=[];
+async function runAndCollect(item){
+  try{await runRenderedItem(item)}
+  catch(error){const detail=error instanceof Error?error.message:String(error);failures.push({path:item.path,detail});console.error(detail)}
+}
 let cursor=0;
-async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
+async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runAndCollect(parallelScripts[index])}}
 await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
-for(const item of isolatedScripts)await runRenderedItem(item);
+for(const item of isolatedScripts)await runAndCollect(item);
+if(failures.length)throw new Error(`Rendered QA failed in ${failures.length} suite(s):\n${failures.map(item=>item.path+': '+item.detail).join('\n')}`);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);

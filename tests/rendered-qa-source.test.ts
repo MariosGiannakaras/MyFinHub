@@ -129,7 +129,16 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('await acquirePort(port)');
     expect(coordinator).toContain('releasePort(port)');
     expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)}');
-    expect(coordinator).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
+    expect(coordinator).toContain('for(const item of isolatedScripts)await runAndCollect(item)');
+    expect(coordinator).toContain('await runAndCollect(parallelScripts[index])');
+    expect(coordinator).toContain('failures.push({path:item.path,detail})');
+    expect(coordinator).toContain('if(failures.length)throw new Error');
+    expect(coordinator).toContain("source.match(/\\bport\\s*=\\s*(\\d+)/)");
+    const tooltipCss=readFileSync('src/styles/ui-hardening-foundations.css','utf8');
+    const dialogQa=readFileSync('scripts/completion-dialog-geometry-qa.mjs','utf8');
+    expect(tooltipCss).toContain('.app-tooltip-bubble:not([data-positioned]){left:auto!important;right:0;top:0!important}');
+    expect(dialogQa).toContain('horizontalDetails');
+    expect(dialogQa).toContain('More opens without horizontal scroll');
   });
 
   it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
