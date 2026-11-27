@@ -19,6 +19,8 @@ Issue: [#666](https://github.com/MariosGiannakaras/MyFinHub/issues/666). Integra
 
 ## Checkpoint
 
+2026-11-27: `287ce51` CI #45921198953 failed sole stale dynamic tooltip source label guard; 2654/2655 tests, CodeQL PASS. Reconcile assertion and add positive actual live-camera QR fixture, exact fields, every-track cleanup, one local draft/no finance write, explicit-review guard; negative pending permission resolves all StrictMode requests. No runtime changes. Browser acceptance pending; combined focused batch after ordinary green.
+
 2026-11-27: exact `a036fbd` mandatory CI #45914940018 and isolated Real Stack #45916783264 PASS; combined focused #45916783311 failed before QR-specific cases at legacy two-button capture guard. Candidate updates precise capability-dependent count and both file input locks, alongside shared tooltip and settled Savings evidence corrections. No QR browser acceptance yet; new ordinary CI followed by consolidated focused run. See #649 plan for full evidence.
 
 2026-11-27: parent `79891c0` CI #45912676309 passed hygiene and CodeQL; all 11 QR tests (including 5 actual WASM fixture decodes) passed. Six outdated source guards and stale desktop linked root manifest metadata failed, repaired together. Full build, rendered QA and real-stack acceptance remain pending; no completion claim.

@@ -793,19 +793,36 @@ try {
     await screenshot('receipt-qr-camera-denied');
     await closeLiveCamera();
     assert(await c.call("function(){return !document.querySelectorAll('.receipt-file-input')[1]?.disabled}"),'file fallback reenabled after camera denial');
-    assert(await c.call("function(){navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{window.__qaResolveCamera=resolve});return true}"),'install deferred camera permission fixture');
+    assert(await c.call("function(){window.__qaCameraResolvers=[];navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>{window.__qaCameraResolvers.push(resolve)});return true}"),'install deferred camera permission fixture');
     await openLiveCamera();
-    await waitFor("function(){return typeof window.__qaResolveCamera==='function'}",'pending camera permission');
+    await waitFor("function(){return window.__qaCameraResolvers?.length>0}",'pending camera permission');
     await closeLiveCamera();
-    assert(await c.call("function(){const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;const stream=canvas.captureStream(1);window.__qaLateCameraTrack=stream.getVideoTracks()[0];window.__qaResolveCamera(stream);return Boolean(window.__qaLateCameraTrack)}"),'resolve permission after cancellation with real synthetic video track');
-    await waitFor("function(){return window.__qaLateCameraTrack?.readyState==='ended'}",'late camera stream is stopped after cancellation');
+    assert(await c.call("function(){window.__qaLateCameraTracks=window.__qaCameraResolvers.map(resolve=>{const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;const stream=canvas.captureStream(1);resolve(stream);return stream.getVideoTracks()[0]});return window.__qaLateCameraTracks.length>0}"),'resolve permission after cancellation with real synthetic video track');
+    await waitFor("function(){return window.__qaLateCameraTracks?.length>0&&window.__qaLateCameraTracks.every(track=>track.readyState==='ended')}",'late camera stream is stopped after cancellation');
     assert(await receiptCount()===0&&await qrWrites()===qrBefore,'camera denial and cancelled late stream persist nothing');
   }finally{
-    await c.call("function(){window.__qaLateCameraTrack?.stop();window.__qaRestoreCamera?.();delete window.__qaLateCameraTrack;delete window.__qaResolveCamera;delete window.__qaRestoreCamera;return true}");
+    await c.call("function(){window.__qaLateCameraTracks?.forEach(track=>track.stop());window.__qaRestoreCamera?.();delete window.__qaLateCameraTracks;delete window.__qaCameraResolvers;delete window.__qaRestoreCamera;return true}");
   }
   // A valid QR must survive absent OCR assets. Subsequent fallbacks must not
   // manufacture any date or amount from non-receipt or ambiguous codes.
   await c.send('Network.setBlockedURLs',{urls:['*://*/ocr/asset-manifest.json','*://provider.invalid/*','*://www1.aade.gr/*']});
+  // Positive live scan uses a real synthetic video stream with the same
+  // official-format QR fixture as the file path. All StrictMode streams
+  // must end; no physical camera, permissions UI or network provider.
+  assert(await c.call(`async function(encoded){const media=navigator.mediaDevices;if(!media)return false;const original=media.getUserMedia;const bytes=Uint8Array.from(atob(encoded),x=>x.charCodeAt(0));const bitmap=await createImageBitmap(new Blob([bytes],{type:'image/png'}));const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext('2d');if(!ctx){bitmap.close();return false}const tracks=[];const paint=()=>{ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0)};paint();const timer=setInterval(paint,100);window.__qaPositiveCamera={tracks,restore:()=>{clearInterval(timer);tracks.forEach(track=>track.stop());bitmap.close();media.getUserMedia=original}};media.getUserMedia=async options=>{if(options.audio!==false)throw Error('Unexpected microphone');const stream=canvas.captureStream(10);tracks.push(...stream.getVideoTracks());paint();return stream};return true}`,[qrFixtures.aade]),'install actual synthetic QR video stream');
+  try{
+    await openLiveCamera();
+    await qrStatus('aade');
+    const liveProposal=await qrProposal();
+    assert(liveProposal?.total===18.35&&liveProposal?.date==='2026-08-22'&&liveProposal?.qr?.identifier==='TST00000001:00000042','actual live camera QR exact fields');
+    await waitFor("function(){return !document.querySelector('.receipt-qr-camera')&&window.__qaPositiveCamera?.tracks.length>0&&window.__qaPositiveCamera.tracks.every(track=>track.readyState==='ended')}",'successful live scan stops every video track');
+    assert(await receiptCount()===1&&await qrWrites()===qrBefore,'live QR scan only persists one local draft and never writes finance');
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(n=>(n.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(button?.disabled)}"),'live QR still requires explicit review');
+    await screenshot('receipt-qr-live-camera-reviewed-required');
+    await deleteCurrentQr();
+  }finally{
+    await c.call("function(){window.__qaPositiveCamera?.restore();delete window.__qaPositiveCamera;return true}");
+  }
   for(const [name,kind] of [['aade','aade'],['multi','multiple'],['provider','external-link'],['malformed','malformed'],['product','product']]){
     await qrCapture(name);await qrStatus(kind);
     const proposal=await qrProposal();assert(proposal?.qr?.kind===kind,'persisted normalized QR classification '+kind);

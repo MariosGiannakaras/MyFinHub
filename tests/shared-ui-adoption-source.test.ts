@@ -216,7 +216,13 @@ describe('shared finance UI adoption contracts',()=>{
     expect(read('src/styles/reporting-period-controls.css')).not.toContain('.period-control span');
     expect(read('src/styles/mobile-more-navigation.css')).toContain('max-height:calc(100dvh');
     expect(read('scripts/keyboard-semantic-accessibility-qa.mjs')).toContain('last More destination scrolls into visible sheet');
-    expect(read('scripts/keyboard-semantic-accessibility-qa.mjs')).toContain('period tooltip contained and clear of trigger');
+    const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(keyboard).toContain("['.period-control button','period']");
+    expect(keyboard).toContain("['.top-actions .app-tooltip button','topbar']");
+    expect(keyboard).toContain("name+' tooltip contained and clear of trigger '+width");
+    expect(keyboard).toContain("r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&contained");
+    expect(keyboard).toContain("r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1");
+    expect(keyboard).toContain("Tooltip geometry failure");
   });
 
   it('retains rendered accessibility checks for names, touch targets, focus and tooltip semantics',()=>{

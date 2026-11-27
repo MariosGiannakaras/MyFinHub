@@ -27,6 +27,11 @@ describe('#666 receipt QR safety boundary',()=>{
     expect(qa).toContain('buttons.length===expected&&buttons.every(button=>button.disabled)&&files.length===2');
     expect(qa).toContain("capture.length===(typeof navigator.mediaDevices?.getUserMedia==='function'?3:2)");
     expect(qa).toContain('late camera stream is stopped after cancellation');
+    expect(qa).toContain("window.__qaLateCameraTracks.every(track=>track.readyState==='ended')");
+    expect(qa).toContain('actual live camera QR exact fields');
+    expect(qa).toContain('successful live scan stops every video track');
+    expect(qa).toContain('live QR scan only persists one local draft and never writes finance');
+    expect(qa).toContain('live QR still requires explicit review');
     expect(qa).toContain('QR review alone cannot bypass independent duplicate confirmation');
     expect(qa).toContain('cancelled QR handoff preserves draft without finance write');
     expect(qa).toContain('explicit QR save dispatches exactly one synthetic finance write');
