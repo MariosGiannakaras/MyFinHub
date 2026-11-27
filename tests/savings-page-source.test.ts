@@ -119,6 +119,10 @@ describe('Savings page action hierarchy',()=>{
     expect(remediationQa).toContain('invalid goal creates no row');
     expect(remediationQa).toContain('aligned mobile Savings width');
     expect(remediationQa).toContain('invalid Savings goal editor visually settled');
+    expect(remediationQa).toContain('invalid Savings goal editor has an opaque dialog surface');
+    expect(remediationQa).toContain('narrow Savings action text and arrow share one readable row');
+    const narrowCompletion=readFileSync(new URL('../src/pages/SavingsCompletion.css',import.meta.url),'utf8');
+    expect(narrowCompletion).not.toContain('.savings-action strong{width:30px');
     expect(remediationQa).toContain('saved cent-exact Savings goal visible and settled');
   });
 

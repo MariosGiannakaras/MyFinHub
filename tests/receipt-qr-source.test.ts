@@ -27,6 +27,9 @@ describe('#666 receipt QR safety boundary',()=>{
     expect(qa).toContain('buttons.length===expected&&buttons.every(button=>button.disabled)&&files.length===2');
     expect(qa).toContain("capture.length===(typeof navigator.mediaDevices?.getUserMedia==='function'?3:2)");
     expect(qa).toContain('receipt capture labels fully contained');
+    expect(qa).toContain('narrow receipt capture uses complete action rows');
+    expect(qa).toContain('reviewed QR Quick Entry visually settled');
+    expect(qa).toContain('reviewed QR Quick Entry has an opaque dialog surface');
     expect(qa).toContain('foreign OCR lines are never silently denominated in EUR');
     expect(qa).toContain("foreignLines.splitBlocked");
     expect(qa).toContain("persistedReview?.itemsCurrency==='USD'");

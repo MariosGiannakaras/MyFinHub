@@ -2,3 +2,4 @@
 .mobile-more-menu>nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .mobile-more-menu>nav>button{min-width:0}.mobile-more-menu>nav>button>span{min-width:0;white-space:normal;overflow-wrap:anywhere}
 .mobile-more-menu>nav svg{width:17px;flex:0 0 auto}
+@media(max-width:360px){.mobile-more-menu>nav{grid-template-columns:1fr}}
