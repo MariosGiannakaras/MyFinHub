@@ -1794,11 +1794,36 @@ async function main(){
     const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;
     assert(providerHealth?.ok===true,'Database health is not clean after provider Storage mutation.');
 
+    // Run the password mutation proof last: disposable local Auth only, no
+    // later finance/browser fixture can depend on the original password.
+    console.log('[real-stack] stage native-current-password-proof');
+    const passwordSession=await primary.request('/api/auth/session');
+    expect(passwordSession,200,undefined,'native-password-active-session');
+    const passwordAccess=primary.snapshot().get('rheomiq_access');
+    assert(typeof passwordAccess==='string'&&passwordAccess.length>40,'Missing active owner token for password proof.');
+    const changedPassword='Local-Only-Rotated-Real-Stack-8r2!';
+    expect(await nativeAccessRequest('/api/auth/account',passwordAccess,'PATCH',{
+      action:'password',currentPassword:'Definitely-Wrong-Password-9!',newPassword:changedPassword,
+    }),400,'INVALID_CURRENT_PASSWORD','native-password-wrong-denied');
+    // The original password must still authenticate after the rejected write.
+    // The accepted rotation itself proves possession of that original password.
+    expect(await nativeAccessRequest('/api/auth/account',passwordAccess,'PATCH',{
+      action:'password',currentPassword:TEST_PASSWORD,newPassword:changedPassword,
+    }),200,undefined,'native-password-correct-accepted');
+    expect(await primary.request('/api/auth/session'),200,undefined,'native-password-owner-session-preserved');
     const logout=await primary.request('/api/auth/logout',{method:'POST',body:{}});
     expect(logout,200);
     assert(logout.body?.authenticated===false,'Logout response did not clear authenticated state.');
     expect(await primary.request('/api/auth/session'),401,'AUTH_REQUIRED');
 
+    const rotatedLogin=new CookieClient('Synthetic password rotation readback');
+    expect(await rotatedLogin.request('/api/auth/login',{method:'POST',body:{email,password:TEST_PASSWORD}}),
+      401,'INVALID_CREDENTIALS','native-password-old-rejected');
+    const rotated=await rotatedLogin.request('/api/auth/login',{method:'POST',body:{email,password:changedPassword}});
+    expect(rotated,200,undefined,'native-password-new-accepted');
+    assert(rotated.body?.authenticated===false&&rotated.body?.mfaRequired===true,
+      'Rotated password bypassed the existing mandatory TOTP boundary.');
+    console.log('[real-stack] PASS native password wrong denial, real rotation, preserved AAL2 session and mandatory MFA readback');
     console.log('[real-stack] PASS auth/password, TOTP enrollment+challenge, session restore/logout');
     console.log('[real-stack] PASS active-device list/revoke/revoke-others/stale-session/re-auth');
     console.log('[real-stack] PASS import, mutable persistence, revision conflict, history undo/redo, backup/restore, direct DB read-back');

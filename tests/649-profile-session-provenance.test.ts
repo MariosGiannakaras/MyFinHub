@@ -53,6 +53,9 @@ function userFetch() {
     const url = String(input);
     const headers = (init?.headers || {}) as Record<string, string>;
     calls.push({ url, method: init?.method || 'GET', authorization: headers.authorization || '' });
+    if (url.endsWith('/auth/v1/user') && headers.authorization === 'Bearer invalid-synthetic-credential') {
+      return payload(401, { message: 'Synthetic invalid bearer' });
+    }
     if (url.endsWith('/auth/v1/user') && init?.method === 'PUT') {
       return payload(200, { id: 'owner-id', email: EMAIL, new_email: 'new@example.test' });
     }
@@ -96,27 +99,32 @@ describe('#649 I03.04 profile, MFA and device cookie/bearer provenance', () => {
     if (oldVercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = oldVercel;
   });
 
-  it('does not accept bearer-only access for browser profile, devices or the session page', async () => {
+  it('keeps session status cookie-only while explicitly authorizing owner AAL2 bearer account and device routes', async () => {
     const fetchCalls = userFetch();
-    const paths = [
-      { marker: 'account', method: 'PATCH', body: { action: 'email', email: 'new@example.test' } },
-      { marker: 'devices', method: 'POST', body: { action: 'rename', sessionId: SESSION_ID, nickname: 'Office' } },
-      { marker: undefined, method: 'GET', body: undefined },
-    ];
-    for (const path of paths) {
-      const res = recorder();
-      await sessionHandler({
-        method: path.method, query: path.marker ? { __myfinhub_route: path.marker } : {},
-        headers: { authorization: 'Bearer ' + accessToken('aal2'), ...safeOrigin },
-        body: path.body,
-      }, res);
-      expect(res.statusCode).toBe(401);
-      expect(JSON.parse(res.body)).toMatchObject({ code: 'AUTH_REQUIRED' });
-      expect(res.headers.has('set-cookie')).toBe(false);
-    }
+    const token = accessToken('aal2');
+    const sessionRes = recorder();
+    await sessionHandler({method: 'GET', query: {}, headers: {authorization: 'Bearer ' + token}}, sessionRes);
+    expect(sessionRes.statusCode).toBe(401);
+    expect(JSON.parse(sessionRes.body)).toMatchObject({code: 'AUTH_REQUIRED'});
+    expect(sessionRes.headers.has('set-cookie')).toBe(false);
     expect(fetchCalls).toHaveLength(0);
     expect(storage.isOwner).not.toHaveBeenCalled();
     noWrites();
+
+    for (const path of [
+      {marker: 'account', method: 'PATCH', body: {action: 'email', email: 'new@example.test'}},
+      {marker: 'devices', method: 'POST', body: {action: 'rename', sessionId: SESSION_ID, nickname: 'Office'}},
+    ]) {
+      const res = recorder();
+      await sessionHandler({method: path.method, query: {__myfinhub_route: path.marker},
+        headers: {authorization: 'Bearer ' + token}, body: path.body}, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.headers.has('set-cookie')).toBe(false);
+      expect(res.headers.has('access-control-allow-origin')).toBe(false);
+    }
+    expect(devices.renameDeviceSession).toHaveBeenCalledWith(token, 'owner-id', SESSION_ID, 'Office');
+    expect(fetchCalls.some(call => call.method === 'PUT' && call.authorization === 'Bearer ' + token)).toBe(true);
+    expect(fetchCalls.every(call => call.authorization === 'Bearer ' + token)).toBe(true);
   });
 
   it('keeps owner AAL1 outside profile and device mutations but allows an MFA-pending session status', async () => {
@@ -178,29 +186,33 @@ describe('#649 I03.04 profile, MFA and device cookie/bearer provenance', () => {
     noWrites();
   });
 
-  it('does not let an Authorization header replace a real cookie on browser-only profile/device routes', async () => {
+  it('rejects explicit invalid bearer without cookie fallback on reviewed settings routes; session status still uses cookies', async () => {
     const calls = userFetch();
     const token = accessToken('aal2');
-    const profile = cookieRequest('PATCH', 'aal2', 'account', safeOrigin);
-    const profileRes = recorder();
-    await sessionHandler({
-      ...profile, headers: { ...profile.headers, authorization: 'Bearer invalid-synthetic-credential' },
-      body: { action: 'email', email: 'new@example.test' },
-    }, profileRes);
-    expect(profileRes.statusCode).toBe(200);
-    expect(JSON.parse(profileRes.body)).toMatchObject({ ok: true, pendingEmail: 'new@example.test' });
-
-    const device = cookieRequest('POST', 'aal2', 'devices', safeOrigin);
-    const deviceRes = recorder();
-    await sessionHandler({
-      ...device, headers: { ...device.headers, authorization: 'Bearer invalid-synthetic-credential' },
-      body: { action: 'rename', sessionId: SESSION_ID, nickname: 'Office' },
-    }, deviceRes);
-    expect(deviceRes.statusCode).toBe(200);
-    expect(devices.renameDeviceSession).toHaveBeenCalledWith(token, 'owner-id', SESSION_ID, 'Office');
-    expect(calls.some(call => call.method === 'PUT' && call.authorization === 'Bearer ' + token)).toBe(true);
-    expect(calls.every(call => call.authorization === 'Bearer ' + token)).toBe(true);
-    expect(deviceRes.headers.has('access-control-allow-origin')).toBe(false);
+    for (const path of [
+      {marker: 'account', method: 'PATCH', body: {action: 'email', email: 'new@example.test'}},
+      {marker: 'devices', method: 'POST', body: {action: 'rename', sessionId: SESSION_ID, nickname: 'Office'}},
+    ]) {
+      for (const authorization of ['Bearer invalid-synthetic-credential', 'invalid']) {
+        const req = cookieRequest(path.method, 'aal2', path.marker, safeOrigin);
+        const res = recorder();
+        await sessionHandler({...req, headers: {...req.headers, authorization}, body: path.body}, res);
+        expect(res.statusCode).toBe(401);
+        expect(JSON.parse(res.body)).toMatchObject({code: 'AUTH_REQUIRED'});
+        expect(res.headers.has('set-cookie')).toBe(false);
+        expect(res.headers.has('access-control-allow-origin')).toBe(false);
+      }
+    }
+    expect(calls).toHaveLength(2);
+    expect(calls.every(call => call.method === 'GET' && call.authorization === 'Bearer invalid-synthetic-credential')).toBe(true);
+    expect(storage.isOwner).not.toHaveBeenCalled();
+    noWrites();
+    const req = cookieRequest('GET', 'aal2');
+    const res = recorder();
+    await sessionHandler({...req, headers: {...req.headers, authorization: 'Bearer invalid-synthetic-credential'}}, res);
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({authenticated: true, email: EMAIL});
+    expect(calls.slice(2).every(call => call.authorization === 'Bearer ' + token)).toBe(true);
   });
 
   it('requires same Origin on login, TOTP enrollment/challenge and logout before any Auth/network mutation', async () => {

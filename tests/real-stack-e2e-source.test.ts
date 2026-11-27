@@ -247,6 +247,11 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'native-settings-denied-devices'");
     expect(script).toContain("'native-settings-denied-account'");
     expect(script).toContain("'native-settings-cookie-preserved'");
+    for(const stage of ['native-password-wrong-denied','native-password-correct-accepted','native-password-owner-session-preserved','native-password-old-rejected','native-password-new-accepted'])
+      expect(script).toContain("'"+stage+"'");
+    expect(script).toContain("rotated.body?.authenticated===false&&rotated.body?.mfaRequired===true");
+    expect(script.indexOf('native-password-wrong-denied')).toBeLessThan(script.indexOf('native-password-correct-accepted'));
+    expect(script.indexOf('native-password-correct-accepted')).toBeLessThan(script.indexOf('native-password-new-accepted'));
     expect(script).toContain("Native settings rejection changed independent owner cookies.");
     expect(script).toContain("'DEVICE_ACCESS_REVOKED'");
     expect(script).toContain('/api/import');
