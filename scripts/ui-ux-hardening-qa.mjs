@@ -99,8 +99,24 @@ try{
   await screenshot('desktop-refresh-tooltip-hoverable');
   await pressEscape();
   await waitFor("function(){const b=document.querySelector('.top-actions button[aria-label=\"Ανανέωση δεδομένων\"]')?.closest('.app-tooltip');return Boolean(b?.matches('[data-tooltip-dismissed]')&&getComputedStyle(b.querySelector('.app-tooltip-bubble')).display==='none')}",'hover tooltip Escape dismisses');
-  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:tooltipSemantics.x,y:tooltipSemantics.y});
-  await waitFor("function(){const b=document.querySelector('.top-actions button[aria-label=\"Ανανέωση δεδομένων\"]')?.closest('.app-tooltip');return Boolean(b?.querySelector('[data-positioned]')&&!b.matches('[data-tooltip-dismissed]'))}",'tooltip reopens on new pointer entry');
+  // Hiding the hovered descendant can queue mouseleave after the Escape
+  // event. Moving directly back to its ancestor is not a proven new entry.
+  // Establish a real pointer exit and observer cleanup before re-entering.
+  const neutral=await c.eval(`(()=>{for(const el of document.querySelectorAll('#main-workspace h1,#main-workspace h2,.workspace')){const r=el.getBoundingClientRect(),x=Math.round((r.left+r.right)/2),y=Math.round((r.top+r.bottom)/2),hit=document.elementFromPoint(x,y);if(hit&&!hit.closest('.app-tooltip')&&x>0&&y>0&&x<innerWidth&&y<innerHeight)return {x,y}}return null})()`);
+  assert(neutral,'tooltip has a neutral pointer destination outside its anchor');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',...neutral});
+  const tooltipState="function(){const a=document.querySelector('.top-actions button[aria-label=\"Ανανέωση δεδομένων\"]'),b=a?.closest('.app-tooltip'),t=b?.querySelector('.app-tooltip-bubble');return {hover:Boolean(b?.matches(':hover')),focus:Boolean(b?.matches(':focus-within')),dismissed:Boolean(b?.matches('[data-tooltip-dismissed]')),positioned:Boolean(t?.matches('[data-positioned]')),display:t?getComputedStyle(t).display:null,opacity:t?getComputedStyle(t).opacity:null}}";
+  await waitFor('function(){const s=('+tooltipState+')();return !s.hover&&!s.focus&&!s.dismissed&&!s.positioned&&s.display==="none"}','tooltip genuine pointer exit and cleanup');
+  const reentry=await c.eval(`(()=>{const a=document.querySelector('.top-actions button[aria-label="Ανανέωση δεδομένων"]'),r=a?.getBoundingClientRect();if(!r)return null;const x=r.left+r.width/2,y=r.top+r.height/2;return document.elementFromPoint(x,y)?.closest('button')===a?{x,y}:null})()`);
+  assert(reentry,'refresh trigger is still hit-test reachable');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',...reentry});
+  try{
+    await waitFor('function(){const s=('+tooltipState+')();return s.hover&&!s.focus&&!s.dismissed&&s.positioned&&s.display!=="none"&&Number(s.opacity)>.9}','tooltip reopens on new pointer entry');
+  }catch(error){
+    console.error('Tooltip pointer reentry failure',JSON.stringify(await c.call(tooltipState)));
+    await screenshot('desktop-refresh-tooltip-reentry-failure');throw error;
+  }
+  await screenshot('desktop-refresh-tooltip-reentered');
   await c.send('Input.dispatchMouseEvent',{type:'mousePressed',x:tooltipSemantics.x,y:tooltipSemantics.y,button:'left',clickCount:1});await sleep(60);assert(await c.eval("document.querySelector('.top-actions button[aria-label=\"Ανανέωση δεδομένων\"]')?.matches(':active')"),'refresh action exposes real pressed state');await screenshot('desktop-refresh-pressed');await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:tooltipSemantics.x,y:tooltipSemantics.y,button:'left',clickCount:1});await viewport(375,812);await navigate({page:'dashboard'},PAGE_HEADINGS.dashboard);assert(await c.eval("getComputedStyle(document.querySelector('.app-tooltip-bubble')).display==='none'"),'touch layout suppresses sticky tooltip bubbles while retaining accessible names');
 
   console.log('UI/UX QA: sorting semantics and stable direction controls');

@@ -254,6 +254,10 @@ describe('shared finance UI adoption contracts',()=>{
     expect(rendered).toContain('hover tooltip remains open through anchor gap');
     expect(rendered).toContain('hover tooltip text remains reachable without focus');
     expect(rendered).toContain('hover tooltip Escape dismisses');
+    expect(rendered).toContain('tooltip genuine pointer exit and cleanup');
+    expect(rendered).toContain('refresh trigger is still hit-test reachable');
+    expect(rendered).toContain('Tooltip pointer reentry failure');
+    expect(rendered).toContain('tooltip reopens on new pointer entry');
   });
 
   it('retains rendered accessibility checks for names, touch targets, focus and tooltip semantics',()=>{
