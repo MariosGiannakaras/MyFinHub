@@ -5,6 +5,7 @@ export function observeTooltip(node:HTMLSpanElement,side:TooltipSide){
   if(!bubble)return ()=>{};
   const place=()=>{
     delete bubble.dataset.positioned;
+    delete bubble.dataset.placedSide;
     if(!bubble.getClientRects().length)return;
     const a=node.getBoundingClientRect(),gap=8;
     let left=gap,top=gap,right=document.documentElement.clientWidth-gap,bottom=document.documentElement.clientHeight-gap;
@@ -27,10 +28,11 @@ export function observeTooltip(node:HTMLSpanElement,side:TooltipSide){
     const [px,py]=positions[chosen];
     bubble.style.left=(Math.max(left,Math.min(right-w,px))-a.left)+'px';
     bubble.style.top=(Math.max(top,Math.min(bottom-h,py))-a.top)+'px';
+    bubble.dataset.placedSide=chosen;
     bubble.dataset.positioned='true';
   };
   place();
   const observer=new ResizeObserver(place);observer.observe(node);observer.observe(bubble);
   window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
-  return()=>{delete bubble.dataset.positioned;observer.disconnect();window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true)};
+  return()=>{delete bubble.dataset.positioned;delete bubble.dataset.placedSide;bubble.style.removeProperty('left');bubble.style.removeProperty('top');bubble.style.removeProperty('max-width');observer.disconnect();window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true)};
 }

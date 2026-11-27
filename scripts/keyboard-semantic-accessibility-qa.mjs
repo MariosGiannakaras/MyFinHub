@@ -343,6 +343,12 @@ try{
      try{await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip contained and clear of trigger '+width)}
      catch(error){console.error('Tooltip geometry failure',JSON.stringify(await c.call(tipGeometry)));await shot('keyboard-'+name+'-tooltip-failure-'+width);throw error}
      await shot('keyboard-'+name+'-tooltip-'+width);
+     await pressEscape();
+     await waitFor("function(){const b=document.activeElement?.closest('.app-tooltip');return Boolean(b?.matches('[data-tooltip-dismissed]')&&getComputedStyle(b.querySelector('.app-tooltip-bubble')).display==='none')}",name+' tooltip Escape dismisses without moving keyboard focus '+width);
+     assert(await c.call("function(){const b=document.activeElement;return Boolean(b?.matches('button')&&b.closest('.app-tooltip')?.matches('[data-tooltip-dismissed]')&&b.getAttribute('aria-describedby'))}"),name+' Escape retains trigger focus and description '+width);
+     if(width===320)await shot('keyboard-'+name+'-tooltip-dismissed-'+width);
+     await c.call("function(){const b=document.activeElement;b.blur();b.focus()}");
+     await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip reopens on new keyboard focus '+width);
    }
  }
  await navigate('dashboard',pages.dashboard,320,420,false);

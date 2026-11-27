@@ -212,6 +212,15 @@ describe('shared finance UI adoption contracts',()=>{
     expect(tooltip).toContain('const candidates=[side,opposite[side]');
     expect(tooltip).toContain("window.addEventListener('scroll',place,true)");
     expect(tooltip).toContain('observer.disconnect()');
+    expect(tooltip).toContain('bubble.dataset.placedSide=chosen');
+    expect(tooltip).toContain("bubble.style.removeProperty('max-width')");
+    expect(hardening).toContain('.app-tooltip[data-tooltip-dismissed] .app-tooltip-bubble{display:none}');
+    expect(hardening).toContain('.app-tooltip-bubble[data-positioned]::before');
+    for(const side of ['top','bottom','left','right'])expect(hardening).toContain('data-placed-side="'+side+'"');
+    const owner=read('src/components/Tooltip.tsx');
+    expect(owner).toContain("if(event.key==='Escape')setDismissed(true)");
+    expect(owner).toContain("window.removeEventListener('keydown',dismiss,true)");
+    expect(owner).toContain('setDismissed(false);setActive(true)');
     expect(read('src/components/Tooltip.tsx')).toContain("import('../lib/tooltipPlacement')");
     expect(read('src/styles/reporting-period-controls.css')).not.toContain('.period-control span');
     expect(read('src/styles/mobile-more-navigation.css')).toContain('max-height:calc(100dvh');
@@ -223,6 +232,11 @@ describe('shared finance UI adoption contracts',()=>{
     expect(keyboard).toContain("r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&contained");
     expect(keyboard).toContain("r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1");
     expect(keyboard).toContain("Tooltip geometry failure");
+    expect(keyboard).toContain('tooltip Escape dismisses without moving keyboard focus');
+    expect(keyboard).toContain('tooltip reopens on new keyboard focus');
+    expect(rendered).toContain('hover tooltip remains open through anchor gap');
+    expect(rendered).toContain('hover tooltip text remains reachable without focus');
+    expect(rendered).toContain('hover tooltip Escape dismisses');
   });
 
   it('retains rendered accessibility checks for names, touch targets, focus and tooltip semantics',()=>{
