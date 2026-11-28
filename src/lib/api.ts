@@ -67,16 +67,16 @@ export function backupOutcomeMayBeCommitted(error:unknown):boolean {
   return importOutcomeMayBeCommitted(error);
 }
 
-const responseScopes=new WeakMap<Response,number>();
+const responseScopes=new WeakMap<Response,{scope:number;token:string}>();
 async function json<T>(response: Response): Promise<T> {
-  const scope=responseScopes.get(response);
+  const receipt=responseScopes.get(response),scope=receipt?.scope;
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   // Check after body settlement, before data or auth/PIN events escape.
   if(scope!==authScopeEpoch())throw new ApiError('Η συνεδρία άλλαξε κατά την επαλήθευση της απόκρισης.',0,'AUTH_SCOPE_CHANGED');
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
     notifyAuthExpired(response.status, details.code);
-    if(response.status===423&&details.code==='APP_LOCK_REQUIRED'&&typeof window!=='undefined')window.dispatchEvent(new Event('myfinhub:app-lock-now'));
+    if(response.status===423&&details.code==='APP_LOCK_REQUIRED'&&receipt?.token===getAppUnlockToken()&&typeof window!=='undefined')window.dispatchEvent(new Event('myfinhub:app-lock-now'));
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
   }
   return payload as T;
@@ -114,7 +114,7 @@ export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {
       headers,
       signal: controller.signal,
     });
-    responseScopes.set(response,scope);
+    responseScopes.set(response,{scope,token});
     return response;
   } catch (error) {
     if (timedOut) throw new ApiError('Η σύνδεση με το MyFinHub άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_TIMEOUT');

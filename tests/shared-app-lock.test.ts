@@ -133,6 +133,13 @@ describe('shared owner app privacy PIN',()=>{
     expect(entry).toContain("import('./components/DesktopAppLockGate')");
     expect(entry).not.toContain("import { DesktopAppLockGate } from");
     expect(gate).toContain('getSharedAppLockState');
+    expect(gate).toContain('version===generation.current&&scope===authScopeEpoch()');
+    expect(gate).toContain('await revocations.current');
+    expect(gate).toContain('await revokeTicket(token,scope)');
+    expect(gate).toContain("if(!current()||document.visibilityState==='hidden')");
+    expect(gate).toContain('if(Date.now()-lastActivity>=delay){enterLockedState(lockState);return}');
+    expect(gate).toContain('token===getAppUnlockToken()');
+    expect(read('src/lib/api.ts')).toContain('receipt?.token===getAppUnlockToken()');
     expect(gate).toContain("action:'verify'");
     expect(gate).toContain('Unmount the financial workspace');
     expect(gate).toContain("'visibilitychange'");
@@ -143,6 +150,9 @@ describe('shared owner app privacy PIN',()=>{
     expect(rendered).toContain('.desktop-app-lock-screen[data-phase=error]');
     expect(rendered).toContain("!document.querySelector('.desktop-app-lock-underlay')");
     expect(rendered).toContain("document.querySelector('.desktop-app-lock-preview')");
+    expect(rendered).toContain('stale successful verification revoked before retry');
+    expect(rendered).toContain('stale PIN receipt cannot mount protected workspace');
+    expect(rendered).toContain('success animation cannot override a newer lock');
 
     expect(settings).toContain('getSharedAppLockState');
     expect(settings).toContain('Τρέχον 4ψήφιο PIN');

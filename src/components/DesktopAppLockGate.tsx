@@ -2,6 +2,7 @@ import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ApiError, getSession, getSharedAppLockState, recoverSharedAppLock, updateSharedAppLock } from '../lib/api';
 import { setAppUnlockToken, getAppUnlockToken, clearAppUnlockToken } from '../lib/appUnlockToken';
+import { authScopeEpoch } from '../lib/authScopedCache';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 
@@ -36,72 +37,94 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
   const[tick,setTick]=useState(Date.now());
   const inputRef=useRef<HTMLInputElement|null>(null);
   const activeStateRef=useRef(lockState);
-  activeStateRef.current=lockState;
+  const generation=useRef(0);
+  const mounted=useRef(false);
+  const actionPending=useRef(false);
+  const revocations=useRef(Promise.resolve());
+  const phaseRef=useRef<Phase>('checking');
+  const changePhase=useCallback((next:Phase)=>{phaseRef.current=next;setPhase(next)},[]);
+  const revokeTicket=useCallback((token:string,scope=authScopeEpoch())=>{
+    if(!token)return revocations.current;
+    // Session-wide revocation must settle before a newer verification can
+    // mint another ticket. Never revoke using a replacement auth session.
+    revocations.current=revocations.current.then(async()=>{
+      if(scope===authScopeEpoch())await updateSharedAppLock({action:'lock',unlockToken:token}).catch(()=>{});
+    });
+    return revocations.current;
+  },[]);
   const retrySeconds=useMemo(()=>Math.max(0,Math.ceil((blockedUntil-tick)/1000)),[blockedUntil,tick]);
 
   const enterLockedState=useCallback((state?:AppLockState)=>{
-    const stale=clearAppUnlockToken();
-    if(stale)void updateSharedAppLock({action:'lock',unlockToken:stale}).catch(()=>{});
-    if(state)setLockState(state);
+    generation.current++;
+    void revokeTicket(clearAppUnlockToken());
+    if(state){activeStateRef.current=state;setLockState(state)}
     setPin('');setMessage('');setSuccess(false);setShake(false);
     setRecovering(false);setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
     setBlockedUntil(Date.now()+Math.max(0,state?.retryAfterMs??0));
-    setTick(Date.now());setPhase('locked');
-  },[]);
+    setTick(Date.now());changePhase('locked');
+  },[changePhase,revokeTicket]);
 
   useEffect(()=>{
     let alive=true;
+    mounted.current=true;
     const inspect=async()=>{
-      setPhase('checking');setMessage('');
+      const version=++generation.current;
+      const current=()=>alive&&version===generation.current;
+      void revokeTicket(clearAppUnlockToken());
+      setPin('');setSuccess(false);setShake(false);setRecovering(false);
+      setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
+      changePhase('checking');setMessage('');
       let verificationStage:'session'|'app-lock'='session';
       try{
         const session=await getSession();
-        if(!alive)return;
-        if(!session.authenticated){setPhase('unlocked');setEverUnlocked(true);return;}
+        if(!current())return;
+        if(!session.authenticated){activeStateRef.current={...activeStateRef.current,enabled:false};setLockState(activeStateRef.current);changePhase('unlocked');setEverUnlocked(true);return;}
         setRecoveryEmail(session.email||'');
         verificationStage='app-lock';
         const global=await getSharedAppLockState();
-        if(!alive)return;
+        if(!current())return;
         if(global.enabled){
           setShared(true);
           const state={supported:true,enabled:true,idleMinutes:global.idleMinutes,failedAttempts:0,retryAfterMs:global.retryAfterMs};
           enterLockedState(state);
           return;
         }
-        if(!bridge){setLockState({supported:true,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});setPhase('unlocked');setEverUnlocked(true);return;}
+        if(!bridge){activeStateRef.current={supported:true,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0};setLockState(activeStateRef.current);changePhase('unlocked');setEverUnlocked(true);return;}
         const legacy=await bridge.getAppLockState();
-        if(!alive)return;
-        setShared(false);setLockState(legacy);
+        if(!current())return;
+        setShared(false);activeStateRef.current=legacy;setLockState(legacy);
         if(legacy.supported&&legacy.enabled)enterLockedState(legacy);
-        else{setPhase('unlocked');setEverUnlocked(true)}
+        else{changePhase('unlocked');setEverUnlocked(true)}
       }catch(error){
-        if(!alive)return;
-        if(error instanceof ApiError&&error.status===401){setPhase('unlocked');setEverUnlocked(true);return;}
+        if(!current())return;
+        if(error instanceof ApiError&&error.status===401){activeStateRef.current={...activeStateRef.current,enabled:false};setLockState(activeStateRef.current);changePhase('unlocked');setEverUnlocked(true);return;}
         setMessage(verificationStage==='session'
           ?'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας. Η σύνδεση δεν είναι προσωρινά διαθέσιμη. Δεν εμφανίζονται οικονομικά δεδομένα.'
           :'Δεν ήταν δυνατός ο ασφαλής έλεγχος PIN. Δεν εμφανίζονται οικονομικά δεδομένα.');
-        setPhase('error');
+        changePhase('error');
       }
     };
     void inspect();
-    const lockNow=()=>{if(alive&&activeStateRef.current.enabled)enterLockedState(activeStateRef.current)};
+    const lockNow=()=>{if(alive){if(activeStateRef.current.enabled)enterLockedState(activeStateRef.current);else void inspect()}};
+    const pageHidden=()=>{if(alive&&activeStateRef.current.enabled)enterLockedState(activeStateRef.current)};
     const lockStateChanged=(event:Event)=>{
       const state=(event as CustomEvent<AppLockState>).detail;
       if(!alive||!state)return;
-      setLockState(state);
+      activeStateRef.current=state;setLockState(state);
       if(state.enabled){
         setShared(true);
         // Changing the global PIN/timeout invalidates existing server tickets.
         // Never leave an already-mounted finance workspace visible after it.
         enterLockedState(state);
-      }
+      }else void inspect();
     };
     const authenticated=()=>{if(alive)void inspect()};
     window.addEventListener('myfinhub:app-lock-now',lockNow);
     window.addEventListener('myfinhub:app-lock-state-changed',lockStateChanged);
     window.addEventListener('myfinhub:auth-completed',authenticated);
-    return()=>{alive=false;window.removeEventListener('myfinhub:app-lock-now',lockNow);window.removeEventListener('myfinhub:app-lock-state-changed',lockStateChanged);window.removeEventListener('myfinhub:auth-completed',authenticated)};
-  },[bridge,enterLockedState]);
+    window.addEventListener('pagehide',pageHidden);
+    return()=>{alive=false;mounted.current=false;generation.current++;void revokeTicket(clearAppUnlockToken());window.removeEventListener('myfinhub:app-lock-now',lockNow);window.removeEventListener('myfinhub:app-lock-state-changed',lockStateChanged);window.removeEventListener('myfinhub:auth-completed',authenticated);window.removeEventListener('pagehide',pageHidden)};
+  },[bridge,enterLockedState,changePhase,revokeTicket]);
 
   useEffect(()=>{
     if(retrySeconds<=0)return;
@@ -120,77 +143,99 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     const delay=Math.max(1,lockState.idleMinutes)*60_000;
     let timer=0;
     let lastRefreshAt=0;
+    const version=generation.current;
     const schedule=()=>{
+      if(version!==generation.current||phaseRef.current!=='unlocked')return;
+      if(Date.now()-lastActivity>=delay){enterLockedState(lockState);return}
       window.clearTimeout(timer);
       lastActivity=Date.now();
       timer=window.setTimeout(()=>enterLockedState(lockState),delay);
       const token=shared?getAppUnlockToken():'';
       if(token&&Date.now()-lastRefreshAt>=15000){
         lastRefreshAt=Date.now();
-        void updateSharedAppLock({action:'touch',unlockToken:token}).catch(()=>window.dispatchEvent(new Event('myfinhub:app-lock-now')));
+        void updateSharedAppLock({action:'touch',unlockToken:token}).catch(()=>{
+          if(version===generation.current&&token===getAppUnlockToken())window.dispatchEvent(new Event('myfinhub:app-lock-now'));
+        });
       }
     };
     const events:Array<keyof WindowEventMap>=['pointerdown','pointermove','keydown','touchstart','wheel'];
-    const resume=()=>{if(document.visibilityState==='visible'&&Date.now()-lastActivity>=delay)enterLockedState(lockState)};
+    const resume=()=>{if(version===generation.current&&document.visibilityState==='visible'&&Date.now()-lastActivity>=delay)enterLockedState(lockState)};
     let lastActivity=Date.now();
     for(const name of events)window.addEventListener(name,schedule,{passive:true});
-    const pageHidden=()=>enterLockedState(lockState);
     document.addEventListener('visibilitychange',resume);
-    window.addEventListener('pagehide',pageHidden);
     schedule();
-    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);window.removeEventListener('pagehide',pageHidden);for(const name of events)window.removeEventListener(name,schedule)};
+    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);for(const name of events)window.removeEventListener(name,schedule)};
   },[bridge,phase,lockState,shared,everUnlocked,enterLockedState]);
 
   const unlock=useCallback(async(candidate:string)=>{
-    if((!bridge&&!shared)||busy||retrySeconds>0||candidate.length!==PIN_LENGTH)return;
+    if((!bridge&&!shared)||actionPending.current||phaseRef.current!=='locked'||recovering||retrySeconds>0||candidate.length!==PIN_LENGTH)return;
+    actionPending.current=true;
+    const version=generation.current,scope=authScopeEpoch();
+    const current=()=>mounted.current&&version===generation.current&&scope===authScopeEpoch()&&phaseRef.current==='locked';
+    const shakeOnce=()=>{setShake(true);window.setTimeout(()=>{if(current())setShake(false)},420)};
     setBusy(true);setMessage('');setShake(false);
     try{
+      await revocations.current;
+      if(!current())return;
       const result=shared?await updateSharedAppLock({action:'verify',pin:candidate}):await bridge!.verifyAppPin(candidate);
-      setLockState({...result,supported:true,failedAttempts:0});setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
+      const token=shared&&result.ok&&/^[a-zA-Z0-9_-]{43}$/.test(result.unlockToken??'')?result.unlockToken!:'';
+      if(!current()){await revokeTicket(token,scope);return}
+      activeStateRef.current={...result,supported:true,failedAttempts:0};setLockState(activeStateRef.current);
+      setBlockedUntil(Date.now()+Math.max(0,result.retryAfterMs));setTick(Date.now());
       if(result.ok){
-        if(shared){
-          if(!result.unlockToken||!(/^[a-zA-Z0-9_-]{43}$/.test(result.unlockToken)))throw new Error('INVALID_APP_UNLOCK_RECEIPT');
-          setAppUnlockToken(result.unlockToken);
-        }
+        if(shared&&!token)throw new Error('INVALID_APP_UNLOCK_RECEIPT');
         setSuccess(true);
-        window.setTimeout(()=>{setPin('');setSuccess(false);setEverUnlocked(true);setPhase('unlocked')},190);
+        await new Promise(resolve=>window.setTimeout(resolve,190));
+        // The animation is not authority. A newer lock, session transition
+        // or hidden page must not be superseded by an old verification.
+        if(!current()||document.visibilityState==='hidden'){
+          await revokeTicket(token,scope);
+          if(current())enterLockedState(activeStateRef.current);
+          return;
+        }
+        if(token)setAppUnlockToken(token);
+        setPin('');setSuccess(false);setEverUnlocked(true);changePhase('unlocked');
         return;
       }
-      setPin('');setShake(true);
-      window.setTimeout(()=>setShake(false),420);
+      setPin('');shakeOnce();
       setMessage(result.retryAfterMs>0?'Πολλές λανθασμένες προσπάθειες. Το PIN κλειδώθηκε προσωρινά.':'Το PIN δεν είναι σωστό.');
     }catch{
-      setPin('');setShake(true);window.setTimeout(()=>setShake(false),420);
-      setMessage('Η επαλήθευση PIN δεν ολοκληρώθηκε.');
-    }finally{setBusy(false)}
-  },[bridge,shared,busy,retrySeconds]);
+      if(current()){setPin('');shakeOnce();setMessage('Η επαλήθευση PIN δεν ολοκληρώθηκε.')}
+    }finally{actionPending.current=false;if(mounted.current)setBusy(false)}
+  },[bridge,shared,recovering,retrySeconds,changePhase,enterLockedState,revokeTicket]);
 
   const recover=useCallback(async()=>{
-    if(busy)return;
+    if(actionPending.current||phaseRef.current!=='locked')return;
     if(recoveryNewPin.length!==PIN_LENGTH||recoveryNewPin!==recoveryConfirmPin||!/^[0-9]{6}$/.test(recoveryTotp)){
       setMessage('Συμπλήρωσε τον κωδικό TOTP και επιβεβαίωσε το νέο 4ψήφιο PIN.');return;
     }
     if(!recoveryEmail.trim()||!recoveryPassword){setMessage('Συμπλήρωσε το email και τον κωδικό πρόσβασης.');return}
+    actionPending.current=true;
+    const version=generation.current,scope=authScopeEpoch();
+    const current=()=>mounted.current&&version===generation.current&&scope===authScopeEpoch()&&phaseRef.current==='locked';
     setBusy(true);setMessage('');
     try{
+      await revocations.current;
+      if(!current())return;
       const result=await recoverSharedAppLock({email:recoveryEmail.trim(),password:recoveryPassword,code:recoveryTotp,newPin:recoveryNewPin});
+      if(!current())return;
       if(!result.ok||!result.enabled)throw new Error('APP_LOCK_RECOVERY_NOT_CONFIRMED');
       // The recovery proof does not unlock the current tab. The new PIN
       // must be verified by the regular backend ticket-granting flow.
       setRecovering(false);setRecoveryPassword('');setRecoveryTotp('');setRecoveryNewPin('');setRecoveryConfirmPin('');
-      setLockState({...result,supported:true,failedAttempts:0});
+      activeStateRef.current={...result,supported:true,failedAttempts:0};setLockState(activeStateRef.current);
       setBlockedUntil(0);setTick(Date.now());
       setMessage('Το PIN άλλαξε. Πληκτρολόγησε το νέο PIN για να ξεκλειδώσεις.');
     }catch(error){
-      setMessage(error instanceof ApiError&&error.status===429?'Πολλές προσπάθειες επαλήθευσης. Δοκίμασε αργότερα.':'Δεν ολοκληρώθηκε η ανάκτηση. Έλεγξε password, TOTP και νέα στοιχεία.');
-    }finally{setBusy(false)}
-  },[busy,recoveryEmail,recoveryPassword,recoveryTotp,recoveryNewPin,recoveryConfirmPin]);
+      if(current())setMessage(error instanceof ApiError&&error.status===429?'Πολλές προσπάθειες επαλήθευσης. Δοκίμασε αργότερα.':'Δεν ολοκληρώθηκε η ανάκτηση. Έλεγξε password, TOTP και νέα στοιχεία.');
+    }finally{actionPending.current=false;if(mounted.current)setBusy(false)}
+  },[recoveryEmail,recoveryPassword,recoveryTotp,recoveryNewPin,recoveryConfirmPin]);
 
   useEffect(()=>{
-    if(pin.length!==PIN_LENGTH||busy||retrySeconds>0||phase!=='locked')return;
+    if(pin.length!==PIN_LENGTH||busy||recovering||retrySeconds>0||phase!=='locked')return;
     const timer=window.setTimeout(()=>void unlock(pin),90);
     return()=>window.clearTimeout(timer);
-  },[pin,busy,retrySeconds,phase,unlock]);
+  },[pin,busy,recovering,retrySeconds,phase,unlock]);
 
   // Unmount the financial workspace when locked; a blurred, mounted DOM is not a privacy boundary.
   const underlay=phase==='unlocked'
