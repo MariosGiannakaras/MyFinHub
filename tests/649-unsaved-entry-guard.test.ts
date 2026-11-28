@@ -50,10 +50,16 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
   it('focuses the actual rejection alert in generic and contextual Quick Entry without making it a Tab stop (#649 I19.05)',()=>{
     const formError=readFileSync(new URL('../src/components/FormError.tsx',import.meta.url),'utf8');
     expect(formError).toContain('role="alert" aria-live="assertive" tabIndex={-1}');
-    expect(generic).toContain("const alert=document.getElementById('quick-add-error')");
-    expect(generic).toContain("alert?.focus({preventScroll:true})");
-    expect(generic).toContain("alert?.scrollIntoView({block:'nearest'})");
-    expect(contextual).toContain("if(visibleError)document.getElementById('context-quick-error')?.focus({preventScroll:true})");
+    const focus=readFileSync(new URL('../src/hooks/useQuickEntryErrorFocus.ts',import.meta.url),'utf8');
+    expect(generic).toContain("useQuickEntryErrorFocus('quick-add-error',visibleError,open&&!saving)");
+    expect(contextual).toContain("useQuickEntryErrorFocus('context-quick-error',visibleError,!saving)");
+    expect(focus).toContain('const alert=document.getElementById(id)');
+    expect(focus).toContain('if(!ready||!message)return');
+    expect(focus).toContain("alert.closest('[inert]')");
+    expect(focus).toContain("alert.scrollIntoView({block:'nearest',behavior:'instant'})");
+    expect(focus).toContain('alert.focus({preventScroll:true})');
+    expect(focus).toContain('[id,message,ready]');
+    expect(focus).toContain('cancelAnimationFrame(frame)');
     expect(budgetQa).toContain('rejected Quick Entry focuses the visible error without losing draft');
     expect(generic).toContain('<FormError id="quick-add-error">{visibleError}</FormError>');
     expect(generic).toContain('receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error');
