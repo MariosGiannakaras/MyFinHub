@@ -1,4 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../server/http.js';
 import { parseAccountSecurityWrite } from '../server/accountSecurityHandler.js';
@@ -54,6 +58,7 @@ describe('account security settings',()=>{
     const appLock=read('desktop/app-lock-main.cjs');
     const preload=read('desktop/preload.cjs');
     const bootstrap=read('desktop/bootstrap.cjs');
+    const main=read('desktop/main.cjs');
     const desktopPackage=read('desktop/package.json');
     expect(appLock).toContain("const PIN_PATTERN = /^\\d{4}$/");
     expect(appLock).toContain('const DEFAULT_IDLE_MINUTES = 5');
@@ -65,17 +70,64 @@ describe('account security settings',()=>{
     expect(appLock).toContain('safeStorage.decryptString');
     expect(appLock).toContain("'app-lock.json'");
     expect(appLock).toContain("'myfinhub:set-app-lock-timeout'");
-    expect(appLock).not.toContain('value?.currentPin');
+    expect(appLock).toContain("verifyPin(String(value?.currentPin || ''))");
     expect(appLock).not.toContain('localStorage');
     expect(appLock).not.toContain('indexedDB');
     expect(preload).toContain('getAppLockState: () =>');
     expect(preload).toContain('verifyAppPin: (pin) =>');
     expect(preload).toContain('setAppPin: (value) =>');
-    expect(preload).toContain('setAppLockTimeout: (minutes) =>');
-    expect(preload).toContain('disableAppPin: () =>');
-    expect(bootstrap).toContain('registerAppLockIpc()');
+    expect(preload).toContain('setAppLockTimeout: (minutes, currentPin) =>');
+    expect(preload).toContain('disableAppPin: (currentPin) =>');
+    expect(bootstrap).toContain("require('./main.cjs')");
+    expect(main).toContain('registerAppLockIpc({ isTrustedSender: isLegacyLockSender, requireLegacyAccess: requireLegacyLockAccess })');
+    expect(main).toContain('event.senderFrame !== mainWindow.webContents.mainFrame');
+    expect(main).toContain("new URL(event.senderFrame.url).origin === mainOrigin");
+    expect(main).toContain("new URL('/api/auth/app-lock', mainOrigin)");
+    expect(main).toContain('state.enabled !== false');
     expect(desktopPackage).toContain('app-lock-main.cjs');
   });
+
+  it('requires authenticated serialized legacy PIN operations and never replaces or removes a verifier without the current PIN',async()=>{
+    const root=mkdtempSync(path.join(os.tmpdir(),'myfinhub-legacy-pin-'));
+    const load=createRequire(import.meta.url);
+    const handlers=new Map<string,(...args:any[])=>any>();
+    const module={exports:{}} as {exports:{registerAppLockIpc:(options:{isTrustedSender:(event:unknown)=>boolean;requireLegacyAccess:()=>Promise<void>})=>void}};
+    const trusted={};let authorized=false;
+    let holdAccess:Promise<void>|undefined;
+    const fakeElectron={app:{getPath:()=>root},ipcMain:{handle:(name:string,handler:(...args:any[])=>any)=>handlers.set(name,handler)},safeStorage:{
+      isEncryptionAvailable:()=>true,
+      encryptString:(value:string)=>Buffer.from(value),
+      decryptString:(value:Buffer)=>value.toString(),
+    }};
+    try{
+      runInNewContext(read('desktop/app-lock-main.cjs'),{module,require:(name:string)=>name==='electron'?fakeElectron:load(name),Buffer,process:{platform:'win32'}});
+      module.exports.registerAppLockIpc({isTrustedSender:event=>event===trusted,requireLegacyAccess:async()=>{
+        if(!authorized)throw new Error('APP_LOCK_AUTH_REQUIRED');
+        await holdAccess;
+      }});
+      const call=(name:string,...args:any[])=>Promise.resolve().then(()=>handlers.get('myfinhub:'+name)!(trusted,...args));
+      expect(()=>handlers.get('myfinhub:get-app-lock-state')!({})).toThrow('Unauthorized IPC sender');
+      await expect(call('set-app-pin',{pin:'2468'})).rejects.toThrow('APP_LOCK_AUTH_REQUIRED');
+      expect(existsSync(path.join(root,'app-lock.json'))).toBe(false);
+      authorized=true;
+      await expect(call('set-app-pin',{pin:'2468'})).resolves.toMatchObject({ok:true,enabled:true});
+      const original=readFileSync(path.join(root,'app-lock.json'),'utf8');
+      await expect(call('set-app-pin',{pin:'1357'})).resolves.toMatchObject({ok:false});
+      await expect(call('set-app-lock-timeout',15,'0000')).resolves.toMatchObject({ok:false,idleMinutes:5});
+      await expect(call('disable-app-pin','0000')).resolves.toMatchObject({ok:false,enabled:true});
+      expect(readFileSync(path.join(root,'app-lock.json'),'utf8')).toBe(original);
+      let release=()=>{};
+      holdAccess=new Promise<void>(resolve=>{release=resolve});
+      const verify=call('verify-app-pin','2468');
+      try{await expect(call('verify-app-pin','0000')).rejects.toThrow('APP_LOCK_BUSY')}finally{release()}
+      await expect(verify).resolves.toMatchObject({ok:true});
+      holdAccess=undefined;
+      for(let i=0;i<5;i++)await expect(call('verify-app-pin','0000')).resolves.toMatchObject({ok:false});
+      const blocked=await call('verify-app-pin','2468');
+      expect(blocked.ok).toBe(false);expect(blocked.retryAfterMs).toBeGreaterThan(0);
+      expect(readFileSync(path.join(root,'app-lock.json'),'utf8')).toBe(original);
+    }finally{rmSync(root,{recursive:true,force:true})}
+  },15000);
 
   it('renders the approved compact access settings and modern PIN gate',()=>{
     const gate=read('src/components/DesktopAppLockGate.tsx');

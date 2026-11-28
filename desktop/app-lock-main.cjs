@@ -15,19 +15,10 @@ const MAX_DELAY_MS = 5 * 60_000;
 const SCRYPT_OPTIONS = { N: 1 << 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 let failedAttempts = 0;
 let blockedUntil = 0;
+let operationPending = false;
 
 function appLockPath() {
   return path.join(app.getPath('userData'), 'app-lock.json');
-}
-
-function senderAllowed(event) {
-  try {
-    const raw = event?.senderFrame?.url || event?.sender?.getURL?.() || '';
-    const url = new URL(raw);
-    return url.protocol === 'http:' && (url.hostname === '127.0.0.1' || url.hostname === 'localhost') && Boolean(url.port);
-  } catch {
-    return false;
-  }
 }
 
 function supported() {
@@ -76,7 +67,13 @@ function publicState() {
 
 function writePrivateJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  const temporary = file + '.' + crypto.randomBytes(6).toString('hex') + '.tmp';
+  try {
+    fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    fs.renameSync(temporary, file);
+  } finally {
+    try { fs.unlinkSync(temporary); } catch { /* already moved */ }
+  }
 }
 
 function readVerifier() {
@@ -102,7 +99,7 @@ function derivePin(pin, salt) {
   });
 }
 
-async function writeVerifier(pin, idleMinutes = DEFAULT_IDLE_MINUTES) {
+async function writeVerifier(pin, idleMinutes = DEFAULT_IDLE_MINUTES, assertCurrentSender) {
   requireSupported();
   if (!PIN_PATTERN.test(pin)) throw new Error('INVALID_PIN_FORMAT');
   const salt = crypto.randomBytes(16);
@@ -111,6 +108,7 @@ async function writeVerifier(pin, idleMinutes = DEFAULT_IDLE_MINUTES) {
     salt: salt.toString('base64'),
     digest: digest.toString('base64'),
   })).toString('base64');
+  assertCurrentSender();
   writePrivateJson(appLockPath(), {
     version: RECORD_VERSION,
     protectedVerifier,
@@ -138,10 +136,10 @@ function recordFailure() {
   blockedUntil = Date.now() + Math.min(MAX_DELAY_MS, BASE_DELAY_MS * (2 ** level));
 }
 
-async function verifyPin(pin, countFailure = true) {
+async function verifyPin(pin) {
   if (retryAfterMs() > 0) return false;
   if (!PIN_PATTERN.test(String(pin || ''))) {
-    if (countFailure) recordFailure();
+    recordFailure();
     return false;
   }
   const verifier = readVerifier();
@@ -151,52 +149,68 @@ async function verifyPin(pin, countFailure = true) {
   if (ok) {
     failedAttempts = 0;
     blockedUntil = 0;
-  } else if (countFailure) recordFailure();
+  } else recordFailure();
   return ok;
 }
 
-function assertSender(event) {
-  if (!senderAllowed(event)) throw new Error('Unauthorized IPC sender.');
-}
-
-function registerAppLockIpc() {
+// Legacy device PIN is a compatibility fallback, not a shared backend ticket.
+function registerAppLockIpc({ isTrustedSender, requireLegacyAccess }) {
+  const assertSender = event => {
+    if (!isTrustedSender(event)) throw new Error('Unauthorized IPC sender.');
+  };
+  const exclusive = (event, operation) => {
+    assertSender(event);
+    if (operationPending) throw new Error('APP_LOCK_BUSY');
+    operationPending = true;
+    return (async () => {
+      try {
+        await requireLegacyAccess(event);
+        assertSender(event);
+        return await operation(() => assertSender(event));
+      } finally { operationPending = false; }
+    })();
+  };
   ipcMain.handle('myfinhub:get-app-lock-state', event => {
     assertSender(event);
     return publicState();
   });
-  ipcMain.handle('myfinhub:verify-app-pin', async (event, pin) => {
-    assertSender(event);
+  ipcMain.handle('myfinhub:verify-app-pin', (event, pin) => exclusive(event, async assertCurrentSender => {
     requireSupported();
-    if (!fs.existsSync(appLockPath())) return { ok: true, ...publicState() };
+    if (!readEnvelope()) return { ok: false, ...publicState() };
     const ok = await verifyPin(String(pin || ''));
+    assertCurrentSender();
     return { ok, ...publicState() };
-  });
-  ipcMain.handle('myfinhub:set-app-pin', async (event, value) => {
-    assertSender(event);
+  }));
+  ipcMain.handle('myfinhub:set-app-pin', (event, value) => exclusive(event, async assertCurrentSender => {
     requireSupported();
     const pin = String(value?.pin || '');
     if (!PIN_PATTERN.test(pin)) return { ok: false, error: 'INVALID_PIN_FORMAT', ...publicState() };
     const existing = readEnvelope();
-    if (existing && await verifyPin(pin, false)) return { ok: false, error: 'PIN_UNCHANGED', ...publicState() };
-    await writeVerifier(pin, existing?.idleMinutes ?? DEFAULT_IDLE_MINUTES);
+    if (existing) {
+      if (!await verifyPin(String(value?.currentPin || ''))) return { ok: false, error: 'APP_LOCK_WRONG_PIN', ...publicState() };
+      if (pin === value.currentPin) return { ok: false, error: 'PIN_UNCHANGED', ...publicState() };
+    }
+    await writeVerifier(pin, existing?.idleMinutes ?? DEFAULT_IDLE_MINUTES, assertCurrentSender);
     return { ok: true, ...publicState() };
-  });
-  ipcMain.handle('myfinhub:set-app-lock-timeout', (event, minutes) => {
-    assertSender(event);
+  }));
+  ipcMain.handle('myfinhub:set-app-lock-timeout', (event, minutes, currentPin) => exclusive(event, async assertCurrentSender => {
     requireSupported();
     if (!ALLOWED_IDLE_MINUTES.has(Number(minutes))) return { ok: false, error: 'INVALID_IDLE_TIMEOUT', ...publicState() };
+    if (!await verifyPin(String(currentPin || ''))) return { ok: false, error: 'APP_LOCK_WRONG_PIN', ...publicState() };
+    assertCurrentSender();
     rewriteIdleMinutes(Number(minutes));
     return { ok: true, ...publicState() };
-  });
-  ipcMain.handle('myfinhub:disable-app-pin', event => {
-    assertSender(event);
+  }));
+  ipcMain.handle('myfinhub:disable-app-pin', (event, currentPin) => exclusive(event, async assertCurrentSender => {
     requireSupported();
-    if (!fs.existsSync(appLockPath())) return { ok: true, ...publicState() };
-    try { fs.unlinkSync(appLockPath()); } catch { /* already removed */ }
+    if (!readEnvelope()) return { ok: true, ...publicState() };
+    if (!await verifyPin(String(currentPin || ''))) return { ok: false, error: 'APP_LOCK_WRONG_PIN', ...publicState() };
+    assertCurrentSender();
+    fs.unlinkSync(appLockPath());
     failedAttempts = 0;
     blockedUntil = 0;
     return { ok: true, ...publicState() };
-  });
+  }));
 }
 
 module.exports = { registerAppLockIpc };

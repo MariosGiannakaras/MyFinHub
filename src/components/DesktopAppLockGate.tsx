@@ -93,8 +93,10 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
         const legacy=await bridge.getAppLockState();
         if(!current())return;
         setShared(false);activeStateRef.current=legacy;setLockState(legacy);
-        if(legacy.supported&&legacy.enabled)enterLockedState(legacy);
-        else{changePhase('unlocked');setEverUnlocked(true)}
+        if(legacy.enabled){
+          if(!legacy.supported)throw new Error('APP_LOCK_LEGACY_UNAVAILABLE');
+          enterLockedState(legacy);
+        }else{changePhase('unlocked');setEverUnlocked(true)}
       }catch(error){
         if(!current())return;
         if(error instanceof ApiError&&error.status===401){activeStateRef.current={...activeStateRef.current,enabled:false};setLockState(activeStateRef.current);changePhase('unlocked');setEverUnlocked(true);return;}

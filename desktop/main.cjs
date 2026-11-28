@@ -12,6 +12,7 @@ const {
   startupError,
 } = require('./startup-diagnostics.cjs');
 const { createDesktopBackupStore } = require('./backup-store.cjs');
+const { registerAppLockIpc } = require('./app-lock-main.cjs');
 
 const PRODUCT_NAME = 'MyFinHub';
 const APP_ID = 'app.myfinhub.desktop';
@@ -29,6 +30,7 @@ const WINDOW_STATE_PROBE_PATH = String(process.env.MYFINHUB_WINDOW_STATE_PROBE_P
 const UPDATE_HOSTS = new Set(['github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com']);
 
 let mainWindow = null;
+let mainOrigin = null;
 let setupWindow = null;
 let desktopBackupStore = null;
 let backend = null;
@@ -394,6 +396,7 @@ async function runWindowStateProbe(window) {
 
 function createWindow(origin, runtime) {
   Menu.setApplicationMenu(null);
+  mainOrigin = new URL(origin).origin;
   mainWindow = new BrowserWindow({
     title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
     ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
@@ -411,7 +414,7 @@ function createWindow(origin, runtime) {
     if (WINDOW_STATE_PROBE_PATH) void runWindowStateProbe(window);
   });
   mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('closed', () => { mainWindow = null; mainOrigin = null; });
   void mainWindow.loadURL(origin);
 }
 
@@ -664,7 +667,25 @@ function isSetupSender(event) {
   } catch { return false; }
 }
 
+function isLegacyLockSender(event) {
+  if (!isMainSender(event) || event.senderFrame !== mainWindow.webContents.mainFrame || !mainOrigin) return false;
+  try { return new URL(event.senderFrame.url).origin === mainOrigin; } catch { return false; }
+}
+
+async function requireLegacyLockAccess(event) {
+  if (!isLegacyLockSender(event)) throw new Error('Unauthorized IPC sender.');
+  // Canonical endpoint proves current owner, AAL2 and active session.
+  const response = await event.sender.session.fetch(new URL('/api/auth/app-lock', mainOrigin).href, {
+    method: 'GET', credentials: 'include', cache: 'no-store',
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('APP_LOCK_AUTH_REQUIRED');
+  const state = await response.json();
+  if (state?.ok !== true || state.enabled !== false || !isLegacyLockSender(event)) throw new Error('APP_LOCK_LEGACY_UNAVAILABLE');
+}
+
 function registerIpcHandlers() {
+  registerAppLockIpc({ isTrustedSender: isLegacyLockSender, requireLegacyAccess: requireLegacyLockAccess });
   ipcMain.handle('myfinhub:get-info', event => {
     if (!isMainSender(event) && !isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
     return { productName: PRODUCT_NAME, version: app.getVersion(), packaged: app.isPackaged };
