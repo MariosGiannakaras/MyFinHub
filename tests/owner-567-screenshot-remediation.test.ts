@@ -65,6 +65,9 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
     expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-16-digits-');
+    expect(file('../src/components/InteractivePaymentCard.css')).toContain('.prototype-payment-card .card-number{font-size:.86rem;letter-spacing:.04em}');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('masked PAN retains all four identifying digits at ');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('remasking retains the full identifying quartet at ');
     expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
     expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
     expect(editor).toContain('card-inline-value card-inline-expiry');

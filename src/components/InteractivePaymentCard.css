@@ -155,6 +155,9 @@
   .prototype-payment-card .card-nickname{max-width:96px}
   .prototype-payment-card .card-toolbar{grid-template-columns:repeat(3,40px);gap:2px}
   .prototype-payment-card .card-body{gap:11px}
+  /* Keep all four masked/revealed quartets within the real copy-button slot
+     at the smallest card width. Inline editing inherits these same metrics. */
+  .prototype-payment-card .card-number{font-size:.86rem;letter-spacing:.04em}
   .prototype-payment-card .card-fields{
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
     gap:7px 9px;
