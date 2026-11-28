@@ -47,6 +47,17 @@ try{
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async(page='attention',state='',width=1440,height=1000,text='normal')=>{await viewport(width,height);await c.send('Page.navigate',{url:urlFor(page,state,text)});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",`${page} heading`);await sleep(160)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
+  // Observe application-owned focus and geometry; never repair focus or scrolling in QA.
+  const assertErrorFocus=async(id,label,evidence)=>{
+    try{
+      await waitFor("function(id){const alert=document.getElementById(id),body=alert?.closest('.entry-body'),modal=alert?.closest('[role=dialog]');if(!alert||!body||!modal)return false;const rect=alert.getBoundingClientRect(),panel=body.getBoundingClientRect();return !body.inert&&modal.getAttribute('aria-busy')!=='true'&&document.activeElement===alert&&rect.width>0&&rect.height>0&&rect.top>=panel.top-2&&rect.bottom<=panel.bottom+2&&rect.top>=-2&&rect.bottom<=innerHeight+2}",label,[id]);
+    }catch(error){
+      const state=await c.call("function(id){const alert=document.getElementById(id),body=alert?.closest('.entry-body'),modal=alert?.closest('[role=dialog]'),active=document.activeElement;return {active:{tag:active?.tagName,id:active?.id,ariaLabel:active?.getAttribute('aria-label')},alert:alert?.getBoundingClientRect().toJSON(),body:body?.getBoundingClientRect().toJSON(),inert:body?.inert,busy:modal?.getAttribute('aria-busy'),scrollTop:body?.scrollTop,scrollHeight:body?.scrollHeight,clientHeight:body?.clientHeight,viewport:{width:innerWidth,height:innerHeight}}}",[id]);
+      console.error(label,JSON.stringify(state));
+      await screenshot(evidence+'-failure');
+      throw error;
+    }
+  };
   const noOverflow=async label=>{const value=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(value<=1,`${label} horizontal overflow ${value}px`)};
   const noUnnamed=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.contextual-quick-modal button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden')return false;return !(el.getAttribute('aria-label')||el.getAttribute('title')||(el.textContent||'').trim())}).map(el=>el.outerHTML.slice(0,150))}");assert(offenders.length===0,`${label} unnamed controls: ${offenders.join(' | ')}`)};
   const assertActionLabelContained=async (label,maxLines=2)=>{
@@ -200,7 +211,7 @@ try{
   await screenshot('quick-entry-multi-funding-invalid-subtotal-preview-desktop');
   await clickText('.generic-quick-modal footer button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('Κάθε πηγή')}",'invalid multi-source leg rejected before finance POST');
-  await waitFor("function(){const modal=document.querySelector('.generic-quick-modal'),alert=modal?.querySelector('#quick-add-error'),body=modal?.querySelector('.entry-body');if(!alert||!body)return false;const rect=alert.getBoundingClientRect(),panel=body.getBoundingClientRect();return document.activeElement===alert&&rect.top>=panel.top-2&&rect.bottom<=panel.bottom+2}",'multi-source validation focus and alert are actually onscreen');
+  await assertErrorFocus('quick-add-error','multi-source validation focus and alert are actually onscreen','quick-entry-multi-funding-invalid-subtotal-desktop');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.generic-quick-modal'))}",[baselineWrites]),'invalid funding subtotal never posts a finance event');
   await screenshot('quick-entry-multi-funding-invalid-subtotal-desktop');
 
@@ -304,6 +315,7 @@ try{
   await clickText('.contextual-quick-modal .editor-actions button','Καταχώριση');
   await waitFor("function(){return (document.querySelector('.contextual-quick-modal #context-quick-error[role=alert]')?.textContent||'').includes('θετικό ποσό')}",'contextual hex notation rejected before canonical posting');
   assert(await c.call("function(expected){return Number(document.documentElement.dataset.qaFinanceWrites||0)===expected&&Boolean(document.querySelector('.contextual-quick-modal'))}",[contextualBeforeWrites]),'contextual hex notation never posts a savings event');
+  await assertErrorFocus('context-quick-error','contextual validation focus and alert are actually onscreen','contextual-entry-hex-rejected-desktop');
   await screenshot('contextual-entry-hex-rejected-desktop');
   const before=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");
   const openedSelect=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[role=combobox]');input?.click();return Boolean(input)}");assert(openedSelect,'savings source selector opens');
@@ -356,6 +368,9 @@ try{
   await chooseProvenanceDate('2026-08-27');
   await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('μετά την ήδη καταγεγραμμένη αναμενόμενη επιστροφή')}",'due-date inconsistent lending edit visibly denied');
+  // Error text can commit before the application-owned next-frame focus.
+  // Observe that transition without focusing, scrolling or retrying the submission.
+  await assertErrorFocus('quick-add-error','lending date rejection focus and alert are actually onscreen','quick-entry-lending-return-conflict-desktop');
   assert(await c.call("function(attempts,writes){const alert=document.querySelector('.generic-quick-modal #quick-add-error');return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts&&Number(document.documentElement.dataset.qaFinanceWrites||0)===writes&&document.activeElement===alert&&Boolean(document.querySelector('.generic-quick-modal'))}",[lendingAttemptsBefore,lendingWritesBefore]),
     'rejected lending date must not even attempt a finance write; editor/accessible focus remain');
   assert(await c.call("function(){const original=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending');return original?.date==='2026-08-16'&&original.expectedReturnDate==='2026-08-25'&&original.source==='migration'}"),

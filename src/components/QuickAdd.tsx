@@ -9,6 +9,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { DialogShell } from './DialogShell';
 import { FinanceIcon } from './FinanceIcon';
 import { FormError } from './FormError';
+import { useQuickEntryErrorFocus } from '../hooks/useQuickEntryErrorFocus';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { categoryTree, defaultCategory } from '../lib/categories';
@@ -109,17 +110,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [receiptUnverified,setReceiptUnverified]=useState(false);
   const receiptUnverifiedRef=useRef(false);
   const visibleError=receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error;
-  // Announcing a failed finance save is not enough for keyboard users: the
-  // rejected operation's visible error becomes the recoverable focus target.
-  useEffect(()=>{
-    if(!open||!visibleError)return;
-    const alert=document.getElementById('quick-add-error');
-    alert?.focus({preventScroll:true});
-    // A tall multi-source form can place the alert below the scrollable body.
-    // Keyboard focus alone must not leave the owner staring at an empty footer.
-    alert?.scrollIntoView({block:'nearest'});
-  },[open,visibleError]);
   const [saving,setSaving]=useState(false);
+  useQuickEntryErrorFocus('quick-add-error',visibleError,open&&!saving);
   const submitInFlight=useRef(false);
   // Finance split parts and multi-source rows need different keys even when
   // two Add clicks happen in the same millisecond or React batches updates.

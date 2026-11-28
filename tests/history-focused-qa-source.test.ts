@@ -36,6 +36,15 @@ describe('history focused rendered regression ownership',()=>{
     expect(css).toContain('.command-palette.change-history-dialog>header p{display:block}');
     expect(css).toContain('.command-palette.change-history-dialog>footer span:first-child{display:flex}');
     expect(browser).toContain('state.introVisible&&state.caveatVisible');
+    expect(css).toContain('@media(max-height:600px)');
+    expect(css).toContain('.command-palette.change-history-dialog{grid-template-rows:auto auto auto auto auto;overflow:auto;overscroll-behavior:contain}');
+    expect(read('src/components/HistoryDialog.tsx')).toContain("scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'})");
+    const mandatory=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(read('scripts/run-rendered-qa.mjs')).toContain("path:'scripts/keyboard-semantic-accessibility-qa.mjs'");
+    for(const proof of ['short History settled and focused','short History Tab reaches each enabled control','short History Tab wraps to visible first control','short History Shift+Tab remains visible','short History disclosure remains reachable','short History Escape restores opener'])expect(mandatory).toContain(proof);
+    expect(mandatory).toContain("historyUrl.searchParams.set('state','history-cursor')");
+    expect(browser).not.toContain('short History Tab reaches each enabled control');
+    expect(read('scripts/large-data-boundaries-qa.mjs')).toContain('large History settled and focused');
     expect(browser).toContain('history-dialog-');
   });
   it('proves exactly 100 scrollable history snapshots and reaches the final row on mobile and desktop',()=>{

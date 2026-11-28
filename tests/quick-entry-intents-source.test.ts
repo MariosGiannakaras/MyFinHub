@@ -23,6 +23,24 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(browser).toContain('contextual hex notation never posts a savings event');
   });
 
+  it('focuses and reveals Quick Entry errors only after the busy body unlocks',()=>{
+    const focus=readFileSync(new URL('../src/hooks/useQuickEntryErrorFocus.ts',import.meta.url),'utf8');
+    expect(quickAdd).toContain("useQuickEntryErrorFocus('quick-add-error',visibleError,open&&!saving)");
+    expect(contextual).toContain("useQuickEntryErrorFocus('context-quick-error',visibleError,!saving)");
+    expect(focus).toContain('if(!ready||!message)return');
+    expect(focus).toContain('requestAnimationFrame(');
+    expect(focus).toContain("alert.closest('[inert]')");
+    expect(focus).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
+    expect(focus).toContain('alert.focus({preventScroll:true})');
+    expect(focus).toContain('cancelAnimationFrame(frame)');
+    expect(focus).toContain('[id,message,ready]');
+    const qa=readFileSync(new URL('../scripts/action-center-context-qa.mjs',import.meta.url),'utf8');
+    expect(qa).toContain('document.activeElement===alert');
+    expect(qa).toContain('!body.inert');
+    expect(qa).toContain('contextual validation focus and alert are actually onscreen');
+    expect(qa).toContain("await screenshot(evidence+'-failure')");
+  });
+
   it('keeps raw split-part values visible but maps only valid cents to finance state',()=>{
     expect(quickAdd).toContain('const [splitAmountText,setSplitAmountText]=useState<Record<string,string>>({})');
     expect(quickAdd).toContain("value={rawSplitAmount??String(p.amount||'')}");
@@ -140,6 +158,13 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(script).toContain("await navigate('transactions','entry-edit-provenance')");
     expect(script).toContain("await chooseProvenanceDate('2026-08-27')");
     expect(script).toContain('rejected lending date must not even attempt a finance write');
+    const wait=script.indexOf("await assertErrorFocus('quick-add-error','lending date rejection focus and alert are actually onscreen'");
+    const rejection=script.indexOf('rejected lending date must not even attempt a finance write');
+    expect(wait).toBeGreaterThan(script.indexOf('due-date inconsistent lending edit visibly denied'));
+    expect(wait).toBeLessThan(rejection);
+    expect(script.slice(wait,rejection)).toContain('document.activeElement===alert');
+    expect(script.slice(wait,rejection)).toContain('Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts');
+    expect(script.slice(wait,rejection)).toContain('Number(document.documentElement.dataset.qaFinanceWrites||0)===writes');
     expect(script).toContain('confirmed same-ID lending edit preserves return date and original source');
     expect(script).toContain('confirmed saving edit preserves owner-confirmed saving origin and original audit source');
     expect(script).toContain('quick-entry-lending-return-conflict-desktop');

@@ -16,8 +16,13 @@ describe('Quick Entry owner-reference contract',()=>{
     expect(helper).toContain('next.cardId=previous.cardId');
   });
   it('brings large-form finance errors onscreen while preserving keyboard focus',()=>{
-    expect(quick).toContain("alert?.focus({preventScroll:true})");
-    expect(quick).toContain("alert?.scrollIntoView({block:'nearest'})");
+    const focus=readFileSync('src/hooks/useQuickEntryErrorFocus.ts','utf8');
+    expect(quick).toContain("useQuickEntryErrorFocus('quick-add-error',visibleError,open&&!saving)");
+    expect(focus).toContain('const alert=document.getElementById(id)');
+    expect(focus).toContain("alert.closest('[inert]')");
+    expect(focus).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
+    expect(focus).toContain('alert.focus({preventScroll:true})');
+    expect(focus.indexOf('alert.scrollIntoView(')).toBeLessThan(focus.indexOf('alert.focus('));
     expect(rendered).toContain('nested discard keyboard Tab stays in topmost alertdialog');
     const context=readFileSync('scripts/action-center-context-qa.mjs','utf8');
     expect(context).toContain('multi-source validation focus and alert are actually onscreen');

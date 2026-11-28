@@ -351,7 +351,27 @@ try{
      await waitFor('function(){return ('+tipGeometry+')().ok}',name+' tooltip reopens on new keyboard focus '+width);
    }
  }
+ // Actual mobile More typography, labels and scroll containment at the
+ // former awkward wrapping width and the user's larger-text preference.
+ for(const [width,height,textSize,theme] of [[375,812,'normal','light'],[390,700,'large','dark'],[640,480,'large','light']]){
+   await navigate('dashboard',pages.dashboard,width,height,true);
+   await c.call("async function(size,theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);document.documentElement.dataset.textSize=size}",[textSize,theme]);
+   assert(await c.call("function(){const b=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');b?.focus();b?.click();return Boolean(b)}"),'readable More opener');
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=m?.closest('.mobile-more-backdrop');return Boolean(m&&b&&Number(getComputedStyle(m).opacity)>=.99&&Number(getComputedStyle(b).opacity)>=.99&&m.contains(document.activeElement))}",'readable More settles');
+   await pressEscape(); // Existing modal Escape contract must not be consumed by a tooltip.
+   await waitFor("function(){return !document.querySelector('.mobile-more-menu')&&document.activeElement?.getAttribute('aria-label')==='Περισσότερες ενότητες'}",'readable More Escape restores opener');
+   assert(await c.call("function(){const b=document.activeElement;b.click();return Boolean(b)}"),'reopen readable More');
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=m?.closest('.mobile-more-backdrop');return Boolean(m&&b&&Number(getComputedStyle(m).opacity)>=.99&&Number(getComputedStyle(b).opacity)>=.99&&m.contains(document.activeElement))}",'readable More reopens settled');
+   const geometry=await c.call(`function(){const m=document.querySelector('.mobile-more-menu'),n=m.querySelector('nav'),r=m.getBoundingClientRect(),nr=n.getBoundingClientRect(),buttons=[...n.querySelectorAll('button')];return {contained:r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1&&m.scrollWidth<=m.clientWidth+1,subtitle:parseFloat(getComputedStyle(m.querySelector('header small')).fontSize),rows:buttons.length,labels:buttons.every(b=>{const label=b.querySelector('span'),a=b.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(label);return parseFloat(getComputedStyle(label).fontSize)>=13&&a.height>=44&&Math.abs(a.left-nr.left)<=1&&Math.abs(a.right-nr.right)<=1&&[...range.getClientRects()].every(x=>x.left>=a.left-1&&x.right<=a.right+1&&x.top>=a.top-1&&x.bottom<=a.bottom+1)})}}`);
+   assert(geometry.contained&&geometry.subtitle>=13&&geometry.rows===8&&geometry.labels,'readable More complete destination rows '+width+' '+JSON.stringify(geometry));
+   await shot('keyboard-more-readable-'+width+'-'+theme+'-'+textSize);
+   for(let i=0;i<8;i++)await pressTab();
+   await waitFor("function(){const m=document.querySelector('.mobile-more-menu'),b=document.activeElement;if(!m||b!==m.querySelector('nav button:last-child'))return false;const a=b.getBoundingClientRect(),r=m.getBoundingClientRect();return a.top>=r.top-1&&a.bottom<=r.bottom+1}",'readable More last destination visible '+width);
+   await shot('keyboard-more-readable-end-'+width+'-'+theme+'-'+textSize);
+   await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu')&&document.activeElement?.getAttribute('aria-label')==='Περισσότερες ενότητες'}",'readable More closes');
+ }
  await navigate('dashboard',pages.dashboard,320,420,false);
+ await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');document.documentElement.dataset.textSize='normal'}");
  assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');button?.focus();button?.click();return Boolean(button)}"),'short viewport More opener exists');
  await waitFor("function(){const menu=document.querySelector('.mobile-more-menu');const r=menu?.getBoundingClientRect();return Boolean(r&&r.width>0&&r.top>=0&&r.bottom<=innerHeight&&menu.scrollHeight>menu.clientHeight)}",'short More sheet contained and scrollable');
  for(let index=0;index<8;index++)await pressTab();
@@ -363,6 +383,50 @@ try{
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'short More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'short More restores focus');
 
+ // Mandatory Ready-matrix ownership: do not leave the short History
+ // regression solely inside the separate Draft-only History workflow.
+  // Short visual viewport: disclosures stay in the scroll flow, not clipped
+  // by the ordinary five-row grid. Use real Tab to prove every enabled
+  // action can be seen and reached, including after reverse traversal.
+  for(const {width,height,theme} of [
+    {width:320,height:500,theme:'light'},
+    {width:768,height:480,theme:'dark'},
+  ]){
+    await viewport(width,height,width<=680);
+    const historyUrl=new URL(baseUrl);historyUrl.searchParams.set('state','history-cursor');historyUrl.searchParams.set('save','saved');historyUrl.searchParams.set('page','dashboard');
+    await c.send('Page.navigate',{url:historyUrl.href});
+    await waitFor("function(){return Boolean(document.querySelector('.top-actions button[aria-label=\"Ιστορικό αλλαγών\"]'))}",'short History shell');
+    await c.call("async function(theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);document.documentElement.dataset.textSize='normal'}",[theme]);
+    assert(await c.call("function(){const b=document.querySelector('.top-actions button[aria-label=\"Ιστορικό αλλαγών\"]');if(!b)return false;b.focus({preventScroll:true});b.click();return true}"),'short History opener');
+    await waitFor("function(){const d=document.querySelector('.change-history-dialog'),b=d?.closest('.command-backdrop');return Boolean(d&&b&&d.querySelector('[data-history-state=current]')&&d.contains(document.activeElement)&&Number(getComputedStyle(d).opacity)>=.99&&Number(getComputedStyle(b).opacity)>=.99)}",'short History settled and focused');
+    const count=await c.call("function(){const d=document.querySelector('.change-history-dialog');return d?.querySelectorAll('button:not([disabled])').length}");
+    assert(count===5,'short History fixture exposes close, two reachable points and Undo/Redo');
+    const focusVisible="function(){const d=document.querySelector('.change-history-dialog'),b=document.activeElement;if(!d||!d.contains(b))return false;const r=d.getBoundingClientRect(),a=b.getBoundingClientRect();return Boolean(a.width>0&&a.height>0&&r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&a.left>=r.left-1&&a.right<=r.right+1&&a.top>=r.top-1&&a.bottom<=r.bottom+1&&d.scrollWidth<=d.clientWidth+1)}";
+    const seen=new Set();
+    for(let i=0;i<count;i++){
+      await waitFor(focusVisible,'short History focused control fully visible '+width+' '+i);
+      seen.add(await c.call("function(){return [...document.querySelectorAll('.change-history-dialog button:not([disabled])')].indexOf(document.activeElement)}"));
+      if(i===0)await shot('history-short-'+width+'-'+theme+'-header');
+      if(i===count-1)await shot('history-short-'+width+'-'+theme+'-footer');
+      if(i<count-1)await pressTab(false);
+    }
+    assert(seen.size===count&&!seen.has(-1),'short History Tab reaches each enabled control');
+    await pressTab(false);await waitFor(focusVisible,'short History Tab wraps to visible first control');
+    assert(await c.call("function(){return document.activeElement?.getAttribute('aria-label')==='Κλείσιμο ιστορικού'}"),'short History wraps to close control');
+    await pressTab(true);await waitFor(focusVisible,'short History Shift+Tab remains visible');
+    // Both disclosures must remain genuinely scroll-reachable; never hide
+    // them to make the compact viewport fit.
+    for(const selector of ['header p','footer > span:first-child']){
+      const visible=await c.call("function(selector){const d=document.querySelector('.change-history-dialog'),n=d?.querySelector(selector);if(!n)return false;n.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});const r=d.getBoundingClientRect(),a=n.getBoundingClientRect();return getComputedStyle(n).display!=='none'&&a.height>0&&a.top>=r.top-1&&a.bottom<=r.bottom+1}",[selector]);
+      assert(visible,'short History disclosure remains reachable: '+selector+' '+width);
+      await shot('history-short-'+width+'-'+theme+(selector==='header p'?'-intro':'-caveat'));
+    }
+    await pressEscape();
+    await waitFor("function(){return !document.querySelector('.change-history-dialog')&&document.activeElement?.getAttribute('aria-label')==='Ιστορικό αλλαγών'&&!document.activeElement.closest('[inert]')}",'short History Escape restores opener');
+  }
+
+
+ await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light')}");
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await viewport(720,500,false);

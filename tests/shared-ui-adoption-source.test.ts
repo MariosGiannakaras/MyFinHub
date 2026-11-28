@@ -243,11 +243,21 @@ describe('shared finance UI adoption contracts',()=>{
     expect(keyboard).toContain("r.width>0&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&contained");
     expect(keyboard).toContain("r.bottom<=a.top+1||r.top>=a.bottom-1||r.right<=a.left+1||r.left>=a.right-1");
     expect(keyboard).toContain("Tooltip geometry failure");
+    expect(read('src/styles/mobile-app-shell.css')).toContain('.mobile-more-menu>header small{font-size:var(--ux-small-size)');
+    expect(read('src/styles/mobile-more-menu-layout.css')).toContain('@media(max-width:390px){.mobile-more-menu>nav{grid-template-columns:1fr}}');
+    expect(read('src/styles/mobile-more-menu-layout.css')).toContain('html[data-text-size="large"] .mobile-more-menu>nav{grid-template-columns:1fr}');
+    expect(keyboard).toContain('readable More complete destination rows');
+    expect(keyboard).toContain('readable More last destination visible');
+    expect(keyboard).toContain('readable More Escape restores opener');
     expect(keyboard).toContain('tooltip Escape dismisses without moving keyboard focus');
     expect(keyboard).toContain('tooltip reopens on new keyboard focus');
     expect(rendered).toContain('hover tooltip remains open through anchor gap');
     expect(rendered).toContain('hover tooltip text remains reachable without focus');
     expect(rendered).toContain('hover tooltip Escape dismisses');
+    expect(rendered).toContain('tooltip genuine pointer exit and cleanup');
+    expect(rendered).toContain('refresh trigger is still hit-test reachable');
+    expect(rendered).toContain('Tooltip pointer reentry failure');
+    expect(rendered).toContain('tooltip reopens on new pointer entry');
   });
 
   it('retains rendered accessibility checks for names, touch targets, focus and tooltip semantics',()=>{
