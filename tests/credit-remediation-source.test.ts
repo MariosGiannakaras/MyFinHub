@@ -25,6 +25,11 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     ])expect(reports).toContain(token);
   });
 
+  it('validates direct purchase and credit limit money using the canonical lexical cent parser',()=>{
+    expect(page).toContain('const numeric=parseMoneyInputAmount(amount);if(numeric===null||numeric<=0)');
+    expect(page).toContain('const numeric=parseMoneyInputAmount(limitText);if(numeric===null||numeric<0)');
+  });
+
   it('keeps one canonical stack navigation model and populated create reachability',()=>{
     expect(page).toContain('<Plus/> Προσθήκη πιστωτικής');
     expect(page).toContain('aria-label={`Αρχείο καρτών, ${archivedCredit.length}`}');

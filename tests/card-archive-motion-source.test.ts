@@ -84,6 +84,21 @@ describe('card archive exit-motion regression #570',()=>{
     expect(render).toContain('(replacement??stage).focus({preventScroll:true})');
   });
 
+  it('cancels replaced confirmation DOM and guards archive mutations until a durable receipt',()=>{
+    expect(credit).toContain("if(deleteMode){deleteMode=false;stage.classList.remove('delete-mode')}");
+    expect(credit).toContain('if(swiping||!cardEl?.isConnected||orderRef.current[0]!==id)return');
+    for(const page of ['CardsPage','CreditCardPage']){
+      const source=readFileSync(new URL(`../src/pages/${page}.tsx`,import.meta.url),'utf8');
+      expect(source).toContain('const archiveMutation=useRef(false)');
+      expect(source).toContain('if(archiveMutation.current)return');
+      expect(source).toContain('archiveMutation.current=true;setRestoring(true)');
+      expect(source).toContain('archiveMutation.current=false;setRestoring(false)');
+      expect(source).toContain('Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε');
+    }
+    const page=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    expect(page).toContain('<FormError id="credit-archive-error">{archiveError}</FormError>');
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

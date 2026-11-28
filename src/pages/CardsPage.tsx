@@ -1,5 +1,5 @@
 import { ArchiveRestore, CreditCard, Landmark, Plus, ShieldCheck, Trash2, WalletCards } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
@@ -85,6 +85,8 @@ export function CardsPage({
   const [detailsIsNew,setDetailsIsNew]=useState(false);
   const [deleteTarget,setDeleteTarget]=useState<PaymentCard|null>(null);
   const [deleteBusy,setDeleteBusy]=useState(false);
+  const archiveMutation=useRef(false);
+  const [restoring,setRestoring]=useState(false);
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
   const bankRef=useModalFocus<HTMLElement>(bankOpen,'[data-autofocus="true"]',()=>{setBankOpen(false);setError('')});
@@ -120,10 +122,16 @@ export function CardsPage({
     (target??bank?.querySelector<HTMLElement>('.bank-add-btn')??document.querySelector<HTMLElement>('.cards-prototype-page h1'))?.focus();
   });
   const archive=async(card:PaymentCard)=>{setMessage('');try{await onArchiveCard(card);focusAfterCardChange(card)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
-  const restore=async(card:PaymentCard)=>{setMessage('');try{await onUpsertCardDurably(restoreCard(card));focusAfterCardChange(card,true)}catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}};
+  const restore=async(card:PaymentCard)=>{
+    if(archiveMutation.current)return;
+    archiveMutation.current=true;setRestoring(true);setMessage('');
+    try{await onUpsertCardDurably(restoreCard(card));focusAfterCardChange(card,true)}
+    catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}
+    finally{archiveMutation.current=false;setRestoring(false)}
+  };
   const confirmDelete=async()=>{
-    if(!deleteTarget)return;
-    setDeleteBusy(true);setMessage('');
+    if(!deleteTarget||archiveMutation.current)return;
+    archiveMutation.current=true;setDeleteBusy(true);setMessage('');
     try{
       const name=deleteTarget.nickname;
       await onDeleteCard(deleteTarget);
@@ -131,8 +139,9 @@ export function CardsPage({
       setDeleteTarget(null);
       setMessage(`Η «${name}» διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε.`);
     }catch(error){
-      setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η οικονομική διαγραφή δεν επιβεβαιώθηκε. Τα ασφαλή στοιχεία δεν αφαιρέθηκαν. Επαναφόρτωσε και δοκίμασε ξανά.');
-    }finally{setDeleteBusy(false)}
+      setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η διαγραφή του προφίλ δεν επιβεβαιώθηκε. Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');
+      focusAfterCardChange(deleteTarget);setDeleteTarget(null);
+    }finally{archiveMutation.current=false;setDeleteBusy(false)}
   };
 
   return <div className="page-stack cards-prototype-page">
@@ -152,7 +161,7 @@ export function CardsPage({
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><IconButton type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>openCardCreate(bank.id)}><Plus/></IconButton></Tooltip></header>
           <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onEditCard={detailsIsNew&&detailsCard?.id===card.id?undefined:editCardProfile} onEditDetails={editCardDetails} onArchive={detailsIsNew&&detailsCard?.id===card.id?undefined:archive} detailsEditor={detailsCard?.id===card.id?<CardDetailsDialog inline open card={detailsCard} bank={bank} requireCvv={detailsIsNew} onBeforeSave={onStageNewCard} onSaved={saveCardDetails} onEditProfile={!detailsIsNew?()=>{setDetailsCard(null);editCardProfile(card)}:undefined} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>:undefined}/>):<button type="button" className="bank-empty" onClick={()=>openCardCreate(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
-          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list" data-content-entrance="list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><Button type="button" variant="primary" onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</Button></div></article>)}</div></details>:null}
+          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list" data-content-entrance="list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><Button type="button" variant="primary" disabled={restoring||deleteBusy} onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" disabled={restoring||deleteBusy} onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</Button></div></article>)}</div></details>:null}
         </section>;
       })}</div>:<div className="cards-workspace-empty"><CreditCard/><div><b>Δεν έχεις αποθηκευμένη χρεωστική ή προπληρωμένη κάρτα.</b><span>Πρόσθεσε κάρτα και επίλεξε την τράπεζά της στο επόμενο βήμα.</span></div><Button type="button" variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας</Button></div>}
     </section>

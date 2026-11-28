@@ -478,6 +478,12 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit workspace');
     await clickText('.page-heading .heading-actions button','Νέα αγορά');
     await waitFor("function(){return Boolean(document.querySelector('[aria-labelledby=\"credit-purchase-title\"]'))}",'credit purchase dialog');
+    const beforeInvalidCreditPurchase=await currentRevision();
+    for(const malformed of ['1e1','0x10','25.501']){
+      await setByLabel('Ποσό',malformed);await clickText('.credit-dialog button','Καταχώριση αγοράς');
+      await waitFor("function(){return Boolean(document.querySelector('#credit-purchase-error[role=alert]'))&&document.querySelector('.credit-dialog .money-input-control')?.getAttribute('aria-invalid')==='true'}",'invalid direct credit purchase amount');
+      assert(await currentRevision()===beforeInvalidCreditPurchase,'Malformed credit purchase changed the canonical revision.');
+    }
     await setByLabel('Ποσό','25.50');await setByLabel('Περιγραφή','Real Browser Credit Purchase');await clickText('.credit-dialog button','Καταχώριση αγοράς');
     await waitFor("function(){return !document.querySelector('[aria-labelledby=\"credit-purchase-title\"]')}",'credit purchase close');await waitCreditState(false);
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit reload after purchase');
