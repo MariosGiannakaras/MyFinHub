@@ -13,7 +13,7 @@ html[data-myfinhub-desktop="true"] .topbar{
   margin-top:calc(-1 * var(--desktop-shell-top-gutter));
   margin-right:calc(-1 * var(--desktop-shell-right-gutter));
   padding-top:var(--desktop-shell-top-gutter);
-  padding-right:calc(15px + var(--desktop-window-controls-reserve));
+  padding-right:calc(15px + max(var(--desktop-window-controls-reserve),100vw - env(titlebar-area-width,100vw) - env(titlebar-area-x,0px)));
   border-radius:0 0 16px 16px;
   user-select:none;
 }
@@ -37,5 +37,12 @@ html[data-myfinhub-desktop="true"] .top-actions{
     --desktop-shell-top-gutter:8px;
     --desktop-shell-right-gutter:8px;
     --desktop-window-controls-reserve:146px;
+  }
+}
+@media(max-width:680px){
+  html[data-myfinhub-desktop="true"] .topbar{
+    height:calc(62px + env(titlebar-area-height,32px));
+    padding-top:env(titlebar-area-height,32px);
+    padding-right:10px;
   }
 }

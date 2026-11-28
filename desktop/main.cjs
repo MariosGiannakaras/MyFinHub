@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain, clipboard, nativeTheme, systemPreferences } = require('electron');
 const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -355,6 +355,31 @@ function hardenWindow(window, allowedOrigin = null) {
   window.webContents.on('will-attach-webview', event => event.preventDefault());
 }
 
+// Keep zoom local to the focused desktop window; do not register global shortcuts.
+function handleWindowZoom(contents, event, input) {
+  if (input.type !== 'keyDown' || !input.control || input.alt || input.meta || input.isComposing) return;
+  const key = input.key;
+  if (!['+', '=', '-', '0'].includes(key)) return;
+  event.preventDefault();
+  const current = contents.getZoomFactor();
+  const next = key === '0' ? 1 : Math.round((current + (key === '-' ? -0.1 : 0.1)) * 10) / 10;
+  contents.setZoomFactor(Math.max(0.8, Math.min(2, next)));
+}
+
+function captionPalette(theme, highContrast, getSystemColor) {
+  if (highContrast) return { color: getSystemColor('window'), symbolColor: getSystemColor('window-text') };
+  return theme === 'dark'
+    ? { color: '#131d2f', symbolColor: '#e7eefb' }
+    : { color: '#f4f7fb', symbolColor: '#10234d' };
+}
+
+let captionTheme = null;
+function refreshCaptionTheme() {
+  if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed()) return;
+  const theme = captionTheme || (nativeTheme.shouldUseDarkColors ? 'dark' : 'light');
+  mainWindow.setTitleBarOverlay(captionPalette(theme, nativeTheme.shouldUseHighContrastColors, name => systemPreferences.getColor(name)));
+}
+
 function stopBackend() {
   const child = backend;
   backend = null;
@@ -366,7 +391,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function runWindowStateProbe(window) {
   if (!WINDOW_STATE_PROBE_PATH || process.platform !== 'win32' || window.isDestroyed()) return;
-  const result = { maximized: false, restored: false, size: null, passed: false, error: null };
+  const result = { maximized: false, restored: false, minimized: false, restoredFromMinimize: false, size: null, zoom: null, passed: false, error: null };
   try {
     window.maximize();
     await delay(500);
@@ -379,7 +404,32 @@ async function runWindowStateProbe(window) {
     window.setSize(1100, 760);
     await delay(500);
     result.size = window.getSize();
-    result.passed = Boolean(result.maximized && result.restored && result.size?.[0] === 1100 && result.size?.[1] === 760);
+
+    window.minimize();
+    await delay(400);
+    result.minimized = window.isMinimized();
+    window.restore();
+    await delay(400);
+    result.restoredFromMinimize = !window.isMinimized();
+
+    // Exercise the same registered keyboard handler on the real packaged
+    // WebContents. Synthetic input events are not a physical-keyboard test.
+    const contents = window.webContents;
+    const key = (value, control = true) => {
+      let prevented = false;
+      contents.emit('before-input-event', { preventDefault: () => { prevented = true; } }, { type: 'keyDown', key: value, control });
+      return prevented;
+    };
+    contents.setZoomFactor(1);
+    const ignored = !key('a') && !key('+', false);
+    const zoomIn = key('+') && Math.abs(contents.getZoomFactor() - 1.1) < 0.01;
+    for (let i = 0; i < 15; i++) key('+');
+    const upperBound = Math.abs(contents.getZoomFactor() - 2) < 0.01;
+    for (let i = 0; i < 20; i++) key('-');
+    const lowerBound = Math.abs(contents.getZoomFactor() - 0.8) < 0.01;
+    const reset = key('0') && Math.abs(contents.getZoomFactor() - 1) < 0.01;
+    result.zoom = { ignored, zoomIn, upperBound, lowerBound, reset };
+    result.passed = Boolean(result.maximized && result.restored && result.minimized && result.restoredFromMinimize && result.size?.[0] === 1100 && result.size?.[1] === 760 && Object.values(result.zoom).every(Boolean));
   } catch (error) {
     result.error = error instanceof Error ? error.message : String(error);
   }
@@ -391,7 +441,7 @@ async function runWindowStateProbe(window) {
     console.error('Window-state probe write failed:', error instanceof Error ? error.message : String(error));
   }
 
-  setTimeout(() => app.quit(), 120);
+  setTimeout(() => { if (!window.isDestroyed()) window.close(); }, 120);
 }
 
 function createWindow(origin, runtime) {
@@ -407,6 +457,10 @@ function createWindow(origin, runtime) {
     },
   });
   hardenWindow(mainWindow, origin);
+  mainWindow.webContents.on('before-input-event', (event, input) => handleWindowZoom(mainWindow.webContents, event, input));
+  captionTheme = null;
+  refreshCaptionTheme();
+  nativeTheme.on('updated', refreshCaptionTheme);
   mainWindow.once('ready-to-show', () => {
     const window = mainWindow;
     if (!window || window.isDestroyed()) return;
@@ -414,7 +468,7 @@ function createWindow(origin, runtime) {
     if (WINDOW_STATE_PROBE_PATH) void runWindowStateProbe(window);
   });
   mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
-  mainWindow.on('closed', () => { mainWindow = null; mainOrigin = null; });
+  mainWindow.on('closed', () => { nativeTheme.removeListener('updated', refreshCaptionTheme); mainWindow = null; mainOrigin = null; captionTheme = null; });
   void mainWindow.loadURL(origin);
 }
 
@@ -686,6 +740,11 @@ async function requireLegacyLockAccess(event) {
 
 function registerIpcHandlers() {
   registerAppLockIpc({ isTrustedSender: isLegacyLockSender, requireLegacyAccess: requireLegacyLockAccess });
+  ipcMain.on('myfinhub:caption-theme', (event, theme) => {
+    if (!isLegacyLockSender(event) || !['light', 'dark'].includes(theme)) return;
+    captionTheme = theme;
+    refreshCaptionTheme();
+  });
   ipcMain.handle('myfinhub:get-info', event => {
     if (!isMainSender(event) && !isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
     return { productName: PRODUCT_NAME, version: app.getVersion(), packaged: app.isPackaged };

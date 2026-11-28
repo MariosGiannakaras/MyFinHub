@@ -78,8 +78,19 @@ try{
   assert(current.overflow<=1,`960 titlebar introduces no horizontal overflow: ${JSON.stringify(current)}`);
   await shot('desktop-titlebar-dark-960');
 
+  // A 960px Windows window at 200% page zoom has a 480px CSS viewport.
+  // Use the same responsive layout without pretending browser emulation is native zoom.
+  await viewport(480,800);
+  await sleep(180);
+  const compact=await c.call(`function(){
+    const bar=document.querySelector('.topbar'), actions=document.querySelector('.top-actions');
+    const rect=bar.getBoundingClientRect(), ar=actions.getBoundingClientRect();
+    return {top:ar.top-rect.top,right:ar.right-rect.right,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-document.documentElement.clientWidth};
+  }`);
+  assert(compact.top>=32&&compact.right<=1&&compact.overflow<=1,`480px zoom-equivalent actions sit below native caption strip without overflow: ${JSON.stringify(compact)}`);
+  await shot('desktop-titlebar-dark-480-zoom-equivalent');
   c.close();
-  console.log('Desktop title-bar rendered QA passed for light/dark 1440px and compact 960px layouts.');
+  console.log('Desktop title-bar rendered QA passed for light/dark 1440px, compact 960px and 480px zoom-equivalent layouts.');
 }finally{
   child.kill('SIGTERM');
   await sleep(180);

@@ -59,6 +59,10 @@ It installs per Windows user by default, creates **Desktop** and **Start Menu** 
 
 Normal users install once and then sign in with the same MyFinHub email/password + TOTP flow used by the web application. No terminal, Git, Node.js, browser or infrastructure setup is required.
 
+## Native window and keyboard accessibility
+
+The standard Windows caption buttons minimize, maximize/restore and close the app. Closing quits the desktop host and stops its local backend; there is no background tray mode. A second launch focuses/restores the existing window. With the app focused, Ctrl+Plus/Equals, Ctrl+Minus and Ctrl+0 change/reset page zoom (80–200%). These are local shortcuts, not system-wide hooks. Caption controls follow the resolved app Light/Dark theme and use Windows system colors in high-contrast mode. Narrow zoom-equivalent layouts place app actions below the caption strip. The existing text-size preference remains separate from temporary page zoom.
+
 ## In-app updates
 
 A packaged MyFinHub installation checks the controlled GitHub Release channel automatically after startup and periodically while running. Automatic checks **do not** force a download or installation.

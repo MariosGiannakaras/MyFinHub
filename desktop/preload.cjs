@@ -56,3 +56,20 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
     return () => ipcRenderer.removeListener(startupProgressChannel, handler);
   },
 }));
+
+// Only observe the existing resolved theme, never expose arbitrary native styling IPC.
+if (process.isMainFrame && location.protocol === 'http:' && location.hostname === '127.0.0.1') {
+  window.addEventListener('DOMContentLoaded', () => {
+    let previous;
+    const root = document.documentElement;
+    const sync = () => {
+      const theme = root.dataset.theme;
+      if (theme !== previous && (theme === 'light' || theme === 'dark')) {
+        previous = theme;
+        ipcRenderer.send('myfinhub:caption-theme', theme);
+      }
+    };
+    new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    sync();
+  }, { once: true });
+}

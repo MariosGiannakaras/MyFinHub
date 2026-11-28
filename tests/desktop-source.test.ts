@@ -97,11 +97,36 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopTitlebar).toContain('margin-top:calc(-1 * var(--desktop-shell-top-gutter))');
     expect(desktopTitlebar).toContain('margin-right:calc(-1 * var(--desktop-shell-right-gutter))');
     expect(desktopTitlebar).toContain('padding-top:var(--desktop-shell-top-gutter)');
-    expect(desktopTitlebar).toContain('padding-right:calc(15px + var(--desktop-window-controls-reserve))');
+    expect(desktopTitlebar).toContain('padding-right:calc(15px + max(var(--desktop-window-controls-reserve),100vw - env(titlebar-area-width,100vw) - env(titlebar-area-x,0px)))');
+    expect(desktopTitlebar).toContain('padding-top:env(titlebar-area-height,32px)');
     expect(desktopTitlebar).toContain('border-radius:0 0 16px 16px');
     expect(desktopTitlebar).toContain('.topbar button');
     expect(desktopTitlebar).toContain('.topbar input');
     expect(desktopTitlebar).toContain('.topbar [role="button"]');
+  });
+
+  it('keeps native caption theme and zoom narrowly scoped with accessible bounded values',()=>{
+    const source=mainBlock('function handleWindowZoom(', 'let captionTheme = null;');
+    const api=runInNewContext(source+'\n({handleWindowZoom,captionPalette})') as {
+      handleWindowZoom:(contents:{getZoomFactor:()=>number;setZoomFactor:(value:number)=>void},event:{preventDefault:()=>void},input:Record<string,unknown>)=>void;
+      captionPalette:(theme:string,highContrast:boolean,getSystemColor:(name:string)=>string)=>{color:string;symbolColor:string};
+    };
+    let zoom=1,prevented=0;
+    const contents={getZoomFactor:()=>zoom,setZoomFactor:(value:number)=>{zoom=value}};
+    const press=(key:string,input:Record<string,unknown>={})=>api.handleWindowZoom(contents,{preventDefault:()=>{prevented++}},{type:'keyDown',key,control:true,...input});
+    press('z');press('+',{alt:true});press('+',{control:false});press('+',{isComposing:true});press('+',{type:'keyUp'});
+    expect(prevented).toBe(0);expect(zoom).toBe(1);
+    for(let i=0;i<20;i++)press('+');
+    expect(zoom).toBe(2);
+    for(let i=0;i<20;i++)press('-');
+    expect(zoom).toBe(0.8);press('0');expect(zoom).toBe(1);
+    const system=(name:string)=>name==='window'?'#000000':'#ffffff';
+    expect(api.captionPalette('light',false,system)).toEqual({color:'#f4f7fb',symbolColor:'#10234d'});
+    expect(api.captionPalette('dark',false,system)).toEqual({color:'#131d2f',symbolColor:'#e7eefb'});
+    expect(api.captionPalette('light',true,system)).toEqual({color:'#000000',symbolColor:'#ffffff'});
+    expect(main).toContain("if (!isLegacyLockSender(event) || !['light', 'dark'].includes(theme)) return;");
+    expect(preload).toContain("attributeFilter: ['data-theme']");
+    expect(preload).toContain("ipcRenderer.send('myfinhub:caption-theme', theme)");
   });
 
   it('renders desktop-only titlebar geometry and theme evidence in the isolated QA surface', () => {
@@ -117,6 +142,8 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopTitlebarQa).toContain('desktop-titlebar-light-1440');
     expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-1440');
     expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-960');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-480-zoom-equivalent');
+    expect(desktopTitlebarQa).toContain('compact.top>=32&&compact.right<=1&&compact.overflow<=1');
     expect(renderedRunner).toContain("path:'scripts/desktop-titlebar-qa.mjs'");
     expect(renderedRunner).toContain("key:'desktop-titlebar'");
   });
@@ -297,6 +324,14 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(main).toContain('window.isMaximized()');
     expect(main).toContain('window.unmaximize()');
     expect(main).toContain('window.setSize(1100, 760)');
+    expect(main).toContain('window.minimize()');
+    expect(main).toContain('window.restore()');
+    expect(main).toContain("contents.emit('before-input-event'");
+    expect(main).toContain('Object.values(result.zoom).every(Boolean)');
+    expect(workflow).toContain('$probe.restoredFromMinimize');
+    expect(workflow).toContain('$probe.zoom.upperBound');
+    expect(workflow).toContain('Packaged app did not exit after normal window close.');
+    expect(main).toContain('if (!window.isDestroyed()) window.close()');
     expect(main).toContain('result.size = window.getSize()');
     expect(main).toContain("fs.writeFileSync(WINDOW_STATE_PROBE_PATH, JSON.stringify(result, null, 2)");
     expect(workflow).toContain('$env:MYFINHUB_WINDOW_STATE_PROBE_PATH = $probePath');
