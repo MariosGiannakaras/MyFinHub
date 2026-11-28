@@ -215,7 +215,9 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       const orderedCards=orderRef.current.map(id=>cardById.get(id)).filter((card):card is RuntimeCard=>Boolean(card));
       stage.innerHTML=orderedCards.map((card,index)=>renderCard(card,index)).join('');Array.from(stage.children).forEach((element,index)=>applyLayout(element as HTMLElement,index));
       stage.classList.toggle('single-card',orderedCards.length===1);
-      const activeId=orderRef.current[0]??null;dots.innerHTML=cardsRef.current.length>1?cardsRef.current.map(card=>`<span class="dot${card.id===activeId?' active':''}"></span>`).join(''):'';const activeDot=dots.querySelector<HTMLElement>('.dot.active');
+      const focusedDot=dots.contains(document.activeElement);
+      const activeId=orderRef.current[0]??null;dots.innerHTML=cardsRef.current.length>1?cardsRef.current.map((card,index)=>`<button type="button" class="dot${card.id===activeId?' active':''}" data-dot-id="${esc(card.id)}" aria-label="${esc(`Κάρτα ${index+1} από ${cardsRef.current.length}: ${card.name}`)}" aria-current="${card.id===activeId?'true':'false'}" tabindex="${card.id===activeId?0:-1}"></button>`).join(''):'';const activeDot=dots.querySelector<HTMLElement>('.dot.active');
+      if(focusedDot)(activeDot??stage).focus({preventScroll:true});
       if(activeDot)requestAnimationFrame(()=>{
         // scrollIntoView on a nested pagination dot also scrolls the document.
         // After repeated card changes that used to move the entire physical
@@ -292,11 +294,34 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
     function disarmDelete(cardEl:HTMLElement|null){if(!cardEl)return;cardEl.querySelector('.delete-confirm')?.remove();cardEl.classList.remove('delete-armed');cardEl.style.removeProperty('--delete-p');deleteMode=false;stage.classList.remove('delete-mode')}
     async function commitDelete(id:string,cardEl:HTMLElement|null){if(!cardEl)return;const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches,stackCard=cardEl.closest<HTMLElement>('.stack-card');disarmDelete(cardEl);if(!stackCard||reduce){await finalizeRemove(id);return}swiping=true;const flash=document.createElement('div');flash.className='delete-flash';stackCard.appendChild(flash);cardEl.classList.add('delete-collapsing');const layer=document.createElement('div');layer.className='shred-layer';const pieces:Promise<unknown>[]=[];const slices=9;for(let i=0;i<slices;i++){const wrap=document.createElement('div');wrap.className='shred-slice';const topInset=i*(100/slices),bottomInset=100-(i+1)*(100/slices);wrap.style.clipPath=`inset(${topInset}% 0 ${Math.max(0,bottomInset)}% 0 round 22px)`;const clone=cardEl.cloneNode(true) as HTMLElement;clone.classList.remove('delete-collapsing');clone.querySelectorAll('.delete-confirm').forEach(node=>node.remove());clone.querySelectorAll('button').forEach(button=>button.remove());wrap.appendChild(clone);layer.appendChild(wrap);const side=i%2===0?-1:1,x=side*(44+Math.random()*68),y=(i-(slices/2))*4+(Math.random()*8-4),rot=side*(4+Math.random()*8);pieces.push(wrap.animate([{transform:'translate3d(0,0,0) rotateZ(0deg)',opacity:1,filter:'blur(0px)'},{offset:.28,transform:'translate3d(0,-4px,0) rotateZ(0deg)',opacity:1},{transform:`translate3d(${x}px, ${26+y}px, 0) rotateZ(${rot}deg)`,opacity:0,filter:'blur(2px)'}],{duration:560+Math.random()*140,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}).finished.catch(()=>undefined))}stackCard.appendChild(layer);await Promise.all(pieces);await finalizeRemove(id)}
     async function finalizeRemove(id:string){swiping=false;deleteMode=false;stage.classList.remove('delete-mode');const card=currentCard(id);if(!card)return;try{await archiveRef.current(card.source)}catch{announce('Δεν ήταν δυνατή η αρχειοθέτηση της κάρτας','error');render();return}cardsRef.current=cardsRef.current.filter(item=>item.id!==id);orderRef.current=orderRef.current.filter(cardId=>cardId!==id);revealedRef.current.delete(id);secretsRef.current.delete(id);render();announce('Η κάρτα αρχειοθετήθηκε');const active=orderRef.current[0];if(active)activeChangeRef.current?.(active)}
-    const keydown=(event:KeyboardEvent)=>{if(event.key==='Escape'){const armed=stage.querySelector<HTMLElement>('.stack-card.top .payment-card.delete-armed');if(armed){event.preventDefault();disarmDelete(armed);stage.focus({preventScroll:true})}return}if(event.target!==stage)return;if(event.key==='ArrowUp'){event.preventDefault();animateRestack(-1)}else if(event.key==='ArrowDown'){event.preventDefault();animateRestack(1)}};stage.addEventListener('pointerdown',startDrag);stage.addEventListener('keydown',keydown);render();return()=>{effectActive=false;stage.removeEventListener('pointerdown',startDrag);stage.removeEventListener('keydown',keydown);timers.forEach(id=>clearTimeout(id));timers.clear();clearGhost();renderRef.current=()=>{}};
+    function selectDot(id:string){
+      if(swiping||drag||deleteMode||orderRef.current[0]===id||!currentCard(id))return;
+      orderRef.current=[id,...orderRef.current.filter(cardId=>cardId!==id)];
+      render();
+      activeChangeRef.current?.(id);
+    }
+    const dotClick=(event:MouseEvent)=>{
+      const target=(event.target as Element).closest<HTMLButtonElement>('button[data-dot-id]');
+      if(!target)return;
+      target.focus({preventScroll:true});
+      selectDot(target.dataset.dotId??'');
+    };
+    const dotKey=(event:KeyboardEvent)=>{
+      const target=(event.target as Element).closest<HTMLButtonElement>('button[data-dot-id]');
+      if(!target||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      const cards=cardsRef.current,index=cards.findIndex(card=>card.id===target.dataset.dotId);
+      if(index<0||cards.length<2)return;
+      event.preventDefault();
+      const next=event.key==='Home'?0:event.key==='End'?cards.length-1:(index+(event.key==='ArrowRight'?1:-1)+cards.length)%cards.length;
+      selectDot(cards[next].id);
+    };
+    dots.addEventListener('click',dotClick);
+    dots.addEventListener('keydown',dotKey);
+    const keydown=(event:KeyboardEvent)=>{if(event.key==='Escape'){const armed=stage.querySelector<HTMLElement>('.stack-card.top .payment-card.delete-armed');if(armed){event.preventDefault();disarmDelete(armed);stage.focus({preventScroll:true})}return}if(event.target!==stage)return;if(event.key==='ArrowUp'){event.preventDefault();animateRestack(-1)}else if(event.key==='ArrowDown'){event.preventDefault();animateRestack(1)}};stage.addEventListener('pointerdown',startDrag);stage.addEventListener('keydown',keydown);render();return()=>{effectActive=false;stage.removeEventListener('pointerdown',startDrag);stage.removeEventListener('keydown',keydown);dots.removeEventListener('click',dotClick);dots.removeEventListener('keydown',dotKey);timers.forEach(id=>clearTimeout(id));timers.clear();clearGhost();renderRef.current=()=>{}};
   },[]);
 
   useEffect(()=>{const next=cards.map(card=>toRuntimeCard(card,banks));cardsRef.current=next;const ids=new Set(next.map(card=>card.id));orderRef.current=orderRef.current.filter(id=>ids.has(id));for(const card of next)if(!orderRef.current.includes(card.id))orderRef.current.push(card.id);if(selectedCardId&&ids.has(selectedCardId)&&orderRef.current[0]!==selectedCardId)orderRef.current=[selectedCardId,...orderRef.current.filter(id=>id!==selectedCardId)];for(const id of [...revealedRef.current])if(!ids.has(id))revealedRef.current.delete(id);for(const id of [...secretsRef.current.keys()])if(!ids.has(id))secretsRef.current.delete(id);renderRef.current();},[cards,banks,selectedCardId]);
 
   const multiCard=cards.length>1;
-  return <section className={`mfh-card-stack ${multiCard?'multi-card-mode':'single-card-mode'}`} id="myfinhub-card-stack" aria-label={multiCard?'Στοίβα πιστωτικών καρτών':'Πιστωτική κάρτα'}><div className="demo-shell"><div className="card-demo"><div ref={stageRef} className="stack-stage" tabIndex={multiCard?0:-1} aria-label={multiCard?'Στοίβα καρτών. Σύρε κάθετα ή χρησιμοποίησε τα πλήκτρα πάνω και κάτω για αλλαγή κάρτας.':'Πιστωτική κάρτα'}/><div className="meta" aria-label={multiCard?'Θέση στη στοίβα καρτών':undefined}><div ref={dotsRef} className="dots" aria-hidden="true"/>{multiCard?<span className="stack-drag-hint" aria-hidden="true">Σύρε κάθετα για αλλαγή κάρτας</span>:null}</div></div></div><div ref={statusRef} className="sr-status" role="status" aria-live="polite"/></section>;
+  return <section className={`mfh-card-stack ${multiCard?'multi-card-mode':'single-card-mode'}`} id="myfinhub-card-stack" aria-label={multiCard?'Στοίβα πιστωτικών καρτών':'Πιστωτική κάρτα'}><div className="demo-shell"><div className="card-demo"><div ref={stageRef} className="stack-stage" tabIndex={multiCard?0:-1} aria-label={multiCard?'Στοίβα καρτών. Σύρε κάθετα ή χρησιμοποίησε τα πλήκτρα πάνω και κάτω για αλλαγή κάρτας.':'Πιστωτική κάρτα'}/><div className="meta" aria-label={multiCard?'Θέση στη στοίβα καρτών':undefined}><div ref={dotsRef} className="dots" role={multiCard?'group':undefined} aria-label={multiCard?'Επιλογή κάρτας':undefined}/>{multiCard?<span className="stack-drag-hint" aria-hidden="true">Σύρε κάθετα για αλλαγή κάρτας</span>:null}</div></div></div><div ref={statusRef} className="sr-status" role="status" aria-live="polite"/></section>;
 }

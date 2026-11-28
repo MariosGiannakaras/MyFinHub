@@ -134,6 +134,15 @@ try{
   assert(singleAfter.topId===singleId&&!singleAfter.mode.includes('dragging'),'single active card does not enter restack choreography');
   await shot('credit-single-card');
 
+  console.log('Credit stack remediation QA: direct accessible selection');
+  await navigate('credit-stack');
+  const choice=await c.call("function(){const dots=[...document.querySelectorAll('#myfinhub-card-stack .dots button')],target=dots.at(-1);if(!target)return null;const rect=target.getBoundingClientRect();target.focus();target.click();return {id:target.dataset.dotId,width:rect.width,height:rect.height}}");
+  assert(choice?.id&&choice.width>=24&&choice.height>=24,'card indicators expose at least 24px real button targets');
+  await waitFor("function(id){const top=document.querySelector('#myfinhub-card-stack .stack-card.top'),selected=document.querySelector('#myfinhub-card-stack .dot[aria-current=true]');return top?.dataset.cardId===id&&selected?.dataset.dotId===id&&selected===document.activeElement&&selected.tabIndex===0}",'clicked indicator selects its card and retains focus',[choice.id]);
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+  await waitFor("function(){const top=document.querySelector('#myfinhub-card-stack .stack-card.top'),selected=document.querySelector('#myfinhub-card-stack .dot[aria-current=true]');return top?.dataset.cardId==='qa-card'&&selected===document.activeElement&&document.querySelectorAll('#myfinhub-card-stack .dot[tabindex=\"0\"]').length===1}",'indicator Home selects the first card with one Tab stop');
+  await shot('credit-stack-indicator-focus');
   console.log('Credit stack remediation QA: long pagination containment');
   await navigate('credit-stack-long');
   let long=await state();

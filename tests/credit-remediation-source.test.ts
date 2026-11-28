@@ -55,6 +55,19 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stackOne).toContain('transition:none');
   });
 
+  it('lets accessible pagination select the existing deck without a second host navigator',()=>{
+    expect(stack).toContain('data-dot-id=');
+    expect(stack).toContain('aria-current=');
+    expect(stack).toContain('dots.addEventListener(\'click\',dotClick)');
+    expect(stack).toContain('dots.removeEventListener(\'click\',dotClick)');
+    expect(stack).toContain('if(swiping||drag||deleteMode||orderRef.current[0]===id||!currentCard(id))return');
+    expect(stack).toContain('if(focusedDot)(activeDot??stage).focus({preventScroll:true})');
+    expect(stackTwo).toContain('min-width:24px');
+    expect(stackTwo).toContain('.dot:focus-visible');
+    expect(qa).toContain('clicked indicator selects its card and retains focus');
+    expect(qa).toContain('indicator Home selects the first card with one Tab stop');
+  });
+
   it('contains pagination and exposes drag discovery without restoring host navigation',()=>{
     // Dot pagination must scroll its own horizontal rail without moving the document.
     expect(stack).toContain('dots.scrollTo({left,behavior:');

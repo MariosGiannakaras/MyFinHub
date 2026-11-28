@@ -1,3 +1,9 @@
+## 2026-11-28 — Credit stack direct navigation checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 100/132 completed (75.8%).** Owner-authorized consolidated deployment remains gated on completion, required validation, merge, release and smoke. Implemented I08.03: actual clickable 24px credit deck pagination buttons, canonical card IDs, aria-current, one selected Tab stop, ArrowLeft/Right/Home/End, stable delegated events with cleanup, focus retained across imperative/parent rerenders. Direct selection is intentionally immediate (no new choreography), guarded against in-flight drag/restack/archive confirmation, and uses existing active-card callback. No vault read/reveal, archive semantics, keyboard stage or drag behavior changed. Existing long-rail/single-card proof retained; new browser assertions exercise click, Home, focus and target geometry. 10 direct parser/source/selection-logic checks passed, full application QA pending; no merge or production change. Branch parent `a34cff21b4a1a001eeaf3e4fd2149bd544b2b7a2`. Continue remaining card nickname/credential/desktop and finance scopes in same batch. 
+   
+---
+
 ## 2026-11-28 — Owner authorizes consolidated deployment after completion; Login, Settings and Planning checkpoint
 
 **Implementations 9/23 completed · Sub-implementations 99/132 completed (75.0%).** Owner explicitly requests completion and deploy, superseding the previous lack of production go/no-go authorization for the completed consolidated Web/Windows batch only. This is not authority to skip CI, overwrite immutable Windows releases, perform destructive/hosted database operations, waive outstanding hosted recovery disposition or modify Android. Existing #645 is an older exact release candidate, not the latest develop; do not merge it merely because old checks passed. Reconcile that release into the final validated develop-based release candidate.
@@ -398,7 +404,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I05 | 5/6 | I05.02 |
 | I06 | 4/5 | I06.05 |
 | I07 | 2/5 | I07.01, I07.02, I07.03 |
-| I08 | 4/6 | I08.02, I08.03 |
+| I08 | 5/6 | I08.02 |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
 | I11 | 4/6 | I11.02, I11.04 |

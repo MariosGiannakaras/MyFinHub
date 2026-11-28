@@ -1,3 +1,9 @@
+## 2026-11-28 — Credit stack direct navigation checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 100/132 completed (75.8%).** Owner-authorized consolidated deployment remains gated on completion, required validation, merge, release and smoke. Implemented I08.03: actual clickable 24px credit deck pagination buttons, canonical card IDs, aria-current, one selected Tab stop, ArrowLeft/Right/Home/End, stable delegated events with cleanup, focus retained across imperative/parent rerenders. Direct selection is intentionally immediate (no new choreography), guarded against in-flight drag/restack/archive confirmation, and uses existing active-card callback. No vault read/reveal, archive semantics, keyboard stage or drag behavior changed. Existing long-rail/single-card proof retained; new browser assertions exercise click, Home, focus and target geometry. 10 direct parser/source/selection-logic checks passed, full application QA pending; no merge or production change. Branch parent `a34cff21b4a1a001eeaf3e4fd2149bd544b2b7a2`. Continue remaining card nickname/credential/desktop and finance scopes in same batch. 
+   
+---
+
 ## 2026-11-28 — Owner authorizes consolidated deployment after completion; Login, Settings and Planning checkpoint
 
 **Implementations 9/23 completed · Sub-implementations 99/132 completed (75.0%).** Owner explicitly requests completion and deploy, superseding the previous lack of production go/no-go authorization for the completed consolidated Web/Windows batch only. This is not authority to skip CI, overwrite immutable Windows releases, perform destructive/hosted database operations, waive outstanding hosted recovery disposition or modify Android. Existing #645 is an older exact release candidate, not the latest develop; do not merge it merely because old checks passed. Reconcile that release into the final validated develop-based release candidate.
@@ -1032,13 +1038,13 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I07.04** Validate linked-account transaction provenance: repeated merchant charges remain separate account ledger events, no fabricated card transaction grouping.
 - [x] **I07.05** Guard vault receipt, encrypted secret exclusion from ordinary FinanceData, reveal after reload, partial save/upload failure, cleanup/retry and privacy.
 
-### I08. Credit cards / Πιστωτική — 4/6
+### I08. Credit cards / Πιστωτική — 5/6
 
 **Priority:** P1 · **Owner:** `CreditCardPage, credit statement selectors, secure card UI` · **Dependencies:** #647 A-02 verified
 
 - [x] **I08.01** Reconcile individual selected-card limit vs aggregated portfolio limits/debt/available credit in every card, report and statement.
 - [ ] **I08.02** Reproduce Greek nickname/glyph clipping at exact 320/375/1440/2560 and computed font; preserve real on-card edit WYSIWYG geometry.
-- [ ] **I08.03** Add discoverable clickable card stack indicators if compatible with existing drag, touch and ArrowUp/ArrowDown keyboard behavior; focus state and reduced motion.
+- [x] **I08.03** Add discoverable clickable card stack indicators if compatible with existing drag, touch and ArrowUp/ArrowDown keyboard behavior; focus state and reduced motion.
 - [x] **I08.04** Localize statement/order terms accurately (κατάσταση λογαριασμού), verify dense header/progression and mobile long-page section navigation.
 - [x] **I08.05** Retest purchase/spending, card-payment non-spending, multi-source payment, due-cycle, interest, overlimit, historic as-of and unposted future state.
 - [x] **I08.06** Verify archive only when settled, debt tombstone invariant, delete confirmation, card vault secret isolation, negative paths, real save receipt.
