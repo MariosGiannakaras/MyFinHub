@@ -1,3 +1,13 @@
+## 2026-11-28 — Consolidated card keyboard and route recovery implementation checkpoint
+
+**Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Code/guard completion, not final rendered acceptance. Original IDs newly implemented/reconciled: I01.01 (actual eight mobile More navigation/current route/heading focus cases), I01.04 (real rejected lazy resource with sanitized recovery alert, synthetic failure clears on navigation, Dashboard recovery heading focus; actual cached lazy rejection may need the already-present reload action), I03.01 (actual Login retries in both themes at desktop/tablet/mobile, synchronous duplicate protection already implemented), I07.01 (existing compact single-bank width and bounded multi-bank/recent-activity layout reviewed against actual M3 evidence and existing 1440/1920/2560 assertions; no stretching or debit-ledger invention), I07.02 (narrow masked PAN fix and existing edit/reveal/clipboard guards), I08.02 (Greek glyph clearance and existing WYSIWYG guards). These code items are now checked in original plan as required by AGENTS; all relevant exact-head rendered acceptance remains outstanding.
+
+Parent `1da6fb07372cf2a7cf636b5cbaa92980d793bf84`: [CI #46139657773](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139657773), [CodeQL #46139659977](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139659977) PASS, 350/350 files, 2684/2684 tests, production build, local PostgreSQL proofs, audit zero vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft warning). New delta: debit archive overlay focuses the real keyboard action, covers prior controls with native inert, Escape/cancel restores opener, receipt-confirmed archive/restore focus follows surviving summary/card; credit follower cards inert and masked, no automatic reveal on restack, archive covered controls inert and Escape/cancel restores opener, reduced motion uses actual app preference, archive manager fallback focus on close and removed rows. Existing archive/restore receipts and irreversible delete policy preserved. Browser scripts parsed and inspected; not full application executed. I07.03 stays partial pending exact actual settled/archive/restore/delete coverage and optimistic uncertain receipt focus review. No new finance semantics, no hidden-secret logging, no production or Android changes.
+
+Remaining 25 original items; keep same draft #671, inspect actual validate/build and budget on this checkpoint, then prioritize I12/Settings/Windows and remaining compatible items. Existing explicit unresolved owner decisions I01.05 (privacy scope), I05.02 (intraday balance), I11.02 (changed past-cycle policy only) remain excluded from guessing. Full Ready review gates, integration and final release pending; do not deploy obsolete #645. Prior counts in historical notes are not current.
+
+---
+
 ## 2026-11-28 — Verified draft budget and card archive receipt/privacy boundary
 
 **Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Parent `ef672edb281c317c90df87059d710f76a41a7a58`: [CI #46139300272](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300272) and [CodeQL #46139300216](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300216) PASS; 350/350 test files, 2683/2683 tests, hygiene, production build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities. JS 527.7/528 KiB, total CSS 559.5/560 KiB hard PASS (soft warning persists); no budget weakening. Draft skips mandatory full rendered/Windows/WebKit/performance. Independent review I07.03 found archive callback could silently no-op when persistence was blocked yet credit deck reported success and removed card locally. Existing reversible archive/restore now await existing durable receipt contract, preserve optimistic finance state semantics, report uncertainty/reload instead of claiming completion, and leave irreversible deletion unchanged. Credit ghost/shred clones mask secret fields before insertion, are inert/aria-hidden; archive commit stays locked through receipt, ignores completion after effect disposal. Added existing-suite synthetic pre-mutation rejection checks for debit and credit, source assertions. Both browser scripts parsed; actual application acceptance pending. No rollback of optimistic finance state on uncertain server receipt. Keep I07.03 partial until actual focus, motion and restore evidence. Existing one-card desktop compact panel is intentional; do not stretch deck or imply a separate debit ledger. Continue remaining compatible scopes and final exact-head gates in #671. No deployment or Android/hosted DB action.
@@ -1002,14 +1012,14 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 
 ## Code work packages and explicit sub-implementations
 
-### I01. Shared AppShell, navigation and routing — 3/6
+### I01. Shared AppShell, navigation and routing — 5/6
 
 **Priority:** P1 · **Owner:** `AppShell, routing, period controls, command entry` · **Dependencies:** none
 
-- [ ] **I01.01** Align sidebar/More-menu, route titles, current-route highlight and Greek labels across desktop/tablet/mobile without changing canonical route IDs.
+- [x] **I01.01** Align sidebar/More-menu, route titles, current-route highlight and Greek labels across desktop/tablet/mobile without changing canonical route IDs.
 - [x] **I01.02** Verify global period-navigation availability and actual active period after route switch; standardize contextual month/as-of semantics where wrong.
 - [x] **I01.03** Give global search, history, refresh and notification popovers anchored flip/edge containment and keyboard/focus return; reproduce historical G-01 tooltip overlap.
-- [ ] **I01.04** Audit route loading, lazy-import failure, unknown hash, route recovery and changed-route focus; preserve recoverable PageErrorBoundary.
+- [x] **I01.04** Audit route loading, lazy-import failure, unknown hash, route recovery and changed-route focus; preserve recoverable PageErrorBoundary.
 - [ ] **I01.05** Reconcile persistent shell privacy visibility and route-scoped money screens against an explicitly approved scope; document nonpersistent reset/no accidental reveal.
 - [x] **I01.06** Guard mobile bottom bar/More-menu, safe areas, 200% zoom, text scaling, route transitions and overlay z-index as one shell contract.
 
@@ -1024,11 +1034,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [ ] **I02.05** Audit dark/light/forced high-contrast + reduced-motion + browser autofill states and accessible semantic positive/negative/warning contrast.
 - [ ] **I02.06** Replace risky `nth-of-type`/DOM-index and ad hoc width assumptions with explicit component/variant semantics, backed by bounded sibling tests.
 
-### I03. Login, TOTP, sessions and authentication recovery — 5/6
+### I03. Login, TOTP, sessions and authentication recovery — 6/6
 
 **Priority:** P0 · **Owner:** `LoginScreen, MfaScreen, server/auth, API/session guard` · **Dependencies:** independent release #645 login fix; owner/AAL2 invariants
 
-- [ ] **I03.01** Reconcile current Login error state with #641/#645 and validate failed credential, offline, server-unavailable and retry in all viewports/themes.
+- [x] **I03.01** Reconcile current Login error state with #641/#645 and validate failed credential, offline, server-unavailable and retry in all viewports/themes.
 - [x] **I03.02** Cover TOTP enrollment, challenge, invalid/expired OTP, auto-verify, factor reset and back navigation; never introduce an MFA bypass.
 - [x] **I03.03** Verify session-expiry and AAL2 downgrade from active pages, stale cookies/bearer provenance, failed refresh and recoverable focus without leaking finance data.
 - [x] **I03.04** Recheck API owner-UID and AAL2 denial paths for login-adjacent/profile/vault/finance requests, SameSite/Origin and cookie vs bearer behavior.
@@ -1066,22 +1076,22 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I06.04** Reproduce and guard saving transfer, manual cash offset, HELP/RETURN and goal allocation with linked-account selection and no double posting.
 - [ ] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
 
-### I07. Debit and prepaid Cards / Κάρτες — 2/5
+### I07. Debit and prepaid Cards / Κάρτες — 4/5
 
 **Priority:** P1 · **Owner:** `CardsPage, CardCreateDialog, CardDetailsDialog, bank visuals` · **Dependencies:** no Android repo change
 
-- [ ] **I07.01** Reconcile card header/recent activity panel widths and large desktop whitespace without implying debit card owns a separate ledger.
-- [ ] **I07.02** Verify exact 16-digit PAN 4×4 input, expiry/CVV, credential reveal/hide, clipboard state, and zero layout shift at 320/375/1440.
+- [x] **I07.01** Reconcile card header/recent activity panel widths and large desktop whitespace without implying debit card owns a separate ledger.
+- [x] **I07.02** Verify exact 16-digit PAN 4×4 input, expiry/CVV, credential reveal/hide, clipboard state, and zero layout shift at 320/375/1440.
 - [ ] **I07.03** Review card stack, archive/recovery/hard-delete settled-state requirements, close focus, keyboard/drag interactions and responsive action affordances.
 - [x] **I07.04** Validate linked-account transaction provenance: repeated merchant charges remain separate account ledger events, no fabricated card transaction grouping.
 - [x] **I07.05** Guard vault receipt, encrypted secret exclusion from ordinary FinanceData, reveal after reload, partial save/upload failure, cleanup/retry and privacy.
 
-### I08. Credit cards / Πιστωτική — 5/6
+### I08. Credit cards / Πιστωτική — 6/6
 
 **Priority:** P1 · **Owner:** `CreditCardPage, credit statement selectors, secure card UI` · **Dependencies:** #647 A-02 verified
 
 - [x] **I08.01** Reconcile individual selected-card limit vs aggregated portfolio limits/debt/available credit in every card, report and statement.
-- [ ] **I08.02** Reproduce Greek nickname/glyph clipping at exact 320/375/1440/2560 and computed font; preserve real on-card edit WYSIWYG geometry.
+- [x] **I08.02** Reproduce Greek nickname/glyph clipping at exact 320/375/1440/2560 and computed font; preserve real on-card edit WYSIWYG geometry.
 - [x] **I08.03** Add discoverable clickable card stack indicators if compatible with existing drag, touch and ArrowUp/ArrowDown keyboard behavior; focus state and reduced motion.
 - [x] **I08.04** Localize statement/order terms accurately (κατάσταση λογαριασμού), verify dense header/progression and mobile long-page section navigation.
 - [x] **I08.05** Retest purchase/spending, card-payment non-spending, multi-source payment, due-cycle, interest, overlimit, historic as-of and unposted future state.

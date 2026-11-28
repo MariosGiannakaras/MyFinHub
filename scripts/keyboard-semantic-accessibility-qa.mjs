@@ -263,12 +263,12 @@ try{
  }
 
  // Exercise actual controlled login submission, not just static error markup.
- for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['tablet',768,900,true],['mobile',320,700,true]]){
+ for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['tablet',768,900,true],['mobile',320,700,true]])for(const theme of ['light','dark']){
    await viewport(width,height,mobile);
    const url=new URL(baseUrl);url.searchParams.set('screen','login-retry');
    await c.send('Page.navigate',{url:url.href});
    await waitFor("function(){return !!document.querySelector('#login-password')}",mode+' retry login loaded');
-   await c.call("async function(theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[mode==='desktop'?'light':'dark']);
+   await c.call("async function(theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
    const fill=await c.call("function(){const set=(id,value)=>{const el=document.getElementById(id);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}))};set('login-email','qa@example.invalid');set('login-password','qa-only-password');return true}");
    assert(fill,mode+' synthetic login input');
    await waitFor("function(){return document.querySelector('.login-submit')?.disabled===false}",mode+' login ready');
@@ -281,7 +281,7 @@ try{
      assert(visible,mode+' login retry alert is visible');
    }
    await waitForAuthMotion(mode+' login retry settled');
-   const capture=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-retry-${mode}.png`,Buffer.from(capture.data,'base64'));
+   const capture=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-retry-${mode}-${theme}.png`,Buffer.from(capture.data,'base64'));
    await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
  }
  await navigate('dashboard',pages.dashboard,1440,1000,false);
@@ -466,6 +466,16 @@ try{
    await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu')}",'More closes after route verification');
  }
  await shot('keyboard-mobile-more-actual-route');
+ console.log('Keyboard/semantic accessibility QA: real rejected lazy resource and recovery');
+ await viewport(1440,1000,false);
+ const lazyUrl=new URL(baseUrl);lazyUrl.searchParams.set('page','transactions');lazyUrl.searchParams.set('failure','lazy');
+ await c.send('Page.navigate',{url:lazyUrl.href});
+ await waitFor("function(){return document.activeElement?.matches('.workspace-error[role=alert]')}",'rejected lazy route focuses sanitized recovery alert');
+ assert(await c.call("function(){const error=document.querySelector('.workspace-error');return !error.textContent.includes('__myfinhub_missing_lazy_resource__')&&error.textContent.includes('Επαναφόρτωση εφαρμογής')&&error.querySelectorAll('button').length===3}"),'lazy failure exposes safe recovery actions, not raw resource error');
+ await shot('keyboard-lazy-resource-error');
+ await c.call("function(){const b=[...document.querySelectorAll('.workspace-error button')].find(b=>b.textContent.trim()==='Dashboard');b.focus();b.click();return true}");
+ await waitFor("function(){return !document.querySelector('.workspace-error')&&document.querySelector('.app-shell')?.dataset.page==='dashboard'&&document.activeElement===document.querySelector('#main-workspace h1')}",'lazy failure Dashboard recovery settles heading focus');
+ await shot('keyboard-lazy-resource-recovered');
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await viewport(720,500,false);

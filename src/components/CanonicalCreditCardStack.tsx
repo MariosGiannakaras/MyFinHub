@@ -213,6 +213,7 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       orderRef.current=orderRef.current.filter(id=>existingIds.has(id));const orderedIds=new Set(orderRef.current);
       for(const card of cardsRef.current)if(!orderedIds.has(card.id)){orderRef.current.push(card.id);orderedIds.add(card.id)}
       const orderedCards=orderRef.current.map(id=>cardById.get(id)).filter((card):card is RuntimeCard=>Boolean(card));
+      for(const id of revealedRef.current)if(id!==orderRef.current[0])revealedRef.current.delete(id);
       stage.innerHTML=orderedCards.map((card,index)=>renderCard(card,index)).join('');Array.from(stage.children).forEach((element,index)=>applyLayout(element as HTMLElement,index));
       stage.classList.toggle('single-card',orderedCards.length===1);
       const focusedDot=dots.contains(document.activeElement);

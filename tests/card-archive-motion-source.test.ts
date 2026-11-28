@@ -68,6 +68,7 @@ describe('card archive exit-motion regression #570',()=>{
     expect(debit).toContain("event.key==='Escape'&&!busy");
     expect(credit).toContain('inert aria-hidden="true"');
     expect(credit).toContain('stackIndex===0&&revealedRef.current.has(card.id)');
+    expect(credit).toContain('if(id!==orderRef.current[0])revealedRef.current.delete(id)');
     expect(credit).toContain("node.inert=true");
     expect(credit).toContain("node.inert=false");
     expect(credit).toContain("armed.querySelector<HTMLButtonElement>('.delete-btn')?.focus");

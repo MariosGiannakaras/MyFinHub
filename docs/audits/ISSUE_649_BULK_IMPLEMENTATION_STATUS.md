@@ -1,3 +1,13 @@
+## 2026-11-28 — Consolidated card keyboard and route recovery implementation checkpoint
+
+**Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Code/guard completion, not final rendered acceptance. Original IDs newly implemented/reconciled: I01.01 (actual eight mobile More navigation/current route/heading focus cases), I01.04 (real rejected lazy resource with sanitized recovery alert, synthetic failure clears on navigation, Dashboard recovery heading focus; actual cached lazy rejection may need the already-present reload action), I03.01 (actual Login retries in both themes at desktop/tablet/mobile, synchronous duplicate protection already implemented), I07.01 (existing compact single-bank width and bounded multi-bank/recent-activity layout reviewed against actual M3 evidence and existing 1440/1920/2560 assertions; no stretching or debit-ledger invention), I07.02 (narrow masked PAN fix and existing edit/reveal/clipboard guards), I08.02 (Greek glyph clearance and existing WYSIWYG guards). These code items are now checked in original plan as required by AGENTS; all relevant exact-head rendered acceptance remains outstanding.
+
+Parent `1da6fb07372cf2a7cf636b5cbaa92980d793bf84`: [CI #46139657773](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139657773), [CodeQL #46139659977](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139659977) PASS, 350/350 files, 2684/2684 tests, production build, local PostgreSQL proofs, audit zero vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft warning). New delta: debit archive overlay focuses the real keyboard action, covers prior controls with native inert, Escape/cancel restores opener, receipt-confirmed archive/restore focus follows surviving summary/card; credit follower cards inert and masked, no automatic reveal on restack, archive covered controls inert and Escape/cancel restores opener, reduced motion uses actual app preference, archive manager fallback focus on close and removed rows. Existing archive/restore receipts and irreversible delete policy preserved. Browser scripts parsed and inspected; not full application executed. I07.03 stays partial pending exact actual settled/archive/restore/delete coverage and optimistic uncertain receipt focus review. No new finance semantics, no hidden-secret logging, no production or Android changes.
+
+Remaining 25 original items; keep same draft #671, inspect actual validate/build and budget on this checkpoint, then prioritize I12/Settings/Windows and remaining compatible items. Existing explicit unresolved owner decisions I01.05 (privacy scope), I05.02 (intraday balance), I11.02 (changed past-cycle policy only) remain excluded from guessing. Full Ready review gates, integration and final release pending; do not deploy obsolete #645. Prior counts in historical notes are not current.
+
+---
+
 ## 2026-11-28 — Verified draft budget and card archive receipt/privacy boundary
 
 **Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Parent `ef672edb281c317c90df87059d710f76a41a7a58`: [CI #46139300272](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300272) and [CodeQL #46139300216](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300216) PASS; 350/350 test files, 2683/2683 tests, hygiene, production build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities. JS 527.7/528 KiB, total CSS 559.5/560 KiB hard PASS (soft warning persists); no budget weakening. Draft skips mandatory full rendered/Windows/WebKit/performance. Independent review I07.03 found archive callback could silently no-op when persistence was blocked yet credit deck reported success and removed card locally. Existing reversible archive/restore now await existing durable receipt contract, preserve optimistic finance state semantics, report uncertainty/reload instead of claiming completion, and leave irreversible deletion unchanged. Credit ghost/shred clones mask secret fields before insertion, are inert/aria-hidden; archive commit stays locked through receipt, ignores completion after effect disposal. Added existing-suite synthetic pre-mutation rejection checks for debit and credit, source assertions. Both browser scripts parsed; actual application acceptance pending. No rollback of optimistic finance state on uncertain server receipt. Keep I07.03 partial until actual focus, motion and restore evidence. Existing one-card desktop compact panel is intentional; do not stretch deck or imply a separate debit ledger. Continue remaining compatible scopes and final exact-head gates in #671. No deployment or Android/hosted DB action.
@@ -435,14 +445,14 @@ The split shared-control candidate immediately below is now the implementation c
 
 | Area | Accepted | Original items still open |
 | --- | ---: | --- |
-| I01 | 3/6 | I01.01, I01.04, I01.05 |
+| I01 | 5/6 | I01.05 |
 | I02 | 2/6 | I02.01, I02.04, I02.05, I02.06 |
-| I03 | 5/6 | I03.01 |
+| I03 | 6/6 | Complete |
 | I04 | 4/5 | I04.05 |
 | I05 | 5/6 | I05.02 |
 | I06 | 4/5 | I06.05 |
-| I07 | 2/5 | I07.01, I07.02, I07.03 |
-| I08 | 5/6 | I08.02 |
+| I07 | 4/5 | I07.03 |
+| I08 | 6/6 | Complete |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
 | I11 | 4/6 | I11.02, I11.04 |
