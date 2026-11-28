@@ -91,7 +91,7 @@ try{
   await c.call("function(){document.querySelector('.app-confirm-dialog button[data-autofocus=true]')?.click()}");
   await waitFor("function(){return !document.querySelector('.app-confirm-dialog')&&Boolean([...document.querySelectorAll('.card-archive-row')].find(row=>row.textContent.includes('QA Settled')))&&!document.querySelector('[data-deleted-statement-history]')}",'cancel hard-delete preserves archived identity');
   await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));const button=row?.querySelector('button.danger:not([disabled])');button?.focus();button?.click()}");
-  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'reopened hard-delete confirmation');
+  await waitFor("function(){const b=document.querySelector('.app-confirm-dialog button[data-action-tone=\\\"destructive\\\"]');return Boolean(b&&!b.disabled&&!b.closest('[inert]')&&b.getClientRects().length)}",'reopened hard-delete confirmation');
   await c.call("function(){const confirm=document.querySelector('.app-confirm-dialog button[data-action-tone=\"destructive\"]');confirm?.click();return Boolean(confirm)}");
   await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))&&!document.querySelector('.app-confirm-dialog')&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'deleted statement history and surviving close focus');
   await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");

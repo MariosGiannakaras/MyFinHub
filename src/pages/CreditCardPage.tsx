@@ -141,6 +141,24 @@ export function CreditCardPage({
     });
   };
   const archiveRef=useModalFocus<HTMLElement>(archiveOpen,'[data-autofocus="true"]',closeArchive);
+  const [archiveFocusRequest,setArchiveFocusRequest]=useState<{restoredId?:string;deletedId?:string}|null>(null);
+  useEffect(()=>{
+    if(!archiveFocusRequest||restoring||deleteCardBusy||deleteCardTarget)return;
+    if(!archiveOpen){setArchiveFocusRequest(null);return}
+    const {restoredId,deletedId}=archiveFocusRequest;
+    if(restoredId&&!activeCredit.some(item=>item.id===restoredId))return;
+    if(deletedId&&archivedCredit.some(item=>item.id===deletedId))return;
+    if(restoredId)setSelectedCardId(restoredId);
+    const frame=requestAnimationFrame(()=>{
+      setArchiveFocusRequest(null);
+      const root=archiveRef.current;
+      const active=document.activeElement;
+      if(root&&!root.closest('[inert]')&&(active===document.body||active===root||active?.closest('.app-confirm-dialog'))){
+        root.querySelector<HTMLButtonElement>('.close-picker:not([disabled])')?.focus();
+      }
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[archiveFocusRequest,archiveOpen,activeCredit,archivedCredit,restoring,deleteCardBusy,deleteCardTarget,archiveRef]);
   const statementSetupRef=useModalFocus<HTMLElement>(statementSetupOpen,'[data-autofocus="true"]',()=>setStatementSetupOpen(false));
   const rateRef=useModalFocus<HTMLElement>(rateOpen,'[data-autofocus="true"]',()=>{if(!rateBusy)setRateOpen(false)});
   const currentRate=card?creditRateAt(card,asOf):null;
@@ -185,9 +203,9 @@ export function CreditCardPage({
   const restoreArchived=async(target:PaymentCard)=>{
     if(archiveMutation.current)return;
     archiveMutation.current=true;setRestoring(true);setArchiveError('');setMessage('');
-    try{const restored=restoreCard(target);await onUpsertCardDurably(restored);setSelectedCardId(restored.id)}
-    catch{setArchiveError('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}
-    finally{archiveMutation.current=false;setRestoring(false);requestAnimationFrame(()=>{if(document.activeElement===document.body)archiveRef.current?.querySelector<HTMLButtonElement>('.close-picker')?.focus()})}
+    try{const restored=restoreCard(target);await onUpsertCardDurably(restored);setArchiveFocusRequest({restoredId:restored.id})}
+    catch{setArchiveError('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');setArchiveFocusRequest({})}
+    finally{archiveMutation.current=false;setRestoring(false)}
   };
   const confirmCardDelete=async()=>{
     if(!deleteCardTarget||archiveMutation.current)return;
@@ -196,10 +214,11 @@ export function CreditCardPage({
     try{
       const name=deleteCardTarget.nickname;
       await onDeleteCard(deleteCardTarget);
+      setArchiveFocusRequest({deletedId:deleteCardTarget.id});
       setDeleteCardTarget(null);
       setMessage(`Η «${name}» διαγράφηκε και τα ασφαλή στοιχεία καθαρίστηκαν. Το οικονομικό ιστορικό παραμένει.`);
-    }catch(error){setArchiveError(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η διαγραφή του προφίλ δεν επιβεβαιώθηκε. Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');setDeleteCardTarget(null)}
-    finally{archiveMutation.current=false;setDeleteCardBusy(false);requestAnimationFrame(()=>{if(document.activeElement===document.body)archiveRef.current?.querySelector<HTMLButtonElement>('.close-picker')?.focus()})}
+    }catch(error){setArchiveError(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η διαγραφή του προφίλ δεν επιβεβαιώθηκε. Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');setDeleteCardTarget(null);setArchiveFocusRequest({})}
+    finally{archiveMutation.current=false;setDeleteCardBusy(false)}
   };
   const submitPurchase=()=>{
     if(!card){setError('Δεν υπάρχει ενεργή επιλεγμένη πιστωτική κάρτα.');return}

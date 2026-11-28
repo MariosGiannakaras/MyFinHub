@@ -99,6 +99,16 @@ describe('card archive exit-motion regression #570',()=>{
     expect(page).toContain('<FormError id="credit-archive-error">{archiveError}</FormError>');
   });
 
+  it('settles archive focus against committed card identity and enabled archive controls',()=>{
+    const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
+    const creditPage=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    expect(cards).toContain('if(activeCards.some(item=>item.id===card.id)!==restored)return');
+    expect(cards).toContain('if(!cardFocus||restoring||deleteBusy||deleteTarget)return');
+    expect(creditPage).toContain('if(restoredId&&!activeCredit.some(item=>item.id===restoredId))return');
+    expect(creditPage).toContain('if(deletedId&&archivedCredit.some(item=>item.id===deletedId))return');
+    expect(creditPage).toContain("'.close-picker:not([disabled])'");
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

@@ -135,7 +135,7 @@ try{
         const denied=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
         writeFileSync(evidenceDir+'/desktop-backup-permission-denied-desktop.png',Buffer.from(denied.data,'base64'));
         await c.call("function(){[...document.querySelectorAll('.desktop-backup-controls button')].find(x=>x.textContent.includes('Ανανέωση κατάστασης')).click();return true}");
-        await wait("function(){return document.querySelectorAll('.desktop-backup-entry').length===2&&!document.querySelector('.desktop-backup-error[role=alert]')}",'explicit retry restores authorized backup catalog');
+        await wait("function(){return document.querySelectorAll('.desktop-backup-entry').length===2&&![...document.querySelectorAll('.desktop-backup-error[role=alert]')].some(node=>node.textContent.includes('Η ενέργεια ή η επιβεβαίωσή της'))&&[...document.querySelectorAll('.desktop-backup-error[role=alert]')].some(node=>node.textContent.includes('Πέρασαν πάνω από 36 ώρες'))}",'explicit retry restores authorized backup catalog');
         const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Επαληθευμένο (SHA-256)'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
         assert(opened,'valid restore action enabled');
         try{

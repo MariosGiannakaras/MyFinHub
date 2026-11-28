@@ -158,6 +158,9 @@ try{
         // cascade, not a password-manager credential retrieval or submission.
         await c.call("function(selector){document.querySelector(selector).focus()}",[selector]);
         await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:['autofill','focus','focus-visible']});
+        // The authored shadow transitions from zero to the autofill inset. Sample
+        // the settled cascade, not the first interpolated animation frame.
+        await waitFor("function(selector){const field=document.querySelector(selector),shell=field.closest('.app-input-shell');return field.matches(':-webkit-autofill')&&![...field.getAnimations(),...shell.getAnimations()].some(a=>a.playState==='running'&&Number.isFinite(a.effect?.getComputedTiming().endTime))}",'settled focused autofill '+selector,[selector]);
         const state=await c.call(`function(selector){
           const field=document.querySelector(selector),style=getComputedStyle(field),shell=getComputedStyle(field.closest('.app-input-shell'));
           const rgb=value=>(value.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);

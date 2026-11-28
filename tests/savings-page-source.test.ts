@@ -190,6 +190,8 @@ describe('Savings page action hierarchy',()=>{
     const receipts=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
     expect(remediationQa).toContain('goal edit replaces same row instead of creating duplicate');
     expect(remediationQa).toContain('confirmed goal deletion restores original count');
+    expect(remediationQa).toContain('const waitFor=async(fn,label,args=[])');
+    expect(remediationQa).toContain('await c.call(fn,args)');
     expect(remediationQa).toContain('goal deletion changes no actual savings money');
     expect(receipts).toContain('rejected goal edit leaves draft and original row');
     expect(receipts).toContain('pending personal goal freezes inputs and leaves original stored goal');

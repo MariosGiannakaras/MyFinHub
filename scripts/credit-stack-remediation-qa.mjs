@@ -260,6 +260,7 @@ try{
   await c.call("function(selector){const url=new URL(location.href);url.searchParams.set('card-profile-save-failure','1');history.replaceState(null,'',url.href);document.querySelector(selector).click()}",[restoreSelector]);
   await waitFor("function(){return document.querySelector('#credit-archive-error[role=alert]')?.textContent.includes('δεν επιβεβαιώθηκε')}",'restore failure is announced inside the active archive manager');
   await shot('credit-stack-restore-rejected-mobile');
+  await waitFor("function(selector){const b=document.querySelector(selector);return Boolean(b&&!b.disabled&&!b.closest('[inert]')&&!b.closest('[aria-busy=true]'))}",'restore retry is enabled after rejected receipt',[restoreSelector]);
   await c.call("function(selector){const url=new URL(location.href);url.searchParams.delete('card-profile-save-failure');history.replaceState(null,'',url.href);document.querySelector(selector).focus();document.activeElement.click()}",[restoreSelector]);
   await waitFor("function(id,count){return document.querySelector('.stack-card.top')?.dataset.cardId===id&&![...document.querySelectorAll('.card-archive-manager [data-archived-card-id]')].some(row=>row.dataset.archivedCardId===id)&&document.querySelectorAll('.card-archive-manager .card-archive-row').length===count&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'restored credit returns to same identity, retains unrelated archive rows and close focus',[restoredId,previousArchiveCount]);
   await c.call("function(){document.activeElement.click()}");

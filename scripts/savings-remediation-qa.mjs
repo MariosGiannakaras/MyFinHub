@@ -20,7 +20,7 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   const url=new URL(baseUrl);url.searchParams.set('page','savings');url.searchParams.set('state','savings-historical');
   await c.send('Page.navigate',{url:url.href});
-  const waitFor=async(fn,label)=>{for(let i=0;i<120;i++){if(await c.call(fn))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings heading');
   const state=()=>c.call("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));const route=document.querySelector('.savings-route-target');const routeValues=[...route?.querySelectorAll('em')||[]].map(node=>(node.textContent||'').replace(/\\s+/g,' ').trim());const goal=[...document.querySelectorAll('.savings-goal-row.personal')].find(row=>(row.textContent||'').includes('Ταμείο ασφαλείας'));return {period:(label?.textContent||'').trim(),heading:(document.querySelector('.savings-month-card h2')?.textContent||'').trim(),routeValues,goalBalance:(goal?.querySelector('[data-goal-field=balance] [data-goal-value]')?.textContent||'').replace(/\\s+/g,' ').trim(),goalProgress:(goal?.querySelector('.savings-goal-progress b')?.textContent||'').trim()}}");
   // The selected reporting-month label updates synchronously; route balances

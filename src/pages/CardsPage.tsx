@@ -115,12 +115,23 @@ export function CardsPage({
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
   const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage('')};
-  const focusAfterCardChange=(card:PaymentCard,restored=false)=>requestAnimationFrame(()=>{
-    if(document.activeElement!==document.body||!document.querySelector('.app-shell[data-page="cards"]'))return;
-    const bank=document.querySelector(`[data-bank="${CSS.escape(card.bankId)}"]`);
-    const target=restored?bank?.querySelector<HTMLElement>(`[data-command-card-id="${CSS.escape(card.id)}"]`):bank?.querySelector<HTMLElement>('.cards-archive>summary');
-    (target??bank?.querySelector<HTMLElement>('.bank-add-btn')??document.querySelector<HTMLElement>('.cards-prototype-page h1'))?.focus();
-  });
+  const [cardFocus,setCardFocus]=useState<{card:PaymentCard;restored:boolean}|null>(null);
+  const focusAfterCardChange=(card:PaymentCard,restored=false)=>setCardFocus({card,restored});
+  // A durable receipt can precede the committed list render. Restore focus only
+  // when the destination identity is actually present (or the old card absent).
+  useEffect(()=>{
+    if(!cardFocus||restoring||deleteBusy||deleteTarget)return;
+    const {card,restored}=cardFocus;
+    if(activeCards.some(item=>item.id===card.id)!==restored)return;
+    const frame=requestAnimationFrame(()=>{
+      setCardFocus(null);
+      if(document.activeElement!==document.body||!document.querySelector('.app-shell[data-page="cards"]'))return;
+      const bank=document.querySelector(`[data-bank="${CSS.escape(card.bankId)}"]`);
+      const target=restored?bank?.querySelector<HTMLElement>(`[data-command-card-id="${CSS.escape(card.id)}"]`):bank?.querySelector<HTMLElement>('.cards-archive>summary');
+      (target??bank?.querySelector<HTMLElement>('.bank-add-btn')??document.querySelector<HTMLElement>('.cards-prototype-page h1'))?.focus();
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[cardFocus,activeCards,restoring,deleteBusy,deleteTarget]);
   const archive=async(card:PaymentCard)=>{setMessage('');try{await onArchiveCard(card);focusAfterCardChange(card)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
   const restore=async(card:PaymentCard)=>{
     if(archiveMutation.current)return;
