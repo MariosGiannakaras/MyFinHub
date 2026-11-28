@@ -212,7 +212,7 @@
   font-weight:760;
   letter-spacing:.035em;
   color:var(--card-muted);
-  line-height:1.1;
+  line-height:1.4;
   max-width:190px;
   white-space:nowrap;
   overflow:hidden;
@@ -420,11 +420,11 @@
   letter-spacing:inherit;
 }
 
-#myfinhub-card-stack .card-field:nth-child(1) .card-field-value{
+#myfinhub-card-stack .card-field[data-card-field=expiry] .card-field-value{
   min-width:58px;
 }
 
-#myfinhub-card-stack .card-field:nth-child(2) .card-field-value{
+#myfinhub-card-stack .card-field[data-card-field=cvv] .card-field-value{
   min-width:38px;
 }
 

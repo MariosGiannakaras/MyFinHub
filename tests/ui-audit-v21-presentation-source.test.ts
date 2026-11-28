@@ -27,7 +27,9 @@ describe('v2.1 audit presentation regression contracts (#646)',()=>{
   it('does not substitute monthly savings flow for the common goal balance',()=>{
     expect(savings).toContain('<span>Κοινό υπόλοιπο</span><span>Ποσό στόχου</span>');
     expect(savings).toContain('Αποταμίευση μήνα: {money.format(flow.saving)}');
-    expect(savings).toContain('<strong>{money.format(savingsBalance)}</strong><strong>{targetTotal');
+    expect(savings).toContain("goalField(surface,'balance',money.format(savingsBalance))");
+    expect(savings).toContain("goalField(surface,'target',targetTotal>0?money.format(targetTotal):'—')");
+    expect(savings).not.toContain("goalField(surface,'balance',money.format(flow.saving))");
   });
 
   it('uses period-aware recurring lookup while retaining historic-month semantics',()=>{
@@ -74,6 +76,6 @@ describe('v2.1 audit presentation regression contracts (#646)',()=>{
     expect(theme).toContain('.save-button.destructive-action{background:var(--error-bg)!important');
     expect(theme).toContain('.save-button.destructive-action{background:var(--error-bg)!important');
     expect(theme).toContain('.app-confirm-dialog .save-button.destructive-action');
-    expect(theme).toContain('background:var(--red)!important;color:var(--white)!important');
+    expect(theme).toContain('background:var(--danger-solid)!important;color:var(--white)!important;border-color:var(--danger-solid)!important');
   });
 });

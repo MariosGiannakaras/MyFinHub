@@ -85,6 +85,20 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('<MoneyInput data-autofocus="true"');
   });
 
+  it('keeps Savings action tones and goal meanings independent of DOM sibling index',()=>{
+    expect(source).toContain('data-saving-source={action.source}');
+    expect(source).toContain('data-goal-field={field}');
+    expect(source).toContain("surface==='desktop'?'sr-only':'savings-goal-label'");
+    expect(source).toContain("goalField(surface,'balance',money.format(savingsBalance))");
+    expect(source).toContain("goalField(surface,'target',money.format(goal.targetAmount))");
+    expect(composition).not.toMatch(/nth-child|nth-of-type/);
+    expect(composition).toContain('[data-saving-source=manual_transfer]');
+    expect(composition).toContain('[data-saving-source=cash_offset]');
+    expect(composition).toContain('font-variant-numeric:tabular-nums');
+    expect(remediationQa).toContain('Savings action identity survives sibling reorder');
+    expect(remediationQa).toContain('Savings goal meanings remain actual text after sibling reorder');
+  });
+
   it('keeps the intermediate/200%-equivalent Savings layout shrink-safe',()=>{
     expect(composition).toContain('@media (min-width:681px) and (max-width:820px)');
     expect(composition).toContain('grid-template-columns:minmax(150px,180px) minmax(0,1fr)');
@@ -170,6 +184,17 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('const combinedGoalGap=Math.max(0,combinedGoalTargets-savingsBalance)');
     expect(source).toContain('Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.');
     expect(source).toContain('data-shared-goal-gap');
+  });
+
+  it('covers successful goal CRUD and durable failure/pending states without changing savings money',()=>{
+    const receipts=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    expect(remediationQa).toContain('goal edit replaces same row instead of creating duplicate');
+    expect(remediationQa).toContain('confirmed goal deletion restores original count');
+    expect(remediationQa).toContain('const waitFor=async(fn,label,args=[])');
+    expect(remediationQa).toContain('await c.call(fn,args)');
+    expect(remediationQa).toContain('goal deletion changes no actual savings money');
+    expect(receipts).toContain('rejected goal edit leaves draft and original row');
+    expect(receipts).toContain('pending personal goal freezes inputs and leaves original stored goal');
   });
 
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{

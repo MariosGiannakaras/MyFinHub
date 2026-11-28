@@ -1,3 +1,198 @@
+## 2026-11-28 — #671 Ready review: coordinated rendered correction
+
+**Implementations 18/23 · Sub-implementations 126/132 (95.5%)** — source/guard scope unchanged; final rendered acceptance is not complete. Exact prior head `b69585e1c7cfd50869cc02b9b94081dade8fe034`: [CI 46180011117](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46180011117) failed the aggregated Chromium validation after 351/351 test files and passing type/build/hard budgets (main JS 528.0/528 KiB, CSS 557.1/560 KiB, soft CSS warning). CodeQL, WebKit, Windows lifecycle/clean launch/first run and Lighthouse/loading shift passed; [Real Stack 46180011075](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46180011075) passed. [Focused backup 46180011144](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46180011144) failed the same backup retry predicate. Reviewed available Chromium/backup screenshot samples and full failure logs, not full artifact acceptance.
+
+Seven Chromium failures batched: debit archive focus and credit restore/delete close focus now wait for committed identity and enabled controls after durable receipts (no financial semantics changed); credit retry test waits for actual enabled action. Savings polling silently dropped expected count argument; corrected argument forwarding and retained count/identity/balance checks. Backup retry predicate conflated denied operation with legitimate >36h stale backup warning; requires authorized catalog, no denial message, and continued overdue warning. Mobile More test incorrectly used first DOM heading (hidden Lending desktop heading); now requires actual visible focused route heading. Autofill assertion sampled interpolated CSS transition; isolated real Chromium reproduction verified 0→1000px inset, and the test waits for settled finite transitions before applying the unchanged contrast and shadow assertions. Source guards extended for identity/argument behavior. All new changes require exact-head Ready gates; no threshold weakening or production/Android modifications. Preserve existing behavior pending owner decisions I01.05/I05.02/I11.02; remaining final acceptance I21.05/I23.06/I23.07. Next: inspect complete new Ready CI and focused artifacts; do not merge until all required gates and review pass. Then final visual acceptance and deliberate validated release workflow; #645 old candidate must not be promoted. No new product decisions.
+
+## 2026-11-28 — Freeze consolidated review candidate
+
+**Implementations 18/23 completed · Sub-implementations 126/132 completed (95.5%).** Parent `cef9e7ff1e5ed62d6ebc9216042e2592a2c8a7a7` [CI #46166740592](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166740592) failed exactly one stale Cards shared-Button source assertion (350/351 files, 2707/2708 tests; other earlier failures corrected); [CodeQL #46166740612](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166740612) PASS. Fix remaining source assertion to retain mutual exclusion on destructive action. I15.03 code/guard complete: shared keyboard radiogroups, durable text-size/readback/reload and theme restoration in real-stack, six-width large-text reflow, OS reduced motion, autofill/focus/forced-colors and native overlay/zoom contracts; final actual cross-engine/Windows acceptance separate. I15.05 code/guard complete: prior Greek legacy/timestamp/session/uncertain logout changes, existing truthful backup JSON vs database/Storage/PIN/vault exclusions, archive/deleted-history plain Greek settlement/copy (no internal rule nickname). I23.03 code/guard complete: actual expanded route/keyboard/aria-live/long-Greek/200%-equivalent reflow plus actual Login 200% zoom, contrast/danger/forced-colors/reduced-motion guards. I23.07 provenance: retain actual checkout SHA, explicitly distinguish PR head/base from synthetic merge checkout, hash routine PNG bytes while preserving existing output-list contract, final capture already observes fixture/theme/privacy controls and hashes PNGs. Actual inspection still pending. **Freeze safe code scope; six original items remain:** I01.05 privacy scope, I05.02 deterministic per-event running-balance contract, I11.02 unpaid forecast policy remain owner decisions, existing behavior preserved. I21.05 Windows artifacts, I23.06 exact-head budgets/loading-shift/large-state/contrast, I23.07 immutable evidence inspection remain acceptance obligations. No new PR or issue. Source assertions/JS parse only here; no local application build. Transition existing #671 to Ready once, run all normal mandatory jobs together, collect entire failure set before a correction push, then final visual sweep only after required green and direct focused inspection. Do not merge until required exact-head gates and review are accepted; no production/hosted/Android change. No budget/security/accessibility threshold relaxation.
+
+---
+
+## 2026-11-28 — Consolidated card/entry source completion and session copy
+
+**Implementations 17/23 completed · Sub-implementations 123/132 completed (93.2%).** Exact parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` [CI #46166329855](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329855) failed three exact-source guards (347/350 files, 2701/2704 tests); [CodeQL #46166329870](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329870) PASS. Correct stale assertions to require actual shared Button/disabled archive states and truthful no-cleanup-started message; update legacy Greek marker assertion. Consolidate prepared candidate `0aea725bc80e1fccac0cbc8c2b4d7090fff1ec86` (see checkpoint below). I07.03 code/guard complete: existing reversible archive/restore, pointer/keyboard, reduced-motion, settled hard-delete/tombstone proof plus exact-ID lifecycle/receipt/focus regressions, not yet rendered acceptance. I19.01 code/guard complete: canonical eight-intent create/edit/readback matrix plus existing contextual domain paths, shared controls and strict legacy/direct Credit/Lending lexical amounts; real-stack acceptance remains required. I15.05 partial: actual hard-expiry event now explains re-login without falsely marking untouched credentials invalid; ambiguous logout copy no longer asserts active session. I23.07 provenance code prepared; actual immutable artifacts and inspection pending. No scope decision for privacy/running balances/forecast policy. Remaining 9 IDs. No local application execution; JS harness syntax/isolated timestamp probe and source review only. Next exact-head draft CI, finish remaining compatible preference/accessibility/copy/performance and evidence work, then grouped Ready gates. No merge, production, hosted or Android changes.
+
+---
+
+## 2026-11-28 — Identity-specific card QA, direct lending, Greek timestamps and immutable evidence
+
+**Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` CI #46166329855: completed/failure; CodeQL #46166329870: in_progress/pending at preparation. Correct the new credit restore QA to select the exact archived ID and preserve the fixture's pre-existing archived rows; assert focus on surviving archive opener or heading. Direct Lending creation/repayment now uses canonical lexical cent validation, real-stack negative cases must not advance revision. Greek historical correction copy, truthful uncertain logout, explicit year/local timestamp and missing-date display in history/device/backup/support surfaces. Final 216-image manifest now records actual synthetic path/query, observed privacy controls (not a claim of global masking), verified theme and per-file SHA-256. No artifact sweep has run yet. Source-only guards, JS parse and isolated timestamp checks completed; TypeScript/full CI/rendered/real-stack/Windows acceptance remains. No change to auth policy, finance semantics, history schema, privacy scope or budget limits. Remaining 11 checklist IDs pending detailed acceptance; continue consolidated review, no production/Android/hosted action.
+
+---
+
+## 2026-11-28 — Archive mutation isolation and direct credit money validation
+
+**Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `b65a7ab12f60dafc0f1eeda38880a4bb46c382e4` [CI #46164736076](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46164736076), [CodeQL #46164735940](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46164735940) PASS (350/350 files, 2702/2702 tests, build, JS 527.8/528 KiB, CSS 557.1/560 KiB hard PASS with soft warning, local PostgreSQL proofs, zero audit vulnerabilities). I07.03 code candidate: serialize restore/hard-delete in both archive managers, reject overlapping clicks and close during credit restore, surface rejected restore/delete inside active credit manager (outside modal background is inert), dismiss failed hard-delete confirmation rather than replay stale target; preserve distinction between uncertain profile receipt and cleanup-pending error. Reset orphaned imperative stack archive lock on DOM replacement and reject stale detached/inactive commit; keep canonical artwork, drag/keyboard, settled debt rule and tombstones unchanged. Added existing credit stack synthetic archive→failed restore→same-ID restore→surviving heading focus; existing statement hard-delete cancel/reopen/surviving focus checks. I19.01 candidate: direct Credit purchase and limit now share strict lexical cent parser; isolated real browser malformed purchase must not advance revision before valid purchase. Prior legacy parser/compact floor accepted by ordinary CI. New source guards and both modified JS QA scripts syntax-checked; actual rendered and real-stack checks not yet run. No counter increase before completing remaining scope review. Remaining 11 IDs, next reconcile actual intent edit matrix (existing six plus withdrawal/expense) and finish Greek copy/preference and final evidence contracts; keep one Draft #671. No production, hosted database, Android or merge action.
+
+---
+
+## 2026-11-28 — Compact density floor, legacy amount validation and card focus
+
+**Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `6087f92c35f13bc53671abff0e0b0a1ae4b8b13b` [CI #46162896216](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46162896216) failed one compact filter exact-source check (349/350 files; 2699/2700 tests); [CodeQL #46162896178](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46162896178) PASS. The new dense token is 11.5px in Compact, below the existing 12px filter requirement: preserve the 12px minimum while honoring Large via max(12px, dense token), including the competing owned-input density owner. Updated both exact-source assertions, retaining existing rendered minimum. I19.01 partial: legacy MoneyInput previously coerced exponent/hex/overprecision via Number; changed edits use canonical cent parser, signed only for adjustments, preserve unchanged imported amount/type including historic precision; reject before durable save, expose invalid state, add existing synthetic legacy QA malformed-no-override cases before successful comma-decimal edit. I07.03 partial: imperative credit-stack DOM refresh now restores same active card/action focus (including copy field identity), never covered card controls or deliberate external focus. Existing lifecycle/settlement/delete contract unchanged. Source guards added; QA script syntax checked, no local app build/browser available. Remaining 11 original IDs unchanged; next verify exact CI, finish card lifecycle/Greek copy and all intent edit/readback evidence, then consolidated final review gates. No hosted/production/Android action or merge. Draft #671 remains sole implementation workstream.
+
+---
+
+## 2026-11-28 — Shared mobile readability and durable preference regression
+
+**Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `895aa6f673ecd9d4512229afbd881d485179394b` [CI #46161483908](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46161483908) passed typecheck but failed one stale exact-source destructive-color assertion (349/350 files, 2699/2700 tests); [CodeQL #46161483875](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46161483875) PASS. Updated that assertion to require solid danger token/white label/border; prior #646 destructive tone and contrast thresholds retained. I02.04 code/guard complete: prior Planning/Login/Savings readability retained; mobile shell and ledger/navigation/recurring microtype uses shared preference roles, bounded/wrapping amounts, full account labels, mobile input sizes max(16px, body size) retain Safari floor and Large sizing, no smaller text workaround; updated exact-source input floor guards. Added existing rendered theme QA large-text ledger/navigation geometry at all six specified widths, actual direct screenshots pending. I15.03 partial: traced production Settings change→finance.update→canonical FinanceSettings→document dataset, separate theme localStorage; existing disposable real-stack browser E2E now checks server readback, authenticated reload and restores original text-size/theme. Synthetic seed resets on navigation, not persistence evidence. OS reduced motion only, no user motion preference per #266. QA JavaScript parses and checklist totals verified; exact-head typecheck/test/build/rendered and Windows still pending. Remaining 11 original IDs. Next inspect exact CI failure if any, complete card lifecycle and all transaction editors, Greek message/security copy and final QA/artifact gates; I15.03 final persistence evidence remains. No budget relaxation, production or Android changes.
+
+---
+
+## 2026-11-28 — Theme regression type safety, focused autofill and login readability
+
+**Implementations 14/23 completed · Sub-implementations 120/132 completed (90.9%).** Parent `d97ff517851ac401fe9e93a59c8ae619c794391d` [CI #46160679938](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46160679938) blocked at TypeScript TS7053 on contrast test dynamic string keys; [CodeQL #46160679948](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46160679948) PASS. Fixed template-literal typed keys matching ThemeTokens `--${string}`; all prior contrast thresholds retained. I02.05 code/guard complete: existing Light/Dark status/solid/focus contrast proof retained; focused composite autofill previously lost its semantic background inset because focus reset shadow won by specificity. Later equally specific autofill rule now retains inset surface while preserving one outer focus ring; existing forced-color outline gate untouched. Extend actual isolated Login CSS QA with Chromium forced autofill/focus states in both themes, explicit semantic inset, text ratio and no inner outline checks; this tests authored styling, not password-manager credential retrieval. OS reduced-motion media check on actual Login, with forced-colors existing proof. Login/MFA/session typography uses existing shared readable roles; localized persisted history text-size labels to match Settings. I02.04/I15.03/I15.05 still partial. QA script parsed, exact checklist verified; exact-head CI, browser compatibility of forced autofill and final rendered/native acceptance pending. Remaining 12 original IDs. Next complete readability/Greek copy and transaction editor/card lifecycle work; preserve single draft PR, final grouped required gates, no Android or production changes.
+
+---
+
+## 2026-11-28 — Semantic contrast, Planning readability and stale regression contracts
+
+**Implementations 14/23 completed · Sub-implementations 119/132 completed (90.2%).** Parent `b1aea23c43abf3af1443a769bf6ad4b8cc6479af` [CI #46159597081](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46159597081) failed 2 stale exact-source assertions (348/350 files, 2695/2697 tests); [CodeQL #46159596890](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46159596890) PASS. Update exact credit th scope and Savings balance-vs-flow source assertions to require the new semantic markup, including explicit no-flow substitution guard; no weakening. I02.06 code/guard complete: prior finance role changes retained; confirmed active DashboardPage, DashboardRecharts and QA do not mount obsolete dashboard-grid/lower-grid/chart-panel; removed legacy mobile positional overrides and redundant reconciliation selectors, leave purely decorative intentional ordering. I02.05 partial: runtime light status foregrounds and solid destructive color separation corrected, warning/background, positive/negative, gradient label and focus token ratios tested directly (56 pairs PASS; min text 4.98 light / 5.14 dark, focus 5.55 / 6.44); existing forced-colors outline unchanged; added actual existing synthetic Credit confirmation Light/Dark contrast screenshots/assertions. I02.04/I15.03 partial: remove Planning fake desktop heading/description/action pseudo-text, use Greek actual text, shared dense typography, wrap/table numeric roles, large-text extreme fixture checks at 1100/1440/2560. Source CSS reduction >2k chars vs parent; actual bundle/build/rendered and native gates pending. Remaining 13 original IDs. Next confirm exact-head CI (especially tight main JS budget), extend actual contrast/autofill/reduced-motion and all-route readability matrix using existing QA, transaction editors, card lifecycle, Greek copy. No financial semantics/production/Android changes. Preserve single draft PR and final grouped required validation.
+
+---
+
+## 2026-11-28 — Compatibility CSS ownership and role-based finance presentation
+
+**Implementations 14/23 completed · Sub-implementations 118/132 completed (89.4%).** Parent `2789d49e4abbe228b4367b45f13cb86c0ccc535c` [CI #46157583531](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46157583531), [CodeQL #46157583497](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46157583497) PASS: 350/350 files, 2695/2695 tests, JS 527.8/528 KiB and CSS 559.8/560 KiB hard PASS (soft warning), disposable PostgreSQL proofs, zero audit vulnerabilities. I02.01 code/guard complete: prior 99 ordered entry inventory retained; documented effective base/mobile/late Savings ownership, removed superseded duplicate mobile declarations, consolidate credit mobile positional label chain into one semantic attr rule. I02.06 partial: actual mobile repayment labels were wrong after Statement column insertion (amount/action labels shifted, actions unlabeled); all six credit tables now declare exact column labels including statement history; Savings actual text balance/target/deadline labels, source-based action tones, shrink-safe/tabular numeric goal cells; Planning/Recurring column widths, Lending description, Dashboard account color, available credit and card expiry/CVV roles no longer rely on their DOM positions. Added deterministic reordered-sibling assertions to existing Savings/credit browser QA and source guards. Direct static check confirms all six credit header/cell schemas match, QA JavaScript syntax parses, net CSS source reduction 1446 characters, exact 132 IDs/23 groups reconciled; exact-head CI and rendered/Windows final acceptance pending. Remaining I02.06 legacy Dashboard chart selectors need consumer verification, intentional stack-depth/entrance/avatar position stays presentation only. 14 original IDs remain. Next review active Dashboard CSS/consumers then typography, theme/forced contrast, readability/settings and transaction editors in coherent batches. No import reorder, budget relaxation, finance-data, Android or production changes.
+
+---
+
+## 2026-11-28 — Windows caption theme, keyboard zoom and normal-close lifecycle
+
+**Implementations 14/23 completed · Sub-implementations 117/132 completed (88.6%).** Parent `bade9c3d3976f92012230ab5aa59a80feba3304d` [CI #46151180348](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46151180348), [CodeQL #46151180752](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46151180752) PASS: 350/350 files, 2694/2694 tests, JS 527.8/528 KiB and CSS 559.5/560 KiB hard PASS (soft CSS warning), disposable PostgreSQL proofs, zero audit vulnerabilities. I21.03 code/guard complete: retain native caption/second-instance restore/normal close (no new tray policy), local Ctrl +/-/0 page zoom 80–200% without global hooks or hijacking other keys, main-owned light/dark palette and system high contrast colors through validated theme-only main-frame IPC, responsive caption clearance using window-controls-overlay geometry and a separate caption strip at mobile zoom-equivalent width. Packaged Windows probe checks minimize/restore, real WebContents zoom using synthetic registered input events, normal exit/backend cleanup; existing titlebar QA extended to 480px zoom-equivalent layout, not a claim of actual Windows rendering. VM guards cover zoom bounds/ignored keys/palettes; native and rendered gates still pending. Prior updater, backup and recovery contracts retained. 15 original IDs remain. Next shared CSS ownership/risky selector inventory I02.01/I02.06, readable typography/theme/focus/contrast and transaction editor review, then final coherent Ready gate; I21.05 final artifacts pending. Owner decision boundaries I01.05/I05.02/I11.02 unchanged. No production/Android changes.
+
+---
+## 2026-11-28 — Legacy Windows PIN privilege boundary and serialized verification
+
+**Implementations 14/23 completed · Sub-implementations 116/132 completed (87.9%).** Parent `6e0e1d6a2cc050a39d87d1f44aa3799f5baefbe8` [CI #46150619354](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46150619354) and [CodeQL #46150619390](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46150619390) PASS: 350/350 files, 2693/2693 tests, JS 527.8/528 KiB, CSS 559.5/560 KiB hard PASS (existing CSS soft warning), disposable PostgreSQL proofs, zero audit vulnerabilities. I21.02 code/guard complete, final rendered/native acceptance separate. #266 and shared PIN contract retain legacy DPAPI fallback only when shared PIN disabled; move registration to controlled main window owner, exact main frame/origin and canonical live owner+AAL2 app-lock status required for native verification/mutations, no shared token issued, single-flight native attempts, existing current PIN required to replace/disable/change timeout, atomically replace verifier, report deletion failure, fail closed if configured legacy protection unavailable. Behavioral VM regression uses disposable local directory and synthetic DPAPI adapter (not real Windows encryption proof) for unauthorized sender/session, wrong/missing PIN, duplicate verification and cooldown, retains original file. Legacy local in-process cooldown remains explicitly bounded; no claims of resistance to privileged OS user or replacement for shared DB rate limiting. No shared PIN activation, Android or production data changes. 16 original IDs remain. I21.03 partial; next desktop shell/titlebar/keyboard/recovery proof and remaining shared UI/transaction-editor/code review; final coherent Ready matrix/immutable rendered evidence outstanding. No release promotion before required gates.
+
+---
+
+## 2026-11-28 — PIN gate lifecycle and stale verification race protection
+
+**Implementations 14/23 completed · Sub-implementations 115/132 completed (87.1%).** Parent `3c941a5cf240077398d022880416dfe6e8efcb3a` [CI #46149708561](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46149708561), [CodeQL #46149708555](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46149708555) PASS: 350/350 files, 2693/2693 tests, JS 527.7/528 KiB, CSS 559.5/560 KiB hard PASS with soft CSS warning, zero audit vulnerabilities; draft rendered/Windows skipped. I21.02 partial: retained shared owner/AAL2/RLS PIN contract and legacy DPAPI fallback per docs/SHARED_APP_LOCK_CONTRACT.md. Gate now invalidates stale inspect/verify/recovery/animation work on newer lock/auth transitions or unmount, serializes PIN actions and session-wide ticket revocation, validates current auth epoch, does not install a token until success delay is current and visible, revokes discarded same-session receipts, blocks late idle activity from extending expired leases and ignores old-token touch/API 423 notifications. Added source guards and deterministic synthetic held-verify plus success-animation lock scenarios to existing rendered QA, preserving actual finance-tree unmount boundary. No backend rate limits, owner credential or shared PIN activation changes. Remaining I21.02 legacy native credential-change/sender/rate-limit review, exact-head validation and rendered evidence; 17 original IDs remain. I21.03 still partial. Next reconcile native legacy IPC restrictions with owner-approved fallback, desktop shell and settings/readability/transaction editor review before consolidated Ready matrix. No Android, production data or release changes.
+
+---
+
+## 2026-11-28 — Windows native update consent and backup destination integrity
+
+**Implementations 14/23 completed · Sub-implementations 115/132 completed (87.1%).** Parent `62dd92865e038747e87c01904ba067b4235bc534` [CI #46149263906](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46149263906), [CodeQL #46149263734](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46149263734) PASS: 350/350 files, 2690/2690 tests, JS 527.7/528 KiB, CSS 559.5/560 KiB hard PASS with existing soft warning, disposable local PostgreSQL proofs and zero audit vulnerabilities. Draft final Windows/rendered gates skipped. I21.04 code/guard complete: previous authenticated cancellation/latest-read/single-flight/permission-denial/restore-preview changes retained; selected native backup destination catalog is read before committing config, with disposable malformed JSON/catalog and not-a-directory negative tests preserving original verified snapshot and unrelated file. Actual restore remains explicit destructive import with canonical validation; no owner data action. I21.03 partial: native periodic checks preserve ready installer and pending confirmation; download/install IPC requires exact displayed version, prompt binds release and installer identity, catches dialog failure, missing installer permits retry; renderer rejects obsolete sequence replies, initial-read race and duplicate actions, no unsupported unchanged-version claim. Added VM mock native prompt/ready regression and source guards. Final exact-head validate/build/budgets and Windows/browser rendered acceptance pending. 17 original IDs remain. Next complete I21.02/I21.03 remaining PIN/shell/keyboard/tray/recovery review, settings and shared UI/finance guards, then single coherent Ready matrix. I01.05/I05.02/I11.02 owner decision boundaries unchanged. No production/Android changes, no stale #645 promotion.
+
+---
+
+## 2026-11-28 — Consolidated CI source guards and Windows backup authorization/race fixes
+
+**Implementations 14/23 completed · Sub-implementations 114/132 completed (86.4%).** Parent `d30c5f75a7241dcdb42226abb1069ff0d4fbe701`: [CI #46143902415](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143902415) hygiene PASS, 347/350 files and 2685/2688 tests passed including new forecast provenance regression; three failures were stale original plan group headings (I04/I11), legacy Dashboard grouping expression, and old recurring QA assertion copy. Fixed both plan headings and updated the existing guards to require the new actual grouping and visible mobile estimate/action conditions, no test weakening. Direct/reusable CodeQL PASS; build/budget not reached. I21.04 partial: native folder-picker cancellation now reauthorizes before returning protected catalog; panel uses synchronous action single-flight, latest-read generation and unmount guard, skips passive reads while native action pending, avoids duplicated explicit refresh read, and verifies current authorization before forwarding restore candidate to existing import preview. Added ordering/source regression locks and synthetic native bridge scenario for duplicate click/cancel, held older success after permission denial, visible error, explicit retry and existing restore confirmation. No production operation, no restore commit, no auth/PIN relaxation. Full actual Windows/rendered acceptance and independent native backup-store permission/rollback review pending, so I21.04 not counted yet. Keep 18 original open IDs. Next exact draft validate/build/budgets, then review updater event/action race and remaining Windows/Settings/finance/accessibility scope in same PR before consolidated Ready matrix. Decision boundaries I01.05/I05.02/I11.02 unchanged; no stale #645 promotion, Android or production data changes.
+
+---
+
+## 2026-11-28 — Dashboard forecast provenance and responsive recurring action hierarchy
+
+**Implementations 14/23 completed · Sub-implementations 114/132 completed (86.4%).** Parent `7df36f9cb3b6bb257934201b5f5a498bdb776d55`: [CI #46143446490](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446490) and [CodeQL #46143446457](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446457) PASS; 350/350 files, 2687/2687 tests, hygiene, build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft CSS warning). No final rendered/Windows gate on Draft. I04.05: existing scoped MFA footer and duplicate group/name guards preserved. Forecast movement category is carried from the actual originating recurring item, nontransfer scheduled record or dated event instead of joining display labels; variable-prefixed and equal-name items no longer lose/cross categories. Dashboard separately identifies already booked future-dated events, preserves existing priority and four-row cap, and retains masked amounts. Regression exercises same-name scheduled, booked, fixed and variable movements and unchanged portfolio/history. I11.04: existing desktop estimate-vs-payment text and primary payment hierarchy reviewed; mobile explicitly identifies estimate as not a payment, keeps Pay primary and management collapsed; existing rendered cadence save/rejection suite now asserts the actually visible mobile row rather than text from hidden desktop DOM. Existing date/cadence/actual amount entry and durable receipt behavior preserved. Code/guard completion only; exact-head type/build/units/budgets and rendered acceptance pending. No new accrual or missed-cycle policy. 18 original IDs remain; explicit product boundaries I01.05/I05.02/I11.02 unchanged. Same #671; next bounded Windows/Settings/security and shared UI review, then full Ready gates together. No production/Android/data changes.
+
+---
+
+## 2026-11-28 — Forecast presentation NodeNext preflight correction
+
+**Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Parent `4d2deb1e225e0bbfc21b27de68bcbb178630d253`: [CI #46140617465](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140617465) failed at hygiene/unused-symbols before build/tests: three TS2835 extension diagnostics in `forecastPresentation.ts` and consequential TS7006 on the untyped event callback. Direct/reusable CodeQL PASS; draft Windows/rendered/performance skipped. The helper is imported by NodeNext unit tests, so its three local imports now use the existing `.js` ESM convention of `forecast.ts` and its dependencies; no change to calculations, dates, copy, test assertions or thresholds. Exact-head hygiene, type, unit and hard bundle checks must confirm the fix; local full checkout unavailable. Keep sole draft #671, remaining 20 original IDs and explicit I01.05/I05.02/I11.02 decision boundaries unchanged. Continue compatible Windows/Settings/finance/UI evidence review, then one coherent Ready matrix, develop merge and separate authorized release. Do not deploy stale #645 or touch production data/Android.
+
+---
+
+## 2026-11-28 — Planning/Savings/installed first-run implementation reconciliation
+
+**Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Newly completed code/guard IDs I06.05, I12.01, I12.03, I12.05, I21.01. Final validation separately pending. Existing goal deadline, future funding, over-target, empty/large, rejected edit/delete and held receipt guards reviewed; added successful create→edit→confirmed synthetic delete with exact row count and unchanged actual savings balances, preserving both-theme editor captures. Added unit coverage for shared forecast source summary and real linked completed-event date (future/date-reached/missing), immutability; existing large multi-account 30/60/90 matrix (tests/forecast-scenarios.test.ts) proves one completed transfer and negative per-account projection, future income, exact portfolio sum, no double count or history mutation. Long-list native wheel and focus code/guards implemented, desktop/mobile source and date semantics reconciled. I21.01 existing first-run implementation/source/packaging guards and successful prior M3 installer/launch gate reviewed; SHA-256 independently verified in prior checkpoint. None of these marks asserts the final exact-head rendered/Windows matrix has run. I21.05 remains final acceptance, not a missing installer implementation.
+
+Remaining 20 original IDs. I01.05/I05.02/new I11.02 policy decision boundaries remain explicit. Continue same #671, exact-head draft validation and remaining independent safe changes; final review and release not yet performed. No production/Android/data changes.
+
+---
+
+## 2026-11-28 — Planning projection provenance and long-list reachability
+
+**Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Parent `9516a539e59ffdfbcf32991a29324157ec3b6652`: [CI #46140179627](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140179627) validate PASS, 350/350 files, 2685/2685 tests and production bundle hard PASS 527.7/528 KiB JS, 559.5/560 KiB CSS (soft warning). Reusable/direct CodeQL still pending at observation. Earlier accepted M3 Windows [CI #46130114663](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46130114663) all three Windows gates success, first-run 20/20 focused tests; inspected actual clean install/launch/uninstall and runtime-config assertions; downloaded artifact #15257710588, verified actual 149.77 MiB NSIS binary SHA-256 matches companion checksum. This is earlier immutable evidence only, not final release acceptance or a new installer publication.
+
+I12.01/I12.03: shared presentation-only source counts include dated-event count previously omitted from mobile totals and absent from desktop details. Projection chart tooltip explicitly labels date/series as projection; due rows distinguish overdue vs today; completed rows resolve the original linked event date and identify future-dated or unavailable records rather than equating scheduled due date with actual movement. No ledger/forecast arithmetic or missed-cycle policy changes. Desktop/mobile progressive pending-list expansion focuses first newly available row, retaining 24/12 bounded slices. Existing nested scroll/menu tests preserved, added real CDP wheel then End and mobile 320 final action reachability. Script parses; exact full app rendered acceptance and date/large-data source review remain pending. I12.01/I12.03 remain partial until next bounded review. Continue same PR. 
+
+---
+
+## 2026-11-28 — Consolidated card keyboard and route recovery implementation checkpoint
+
+**Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Code/guard completion, not final rendered acceptance. Original IDs newly implemented/reconciled: I01.01 (actual eight mobile More navigation/current route/heading focus cases), I01.04 (real rejected lazy resource with sanitized recovery alert, synthetic failure clears on navigation, Dashboard recovery heading focus; actual cached lazy rejection may need the already-present reload action), I03.01 (actual Login retries in both themes at desktop/tablet/mobile, synchronous duplicate protection already implemented), I07.01 (existing compact single-bank width and bounded multi-bank/recent-activity layout reviewed against actual M3 evidence and existing 1440/1920/2560 assertions; no stretching or debit-ledger invention), I07.02 (narrow masked PAN fix and existing edit/reveal/clipboard guards), I08.02 (Greek glyph clearance and existing WYSIWYG guards). These code items are now checked in original plan as required by AGENTS; all relevant exact-head rendered acceptance remains outstanding.
+
+Parent `1da6fb07372cf2a7cf636b5cbaa92980d793bf84`: [CI #46139657773](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139657773), [CodeQL #46139659977](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139659977) PASS, 350/350 files, 2684/2684 tests, production build, local PostgreSQL proofs, audit zero vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft warning). New delta: debit archive overlay focuses the real keyboard action, covers prior controls with native inert, Escape/cancel restores opener, receipt-confirmed archive/restore focus follows surviving summary/card; credit follower cards inert and masked, no automatic reveal on restack, archive covered controls inert and Escape/cancel restores opener, reduced motion uses actual app preference, archive manager fallback focus on close and removed rows. Existing archive/restore receipts and irreversible delete policy preserved. Browser scripts parsed and inspected; not full application executed. I07.03 stays partial pending exact actual settled/archive/restore/delete coverage and optimistic uncertain receipt focus review. No new finance semantics, no hidden-secret logging, no production or Android changes.
+
+Remaining 25 original items; keep same draft #671, inspect actual validate/build and budget on this checkpoint, then prioritize I12/Settings/Windows and remaining compatible items. Existing explicit unresolved owner decisions I01.05 (privacy scope), I05.02 (intraday balance), I11.02 (changed past-cycle policy only) remain excluded from guessing. Full Ready review gates, integration and final release pending; do not deploy obsolete #645. Prior counts in historical notes are not current.
+
+---
+
+## 2026-11-28 — Verified draft budget and card archive receipt/privacy boundary
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Parent `ef672edb281c317c90df87059d710f76a41a7a58`: [CI #46139300272](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300272) and [CodeQL #46139300216](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139300216) PASS; 350/350 test files, 2683/2683 tests, hygiene, production build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities. JS 527.7/528 KiB, total CSS 559.5/560 KiB hard PASS (soft warning persists); no budget weakening. Draft skips mandatory full rendered/Windows/WebKit/performance. Independent review I07.03 found archive callback could silently no-op when persistence was blocked yet credit deck reported success and removed card locally. Existing reversible archive/restore now await existing durable receipt contract, preserve optimistic finance state semantics, report uncertainty/reload instead of claiming completion, and leave irreversible deletion unchanged. Credit ghost/shred clones mask secret fields before insertion, are inert/aria-hidden; archive commit stays locked through receipt, ignores completion after effect disposal. Added existing-suite synthetic pre-mutation rejection checks for debit and credit, source assertions. Both browser scripts parsed; actual application acceptance pending. No rollback of optimistic finance state on uncertain server receipt. Keep I07.03 partial until actual focus, motion and restore evidence. Existing one-card desktop compact panel is intentional; do not stretch deck or imply a separate debit ledger. Continue remaining compatible scopes and final exact-head gates in #671. No deployment or Android/hosted DB action.
+
+---
+
+## 2026-11-28 — Hard CSS budget correction bundled with glyph changes
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Parent review `825c8e90327191e3a3f25a1f4a8955abb1148e41`: [CI #46139055144](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46139055144) actual hygiene/type and 350/350 unit files, 2681/2681 tests PASS. Production build emitted JS 527.7/528 KiB, eager CSS 238.2/256 KiB, but aggregate CSS 560.3/560 KiB FAIL. No threshold changes. Review of actual deck renderCard, debit physical card, CardDetailsDialog, profile preview and repository search found retired card-action / edit-number / edit-small hooks still shipped as scoped theme rules and legacy global selector aliases; the current DOM owners use toolbar/copy actions and card-inline-value, not those classes. Removed only the unreferenced selectors and four entirely obsolete primary-action rules, preserving all active selector declarations and order. 797 source characters removed; actual minified budget improvement must be measured by CI. Added source guard against reintroduction and retained existing deck/inline geometry tests. Consolidated with prepared Greek glyph fix. Mandatory exact-head CI/CodeQL and rendered/Windows validation still outstanding. No production changes, no relaxed limits. Next: verify actual hard budget, then continue remaining compatible batch; inspect real masked and Greek screenshot evidence on review head.
+   
+---
+
+## 2026-11-28 — Physical card Greek glyph clearance prepared
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Parent `825c8e90327191e3a3f25a1f4a8955abb1148e41`, same #671. Existing credit face clipped accent/descender ink with line-height 1.1 and Payzy-specific 1.0. Isolated Chromium actual computed font-family/weight/size/line-box baseline and Canvas ink measurements for six Greek stress labels at 10.56px: 1.0 produced negative top clearance down to -2px and bottom -0.44px; 1.1 remained negative bottom and some accented top; 1.4 gives nonnegative top and positive ~1.78px bottom. Adopted 1.4 in both owning physical-card nickname selectors (including debit editor/profile-preview shared face), removed Payzy-specific compression without changing logo layout, card geometry or nickname truncation rules. New synthetic Greek nickname fixture exercises standard and Payzy deck at 320/375/1440/2560; browser guard measures actual computed font ink against its line box, full width and screenshots. No actual app run or final WYSIWYG proof yet; I08.02 remains partial. Existing I07.02 masked correction preserved. This change follows confirmed isolated evidence, not a claim that actual product capture already passed. Final exact-head QA and Windows/release remain required.
+   
+---
+
+## 2026-11-28 — Draft source-test correction and real narrow-card clipping regression
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Exact parent `1a7f77f3e89bab09633859fac4566bcc70b9e223`, draft #671. [CI #46134017116](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46134017116) hygiene PASS; 349/350 test files, 2680/2681 tests PASS, sole failure obsolete PageHeader literal `<h1>{title}</h1>` in cross-page consistency test. Direct CodeQL #46134017100 and reusable CodeQL PASS. Build/bundle not reached, final rendered/Windows intentionally skipped on Draft. Corrected the stale guard to require the real heading ref, tabindex and focus behavior, without changing runtime heading semantics.
+
+Directly inspected 12 selected existing immutable accepted M3 Chromium captures from artifact #15258211261 (Cards 320/1440/2560, dark Cards, inline 16-digit edit at 320/375/1440, completed archive mobile/desktop, single/multi/long Credit deck). Full-size 320 masked debit screenshot demonstrates actual last-four truncation (“11…”). Root cause: the original .94rem/.065em mono text uses ~190px in a ~185px content slot after the 40px copy target. Isolated real Chromium probe of the same 254px physical width, padding, gap and copy target reproduced width 190>185 for both masked and 16-digit text; .86rem/.04em gives 167px in the same slot for both. Modified existing <=360px physical-card number typography, not the touch target, card dimensions, vault or copy behavior. Inline editor inherits the same face metrics; desktop and 375+ unchanged. Added actual masked before/after reveal geometry checks and evidence capture at 320/375/1440 to existing frontend QA, preserving existing WYSIWYG and reveal assertions. QA script parses; isolated probe is not full application acceptance. I07.02 remains partial until exact-head geometry, clipboard and edit checks pass. I07.01 prior evidence confirms bounded rail/recent activity but final whitespace review is not yet closed. No production data or Android changes. Next: actual type/unit/build and bundle on consolidated draft, remaining card nickname, finance/Windows and mandatory final Ready gates. Existing #645 is not the release candidate for the consolidated work.
+
+---
+
+## 2026-11-28 — Draft preflight failure corrected; finance boundary regressions
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** Same active draft #671. On parent `c8ffde276af6bfa604b74f1925e1af80326dd92b`, [CI #46133755427](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46133755427) validate failed before unit/build at hygiene: the new credit-pagination test referenced a QA script variable outside its scope. Fixed the local read and updated the obsolete flex sizing assertion to match the intentional 24px button contract. Added strict calendar validation for savings deadlines (valid unchanged expired deadline retained), future savings transfer regression, safe recurring calendar year arithmetic and guard against returning stale overdue cycle, explicit missed-cycle forecast/Attention matrix (1/2/12/24 months), and large multi-account forecast regression with a completed scheduled transfer, negative account, 30/60/90 horizons, source counts and immutable history. Clarified existing forecast policy on desktop/mobile, no new accrual or posting policy. Nine direct executable date/deadline checks passed; full repository tests, budget and rendered checks still pending. I06.05/I11.02/I12.05 remain open pending acceptance, conflict and product-policy disposition; do not inflate counts. Preserve owner authorization for final validated deployment; main unchanged. Continue the same branch, not old #645; consolidate remaining card/shell/Windows/evidence scope before Ready and exact mandatory release gates.
+
+---
+
+## 2026-11-28 — Shared control preflight and release-path checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** On `fix/649-bulk-final`, parent `ecd3574703b35189258f852c71cc8ff6d5f4cbee`. Reviewed I01.02 end-to-end code/source guards: production and QA share as-of clock, same 4 reporting routes, month survives navigation, Planning excluded, safe upper year compare, existing snapshot/domain regressions. Code implementation complete; real browser proof of new route traversal still pending. Updated pre-existing Stage 2 Login guard for synchronous in-flight protection without removing existing disabled/shared primitive contract. Shared app-controls forced-colors outline supplements shadow-based focus, retains single composite field outline; new real forced-colors Login QA and source guard. CSS entry inventory in existing UI system audit (80+5+14 unique explicit paths), cheap ordered boundary guard; no import shuffle or selector-wide cleanup without evidence. I02.01/I02.05 remain partial; further effective ownership/high contrast/autofill review needed. 12 direct parser/source/inventory checks passed; actual full application build unavailable locally. Tight previous JS/CSS budget headroom (527.9/528, 559.7/560 KiB) makes actual type/build/unit check necessary before more shared-root edits. Open a single Draft PR to develop for ordinary validate/CodeQL (expensive rendered/Windows gates remain deferred to the completed Ready candidate); keep scope and existing tracker, continue independent finance/Windows review without repeatedly restarting the exact head. No production release yet; owner has authorized the final consolidated deploy, not the old #645 candidate or destructive DB/recovery actions. 
+   
+---
+
+## 2026-11-28 — Credit stack direct navigation checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 100/132 completed (75.8%).** Owner-authorized consolidated deployment remains gated on completion, required validation, merge, release and smoke. Implemented I08.03: actual clickable 24px credit deck pagination buttons, canonical card IDs, aria-current, one selected Tab stop, ArrowLeft/Right/Home/End, stable delegated events with cleanup, focus retained across imperative/parent rerenders. Direct selection is intentionally immediate (no new choreography), guarded against in-flight drag/restack/archive confirmation, and uses existing active-card callback. No vault read/reveal, archive semantics, keyboard stage or drag behavior changed. Existing long-rail/single-card proof retained; new browser assertions exercise click, Home, focus and target geometry. 10 direct parser/source/selection-logic checks passed, full application QA pending; no merge or production change. Branch parent `a34cff21b4a1a001eeaf3e4fd2149bd544b2b7a2`. Continue remaining card nickname/credential/desktop and finance scopes in same batch. 
+   
+---
+
+## 2026-11-28 — Owner authorizes consolidated deployment after completion; Login, Settings and Planning checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 99/132 completed (75.0%).** Owner explicitly requests completion and deploy, superseding the previous lack of production go/no-go authorization for the completed consolidated Web/Windows batch only. This is not authority to skip CI, overwrite immutable Windows releases, perform destructive/hosted database operations, waive outstanding hosted recovery disposition or modify Android. Existing #645 is an older exact release candidate, not the latest develop; do not merge it merely because old checks passed. Reconcile that release into the final validated develop-based release candidate.
+
+On `fix/649-bulk-final` parent `4e4e744f20b3d861dbd8c8ff7c9ae4fce243d3ae`: Login synchronous in-flight guard prevents duplicate requests before React disables controls; resubmission clears old visible error and restores even an identical rejected message. New QA-only callback tests repeated rejected credentials, network and unavailable errors on desktop/tablet/mobile with synthetic credentials, duplicate synchronous submits and visible error/re-enabled controls. Settings removes duplicated platform/status label in Web and idle Windows; retains version, actual native status, connected-device access and opt-in diagnostics. General/Profile regression guards complete I15.01 implementation; rendered acceptance pending. Planning desktop scheduled scrollport named and keyboard focusable; actual End key assertion added without removing previous geometry/action menu assertions. Forecast copy distinguishes booked future-dated events from not-yet-booked scheduled and estimated flows; no finance algorithm or due-policy change. I03.01/I12.01/I12.03 remain partial pending full remaining scope. 12 direct executable logic/source/parser checks passed; no local application build or full browser test. Actual CI and integration pending, main unchanged. Next: complete remaining finance/card/savings/Windows deltas, recheck previous prepared QA selectors and bundle headroom, open one review PR and run mandatory exact-head matrix. Privacy scope, event running balance semantics and missed-cycle forecast policy remain explicitly unresolved rather than guessed.
+
+---
+
+## 2026-11-28 — Consolidated implementation checkpoint: route focus, appearance keyboard and auth copy
+
+**Implementations 9/23 completed · Sub-implementations 98/132 completed (74.2%).** On `fix/649-bulk-final`, parent `74c3bc9d8a01ae3c07f8ad17170fdfc0570ccda1` (based on integrated M3 develop 24acf301). Continue owner-directed bulk batch without opening a Ready PR or full CI for this intermediate checkpoint. Actual changes: shared PageHeader (all 12 routes use it) now owns cancellable focus on its real mounted heading after lazy content/route transition; old App-level single frame could target outgoing or missing heading. Focus only when body/nav/brand owns focus, never in inert background or over a focused command destination; unchanged 404/PageErrorBoundary. Existing real shell cross-route QA activates actual nav and observes destination heading focus. Appearance theme/text-size radiogroups now use shared roving navigation, a single selected Tab stop and Arrow/Home/End activation; theme rendered suite exercises real key events, local preference persistence, text size selection/restoration and focus. Login/session operational copy distinguishes network retry from service outage and removes unsupported blanket session-preservation claim, without changing auth, epochs, cookie, MFA/AAL2 or retry semantics. Static Login error markup regression updated. 21 direct JS parser/logic/source checks pass; no full local application Vitest or browser result. Reuse accepted 56-suite M3 evidence only for unchanged scope. I01.04/I15.03/I03.01/I15.05 remain partial until remaining scope and combined browser evidence; no new count. Next: shared UI and Settings/General/Profile evidence, remaining Login actual retry/error modes, then finance UX and Windows. Exact active branch remains sole implementation stream; no production/hosted data/Android actions.
+
+---
+
+## 2026-11-28 — M3 integrated; consolidated remaining #649 batch in implementation
+
+**Implementations 9/23 completed · Sub-implementations 98/132 completed (74.2%).** PR #670 merged to develop `24acf3014953bc20875c273007e2f9ed898ec95d` after exact `d8f6def` [CI #46130114663](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46130114663) and [direct CodeQL #46130114611](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46130114611) PASS: 2666/2666 tests (350 files), all 56 Chromium suites, Windows clean installed/first run/package, WebKit, Lighthouse/CLS, reusable CodeQL, Unified, zero vulnerabilities, JS 527.9/528 KiB, CSS 559.7/560 KiB hard PASS (soft warning). Direct inspection of 20 images from immutable artifact #15258211261 (950 PNGs): all eight short History captures, six More start/end states, refresh hoverable tooltip, generic multi-source/contextual error and three lending rejection layouts. All intended content reachable, focus visible; More close tooltip transiently covers subtitle at narrow sizes, full subtitle visible after focus moves. I01.03/I01.06 accepted; no new notification surface. Develop integration workflow not visible yet via connector. Main unchanged.
+
+**Owner bulk override now staged on one implementation branch `fix/649-bulk-final` based on accepted develop.** Reapplied prepared `3a411ea` nine-file delta without overwriting accepted M3 counters: AGENTS cadence, scoped Dashboard MFA security copy and duplicate upcoming label suppression, real reporting route traversal, 12-route navigation/current-state guards. Additional I01.02 correction: PeriodControl uses the same as-of prop already owned by FinanceApp/useLocalDate and the synthetic fixture; removes independent wall-clock timer which could incorrectly enable later fixture months; ordered valid month comparison avoids upper-calendar overflow. Existing source contracts expanded and existing QA proves disabled advance after cross-route return. Prior 57 source/syntax checks plus 19 direct syntax/logic/source/counter checks on this delta passed; no local full Vitest/build/rendered claim. These items remain partial pending their full scope and consolidated validation.
+
+**Remaining 34 original IDs, single compatible batch:** A shell/design/accessibility/Login/Dashboard/Settings I01.01/.02/.04/.05, I02.01/.04/.05/.06, I03.01, I04.05, I15.01/.03/.05; B finance UX/domain I05.02, I06.05, I07.01/.02/.03, I08.02/.03, I11.02/.04, I12.01/.03/.05, I19.01; C Windows/final QA I21.01–.05, I23.03/.06/.07. Next work: bounded remaining AppShell route focus/privacy evidence, shared UI/readability, and Login/Settings; reuse accepted proofs where sufficient, then finance UX and Windows. Genuine product decisions (privacy scope, running-balance and forecast rules) must be explicitly resolved or recorded blocked, not invented. Do not push to a Ready PR until consolidated implementation and focused preflight, no per-item CI or competing PR. Branch pushes without a PR do not trigger ordinary CI per workflow push filters. Local checkout/dependency access unavailable; mandatory exact-head review gates cannot be replaced. No production, Android or hosted database action.
+
+---
+
 ## 2026-11-28 — M3 review: reserve real scroll clearance for focused Quick Entry errors
 
 **Implementations 9/23 completed · Sub-implementations 96/132 completed (72.7%).** Exact `d5ad6a4` [CI #46127563564](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46127563564) failed only action-center-context rendered suite (55/56); 2666/2666 tests, 350/350 files, main JS 527.9/528 KiB, CSS 559.7/560 KiB hard PASS (soft warning), direct [CodeQL #46127563561](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46127563561), reusable CodeQL, three Windows jobs, WebKit and Lighthouse/CLS PASS. Unified FAIL. Exact failure diagnostic confirms focus is already on quick-add-error, body not inert, dialog not busy; alert bottom 895.453125 vs scrollport bottom 893 (2.453125px clipped), scrollTop 30, scrollHeight 569, clientHeight 522, remaining scroll range 17px. Inspected failure PNG and five M3 screenshots in artifact #15256348084: bottom of alert/focus ring clipped; short History disclosures/footer and three final More keyboard destinations remain readable/reachable. Prior nearest-edge scroll leaves insufficient clearance for late geometry shifts; exact source of 2.45px shift is not proven. Shared owner switches from nearest to center alignment (naturally clamped at scroll end), retaining instant scroll, next-frame unlocked/inert check, preventScroll focus and cancellation. No CSS or finance changes. Isolated Chromium scrollport reproduction with a 4px late footer-height change at 1440x1000, 820x900 and 375x812: nearest left alert clipped 2.5–2.7px; center kept full alert and focus with 11.3–11.5px bottom clearance in all three (six actual DOM runs; not full app). Updated all three existing source guards to require center and preserve the other invariants; executed 43 source checks against exact files. Strict rendered geometry and lending no-write/focus/provenance checks unchanged, no retries or tolerance increase. Actual product browser validation and defect registry root-cause confirmation still pending. Keep single Ready #670, one coherent required matrix; inspect exact-head evidence before merge. No production, hosted database or Android changes.
@@ -934,40 +1129,40 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 
 ## Code work packages and explicit sub-implementations
 
-### I01. Shared AppShell, navigation and routing — 0/6
+### I01. Shared AppShell, navigation and routing — 5/6
 
 **Priority:** P1 · **Owner:** `AppShell, routing, period controls, command entry` · **Dependencies:** none
 
-- [ ] **I01.01** Align sidebar/More-menu, route titles, current-route highlight and Greek labels across desktop/tablet/mobile without changing canonical route IDs.
-- [ ] **I01.02** Verify global period-navigation availability and actual active period after route switch; standardize contextual month/as-of semantics where wrong.
-- [ ] **I01.03** Give global search, history, refresh and notification popovers anchored flip/edge containment and keyboard/focus return; reproduce historical G-01 tooltip overlap.
-- [ ] **I01.04** Audit route loading, lazy-import failure, unknown hash, route recovery and changed-route focus; preserve recoverable PageErrorBoundary.
+- [x] **I01.01** Align sidebar/More-menu, route titles, current-route highlight and Greek labels across desktop/tablet/mobile without changing canonical route IDs.
+- [x] **I01.02** Verify global period-navigation availability and actual active period after route switch; standardize contextual month/as-of semantics where wrong.
+- [x] **I01.03** Give global search, history, refresh and notification popovers anchored flip/edge containment and keyboard/focus return; reproduce historical G-01 tooltip overlap.
+- [x] **I01.04** Audit route loading, lazy-import failure, unknown hash, route recovery and changed-route focus; preserve recoverable PageErrorBoundary.
 - [ ] **I01.05** Reconcile persistent shell privacy visibility and route-scoped money screens against an explicitly approved scope; document nonpersistent reset/no accidental reveal.
-- [ ] **I01.06** Guard mobile bottom bar/More-menu, safe areas, 200% zoom, text scaling, route transitions and overlay z-index as one shell contract.
+- [x] **I01.06** Guard mobile bottom bar/More-menu, safe areas, 200% zoom, text scaling, route transitions and overlay z-index as one shell contract.
 
-### I02. Shared visual system, typography and semantic controls — 2/6
+### I02. Shared visual system, typography and semantic controls — 6/6
 
 **Priority:** P1 · **Owner:** `src/lib/theme.ts, Surface/Button/Input, root-compat.css and tokens` · **Dependencies:** after #647 visual baseline
 
-- [ ] **I02.01** Inventory 80+ ordered CSS compatibility imports and effective selector/token ownership; consolidate repeated root causes rather than adding narrow override chains.
+- [x] **I02.01** Inventory 80+ ordered CSS compatibility imports and effective selector/token ownership; consolidate repeated root causes rather than adding narrow override chains.
 - [x] **I02.02** Normalize default buttons, selects, money/date inputs, autocomplete and validation/focus states by shared role across login, editors, settings and Quick Entry.
 - [x] **I02.03** Ensure destructive action tokens survive primary accent rules in standard and confirm surfaces; regress exact #646 T-03 fix.
-- [ ] **I02.04** Resolve dense Greek typography/minimum readable sizes, truncation/overflow-wrap rules and number tabular alignment at 320/375/390/768/1440/2560.
-- [ ] **I02.05** Audit dark/light/forced high-contrast + reduced-motion + browser autofill states and accessible semantic positive/negative/warning contrast.
-- [ ] **I02.06** Replace risky `nth-of-type`/DOM-index and ad hoc width assumptions with explicit component/variant semantics, backed by bounded sibling tests.
+- [x] **I02.04** Resolve dense Greek typography/minimum readable sizes, truncation/overflow-wrap rules and number tabular alignment at 320/375/390/768/1440/2560.
+- [x] **I02.05** Audit dark/light/forced high-contrast + reduced-motion + browser autofill states and accessible semantic positive/negative/warning contrast.
+- [x] **I02.06** Replace risky `nth-of-type`/DOM-index and ad hoc width assumptions with explicit component/variant semantics, backed by bounded sibling tests.
 
-### I03. Login, TOTP, sessions and authentication recovery — 5/6
+### I03. Login, TOTP, sessions and authentication recovery — 6/6
 
 **Priority:** P0 · **Owner:** `LoginScreen, MfaScreen, server/auth, API/session guard` · **Dependencies:** independent release #645 login fix; owner/AAL2 invariants
 
-- [ ] **I03.01** Reconcile current Login error state with #641/#645 and validate failed credential, offline, server-unavailable and retry in all viewports/themes.
+- [x] **I03.01** Reconcile current Login error state with #641/#645 and validate failed credential, offline, server-unavailable and retry in all viewports/themes.
 - [x] **I03.02** Cover TOTP enrollment, challenge, invalid/expired OTP, auto-verify, factor reset and back navigation; never introduce an MFA bypass.
 - [x] **I03.03** Verify session-expiry and AAL2 downgrade from active pages, stale cookies/bearer provenance, failed refresh and recoverable focus without leaking finance data.
 - [x] **I03.04** Recheck API owner-UID and AAL2 denial paths for login-adjacent/profile/vault/finance requests, SameSite/Origin and cookie vs bearer behavior.
 - [x] **I03.05** Confirm accessibility of labels, OTP digit entry, paste/keyboard, live error announcements, 200% zoom and mobile dark mode.
 - [x] **I03.06** Preserve and regression-lock app-lock PIN and active-device session revocation interaction and timing without asserting device identity data not available.
 
-### I04. Dashboard / Επισκόπηση — 4/5
+### I04. Dashboard / Επισκόπηση — 5/5
 
 **Priority:** P1 · **Owner:** `DashboardPage.tsx, DashboardRecharts, dashboard selectors` · **Dependencies:** #647 before modification; #648 owns cash sign
 
@@ -975,7 +1170,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I04.02** Guard hidden/revealed money and charts across account cards, summary, categories, recent movements, secondary balances and tooltips; privacy scope requires owner contract.
 - [x] **I04.03** Confirm account hierarchy, IBAN absence, account chart historic/future dates, first-/last-month balance provenance and large-number stress.
 - [x] **I04.04** Improve EOD vs event contextual labels and comparison percent-zero-basis explanation without changing canonical finance computations.
-- [ ] **I04.05** Resolve duplicate recurring/exposure labels and verify footer security/encryption claims against actual scoped guarantees before copy changes.
+- [x] **I04.05** Resolve duplicate recurring/exposure labels and verify footer security/encryption claims against actual scoped guarantees before copy changes.
 
 ### I05. Transactions / Συναλλαγές — 5/6
 
@@ -988,7 +1183,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I05.05** Recheck filtering/sorting/date range/pagination/export, accurate counts, empty/no-results states, and shortcut/deep focus for exact event.
 - [x] **I05.06** Exercise edit/delete/undo/receipt/recurring linkage/correction conflict and native/legacy semantic preservation, with durable receipt and failure UI.
 
-### I06. Savings / Αποταμίευση — 4/5
+### I06. Savings / Αποταμίευση — 5/5
 
 **Priority:** P1 · **Owner:** `SavingsPage, goal projections, domain savings` · **Dependencies:** #646 S-03 completed
 
@@ -996,25 +1191,25 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I06.02** Correct chart tick precision and repeated labels for low ranges without synthetic maximum or manipulating underlying balances.
 - [x] **I06.03** Explicitly distinguish monthly savings flow, common cash pool, per-goal target and nonreserved goals; verify #646 S-03 remains intact.
 - [x] **I06.04** Reproduce and guard saving transfer, manual cash offset, HELP/RETURN and goal allocation with linked-account selection and no double posting.
-- [ ] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
+- [x] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
 
-### I07. Debit and prepaid Cards / Κάρτες — 2/5
+### I07. Debit and prepaid Cards / Κάρτες — 5/5
 
 **Priority:** P1 · **Owner:** `CardsPage, CardCreateDialog, CardDetailsDialog, bank visuals` · **Dependencies:** no Android repo change
 
-- [ ] **I07.01** Reconcile card header/recent activity panel widths and large desktop whitespace without implying debit card owns a separate ledger.
-- [ ] **I07.02** Verify exact 16-digit PAN 4×4 input, expiry/CVV, credential reveal/hide, clipboard state, and zero layout shift at 320/375/1440.
-- [ ] **I07.03** Review card stack, archive/recovery/hard-delete settled-state requirements, close focus, keyboard/drag interactions and responsive action affordances.
+- [x] **I07.01** Reconcile card header/recent activity panel widths and large desktop whitespace without implying debit card owns a separate ledger.
+- [x] **I07.02** Verify exact 16-digit PAN 4×4 input, expiry/CVV, credential reveal/hide, clipboard state, and zero layout shift at 320/375/1440.
+- [x] **I07.03** Review card stack, archive/recovery/hard-delete settled-state requirements, close focus, keyboard/drag interactions and responsive action affordances.
 - [x] **I07.04** Validate linked-account transaction provenance: repeated merchant charges remain separate account ledger events, no fabricated card transaction grouping.
 - [x] **I07.05** Guard vault receipt, encrypted secret exclusion from ordinary FinanceData, reveal after reload, partial save/upload failure, cleanup/retry and privacy.
 
-### I08. Credit cards / Πιστωτική — 4/6
+### I08. Credit cards / Πιστωτική — 6/6
 
 **Priority:** P1 · **Owner:** `CreditCardPage, credit statement selectors, secure card UI` · **Dependencies:** #647 A-02 verified
 
 - [x] **I08.01** Reconcile individual selected-card limit vs aggregated portfolio limits/debt/available credit in every card, report and statement.
-- [ ] **I08.02** Reproduce Greek nickname/glyph clipping at exact 320/375/1440/2560 and computed font; preserve real on-card edit WYSIWYG geometry.
-- [ ] **I08.03** Add discoverable clickable card stack indicators if compatible with existing drag, touch and ArrowUp/ArrowDown keyboard behavior; focus state and reduced motion.
+- [x] **I08.02** Reproduce Greek nickname/glyph clipping at exact 320/375/1440/2560 and computed font; preserve real on-card edit WYSIWYG geometry.
+- [x] **I08.03** Add discoverable clickable card stack indicators if compatible with existing drag, touch and ArrowUp/ArrowDown keyboard behavior; focus state and reduced motion.
 - [x] **I08.04** Localize statement/order terms accurately (κατάσταση λογαριασμού), verify dense header/progression and mobile long-page section navigation.
 - [x] **I08.05** Retest purchase/spending, card-payment non-spending, multi-source payment, due-cycle, interest, overlimit, historic as-of and unposted future state.
 - [x] **I08.06** Verify archive only when settled, debt tombstone invariant, delete confirmation, card vault secret isolation, negative paths, real save receipt.
@@ -1039,26 +1234,26 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I10.04** Exercise partial/multiple repayments, historic as-of, future-dated event exclusion, overpayment guards and custom person mapping.
 - [x] **I10.05** Guard masked/unmasked receivables across summary and details, date/amount formatting, failure/conflict/pending receipts.
 
-### I11. Recurring subscriptions and obligations / Πάγια — 4/6
+### I11. Recurring subscriptions and obligations / Πάγια — 5/6
 
 **Priority:** P0 · **Owner:** `RecurringPage, recurrenceCadence, Attention selector, forecast` · **Dependencies:** #646 overdue-display done; forecast approval gated
 
 - [x] **I11.01** Preserve shared canonical `recurringDue` current/overdue state and separate `nextRecurringDate` future schedule, with explicit time reference in UI.
 - [ ] **I11.02** Define unpaid past-cycle forecast policy via approved booked/due/estimated distinction; guard no double counting across 1/2/12/24-month cadences.
 - [x] **I11.03** Retest early/partial/duplicate payments, pause/stop/resume, day-end/Feb/annual rollover and linked canonical Loans payment.
-- [ ] **I11.04** Clarify variable amount estimate vs actual recorded amount; align due-state primary/secondary CTA hierarchy after visual/product review.
+- [x] **I11.04** Clarify variable amount estimate vs actual recorded amount; align due-state primary/secondary CTA hierarchy after visual/product review.
 - [x] **I11.05** Check provider logos/branding partial upload failure, mobile/dark long names, event origin and retry/conflict feedback.
 - [x] **I11.06** Protect historical legacy identity and lifetime purchases from forced monthly recurring reclassification.
 
-### I12. Planning and future cashflow / Προγραμματισμός — 2/5
+### I12. Planning and future cashflow / Προγραμματισμός — 5/5
 
 **Priority:** P1 · **Owner:** `PlanningPage, scheduled cashflow, forecast components` · **Dependencies:** #647 P-02/P-03 complete
 
-- [ ] **I12.01** Reconcile nested pending-list scroll/last-row reachability, keyboard wheel/trackpad and 320/mobile long-viewport accessibility.
+- [x] **I12.01** Reconcile nested pending-list scroll/last-row reachability, keyboard wheel/trackpad and 320/mobile long-viewport accessibility.
 - [x] **I12.02** Keep current portfolio visible and flat sparklines centered as fixed #646, with true forecast vs booked value provenance.
-- [ ] **I12.03** Distinguish scheduled/estimated/due/actually posted transactions in labels, chart legend, tooltip and date resolution.
+- [x] **I12.03** Distinguish scheduled/estimated/due/actually posted transactions in labels, chart legend, tooltip and date resolution.
 - [x] **I12.04** Test create/edit/skip/cancel/complete/failure/undo scheduled events with exact one logical posting, negative scenarios and conflict receipts.
-- [ ] **I12.05** Verify multi-account cash projections, large dates/amounts, expected negative balances and history comparison without double posting.
+- [x] **I12.05** Verify multi-account cash projections, large dates/amounts, expected negative balances and history comparison without double posting.
 
 ### I13. Attention center / Έλεγχος — 5/5
 
@@ -1081,15 +1276,15 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I14.05** Recheck budget create/edit/delete/rule priority/rollover, canceled/pending receipts, conflict, shortcuts, keyboard and deep links.
 - [x] **I14.06** Review 375×4259 mobile long scroll, section anchor visibility, sticky controls, dark theme and horizontal overflow with stress fixtures.
 
-### I15. Settings — General, Profile and Readability — 2/5
+### I15. Settings — General, Profile and Readability — 5/5
 
 **Priority:** P1 · **Owner:** `SettingsPage tabs general/profile, AccountSecuritySettings` · **Dependencies:** release #645 auth errors separate
 
-- [ ] **I15.01** Audit General vs Profile information hierarchy to remove redundant platform metadata without hiding support/diagnostics.
+- [x] **I15.01** Audit General vs Profile information hierarchy to remove redundant platform metadata without hiding support/diagnostics.
 - [x] **I15.02** Review settings tabs as tabs (selection/arrow navigation/activation/focus) on 320/375/768/desktop including deep-linked active tab.
-- [ ] **I15.03** Validate readability/theme preference persistence, large text, reduced motion, focus contrast and browser/native accessibility.
+- [x] **I15.03** Validate readability/theme preference persistence, large text, reduced motion, focus contrast and browser/native accessibility.
 - [x] **I15.04** Recheck profile email/owner session and security actions against actual supported backend calls; no fictitious device activity metadata.
-- [ ] **I15.05** Verify messages/copy in Greek, timestamps, login/session failure instructions and no unsupported claims about encryption/recovery.
+- [x] **I15.05** Verify messages/copy in Greek, timestamps, login/session failure instructions and no unsupported claims about encryption/recovery.
 
 ### I16. Settings — Accounts and Financial Providers — 6/6
 
@@ -1124,11 +1319,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I18.05** Verify device session list, revocation denial paths, stale access, active owner+AAL2 authorization and red failure vs genuine green save receipt.
 - [x] **I18.06** Run desktop backup panel empty/restore/failure/retry/light/dark/mobile accessibility with no physical device gate.
 
-### I19. Quick Entry, payments, local receipts and spending capture — 6/7
+### I19. Quick Entry, payments, local receipts and spending capture — 7/7
 
 **Priority:** P0 · **Owner:** `QuickAdd, ContextualQuickAdd, ReceiptAwareQuickAdd, payment flows` · **Dependencies:** cross-store partial writes and domain posting
 
-- [ ] **I19.01** Audit all create/edit transaction types and actual account/source-target-result editors via shared MoneyInput/Category/Date and keyboard/validation.
+- [x] **I19.01** Audit all create/edit transaction types and actual account/source-target-result editors via shared MoneyInput/Category/Date and keyboard/validation.
 - [x] **I19.02** Guarantee each payment posts exactly one canonical logical event and correct ledger legs across credit, loans, lending, recurring and savings.
 - [x] **I19.03** Verify receipts remain local/authorized, filename/image restrictions, OCR limitations, mapping, ambiguous matches, duplicate imports and no exfiltration.
 - [x] **I19.04** Test independent asset upload/metadata and finance revision partial-success states, cleanup, retry/idempotency and conflict feedback.
@@ -1147,14 +1342,14 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I20.05** Reproduce tooltips/popovers/overflow at topbar and bottom sheet, anchored flipping and reduced motion, with shared regression geometry. Accepted #669, exact cb6e898d CI #46062409972 and inspected 14 focused screenshots; integrated 19a8f899.
 - [x] **I20.06** Exercise copied sensitive value, clipboard fallback, live status/error role, text truncation and mobile reduced-viewport dialogs.
 
-### I21. Windows desktop-only shell, updates and app lock — 0/5
+### I21. Windows desktop-only shell, updates and app lock — 4/5
 
 **Priority:** P1 · **Owner:** `Windows/Electron titlebar, loopback, app lock, updater, backup` · **Dependencies:** never require physical hardware as baseline
 
-- [ ] **I21.01** Validate installed-user launch/first run/loopback without runtime configuration prompts or packaging secret credentials.
-- [ ] **I21.02** Audit app-owned PIN lock/recovery/rate limit, owner+AAL2 session timing, lock-after-idle and foreground/background visibility.
-- [ ] **I21.03** Recheck desktop titlebar, updates, tray/minimize/close navigation, zoom/keyboard/dark/light and error-recovery affordances.
-- [ ] **I21.04** Verify desktop backup/restore native file semantics, safe file picker/permission denied, no partial restore and exact user-visible scope.
+- [x] **I21.01** Validate installed-user launch/first run/loopback without runtime configuration prompts or packaging secret credentials.
+- [x] **I21.02** Audit app-owned PIN lock/recovery/rate limit, owner+AAL2 session timing, lock-after-idle and foreground/background visibility.
+- [x] **I21.03** Recheck desktop titlebar, updates, tray/minimize/close navigation, zoom/keyboard/dark/light and error-recovery affordances.
+- [x] **I21.04** Verify desktop backup/restore native file semantics, safe file picker/permission denied, no partial restore and exact user-visible scope.
 - [ ] **I21.05** Inspect automated Windows installer/lifecycle/rendered QA artifacts on final review head and preserve installer-size/security limits.
 
 ### I22. Finance/API/Supabase authorization and multi-store correctness — 7/7
@@ -1169,13 +1364,13 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I22.06** Test material financial definitions: booked vs due vs estimated, receivable vs cash, credit purchase vs payment and positive-only distribution vs net worth.
 - [x] **I22.07** Establish sensitive-data/redaction invariants for diagnostics, screenshots, browser console, Windows logs and app memory while testing recovery.
 
-### I23. Cross-app rendered QA, accessibility, performance and regression tooling — 4/7
+### I23. Cross-app rendered QA, accessibility, performance and regression tooling — 5/7
 
 **Priority:** P1 · **Owner:** `scripts/run-rendered-qa, visual-evidence, defect intelligence` · **Dependencies:** on last coherent batch only
 
 - [x] **I23.01** Fix visual evidence capture stability: Transactions staggered enter/virtual rows, Dashboard deferred charts, fonts/images/layout ready before full-page screenshot.
 - [x] **I23.02** Build a durable interface-state coverage manifest covering 12 routes × breakpoints/themes plus 7 settings tabs, auth, modals, error/empty/loading/conflict/offline.
-- [ ] **I23.03** Expand meaningful regression locks for focus, aria-live, keyboard, 200% zoom, responsive overflow, hover/focus/danger, reduced motion and long Greek labels.
+- [x] **I23.03** Expand meaningful regression locks for focus, aria-live, keyboard, 200% zoom, responsive overflow, hover/focus/danger, reduced motion and long Greek labels.
 - [x] **I23.04** Add selective visual geometry/data provenance fixtures rather than screenshot-pixel overrides, and document confirmed defect classes in quality/defect-patterns.json.
 - [x] **I23.05** Retain exact-page source tests and narrow browser preflight for changes; run complete rendered + WebKit + Lighthouse + Windows matrix only on final coherent Ready heads.
 - [ ] **I23.06** Audit bundle budgets, loading skeleton shift, large-data route responsiveness and accessibility contrasts without weakening thresholds.

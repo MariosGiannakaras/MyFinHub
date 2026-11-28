@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, enrollMfa as enrollMfaApi, getSession, login as loginApi, logout as logoutApi, verifyMfa as verifyMfaApi, type MfaEnrollment, type SessionInfo } from '../lib/api';
 import { clearAppUnlockToken } from '../lib/appUnlockToken';
+import { AUTH_RELOGIN_MESSAGE } from '../lib/authExpiry';
 
 type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enroll' | 'error';
 
 function operationalMessage(error: unknown, fallback: string) {
   if (!(error instanceof ApiError)) return fallback;
   if (error.status === 429) return 'Έγιναν πολλές προσπάθειες. Περίμενε λίγο και δοκίμασε ξανά.';
-  if (error.status === 503 || error.status === 504) return 'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Η συνεδρία σου δεν διαγράφηκε· δοκίμασε ξανά.';
+  if (error.status === 503 || error.status === 504) return 'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.';
+  if (error.status === 0 && error.code?.startsWith('NETWORK_')) return 'Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.';
   return fallback;
 }
 
@@ -60,7 +62,7 @@ export function useSession() {
     const expired = () => {
       ++transitionEpoch.current;
       clearAppUnlockToken();
-      setEmail(null); setError(''); setState('anonymous');
+      setEmail(null); setError(AUTH_RELOGIN_MESSAGE); setState('anonymous');
     };
     const mfaRequired = () => { void refresh(); };
     window.addEventListener('rheomiq:auth-expired', expired);
@@ -133,7 +135,7 @@ export function useSession() {
       return true;
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
-      setError(operationalMessage(e, 'Η αποσύνδεση δεν ολοκληρώθηκε. Η τρέχουσα συνεδρία παραμένει ενεργή. Δοκίμασε ξανά.'));
+      setError(operationalMessage(e, 'Η αποσύνδεση δεν επιβεβαιώθηκε. Δοκίμασε ξανά.'));
       return false;
     }
   }, [applySession]);

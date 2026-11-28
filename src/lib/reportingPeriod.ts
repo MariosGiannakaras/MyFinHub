@@ -21,5 +21,5 @@ export function reportingPeriodEndDate(month:string,asOf:string){
 
 export function canAdvanceReportingMonth(month:string,maxMonth:string){
   if(!isValidMonthOnly(month)||!isValidMonthOnly(maxMonth))return false;
-  return shiftReportingMonth(month,1)<=maxMonth;
+  return month<maxMonth;
 }

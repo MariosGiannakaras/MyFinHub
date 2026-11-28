@@ -166,13 +166,6 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
 
   useEffect(() => { setMonth((current) => reportingMonthForDate(current, today, monthIsManual)); }, [today, monthIsManual]);
-  useEffect(() => {
-    if (notFound) return;
-    requestAnimationFrame(() => {
-      const heading = document.querySelector<HTMLElement>('#main-workspace h1');
-      if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-    });
-  }, [page, notFound]);
 
   const data = finance.data;
   // One shared operation for user-initiated, automatic-on-reload and manual
@@ -284,7 +277,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const upsertCardDurably=(card:PaymentCard)=>finance.updateDurably(current=>withCard(current,card));
   const stageNewCard=(card:PaymentCard)=>finance.updateDurably(current=>
     (current.state.cards??[]).some(item=>item.id===card.id)?current:withCard(current,{...card,last4:undefined,vaultRef:undefined}));
-  const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
+  const archiveCard = (card: PaymentCard) => upsertCardDurably(archiveCardRecord(card));
   const deleteCard=async(card:PaymentCard)=>{
     if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
     await finance.updateDurably(current=>withCardSecretCleanupPending(current,card,new Date().toISOString(),today));
@@ -406,7 +399,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} onNavigateHistory={finance.goToHistoryPoint} canUndo={finance.canUndo} canRedo={finance.canRedo} undoDepth={finance.undoDepth} redoDepth={finance.redoDepth} historyAvailable={finance.historyAvailable} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
       {(finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0) ? <Suspense fallback={null}><PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/></Suspense> : null}
       {receiptCleanup.pending.length>0 ? <Suspense fallback={null}><ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/></Suspense> : null}
-      {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
+      {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} asOf={today} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}

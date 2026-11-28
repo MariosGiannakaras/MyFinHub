@@ -86,7 +86,7 @@ try{
    const unnamed=controls.filter(el=>!labelText(el)).map(el=>el.outerHTML.slice(0,180));
    const positiveTab=[...document.querySelectorAll('[tabindex]')].filter(el=>Number(el.getAttribute('tabindex'))>0).map(el=>el.outerHTML.slice(0,160));
     const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex="-1"])';
-    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].flatMap(root=>[root,...root.querySelectorAll(hiddenSelector)]).filter(el=>el.matches(hiddenSelector)&&visible(el)).map(el=>el.outerHTML.slice(0,160));
+    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].flatMap(root=>[root,...root.querySelectorAll(hiddenSelector)]).filter(el=>el.matches(hiddenSelector)&&visible(el)&&!el.closest('[inert]')).map(el=>el.outerHTML.slice(0,160));
    const h1=[...document.querySelectorAll('h1')].filter(visible);
    const imgs=[...document.querySelectorAll('img')].filter(visible).filter(img=>!img.hasAttribute('alt')).map(img=>img.outerHTML.slice(0,160));
    const tables=[...document.querySelectorAll('table')].filter(visible).map(table=>({caption:Boolean(table.querySelector('caption')||table.getAttribute('aria-label')||table.getAttribute('aria-labelledby')),headers:table.querySelectorAll('th').length}));
@@ -149,6 +149,11 @@ try{
  for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
    for(const [page,heading] of Object.entries(pages)){
      await navigate(page,heading,width,height,mobile);
+     const navigation=await c.call("function(){const shell=document.querySelector('.app-shell'),desktop=[...document.querySelectorAll('.sidebar nav button[aria-current=page]')],primary=[...document.querySelectorAll('.mobile-nav button[aria-current=page]')],more=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');return {page:shell?.dataset.page,desktop:desktop.map(b=>b.textContent.trim()),primary:primary.map(b=>b.getAttribute('aria-label')),more:more?.classList.contains('active')}}");
+     const navLabel={dashboard:'Dashboard',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική',loans:'Δόσεις & Δάνεια',lending:'Δανεικά / Οφειλές',recurring:'Πάγια',planning:'Προγραμματισμός',attention:'Έλεγχος',reports:'Αναφορές',settings:'Ρυθμίσεις'}[page];
+     const primaryRoute=['dashboard','transactions','savings','cards'].includes(page);
+     assert(navigation.page===page&&navigation.desktop.length===1&&navigation.desktop[0]===navLabel,`${mode}/${page}: canonical sidebar route and current label agree`);
+     assert(primaryRoute?navigation.primary.length===1&&navigation.primary[0]===navLabel&&!navigation.more:navigation.primary.length===0&&navigation.more,`${mode}/${page}: mobile primary/More current route agrees`);
      const audit=await semanticAudit();
      assert(audit.main===1,`${mode}/${page}: expected one main landmark, got ${audit.main}`);
      assert(audit.h1===1,`${mode}/${page}: expected one visible H1, got ${audit.h1}`);
@@ -257,6 +262,28 @@ try{
    }
  }
 
+ // Exercise actual controlled login submission, not just static error markup.
+ for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['tablet',768,900,true],['mobile',320,700,true]])for(const theme of ['light','dark']){
+   await viewport(width,height,mobile);
+   const url=new URL(baseUrl);url.searchParams.set('screen','login-retry');
+   await c.send('Page.navigate',{url:url.href});
+   await waitFor("function(){return !!document.querySelector('#login-password')}",mode+' retry login loaded');
+   await c.call("async function(theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
+   const fill=await c.call("function(){const set=(id,value)=>{const el=document.getElementById(id);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}))};set('login-email','qa@example.invalid');set('login-password','qa-only-password');return true}");
+   assert(fill,mode+' synthetic login input');
+   await waitFor("function(){return document.querySelector('.login-submit')?.disabled===false}",mode+' login ready');
+   for(const [index,message] of ['Λάθος στοιχεία σύνδεσης.','Λάθος στοιχεία σύνδεσης.','Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.','Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.'].entries()){
+     if(index===1)await c.call("function(){const el=document.querySelector('#login-password');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'qa-only-retry-password');el.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+     if(index===1)await waitFor("function(){return !document.querySelector('#login-error')}",mode+' editing dismisses the old error');
+     await c.call("function(){const form=document.querySelector('.login-form');for(let i=0;i<2;i++)form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));return true}");
+     await waitFor("function(n,message){const alert=document.querySelector('#login-error');return Number(document.documentElement.dataset.qaLoginAttempts)===n&&document.querySelector('.login-submit')?.disabled===false&&alert?.textContent?.trim()===message}",mode+' retry shows the correct alert and re-enables form',[index+1,message]);
+     const visible=await c.call("function(){const alert=document.querySelector('#login-error'),rect=alert?.getBoundingClientRect();return Boolean(alert?.getAttribute('role')==='alert'&&rect?.width>0&&rect?.height>0&&rect.top>=0&&rect.bottom<=innerHeight)}");
+     assert(visible,mode+' login retry alert is visible');
+   }
+   await waitForAuthMotion(mode+' login retry settled');
+   const capture=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-retry-${mode}-${theme}.png`,Buffer.from(capture.data,'base64'));
+   await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
+ }
  await navigate('dashboard',pages.dashboard,1440,1000,false);
  // A pre-existing native inert subtree is not owned by the modal coordinator.
  await c.call("function(){const el=document.createElement('div');el.id='qa-existing-inert';el.inert=true;document.body.append(el);return true}");
@@ -427,6 +454,28 @@ try{
 
 
  await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light')}");
+ console.log('Keyboard/semantic accessibility QA: actual More destination selection and current route');
+ await navigate('dashboard',pages.dashboard,375,812,true);
+ for(const [label,page] of [['Πιστωτική','credit'],['Δόσεις & Δάνεια','loans'],['Δανεικά / Οφειλές','lending'],['Πάγια','recurring'],['Προγραμματισμός','planning'],['Έλεγχος','attention'],['Αναφορές','reports'],['Ρυθμίσεις','settings']]){
+   await c.call("function(){const b=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');b.focus();b.click();return true}");
+   await waitFor("function(){return document.querySelector('.mobile-more-menu')?.contains(document.activeElement)}",'More focus before selecting '+page);
+   assert(await c.call("function(label){const button=[...document.querySelectorAll('.mobile-more-menu nav button')].find(b=>b.textContent.trim()===label);button?.focus();button?.click();return Boolean(button)}",[label]),'More destination '+page);
+   await waitFor("function(page,title){return document.querySelector('.app-shell')?.dataset.page===page&&!document.querySelector('.mobile-more-menu')&&document.activeElement?.matches('#main-workspace h1')&&document.activeElement.getClientRects().length>0&&!document.activeElement.closest('[inert]')&&document.activeElement.textContent.includes(title)}",'actual More route heading receives focus '+page,[page,pages[page]]);
+   await c.call("function(){const b=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');b.focus();b.click();return true}");
+   await waitFor("function(label){return document.querySelector('.mobile-more-menu nav button[aria-current=page]')?.textContent.trim()===label}",'More current destination '+page,[label]);
+   await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu')}",'More closes after route verification');
+ }
+ await shot('keyboard-mobile-more-actual-route');
+ console.log('Keyboard/semantic accessibility QA: real rejected lazy resource and recovery');
+ await viewport(1440,1000,false);
+ const lazyUrl=new URL(baseUrl);lazyUrl.searchParams.set('page','transactions');lazyUrl.searchParams.set('failure','lazy');
+ await c.send('Page.navigate',{url:lazyUrl.href});
+ await waitFor("function(){return document.activeElement?.matches('.workspace-error[role=alert]')}",'rejected lazy route focuses sanitized recovery alert');
+ assert(await c.call("function(){const error=document.querySelector('.workspace-error');return !error.textContent.includes('__myfinhub_missing_lazy_resource__')&&error.textContent.includes('Επαναφόρτωση εφαρμογής')&&error.querySelectorAll('button').length===3}"),'lazy failure exposes safe recovery actions, not raw resource error');
+ await shot('keyboard-lazy-resource-error');
+ await c.call("function(){const b=[...document.querySelectorAll('.workspace-error button')].find(b=>b.textContent.trim()==='Dashboard');b.focus();b.click();return true}");
+ await waitFor("function(){return !document.querySelector('.workspace-error')&&document.querySelector('.app-shell')?.dataset.page==='dashboard'&&document.activeElement===document.querySelector('#main-workspace h1')}",'lazy failure Dashboard recovery settles heading focus');
+ await shot('keyboard-lazy-resource-recovered');
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await viewport(720,500,false);

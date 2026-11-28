@@ -25,6 +25,8 @@ describe('reporting period boundaries',()=>{
     expect(canAdvanceReportingMonth('2026-07','2026-08')).toBe(true);
     expect(canAdvanceReportingMonth('2026-08','2026-08')).toBe(false);
     expect(canAdvanceReportingMonth('2026-09','2026-08')).toBe(false);
+    expect(canAdvanceReportingMonth('9999-12','9999-12')).toBe(false);
+    expect(canAdvanceReportingMonth('9999-11','9999-12')).toBe(true);
   });
 
   it('fails closed for malformed month keys',()=>{

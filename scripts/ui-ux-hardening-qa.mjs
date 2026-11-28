@@ -67,6 +67,28 @@ try{
   await noOverflow('auth unavailable 375');await screenshot('mobile-auth-unavailable');
   await c.send('Network.setBlockedURLs',{urls:[]});
 
+  console.log('UI/UX QA: PIN verification invalidated by a newer lock');
+  await navigate({screen:'desktop-lock'},null);
+  await waitFor("function(){return Boolean(document.querySelector('.desktop-app-lock-screen[data-phase=locked] input'))}",'initial locked PIN probe');
+  const enterPin=()=>c.call("function(){const input=document.querySelector('input[aria-label=\"4ψήφιο PIN εφαρμογής\"]');if(!input||input.disabled)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'2468');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  await c.eval('globalThis.__qaPinRace.hold()');
+  assert(await enterPin(),'PIN input accepts synthetic correct PIN');
+  await waitFor("function(){return globalThis.__qaPinRace.held()}",'held verification response');
+  await c.eval("window.dispatchEvent(new Event('myfinhub:app-lock-now'));globalThis.__qaPinRace.release()");
+  await waitFor("function(){return globalThis.__qaPinRace.lockCalls()===1&&document.querySelector('.desktop-app-lock-screen[data-phase=locked] input')?.disabled===false}",'stale successful verification revoked before retry');
+  assert(await c.eval("!document.querySelector('[data-desktop-lock-probe=protected]')"),'stale PIN receipt cannot mount protected workspace');
+  await screenshot('mobile-pin-stale-verification-locked');
+  assert(await enterPin(),'fresh PIN can be verified after stale receipt cleanup');
+  await waitFor("function(){return Boolean(document.querySelector('[data-desktop-lock-probe=protected]'))}",'fresh PIN unlocks protected probe');
+  await c.eval("window.dispatchEvent(new Event('myfinhub:app-lock-now'))");
+  await waitFor("function(){return Boolean(document.querySelector('.desktop-app-lock-screen[data-phase=locked] input'))&&!document.querySelector('[data-desktop-lock-probe=protected]')}",'explicit lock removes protected probe');
+  await c.eval(`(()=>{globalThis.__qaSawPinSuccess=false;const observer=new MutationObserver(()=>{if(document.querySelector('.desktop-app-lock-card.is-success')){observer.disconnect();globalThis.__qaSawPinSuccess=true;window.dispatchEvent(new Event('myfinhub:app-lock-now'))}});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})})()`);
+  assert(await enterPin(),'PIN ready for delayed success test');
+  await waitFor("function(){return globalThis.__qaSawPinSuccess===true}",'success animation interrupted by lock');
+  await sleep(350);
+  assert(await c.eval("!document.querySelector('[data-desktop-lock-probe=protected]')&&Boolean(document.querySelector('.desktop-app-lock-screen[data-phase=locked]'))"),'success animation cannot override a newer lock');
+  await screenshot('mobile-pin-stale-animation-locked');
+
   console.log('UI/UX QA: persistence and error states');
   await viewport(1440,1000);await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);assert(await c.eval("document.querySelector('.persistence-notice.error')?.textContent.includes('Η αποθήκευση δεν ολοκληρώθηκε')"),'friendly persistence error copy');await screenshot('desktop-persistence-error');
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);assert(await c.eval("document.querySelector('.persistence-notice.conflict')?.textContent.includes('Υπάρχουν νεότερα δεδομένα')"),'friendly conflict copy');await screenshot('desktop-persistence-conflict');

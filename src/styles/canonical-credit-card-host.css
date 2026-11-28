@@ -204,19 +204,7 @@
   .credit-card-redesign-page .semantic-table td.actions .row-actions{
     justify-content:flex-start;
   }
-  .credit-card-redesign-page .credit-purchases-table td:nth-child(1)::before,
-  .credit-card-redesign-page .credit-payments-table td:nth-child(1)::before,
-  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(1)::before{content:"Ημερομηνία"}
-  .credit-card-redesign-page .credit-purchases-table td:nth-child(2)::before{content:"Περιγραφή"}
-  .credit-card-redesign-page .credit-purchases-table td:nth-child(3)::before{content:"Κατηγορία"}
-  .credit-card-redesign-page .credit-purchases-table td:nth-child(4)::before,
-  .credit-card-redesign-page .credit-payments-table td:nth-child(3)::before,
-  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(4)::before{content:"Ποσό"}
-  .credit-card-redesign-page .credit-purchases-table td:nth-child(5)::before,
-  .credit-card-redesign-page .credit-payments-table td:nth-child(4)::before{content:"Ενέργειες"}
-  .credit-card-redesign-page .credit-payments-table td:nth-child(2)::before{content:"Από λογαριασμό"}
-  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(2)::before{content:"Τύπος"}
-  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(3)::before{content:"Περιγραφή"}
+  .credit-card-redesign-page .semantic-table td[data-label]::before{content:attr(data-label)}
 }
 
 .credit-history-more{margin-top:10px;justify-self:start}

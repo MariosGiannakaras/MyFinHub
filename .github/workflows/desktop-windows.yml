@@ -86,7 +86,7 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath $probePath)) { throw 'Packaged Electron BrowserWindow state probe did not produce evidence.' }
           $probe = Get-Content -LiteralPath $probePath -Raw | ConvertFrom-Json
-          if (-not $probe.passed -or -not $probe.maximized -or -not $probe.restored) {
+          if (-not $probe.passed -or -not $probe.maximized -or -not $probe.restored -or -not $probe.minimized -or -not $probe.restoredFromMinimize -or -not $probe.zoom.ignored -or -not $probe.zoom.zoomIn -or -not $probe.zoom.upperBound -or -not $probe.zoom.lowerBound -or -not $probe.zoom.reset) {
             throw "Packaged Electron BrowserWindow state probe failed: $($probe | ConvertTo-Json -Compress)"
           }
           if ($probe.size[0] -ne 1100 -or $probe.size[1] -ne 760) {
@@ -97,7 +97,13 @@ jobs:
             Wait-Process -Id $probeProcess.Id -Timeout 10 -ErrorAction SilentlyContinue
             $probeProcess.Refresh()
           }
-          if (-not $probeProcess.HasExited) { taskkill /PID $probeProcess.Id /T /F | Out-Null }
+          if (-not $probeProcess.HasExited) {
+            taskkill /PID $probeProcess.Id /T /F | Out-Null
+            throw 'Packaged app did not exit after normal window close.'
+          }
+          if ($probeProcess.ExitCode -ne 0) { throw "Packaged normal window close exited with code $($probeProcess.ExitCode)." }
+          $remainingBackend = Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' }
+          if ($remainingBackend) { throw 'Packaged normal window close left the local backend running.' }
           Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
             Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
           }

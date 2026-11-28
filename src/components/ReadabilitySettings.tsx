@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { rovingTabDestination } from '../lib/rovingTabDestination';
 import { getThemePreference, setThemePreference, subscribeThemePreference, type ThemePreference } from '../lib/theme';
 import type { TextSizePreference } from '../types';
 import { Surface } from './Surface';
@@ -14,6 +15,19 @@ const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; description:
   { value: 'light', label: 'Φωτεινό', description: 'Φωτεινό θέμα με ήπιες επιφάνειες και καθαρή αντίθεση.' },
   { value: 'dark', label: 'Σκούρο', description: 'Σκούρο θέμα σχεδιασμένο για άνετη ανάγνωση χωρίς υπερβολική αντίθεση.' },
 ];
+
+function handleRadioKey(event:KeyboardEvent<HTMLDivElement>){
+  const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role=radio]')];
+  const active=(event.target as HTMLElement).closest('button[role=radio]');
+  if(!active)return;
+  const index=buttons.indexOf(active as HTMLButtonElement);
+  const key=event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft':event.key;
+  const next=rovingTabDestination(key,index,buttons.length);
+  if(next===null)return;
+  event.preventDefault();
+  buttons[next].focus();
+  buttons[next].click();
+}
 
 export function ReadabilitySettings({ value = 'normal', onChange }: { value?: TextSizePreference; onChange: (value: TextSizePreference) => void }) {
   const [theme, setTheme] = useState<ThemePreference>(() => getThemePreference());
@@ -37,13 +51,14 @@ export function ReadabilitySettings({ value = 'normal', onChange }: { value?: Te
           <b>Μέγεθος κειμένου</b>
           <small>Εφαρμόζεται σε όλη την εφαρμογή.</small>
         </div>
-        <div className="text-size-picker" role="radiogroup" aria-label="Μέγεθος κειμένου">
+        <div className="text-size-picker" role="radiogroup" aria-label="Μέγεθος κειμένου" onKeyDown={handleRadioKey}>
           {OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               role="radio"
               aria-checked={value === option.value}
+              tabIndex={value === option.value ? 0 : -1}
               className={value === option.value ? 'active' : ''}
               title={option.description}
               onClick={() => onChange(option.value)}
@@ -59,13 +74,14 @@ export function ReadabilitySettings({ value = 'normal', onChange }: { value?: Te
           <b>Θέμα</b>
           <small>Σύστημα, φωτεινό ή σκούρο θέμα χωρίς αλλαγή των οικονομικών δεδομένων.</small>
         </div>
-        <div className="text-size-picker" role="radiogroup" aria-label="Θέμα εμφάνισης">
+        <div className="text-size-picker" role="radiogroup" aria-label="Θέμα εμφάνισης" onKeyDown={handleRadioKey}>
           {THEME_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               role="radio"
               aria-checked={theme === option.value}
+              tabIndex={theme === option.value ? 0 : -1}
               className={theme === option.value ? 'active' : ''}
               title={option.description}
               onClick={() => chooseTheme(option.value)}

@@ -39,6 +39,7 @@ try{
   assert(loginState.heading.includes('Σύνδεση'),'hard expiry returns to login');
   assert(loginState.password==='password','login password remains masked');
   assert(!loginState.financeShell,'hard expiry never leaves finance workspace mounted');
+  assert(await c.call("function(){return document.querySelector('#login-error[role=alert]')?.textContent.includes('Συνδέσου ξανά')&&document.querySelector('#login-email')?.getAttribute('aria-invalid')!=='true'&&document.querySelector('#login-password')?.getAttribute('aria-invalid')!=='true'}"),'hard expiry explains re-login without marking untouched credentials invalid');
   await shot('session-hard-expiry');
 
   console.log('Session runtime QA passed.');

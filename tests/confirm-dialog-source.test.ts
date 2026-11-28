@@ -30,7 +30,7 @@ describe('ConfirmDialog source contract',()=>{
     expect(source).toContain('onRequestClose={cancel}');
     expect(styles).toContain('[data-tone="destructive"]');
     expect(styles).toContain('.destructive-action');
-    expect(styles).toContain('background:var(--red)');
+    expect(styles).toContain('background:var(--danger-solid,var(--red))');
   });
 
   it('keeps narrow-screen confirmation actions touch safe',()=>{

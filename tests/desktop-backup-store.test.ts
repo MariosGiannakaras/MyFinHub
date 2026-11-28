@@ -117,6 +117,27 @@ describe('desktop automatic backup store', () => {
     expect(fs.readFileSync(unrelated,'utf8')).toBe('preserve');
   });
 
+  it('preserves the original folder and verified snapshot when the chosen destination cannot be read', () => {
+    const {root,store}=setup();
+    store.initialize();
+    const first=store.save({data,revision:'465'});
+    const before=store.status();
+    const bad=path.join(root,'bad-catalog');
+    fs.mkdirSync(bad);
+    for(const value of ['invalid JSON',JSON.stringify({version:1,backups:[null]})]){
+      fs.writeFileSync(path.join(bad,'backup-index.json'),value);
+      expect(()=>store.setFolder(bad)).toThrow();
+      expect(store.status()).toEqual(before);
+      expect(store.restoreCandidate(first.name)).toEqual(data);
+      expect(fs.readFileSync(path.join(bad,'backup-index.json'),'utf8')).toBe(value);
+    }
+    const file=path.join(root,'not-a-folder');
+    fs.writeFileSync(file,'unrelated');
+    expect(()=>store.setFolder(file)).toThrow();
+    expect(store.status()).toEqual(before);
+    expect(fs.readFileSync(file,'utf8')).toBe('unrelated');
+  });
+
   it('switches to an explicitly selected folder without erasing old backups', () => {
     const { root, store } = setup();
     store.initialize();

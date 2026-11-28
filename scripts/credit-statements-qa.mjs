@@ -88,8 +88,12 @@ try{
   assert(archive.deleteEnabled,'settled archived card remains eligible for hard delete');
   await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));row?.querySelector('button.danger:not([disabled])')?.click();return true}");
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'hard-delete confirmation');
+  await c.call("function(){document.querySelector('.app-confirm-dialog button[data-autofocus=true]')?.click()}");
+  await waitFor("function(){return !document.querySelector('.app-confirm-dialog')&&Boolean([...document.querySelectorAll('.card-archive-row')].find(row=>row.textContent.includes('QA Settled')))&&!document.querySelector('[data-deleted-statement-history]')}",'cancel hard-delete preserves archived identity');
+  await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));const button=row?.querySelector('button.danger:not([disabled])');button?.focus();button?.click()}");
+  await waitFor("function(){const b=document.querySelector('.app-confirm-dialog button[data-action-tone=\\\"destructive\\\"]');return Boolean(b&&!b.disabled&&!b.closest('[inert]')&&b.getClientRects().length)}",'reopened hard-delete confirmation');
   await c.call("function(){const confirm=document.querySelector('.app-confirm-dialog button[data-action-tone=\"destructive\"]');confirm?.click();return Boolean(confirm)}");
-  await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))}",'deleted statement history');
+  await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))&&!document.querySelector('.app-confirm-dialog')&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'deleted statement history and surviving close focus');
   await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.card-archive-manager')}",'archive manager close after deletion');
   const deleted=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const identity=section?.querySelector('.deleted-credit-history-card > .panel-head')?.textContent||'';const text=section?.textContent||'';return {text,identity,identityLeaksNickname:/QA Settled/.test(identity),leaksProtectedIdentity:/2222|ΠΕΙΡΑΙΩΣ/.test(text),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");

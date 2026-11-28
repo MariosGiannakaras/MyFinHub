@@ -86,7 +86,24 @@ try{
     throw new Error(`Visual evidence did not reach painted content state for ${page}: ${JSON.stringify({animations:last,ledger:lastPaint})}`);
   };
   const navigate=async(page,heading)=>{const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');await c.send('Page.navigate',{url:url.href});for(let i=0;i<100;i++){if(await c.call("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading]))break;if(i===99)throw new Error(`Timed out waiting for visual route ${page}`);await sleep(100)}await waitForVisualPaint(page);if(page==='dashboard'){await revealDashboardForVisualEvidence();await waitForDashboardSteadyState()}if(page==='reports')await assertReportCreditLayout();const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");if(visibleQaControl)throw new Error(`QA-only crash control is visible in visual capture for ${page}`)};
-  const assertMobileCreditHistory=async()=>{const state=await c.call(`function(){const rows=[...document.querySelectorAll('.credit-purchases-table tbody tr,.credit-payments-table tbody tr')];const details=rows.map(row=>{const cells=[...row.querySelectorAll('td')],amount=row.querySelector('td.amount'),actions=row.querySelector('td.actions');const rect=row.getBoundingClientRect(),amountRect=amount?.getBoundingClientRect(),actionsRect=actions?.getBoundingClientRect();return {cells:cells.length,rowWidth:rect.width,amountVisible:Boolean(amountRect&&amountRect.width>0&&amountRect.left>=0&&amountRect.right<=innerWidth+1),actionsVisible:!actions||Boolean(actionsRect&&actionsRect.width>0&&actionsRect.left>=0&&actionsRect.right<=innerWidth+1)}});return {rows:details.length,details,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);if(!state.rows)throw new Error('Visual QA expected populated mobile credit history rows');if(state.overflow>1||state.details.some(item=>!item.amountVisible||!item.actionsVisible))throw new Error(`Mobile credit history is clipped or unreadable: ${JSON.stringify(state)}`)};
+  const assertMobileCreditHistory=async()=>{
+    const state=await c.call(`function(){
+      const rows=[...document.querySelectorAll('.credit-purchases-table tbody tr,.credit-payments-table tbody tr')];
+      const allRows=[...document.querySelectorAll('.credit-card-redesign-page .semantic-table tbody tr')];
+      const label=cell=>getComputedStyle(cell,'::before').content;
+      const validLabels=allRows.every(row=>{
+        const cells=[...row.querySelectorAll('td')],headers=[...row.closest('table').querySelectorAll('thead th')].map(node=>node.textContent.trim());
+        if(!cells.length||cells.length!==headers.length||!cells.every((cell,i)=>cell.dataset.label===headers[i]&&label(cell)===JSON.stringify(headers[i])))return false;
+        const first=cells[0],next=first.nextSibling,expected=label(first);
+        try{row.append(first);return label(first)===expected&&cells.every(cell=>label(cell)===JSON.stringify(cell.dataset.label))}finally{row.insertBefore(first,next)}
+      });
+      const details=rows.map(row=>{const amount=row.querySelector('td.amount'),actions=row.querySelector('td.actions'),amountRect=amount?.getBoundingClientRect(),actionsRect=actions?.getBoundingClientRect();return {amountVisible:Boolean(amountRect&&amountRect.width>0&&amountRect.left>=0&&amountRect.right<=innerWidth+1),actionsVisible:Boolean(actionsRect&&actionsRect.width>0&&actionsRect.left>=0&&actionsRect.right<=innerWidth+1)}});
+      return {rows:details.length,details,validLabels,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth};
+    }`);
+    if(!state.rows)throw new Error('Visual QA expected populated mobile credit history rows');
+    if(!state.validLabels)throw new Error('Mobile credit history labels must match semantic headers and survive sibling reorder');
+    if(state.overflow>1||state.details.some(item=>!item.amountVisible||!item.actionsVisible))throw new Error(`Mobile credit history is clipped or unreadable: ${JSON.stringify(state)}`);
+  };
   const fullPage=async(page,mode,width,height)=>{
     let captureOverride=false;
     if(page==='transactions'){

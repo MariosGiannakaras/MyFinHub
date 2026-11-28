@@ -30,7 +30,8 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(login).toContain("from './Button'");
     expect(login).toContain('<Button variant="primary" className="login-submit" type="submit" disabled={busy||!ready}');
     expect(login).toContain('onSubmit={submit}');
-    expect(login).toContain('if(busy||!ready)return');
+    expect(login).toContain('if(submitting.current||!ready)return');
+    expect(login).toContain('submitting.current=true');
     expect(login).not.toContain('primary-action');
     expect(login).toContain("from './IconButton'");
     expect(login).toContain('<IconButton type="button" variant="quiet" className="login-password-toggle"');

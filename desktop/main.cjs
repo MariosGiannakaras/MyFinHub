@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain, clipboard, nativeTheme, systemPreferences } = require('electron');
 const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -12,6 +12,7 @@ const {
   startupError,
 } = require('./startup-diagnostics.cjs');
 const { createDesktopBackupStore } = require('./backup-store.cjs');
+const { registerAppLockIpc } = require('./app-lock-main.cjs');
 
 const PRODUCT_NAME = 'MyFinHub';
 const APP_ID = 'app.myfinhub.desktop';
@@ -29,6 +30,7 @@ const WINDOW_STATE_PROBE_PATH = String(process.env.MYFINHUB_WINDOW_STATE_PROBE_P
 const UPDATE_HOSTS = new Set(['github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com']);
 
 let mainWindow = null;
+let mainOrigin = null;
 let setupWindow = null;
 let desktopBackupStore = null;
 let backend = null;
@@ -40,7 +42,7 @@ let downloadedInstaller = null;
 let startingConfiguredApp = false;
 let lastSetupDiagnostic = null;
 let setupRuntimeState = { progress: 6, step: 1, message: 'Αναμονή για τα στοιχεία σύνδεσης.', error: null };
-let updateState = { supported: process.platform === 'win32', currentVersion: app.getVersion(), status: 'idle', availableVersion: null, progress: 0, message: '' };
+let updateState = { sequence: 0, supported: process.platform === 'win32', currentVersion: app.getVersion(), status: 'idle', availableVersion: null, progress: 0, message: '' };
 
 app.setName(PRODUCT_NAME);
 const singleInstance = app.requestSingleInstanceLock();
@@ -353,6 +355,31 @@ function hardenWindow(window, allowedOrigin = null) {
   window.webContents.on('will-attach-webview', event => event.preventDefault());
 }
 
+// Keep zoom local to the focused desktop window; do not register global shortcuts.
+function handleWindowZoom(contents, event, input) {
+  if (input.type !== 'keyDown' || !input.control || input.alt || input.meta || input.isComposing) return;
+  const key = input.key;
+  if (!['+', '=', '-', '0'].includes(key)) return;
+  event.preventDefault();
+  const current = contents.getZoomFactor();
+  const next = key === '0' ? 1 : Math.round((current + (key === '-' ? -0.1 : 0.1)) * 10) / 10;
+  contents.setZoomFactor(Math.max(0.8, Math.min(2, next)));
+}
+
+function captionPalette(theme, highContrast, getSystemColor) {
+  if (highContrast) return { color: getSystemColor('window'), symbolColor: getSystemColor('window-text') };
+  return theme === 'dark'
+    ? { color: '#131d2f', symbolColor: '#e7eefb' }
+    : { color: '#f4f7fb', symbolColor: '#10234d' };
+}
+
+let captionTheme = null;
+function refreshCaptionTheme() {
+  if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed()) return;
+  const theme = captionTheme || (nativeTheme.shouldUseDarkColors ? 'dark' : 'light');
+  mainWindow.setTitleBarOverlay(captionPalette(theme, nativeTheme.shouldUseHighContrastColors, name => systemPreferences.getColor(name)));
+}
+
 function stopBackend() {
   const child = backend;
   backend = null;
@@ -364,7 +391,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function runWindowStateProbe(window) {
   if (!WINDOW_STATE_PROBE_PATH || process.platform !== 'win32' || window.isDestroyed()) return;
-  const result = { maximized: false, restored: false, size: null, passed: false, error: null };
+  const result = { maximized: false, restored: false, minimized: false, restoredFromMinimize: false, size: null, zoom: null, passed: false, error: null };
   try {
     window.maximize();
     await delay(500);
@@ -377,7 +404,32 @@ async function runWindowStateProbe(window) {
     window.setSize(1100, 760);
     await delay(500);
     result.size = window.getSize();
-    result.passed = Boolean(result.maximized && result.restored && result.size?.[0] === 1100 && result.size?.[1] === 760);
+
+    window.minimize();
+    await delay(400);
+    result.minimized = window.isMinimized();
+    window.restore();
+    await delay(400);
+    result.restoredFromMinimize = !window.isMinimized();
+
+    // Exercise the same registered keyboard handler on the real packaged
+    // WebContents. Synthetic input events are not a physical-keyboard test.
+    const contents = window.webContents;
+    const key = (value, control = true) => {
+      let prevented = false;
+      contents.emit('before-input-event', { preventDefault: () => { prevented = true; } }, { type: 'keyDown', key: value, control });
+      return prevented;
+    };
+    contents.setZoomFactor(1);
+    const ignored = !key('a') && !key('+', false);
+    const zoomIn = key('+') && Math.abs(contents.getZoomFactor() - 1.1) < 0.01;
+    for (let i = 0; i < 15; i++) key('+');
+    const upperBound = Math.abs(contents.getZoomFactor() - 2) < 0.01;
+    for (let i = 0; i < 20; i++) key('-');
+    const lowerBound = Math.abs(contents.getZoomFactor() - 0.8) < 0.01;
+    const reset = key('0') && Math.abs(contents.getZoomFactor() - 1) < 0.01;
+    result.zoom = { ignored, zoomIn, upperBound, lowerBound, reset };
+    result.passed = Boolean(result.maximized && result.restored && result.minimized && result.restoredFromMinimize && result.size?.[0] === 1100 && result.size?.[1] === 760 && Object.values(result.zoom).every(Boolean));
   } catch (error) {
     result.error = error instanceof Error ? error.message : String(error);
   }
@@ -389,11 +441,12 @@ async function runWindowStateProbe(window) {
     console.error('Window-state probe write failed:', error instanceof Error ? error.message : String(error));
   }
 
-  setTimeout(() => app.quit(), 120);
+  setTimeout(() => { if (!window.isDestroyed()) window.close(); }, 120);
 }
 
 function createWindow(origin, runtime) {
   Menu.setApplicationMenu(null);
+  mainOrigin = new URL(origin).origin;
   mainWindow = new BrowserWindow({
     title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
     ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
@@ -404,6 +457,10 @@ function createWindow(origin, runtime) {
     },
   });
   hardenWindow(mainWindow, origin);
+  mainWindow.webContents.on('before-input-event', (event, input) => handleWindowZoom(mainWindow.webContents, event, input));
+  captionTheme = null;
+  refreshCaptionTheme();
+  nativeTheme.on('updated', refreshCaptionTheme);
   mainWindow.once('ready-to-show', () => {
     const window = mainWindow;
     if (!window || window.isDestroyed()) return;
@@ -411,7 +468,7 @@ function createWindow(origin, runtime) {
     if (WINDOW_STATE_PROBE_PATH) void runWindowStateProbe(window);
   });
   mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('closed', () => { nativeTheme.removeListener('updated', refreshCaptionTheme); mainWindow = null; mainOrigin = null; captionTheme = null; });
   void mainWindow.loadURL(origin);
 }
 
@@ -439,7 +496,7 @@ function sanitizedUpdateState() {
 }
 
 function setUpdateState(patch) {
-  updateState = { ...updateState, ...patch };
+  updateState = { ...updateState, ...patch, sequence: updateState.sequence + 1 };
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('myfinhub:update-state', sanitizedUpdateState());
 }
 
@@ -474,7 +531,7 @@ async function checkForUpdates(manual = false) {
     setUpdateState({ status: 'unsupported', message: 'Οι ενημερώσεις είναι διαθέσιμες μόνο στην εγκατεστημένη έκδοση Windows.' });
     return sanitizedUpdateState();
   }
-  if (['checking', 'downloading', 'installing'].includes(updateState.status)) return sanitizedUpdateState();
+  if (updatePromptActive || ['checking', 'downloading', 'ready', 'installing'].includes(updateState.status)) return sanitizedUpdateState();
   setUpdateState({ status: 'checking', progress: 0, message: manual ? 'Έλεγχος για νέα έκδοση…' : '' });
   try {
     const found = await fetchLatestRelease();
@@ -594,7 +651,12 @@ function powershellLiteral(value) {
 }
 
 function installDownloadedUpdate() {
-  if (!downloadedInstaller || updateState.status !== 'ready' || !fs.existsSync(downloadedInstaller)) throw new Error('No verified update is ready.');
+  if (!downloadedInstaller || !pendingRelease || updateState.status !== 'ready') throw new Error('No verified update is ready.');
+  if (!fs.existsSync(downloadedInstaller)) {
+    downloadedInstaller = null;
+    setUpdateState({ status: 'error', progress: 0, message: 'Το επαληθευμένο αρχείο δεν είναι διαθέσιμο. Έλεγξε ξανά για ενημέρωση.' });
+    return sanitizedUpdateState();
+  }
   const currentExe = process.execPath;
   const command = [
     'Start-Sleep -Milliseconds 1500',
@@ -613,21 +675,27 @@ function installDownloadedUpdate() {
 async function promptForAvailableUpdate() {
   if (updatePromptActive || !mainWindow || mainWindow.isDestroyed() || !pendingRelease || updateState.status !== 'available') return;
   updatePromptActive = true;
+  const release = pendingRelease;
   try {
     const choice = await dialog.showMessageBox(mainWindow, {
-      type: 'info', title: `${PRODUCT_NAME} — Ενημέρωση`, message: `Νέα έκδοση ${pendingRelease.version}`,
+      type: 'info', title: `${PRODUCT_NAME} — Ενημέρωση`, message: `Νέα έκδοση ${release.version}`,
       detail: 'Θα ληφθεί από το επίσημο GitHub Release και θα επαληθευτεί με SHA-256 πριν γίνει διαθέσιμη για εγκατάσταση.',
       buttons: ['Λήψη ενημέρωσης', 'Αργότερα'], defaultId: 0, cancelId: 1, noLink: true,
     });
-    if (choice.response !== 0) return;
+    if (choice.response !== 0 || release !== pendingRelease || updateState.status !== 'available') return;
     await downloadUpdate();
-    if (updateState.status !== 'ready' || !downloadedInstaller || !mainWindow || mainWindow.isDestroyed()) return;
+    if (release !== pendingRelease || updateState.status !== 'ready' || !downloadedInstaller || !mainWindow || mainWindow.isDestroyed()) return;
+    const installer = downloadedInstaller;
     const install = await dialog.showMessageBox(mainWindow, {
-      type: 'info', title: `${PRODUCT_NAME} — Έτοιμη ενημέρωση`, message: `Η έκδοση ${pendingRelease.version} είναι έτοιμη`,
+      type: 'info', title: `${PRODUCT_NAME} — Έτοιμη ενημέρωση`, message: `Η έκδοση ${release.version} είναι έτοιμη`,
       detail: 'Το MyFinHub θα κλείσει, θα εγκαταστήσει την επαληθευμένη ενημέρωση και θα ανοίξει ξανά. Χωρίς πληρωμένο Windows certificate μπορεί να εμφανιστεί Unknown publisher / SmartScreen.',
       buttons: ['Εγκατάσταση & επανεκκίνηση', 'Αργότερα'], defaultId: 0, cancelId: 1, noLink: true,
     });
-    if (install.response === 0) installDownloadedUpdate();
+    if (install.response === 0 && release === pendingRelease && installer === downloadedInstaller && updateState.status === 'ready') installDownloadedUpdate();
+  } catch {
+    if (release === pendingRelease && ['available', 'ready'].includes(updateState.status)) {
+      setUpdateState({ message: 'Η επιβεβαίωση ενημέρωσης δεν ολοκληρώθηκε. Μπορείς να συνεχίσεις από τις ρυθμίσεις.' });
+    }
   } finally {
     updatePromptActive = false;
   }
@@ -653,15 +721,46 @@ function isSetupSender(event) {
   } catch { return false; }
 }
 
+function isLegacyLockSender(event) {
+  if (!isMainSender(event) || event.senderFrame !== mainWindow.webContents.mainFrame || !mainOrigin) return false;
+  try { return new URL(event.senderFrame.url).origin === mainOrigin; } catch { return false; }
+}
+
+async function requireLegacyLockAccess(event) {
+  if (!isLegacyLockSender(event)) throw new Error('Unauthorized IPC sender.');
+  // Canonical endpoint proves current owner, AAL2 and active session.
+  const response = await event.sender.session.fetch(new URL('/api/auth/app-lock', mainOrigin).href, {
+    method: 'GET', credentials: 'include', cache: 'no-store',
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('APP_LOCK_AUTH_REQUIRED');
+  const state = await response.json();
+  if (state?.ok !== true || state.enabled !== false || !isLegacyLockSender(event)) throw new Error('APP_LOCK_LEGACY_UNAVAILABLE');
+}
+
 function registerIpcHandlers() {
+  registerAppLockIpc({ isTrustedSender: isLegacyLockSender, requireLegacyAccess: requireLegacyLockAccess });
+  ipcMain.on('myfinhub:caption-theme', (event, theme) => {
+    if (!isLegacyLockSender(event) || !['light', 'dark'].includes(theme)) return;
+    captionTheme = theme;
+    refreshCaptionTheme();
+  });
   ipcMain.handle('myfinhub:get-info', event => {
     if (!isMainSender(event) && !isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
     return { productName: PRODUCT_NAME, version: app.getVersion(), packaged: app.isPackaged };
   });
   ipcMain.handle('myfinhub:get-update-state', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return sanitizedUpdateState(); });
   ipcMain.handle('myfinhub:check-updates', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return checkForUpdates(true); });
-  ipcMain.handle('myfinhub:download-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return downloadUpdate(); });
-  ipcMain.handle('myfinhub:install-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return installDownloadedUpdate(); });
+  ipcMain.handle('myfinhub:download-update', (event, version) => {
+    if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.');
+    if (typeof version !== 'string' || version !== pendingRelease?.version) throw new Error('Update selection changed.');
+    return downloadUpdate();
+  });
+  ipcMain.handle('myfinhub:install-update', (event, version) => {
+    if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.');
+    if (typeof version !== 'string' || version !== pendingRelease?.version) throw new Error('Update selection changed.');
+    return installDownloadedUpdate();
+  });
   // The renderer has no Node filesystem or privileged database credentials.
   // Backup snapshots are fetched by main from authenticated server GET /api/data.
   const assertBackupSender = event => {
@@ -721,9 +820,10 @@ function registerIpcHandlers() {
       defaultPath: desktopBackupStore.folder(),
       properties: ['openDirectory', 'createDirectory'],
     });
-    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
-    // Recheck after the native dialog: session can expire while it is open.
+    // Recheck after the native dialog even on cancellation: returning the
+    // backup catalog is itself a privileged read.
     await requireBackupAccess(event, unlockToken);
+    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
     return desktopBackupStore.setFolder(picked.filePaths[0]);
   });
   ipcMain.handle('myfinhub:backup-open-folder', async (event, unlockToken) => {

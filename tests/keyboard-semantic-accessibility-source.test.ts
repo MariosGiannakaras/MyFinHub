@@ -14,6 +14,8 @@ const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
+    expect(qa).toContain('canonical sidebar route and current label agree');
+    expect(qa).toContain('mobile primary/More current route agrees');
     for(const page of ['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']){
       expect(qa).toContain(`${page}:`);
     }
@@ -70,7 +72,7 @@ describe('keyboard and semantic accessibility verification contract',()=>{
 
   it('keeps historical credit statement tables semantically labelled',()=>{
     expect(credit).toContain('<caption className="sr-only">Κινήσεις ιστορικής δήλωσης πιστωτικής</caption>');
-    expect(credit).toContain('<thead><tr><th>Ημερομηνία</th><th>Τύπος</th><th>Περιγραφή</th><th className="amount">Ποσό</th></tr></thead>');
+    expect(credit).toContain('<thead><tr><th scope="col">Ημερομηνία</th><th scope="col">Τύπος</th><th scope="col">Περιγραφή</th><th scope="col" className="amount">Ποσό</th></tr></thead>');
   });
 
   it('checks shared modal focus trapping, escape and opener restoration',()=>{

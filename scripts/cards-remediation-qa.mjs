@@ -181,5 +181,28 @@ try{
   await shot('cards-sensitive-copy-unmounted-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCardStaleVaultRestore?.();return true}"),'restore isolated pending vault and clipboard spies');
 
+  console.log('Archive confirmation focus, Escape and reversible card identity');
+  await viewport(375,812);await navigate('');
+  const cardIdentity=await c.call("function(){const card=document.querySelector('.prototype-payment-card');const b=card.querySelector('button[aria-label=\\\"Αρχειοθέτηση κάρτας\\\"]');b.focus();b.click();return card.dataset.commandCardId}");
+  await waitFor("function(){const card=document.querySelector('.prototype-payment-card');return document.activeElement?.classList.contains('r-card-archive-keyboard')&&card.querySelector('.card-header').inert&&card.querySelector('.card-body').inert}",'archive confirmation owns keyboard focus');
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
+  await waitFor("function(){return !document.querySelector('.r-card-archive-confirm')&&document.activeElement?.getAttribute('aria-label')==='Αρχειοθέτηση κάρτας'}",'cancelled archive restores opener');
+  await archiveCard(false,'focus-restore');
+  await waitFor("function(){return document.activeElement?.matches('.cards-archive>summary')}",'completed archive focuses reachable archive summary');
+  await c.call("function(){const details=document.querySelector('.cards-archive');details.open=true;const restore=details.querySelector('.card-archive-actions button');restore.focus();restore.click();return true}");
+  await waitFor("function(id){return document.activeElement?.dataset.commandCardId===id&&!document.querySelector('.cards-archive .card-archive-row')}",'restore focuses same active card',[cardIdentity]);
+  await shot('cards-archive-restored-focus-375');
+
+  console.log('Rejected archive receipt preserves the original debit card');
+  await navigate('');
+  await c.call("function(){history.replaceState(null,'',location.pathname+'?page=cards&card-profile-save-failure=1');return true}");
+  assert(await c.call("function(){const button=document.querySelector('.prototype-payment-card button[aria-label=\\\"Αρχειοθέτηση κάρτας\\\"]');button?.click();return Boolean(button)}"),'arm rejected archive');
+  await waitFor("function(){return Boolean(document.querySelector('.r-card-archive-keyboard'))}",'rejected archive slider');
+  await c.call("function(){document.querySelector('.r-card-archive-keyboard').click();return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card'))&&!document.querySelector('.r-card-archive-shred')&&document.querySelector('.r-card-status')?.textContent.includes('δεν επιβεβαιώθηκε')}",'rejected archive remains visible and announces failure');
+  assert(await c.call("function(){return !document.querySelector('.cards-archive .card-archive-row')&&!document.querySelector('.r-card-status')?.textContent.includes('αρχειοθετήθηκε') }"),'rejected archive has no archived row or success state');
+  await shot('cards-archive-rejected-receipt');
+
   c.close();console.log(`Cards remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

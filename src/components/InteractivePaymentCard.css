@@ -29,7 +29,7 @@
 .prototype-payment-card .card-nickname{
   max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--card-muted);font-size:var(--ux-dense-data-size);font-weight:760;
-  letter-spacing:.035em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.13);
+  letter-spacing:.035em;line-height:1.4;text-shadow:0 1px 3px rgba(0,0,0,.13);
 }
 .prototype-payment-card .card-toolbar{
   display:flex;align-items:center;justify-content:flex-end;gap:5px;
@@ -155,6 +155,9 @@
   .prototype-payment-card .card-nickname{max-width:96px}
   .prototype-payment-card .card-toolbar{grid-template-columns:repeat(3,40px);gap:2px}
   .prototype-payment-card .card-body{gap:11px}
+  /* Keep all four masked/revealed quartets within the real copy-button slot
+     at the smallest card width. Inline editing inherits these same metrics. */
+  .prototype-payment-card .card-number{font-size:.86rem;letter-spacing:.04em}
   .prototype-payment-card .card-fields{
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
     gap:7px 9px;

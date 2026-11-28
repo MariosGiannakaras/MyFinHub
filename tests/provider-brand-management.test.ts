@@ -119,8 +119,8 @@ describe('provider branding management',()=>{
   it('keeps compact owned finance filters legible and external MoneyInput aria-invalid intact',()=>{
     const css=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
     const density=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');
-    expect(css).toContain('min-height:32px;border-radius:8px;font-size:12px');
-    expect(density).toContain('padding:0 30px 0 8px;font-size:12px');
+    expect(css).toContain('min-height:32px;border-radius:8px;font-size:max(12px,var(--ux-dense-data-size))');
+    expect(density).toContain('padding:0 30px 0 8px;font-size:max(12px,var(--ux-dense-data-size))');
     const field=readFileSync(new URL('../src/components/MoneyInput.tsx',import.meta.url),'utf8');
     expect(field).toContain("aria-invalid={invalid||inputProps['aria-invalid']||undefined}");
     expect(providerBrandingQaSource).toContain('compact Transactions filters remain at least 12px');

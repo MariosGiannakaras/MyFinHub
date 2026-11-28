@@ -72,6 +72,26 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('last-row action menu must remain visible and clickable');
   });
 
+  it('exposes a named keyboard-scrollable scheduled list and distinguishes projections from bookings',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    const mobile=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+    expect(component).toContain('className="planning-approved-table-wrap" role="region" aria-labelledby="planning-approved-scheduled-title" tabIndex={0}');
+    expect(component).toContain('name="Προβλεπόμενη ρευστότητα"');
+    expect(component).toContain('οι εκτιμήσεις παγίων δεν είναι καταχωρισμένες πληρωμές');
+    const presentation=readFileSync(new URL('../src/lib/forecastPresentation.ts',import.meta.url),'utf8');
+    expect(presentation).toContain('Καταχωρισμένο · μελλοντική ημερομηνία');
+    expect(presentation).toContain('counts.dated_event');
+    expect(presentation).toContain('event.date>asOf');
+    expect(presentation).toContain('event.id===item.completedEventId');
+    expect(component).toContain('forecastSourceSummary(forecasts[90].sourceCounts)');
+    expect(mobile).toContain('forecastSourceSummary(forecast.sourceCounts)');
+    expect(component).toContain('completedScheduledDescription(data,item,asOf)');
+    expect(mobile).toContain('completedScheduledDescription(data,item,asOf)');
+    expect(qa).toContain('physical wheel reaches earlier scheduled rows');
+    expect(qa).toContain('mobile pending expansion focuses first newly available row');
+    expect(qa).toContain('keyboard End reaches final scheduled row');
+  });
+
   it('allocates axis width from formatted cash values so large negative signs stay inside the chart',()=>{
     const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
     expect(component).toContain('const portfolioAxisWidth=Math.max(82');
@@ -82,6 +102,14 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('tick.left>=negativeAxis.rootLeft+8');
     expect(qa).toContain("root.querySelectorAll('svg text')");
     expect(qa).toContain("includes('€')");
+  });
+
+  it('keeps actual Planning heading and dense data readable instead of substituting tiny pseudo text',()=>{
+    expect(refinement).not.toMatch(/\.page-heading.*::(?:before|after)/);
+    expect(refinement).not.toMatch(/font-size:[789](?:\.\d+)?px/);
+    expect(refinement).toContain('.planning-approved-table{font-size:var(--ux-dense-data-size)}');
+    expect(target).toContain('overflow-wrap:anywhere;font-variant-numeric:tabular-nums');
+    expect(readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8')).toContain('Planning actual Greek heading, description and dense table follow large text roles');
   });
 
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{

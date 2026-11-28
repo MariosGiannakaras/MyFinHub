@@ -17,8 +17,8 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   openBackupFolder: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-open-folder', unlockToken),
   getUpdateState: () => ipcRenderer.invoke('myfinhub:get-update-state'),
   checkForUpdates: () => ipcRenderer.invoke('myfinhub:check-updates'),
-  downloadUpdate: () => ipcRenderer.invoke('myfinhub:download-update'),
-  installUpdate: () => ipcRenderer.invoke('myfinhub:install-update'),
+  downloadUpdate: (version) => ipcRenderer.invoke('myfinhub:download-update', version),
+  installUpdate: (version) => ipcRenderer.invoke('myfinhub:install-update', version),
   onUpdateState: (listener) => {
     if (typeof listener !== 'function') return () => {};
     const handler = (_event, state) => listener(state);
@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   getAppLockState: () => ipcRenderer.invoke('myfinhub:get-app-lock-state'),
   verifyAppPin: (pin) => ipcRenderer.invoke('myfinhub:verify-app-pin', pin),
   setAppPin: (value) => ipcRenderer.invoke('myfinhub:set-app-pin', value),
-  setAppLockTimeout: (minutes) => ipcRenderer.invoke('myfinhub:set-app-lock-timeout', minutes),
-  disableAppPin: () => ipcRenderer.invoke('myfinhub:disable-app-pin'),
+  setAppLockTimeout: (minutes, currentPin) => ipcRenderer.invoke('myfinhub:set-app-lock-timeout', minutes, currentPin),
+  disableAppPin: (currentPin) => ipcRenderer.invoke('myfinhub:disable-app-pin', currentPin),
   getRecoveryState: async () => {
     const state = await rawRecoveryState();
     return {
@@ -56,3 +56,20 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
     return () => ipcRenderer.removeListener(startupProgressChannel, handler);
   },
 }));
+
+// Only observe the existing resolved theme, never expose arbitrary native styling IPC.
+if (process.isMainFrame && location.protocol === 'http:' && location.hostname === '127.0.0.1') {
+  window.addEventListener('DOMContentLoaded', () => {
+    let previous;
+    const root = document.documentElement;
+    const sync = () => {
+      const theme = root.dataset.theme;
+      if (theme !== previous && (theme === 'light' || theme === 'dark')) {
+        previous = theme;
+        ipcRenderer.send('myfinhub:caption-theme', theme);
+      }
+    };
+    new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    sync();
+  }, { once: true });
+}

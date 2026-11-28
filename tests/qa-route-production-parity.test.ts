@@ -17,6 +17,11 @@ describe('rendered QA matches production page-level code splitting',()=>{
     expect(qa).toContain('<Suspense fallback={<PageSkeleton/>}>');
     expect(qa).toContain('<PageErrorBoundary resetKey={page}');
     expect(qa).toContain('lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content');
+    expect(qa).toContain("onDashboard={()=>{setLazyFailure(false);setCrash(false);setPage('dashboard')}}");
+    const keyboard=readFileSync('scripts/keyboard-semantic-accessibility-qa.mjs','utf8');
+    expect(keyboard).toContain('lazy failure Dashboard recovery settles heading focus');
+    expect(keyboard).toContain('actual More route heading receives focus');
+    expect(keyboard).toContain("for(const theme of ['light','dark'])");
     expect(qa).toContain('const content=page');
     expect(qa).toContain('saveState===\'loading\'');
     // Lighthouse must build the exact same QA routing and not silently

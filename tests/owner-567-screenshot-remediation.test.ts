@@ -65,6 +65,9 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('rows={panIsLong?2:1}');
     expect(editor).toContain('<AppTextarea data-autofocus');
     expect(file('../scripts/frontend-qa.mjs')).toContain('card-inline-edit-16-digits-');
+    expect(file('../src/components/InteractivePaymentCard.css')).toContain('.prototype-payment-card .card-number{font-size:.86rem;letter-spacing:.04em}');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('masked PAN retains all four identifying digits at ');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('remasking retains the full identifying quartet at ');
     expect(file('../scripts/frontend-qa.mjs')).toContain('editing preserves original credit-compatible card ratio, PAN/CVV font sizes');
     expect(file('../scripts/card-vault-runtime-qa.mjs')).toContain('HTMLTextAreaElement.prototype');
     expect(editor).toContain('card-inline-value card-inline-expiry');
@@ -83,7 +86,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
     // The app's general 16px mobile form-input override must not inflate the
     // physical card's 16-digit PAN and force unseen wrapped textarea rows.
-    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
+    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:max(16px,var(--ux-body-size))!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}');
     expect(inlineCss).toContain('.app-card-details-inline .card-number.card-inline-edit-host{');

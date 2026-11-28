@@ -440,14 +440,14 @@ try{
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);
   await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Goal'))}",'expired goal fixture');
-  const historicDeadline=await c.call("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].find(row=>(row.textContent||'').includes('QA Expired Goal'))?.lastElementChild?.textContent?.trim()||''}");
+  const historicDeadline=await c.call("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].find(row=>(row.textContent||'').includes('QA Expired Goal'))?.querySelector('[data-goal-field=deadline] [data-goal-value]')?.textContent?.trim()||''}");
   assert(Boolean(historicDeadline)&&historicDeadline!=='Χωρίς προθεσμία','historical personal-goal deadline shown');
   await clickText('.savings-goals-desktop .savings-goal-row.personal button','Επεξεργασία');
   await waitFor("function(){return (document.querySelector('.savings-dialog')?.textContent||'').includes('Η υπάρχουσα προθεσμία έχει παρέλθει')}",'existing expired date preservation disclosed');
   await setLabelInput('Όνομα στόχου','QA Expired Renamed');
   await clickText('.savings-dialog .editor-actions button','Αποθήκευση στόχου');
   await waitFor("function(){return !document.querySelector('#savings-goal-editor-title')&&[...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Renamed'))}",'historical goal unrelated edit saves');
-  const retainedDeadline=await c.call("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].find(row=>(row.textContent||'').includes('QA Expired Renamed'))?.lastElementChild?.textContent?.trim()||''}");
+  const retainedDeadline=await c.call("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].find(row=>(row.textContent||'').includes('QA Expired Renamed'))?.querySelector('[data-goal-field=deadline] [data-goal-value]')?.textContent?.trim()||''}");
   assert(retainedDeadline===historicDeadline,'unmodified expired deadline survives finance mutation');
   await screenshot('savings-expired-goal-retained-deadline-desktop');
 

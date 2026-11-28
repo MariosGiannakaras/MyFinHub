@@ -76,8 +76,8 @@ try{
   const saveMode=await c.call("function(){const button=[...document.querySelectorAll('[role=dialog] button')].find(item=>(item.textContent||'').trim()==='Αποθήκευση');button?.click();return Boolean(button)}");
   assert(saveMode,'variable amount editor shares one durable save action');
   await waitFor("function(){return !document.querySelector('[role=dialog]')}",'variable recurring saved receipt');
-  const savedVariable=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
-  assert(savedVariable,'responsive recurring list visibly labels the forecast amount as estimate');
+  const savedVariable=await c.call("function(){const row=[...document.querySelectorAll('.mobile-recurring-row')].find(item=>item.getClientRects().length>0&&item.querySelector('.mobile-recurring-amount small')?.textContent==='Εκτίμηση · όχι πληρωμή');const pay=row?.querySelector('.mobile-pay-action'),menu=row?.querySelector('.mobile-action-menu');return Boolean(row&&pay&&pay.getClientRects().length>0&&menu&&!menu.open&&pay.getAttribute('aria-label')?.startsWith('Πληρωμή '))}");
+  assert(savedVariable,'responsive recurring list visibly separates estimated amount from actual payment, with payment primary and management collapsed');
   const duplicateSuccess=await c.call("function(){return (document.querySelector('.recurring-approved-page .action-status')?.textContent||'').includes('αποθηκεύτηκε')}");
   assert(!duplicateSuccess,'true top-edge save progress remains the only routine save confirmation');
   await shot('recurring-variable-estimate-saved-mobile');

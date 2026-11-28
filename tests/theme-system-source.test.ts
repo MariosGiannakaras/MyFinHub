@@ -41,6 +41,19 @@ describe('theme architecture source contract',()=>{
     expect(rendered).not.toContain("innerText.trim()==='Light'");
   });
 
+  it('uses the shared roving keyboard contract for both appearance radio groups',()=>{
+    expect(settings).toContain("rovingTabDestination(key,index,buttons.length)");
+    expect(settings).toContain("tabIndex={value === option.value ? 0 : -1}");
+    expect(settings).toContain("tabIndex={theme === option.value ? 0 : -1}");
+    expect(settings).toContain("event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft'");
+    expect(rendered).toContain('theme ArrowRight wraps Dark to System and persists');
+    expect(rendered).toContain('text-size End selects large');
+    expect(rendered).toContain('text-size radio ArrowLeft focus');
+    expect(rendered).toContain('large-text responsive geometry');
+    expect(rendered).toContain('[320,375,390,768,1440,2560]');
+    expect(rendered).toContain('mobile navigation labels remain readable and contained');
+  });
+
   it('binds interactive borders and formerly light-biased chrome to semantic theme roles',()=>{
     expect(theme).toContain("'--control-border':'#5a7092'");
     expect(theme).toContain('.eyebrow,.quick-modal>header small{color:var(--info)!important}');
@@ -64,6 +77,27 @@ describe('theme architecture source contract',()=>{
     expect(reportsStyles).toContain('background:var(--warning-bg)');
     expect(reportsStyles).toContain('background:var(--error-bg)');
     expect(rendered).toContain('dark Reports executive picture is a dark semantic surface');
+  });
+
+  it('keeps solid destructive confirmation contrast distinct from status foreground colors',()=>{
+    const primitives=readFileSync('scripts/primitives-adoption-qa.mjs','utf8');
+    expect(theme).toContain("'--danger-solid':'#b32942'");
+    expect(theme).toContain('background:var(--danger-solid)!important;color:var(--white)!important');
+    expect(primitives).toContain('actual destructive confirmation label contrast');
+    expect(primitives).toContain("for(const theme of ['light','dark'])");
+  });
+
+  it('preserves actual outlines when forced colors suppress box shadows',()=>{
+    const controls=readFileSync('src/styles/app-controls.css','utf8');
+    expect(controls).toContain('@media (forced-colors:active)');
+    expect(controls).toContain('outline:2px solid Highlight!important');
+    expect(controls).toContain('.app-input-shell>.app-control:focus-visible{outline:0!important}');
+    expect(rendered).toContain("name:'forced-colors',value:'active'");
+    expect(rendered).toContain('forced colors retains a single visible composite field outline');
+    expect(rendered).toContain('OS reduced motion disables Login entrance and smooth scrolling');
+    expect(rendered).toContain("forcedPseudoClasses:['autofill','focus','focus-visible']");
+    expect(rendered).toContain('focused autofill preserves semantic surface, readable text and outer ring');
+    expect(controls).toContain('.app-input-shell>.app-control:-webkit-autofill{border-radius:0;-webkit-text-fill-color:var(--ink)!important;caret-color:var(--ink);box-shadow:0 0 0 1000px');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{

@@ -24,6 +24,14 @@ describe('LegacyTransactionEditor shared action primitive ownership',()=>{
     expect(editor).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
   });
 
+  it('rejects malformed changed amounts before invoking the durable override, without rewriting historical precision',()=>{
+    expect(editor).toContain("amount === String(transaction.amount) && type === transaction.type");
+    expect(editor).toContain("parseMoneyInputAmount(amount, type === 'adjustment')");
+    expect(editor).toContain('invalid={Boolean(error && amountInvalid)}');
+    expect(editor.indexOf('if (numeric === null || amountInvalid)')).toBeLessThan(editor.indexOf('await onSave(normalized)'));
+    expect(editor).not.toContain("Number(amount.replace");
+  });
+
   it('removes direct generic class ownership from this editor',()=>{
     expect(editor).not.toContain('className="save-button"');
     expect(editor).not.toContain('className="secondary"');

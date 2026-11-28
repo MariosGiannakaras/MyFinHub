@@ -367,6 +367,10 @@ function buildQaData(params:URLSearchParams){
       next.state.cards=[...cards,...variants.map((item,index)=>({...base,...item,createdAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`,updatedAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`}))];
     }
   }
+  if(params.get('state')==='credit-greek-nickname'||params.get('state')==='credit-greek-nickname-payzy'){
+    const payzy=params.get('state')==='credit-greek-nickname-payzy';
+    next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'&&card.active!==false?{...card,nickname:'Ύψος ΐΰ',...(payzy?{bankId:'payzy',designId:'payzy-neo'}:{})}:card);
+  }
   if(params.get('state')==='credit-stack'||params.get('state')==='credit-stack-long'){
     const cards=next.state.cards??[],base=cards.find(card=>card.kind==='credit'&&card.active!==false);
     if(base){
@@ -544,7 +548,7 @@ function buildQaData(params:URLSearchParams){
 
 function QaWorkspace(){
   const params=new URLSearchParams(location.search);
-  const lazyFailure=params.get('failure')==='lazy';
+  const [lazyFailure,setLazyFailure]=useState(()=>params.get('failure')==='lazy');
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
   const entryEditProbe=params.get('state')==='entry-edit-provenance';
   useEffect(()=>{
@@ -698,7 +702,7 @@ function QaWorkspace(){
   const upsertCard=(card:PaymentCard)=>update(current=>({...current,state:{...current.state,cards:[...(current.state.cards??[]).filter(item=>item.id!==card.id),card]}}));
   const upsertCardDurably=async(card:PaymentCard)=>{if(new URLSearchParams(location.search).get('card-profile-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προφίλ απέτυχε.');upsertCard(card)};
   const stageNewCard=async(card:PaymentCard)=>{if(!(data.state.cards??[]).some(item=>item.id===card.id))upsertCard({...card,last4:undefined,vaultRef:undefined})};
-  const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
+  const archiveCard=(card:PaymentCard)=>upsertCardDurably(archiveCardRecord(card));
   const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
@@ -833,11 +837,11 @@ function QaWorkspace(){
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setLazyFailure(false);setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       <ReceiptCleanupNotice pendingCount={receiptCleanup.pending.length} busy={receiptCleanup.busy} onRetry={receiptCleanup.retry}/>
-      {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
-      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
+      {periodVisible?<div className="period-row"><PeriodControl month={month} asOf={today} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
+      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setLazyFailure(false);setCrash(false);setPage('dashboard')}}><Suspense fallback={<PageSkeleton/>}>{lazyFailure?<LazyResourceFailure/>:crash?<Crash/>:content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduledDurably} onReceiptCleanupFailure={receiptCleanup.onFailure} currentBalance={id=>accountBalances(data,today)[id]||0}/>
@@ -882,7 +886,19 @@ function QaSessionSignalProbe(){
   return <LoginScreen onLogin={session.login} error={session.error}/>;
 }
 
+function QaLoginRetryProbe(){
+  const [error,setError]=useState('');
+  return <LoginScreen error={error} onLogin={async()=>{
+    const attempt=Number(document.documentElement.dataset.qaLoginAttempts||'0')+1;
+    document.documentElement.dataset.qaLoginAttempts=String(attempt);
+    await new Promise(resolve=>setTimeout(resolve,180));
+    setError(attempt<=2?'Λάθος στοιχεία σύνδεσης.':attempt===3?'Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.':'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.');
+    return false;
+  }}/>;
+}
+
 function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
+  if(screen==='login-retry')return <QaLoginRetryProbe/>;
   const loginErrors:Record<string,string>={
     'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
     'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',

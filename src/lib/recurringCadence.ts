@@ -1,5 +1,5 @@
 import type { RecurrenceUnit, RecurringItem } from '../types.js';
-import { isValidDateOnly } from './dateOnly.js';
+import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
 
 function normalizedInterval(value: unknown) {
   const parsed = Number(value ?? 1);
@@ -28,20 +28,14 @@ export function recurringMonthlyEquivalent(item: RecurringItem) {
   return Number(item.amount || 0) / months;
 }
 
-function utcDate(value: string) {
-  return new Date(`${value}T12:00:00Z`);
-}
-
-function buildDate(year: number, monthIndex: number, day: number) {
-  const last = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(year, monthIndex, Math.min(day, last), 12)).toISOString().slice(0, 10);
-}
-
 export function addRecurringInterval(date: string, item: RecurringItem) {
   if (!isValidDateOnly(date)) return null;
-  const parsed = utcDate(date);
-  const months = recurringCadence(item).months;
-  return buildDate(parsed.getUTCFullYear(), parsed.getUTCMonth() + months, parsed.getUTCDate());
+  const absolute=Number(date.slice(0,4))*12+Number(date.slice(5,7))-1+recurringCadence(item).months;
+  const year=Math.floor(absolute/12);
+  if(year<1||year>9999)return null;
+  const month=String(year).padStart(4,'0')+'-'+String(absolute%12+1).padStart(2,'0');
+  const last=Number(calendarMonthRange(month).end.slice(8));
+  return month+'-'+String(Math.min(Number(date.slice(8)),last)).padStart(2,'0');
 }
 
 export function advanceRecurringDate(anchor: string, item: RecurringItem, asOf: string) {
@@ -50,11 +44,11 @@ export function advanceRecurringDate(anchor: string, item: RecurringItem, asOf: 
   let guard = 0;
   while (next < asOf && guard < 240) {
     const advanced = addRecurringInterval(next, item);
-    if (!advanced || advanced === next) return null;
+    if (!advanced || advanced <= next) return null;
     next = advanced;
     guard += 1;
   }
-  return next;
+  return next>=asOf?next:null;
 }
 
 export function validRecurringAnchor(value: string | null | undefined) {

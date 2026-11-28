@@ -64,7 +64,11 @@ describe('time-aware product integration', () => {
   });
 
   it('surfaces scheduled items on Dashboard without replacing actual transaction entry', () => {
-    expect(dashboard).toContain("item.source==='recurring'?'Πάγια':item.source==='loan'?'Δόσεις / Δάνεια':'Προγραμματισμένα'");
+    const presentation=readFileSync(new URL('../src/lib/forecastPresentation.ts',import.meta.url),'utf8');
+    expect(dashboard).toContain('group:upcomingPaymentGroup(item)');
+    expect(presentation).toContain("if(item.source==='recurring')");
+    expect(presentation).toContain("if(item.source==='loan')return 'Δόσεις / Δάνεια'");
+    expect(presentation).toContain("item.source==='dated_event'?'Καταχωρισμένα':'Προγραμματισμένα'");
     expect(dashboard).toContain('cashFlowForecast(data,asOf,30)');
     expect(dashboard).toContain('onPlanning');
     expect(dashboard).toContain('Νέα κίνηση');

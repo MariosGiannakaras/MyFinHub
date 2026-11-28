@@ -42,6 +42,73 @@ describe('card archive exit-motion regression #570',()=>{
     expect(debitCss).toContain('pointer-events:none');
   });
 
+  it('requires durable archive and restore receipts without changing irreversible deletion',()=>{
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(app).toContain('upsertCardDurably(archiveCardRecord(card))');
+    expect(qa).toContain('upsertCardDurably(archiveCardRecord(card))');
+    for(const page of ['CardsPage','CreditCardPage']){
+      const source=readFileSync(new URL(`../src/pages/${page}.tsx`,import.meta.url),'utf8');
+      expect(source).toContain('onArchiveCard:(card:PaymentCard)=>Promise<void>');
+      expect(source).toContain('await onArchiveCard(');
+      expect(source).toContain('await onUpsertCardDurably(');
+      expect(source).toContain('Η αρχειοθέτηση δεν επιβεβαιώθηκε.');
+      expect(source).toContain('Η επαναφορά δεν επιβεβαιώθηκε.');
+    }
+    expect(credit).toContain('finally{swiping=false}if(!effectActive)return;');
+    expect(credit).toContain('maskDecoration(ghostNode)');
+    expect(credit).toContain('maskDecoration(clone)');
+    expect(credit).toContain("node.setAttribute('aria-hidden','true');node.inert=true");
+    expect(credit).toContain("field.textContent='••••'");
+  });
+
+  it('makes archive confirmation keyboard reachable and isolates covered card controls',()=>{
+    expect(debit).toContain('inert={deleteOpen}');
+    expect(debit).toContain('const cancelArchive=');
+    expect(debit).toContain("event.key==='Escape'&&!busy");
+    expect(credit).toContain('inert aria-hidden="true"');
+    expect(credit).toContain('stackIndex===0&&revealedRef.current.has(card.id)');
+    expect(credit).toContain('if(id!==orderRef.current[0])revealedRef.current.delete(id)');
+    expect(credit).toContain("node.inert=true");
+    expect(credit).toContain("node.inert=false");
+    expect(credit).toContain("armed.querySelector<HTMLButtonElement>('.delete-btn')?.focus");
+    expect(credit).toContain("document.documentElement.dataset.motion==='reduced'");
+  });
+
+  it('retains same-card action focus after imperative DOM replacement without focusing covered cards',()=>{
+    const render=credit.slice(credit.indexOf('    function render(){'),credit.indexOf('    renderRef.current=render;'));
+    expect(render.indexOf('const focused=document.activeElement')).toBeLessThan(render.indexOf('stage.innerHTML='));
+    expect(render).toContain('focusedId===activeId&&document.activeElement===document.body');
+    expect(render).toContain('`.stack-card.top .${action}`');
+    expect(render).toContain("button.dataset.field===field");
+    expect(render).toContain('(replacement??stage).focus({preventScroll:true})');
+  });
+
+  it('cancels replaced confirmation DOM and guards archive mutations until a durable receipt',()=>{
+    expect(credit).toContain("if(deleteMode){deleteMode=false;stage.classList.remove('delete-mode')}");
+    expect(credit).toContain('if(swiping||!cardEl?.isConnected||orderRef.current[0]!==id)return');
+    for(const page of ['CardsPage','CreditCardPage']){
+      const source=readFileSync(new URL(`../src/pages/${page}.tsx`,import.meta.url),'utf8');
+      expect(source).toContain('const archiveMutation=useRef(false)');
+      expect(source).toContain('if(archiveMutation.current)return');
+      expect(source).toContain('archiveMutation.current=true;setRestoring(true)');
+      expect(source).toContain('archiveMutation.current=false;setRestoring(false)');
+      expect(source).toContain('Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε');
+    }
+    const page=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    expect(page).toContain('<FormError id="credit-archive-error">{archiveError}</FormError>');
+  });
+
+  it('settles archive focus against committed card identity and enabled archive controls',()=>{
+    const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
+    const creditPage=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    expect(cards).toContain('if(activeCards.some(item=>item.id===card.id)!==restored)return');
+    expect(cards).toContain('if(!cardFocus||restoring||deleteBusy||deleteTarget)return');
+    expect(creditPage).toContain('if(restoredId&&!activeCredit.some(item=>item.id===restoredId))return');
+    expect(creditPage).toContain('if(deletedId&&archivedCredit.some(item=>item.id===deletedId))return');
+    expect(creditPage).toContain("'.close-picker:not([disabled])'");
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

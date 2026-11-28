@@ -1,5 +1,6 @@
+import { formatLocalTimestamp } from '../lib/formatTimestamp';
 import { CheckCircle2, FolderOpen, HardDriveDownload, RefreshCw, TriangleAlert } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { desktopBackupBridge, type LocalBackupStatus } from '../lib/desktopBackups';
 import type { FinanceData } from '../types';
 import { Button } from './Button';
@@ -7,7 +8,7 @@ import { Surface } from './Surface';
 
 const HOUR_MS = 60 * 60 * 1000;
 const STATUS_REFRESH_MS = 5 * 60 * 1000;
-const dateLabel = (value:string) => new Date(value).toLocaleString('el-GR');
+const dateLabel = formatLocalTimestamp;
 
 export function DesktopBackupPanel({
   refreshToken, onPrepareRestore,
@@ -20,17 +21,28 @@ export function DesktopBackupPanel({
   const [error, setError] = useState('');
   const [operation, setOperation] = useState<'folder' | 'open' | 'restore' | 'refresh' | null>(null);
   const busy = operation !== null;
+  const active = useRef(false);
+  const requestVersion = useRef(0);
+  const actionPending = useRef(false);
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; requestVersion.current += 1; };
+  }, [bridge]);
 
   useEffect(() => {
     if (!bridge) return;
     let live = true;
     const refresh = async () => {
+      if (actionPending.current) return;
+      const version = ++requestVersion.current;
+      const currentRequest = () => live && version === requestVersion.current;
       try {
         const current = await bridge.getBackupStatus();
-        if (live) { setStatus(current); setError(''); }
+        if (currentRequest()) { setStatus(current); setError(''); }
       } catch {
         // Do not continue presenting an obsolete result as current after auth expires.
-        if (live) { setStatus(null); setError('Η κατάσταση των τοπικών αντιγράφων δεν είναι διαθέσιμη. Έλεγξε τη σύνδεση και προσπάθησε ξανά.'); }
+        if (currentRequest()) { setStatus(null); setError('Η κατάσταση των τοπικών αντιγράφων δεν είναι διαθέσιμη. Έλεγξε τη σύνδεση και προσπάθησε ξανά.'); }
       }
     };
     void refresh();
@@ -47,16 +59,30 @@ export function DesktopBackupPanel({
   if (!bridge) return null;
 
   const action = async (kind:NonNullable<typeof operation>, run:()=>Promise<unknown>) => {
-    if (busy) return;
+    if (actionPending.current || !active.current) return;
+    actionPending.current = true;
+    const version = ++requestVersion.current;
+    const currentRequest = () => active.current && version === requestVersion.current;
     setOperation(kind);
     setError('');
     try {
-      await run();
-      setStatus(await bridge.getBackupStatus());
+      const result = await run();
+      if (!currentRequest()) return;
+      // Refresh directly only once, and recheck authorization before showing
+      // a restore candidate. A failed verification must not open the preview.
+      const current = kind === 'refresh' ? result as LocalBackupStatus : await bridge.getBackupStatus();
+      if (!currentRequest()) return;
+      setStatus(current);
+      if (kind === 'restore') onPrepareRestore(result as FinanceData);
     } catch {
-      setStatus(null);
-      setError('Η ενέργεια ή η επιβεβαίωσή της δεν ολοκληρώθηκε. Επανέλεγξε την κατάσταση πριν συνεχίσεις.');
-    } finally { setOperation(null); }
+      if (currentRequest()) {
+        setStatus(null);
+        setError('Η ενέργεια ή η επιβεβαίωσή της δεν ολοκληρώθηκε. Επανέλεγξε την κατάσταση πριν συνεχίσεις.');
+      }
+    } finally {
+      actionPending.current = false;
+      if (active.current) setOperation(null);
+    }
   };
 
   const lastValid = status?.lastValidBackupAt ? Date.parse(status.lastValidBackupAt) : NaN;
@@ -93,7 +119,7 @@ export function DesktopBackupPanel({
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div className="settings-data-action-copy">
           <strong>{stateText}</strong>
-          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}${revisionBehind ? ' · Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.' : ''}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
+          <small>{status ? (Number.isFinite(lastValid) ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}${revisionBehind ? ' · Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.' : ''}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
         </div>
       </div>
       <div className="settings-app-list desktop-backup-facts">
@@ -125,7 +151,7 @@ export function DesktopBackupPanel({
                 <small>Revision {item.revision} · {Math.ceil(item.bytes / 1024)} KB · {item.valid ? 'Επαληθευμένο (SHA-256)' : 'Μη έγκυρο αρχείο — απαγορεύεται η επαναφορά'}</small>
               </div>
               <Button type="button" variant="secondary" disabled={busy || !item.valid} aria-label={`Επαναφορά αντιγράφου ${dateLabel(item.createdAt)}`} onClick={() => void action(
-                'restore', async () => { onPrepareRestore(await bridge.getRestoreCandidate(item.name)); },
+                'restore', () => bridge.getRestoreCandidate(item.name),
               )}>{operation === 'restore' ? 'Έλεγχος…' : 'Επαναφορά'}</Button>
             </div>
           ))}

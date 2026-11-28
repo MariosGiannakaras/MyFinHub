@@ -33,7 +33,8 @@ describe('cross-page UI consistency contracts',()=>{
   it('uses the shared page frame and PageHeader across all routed finance/settings surfaces',()=>{
     const pageHeader=read('src/components/PageHeader.tsx');
     expect(pageHeader).toContain("['page-heading',className]");
-    expect(pageHeader).toContain('<h1>{title}</h1>');
+    expect(pageHeader).toContain('<h1 ref={headingRef} tabIndex={-1}>{title}</h1>');
+    expect(pageHeader).toContain('heading.focus({ preventScroll: true })');
     expect(pageHeader).toContain('className="heading-actions"');
     for(const file of routedPages){
       const source=read(file);

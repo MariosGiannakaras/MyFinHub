@@ -36,18 +36,35 @@
 }
 
 #myfinhub-card-stack .dot{
-  flex:0 0 auto;
+  flex:0 0 24px;
+  width:24px;
+  height:24px;
+  min-width:24px;
+  min-height:24px;
+  padding:0;
+  border:0;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:transparent;
+  color:var(--muted);
+  box-shadow:none;
+  cursor:pointer;
+}
+#myfinhub-card-stack .dot::before{
+  content:'';
   width:6px;
   height:6px;
   border-radius:999px;
-  background:#bdc9db;
-  transition:width .28s cubic-bezier(.2,.8,.2,1),background .28s ease,transform .28s ease;
+  background:currentColor;
 }
-
-#myfinhub-card-stack .dot.active{
+#myfinhub-card-stack .dot.active::before{
   width:22px;
-  background:#4777d6;
-  transform:scaleY(1.05);
+  background:var(--accent);
+}
+#myfinhub-card-stack .dot:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
 }
 
 #myfinhub-card-stack .delete-confirm{

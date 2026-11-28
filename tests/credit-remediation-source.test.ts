@@ -25,6 +25,11 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     ])expect(reports).toContain(token);
   });
 
+  it('validates direct purchase and credit limit money using the canonical lexical cent parser',()=>{
+    expect(page).toContain('const numeric=parseMoneyInputAmount(amount);if(numeric===null||numeric<=0)');
+    expect(page).toContain('const numeric=parseMoneyInputAmount(limitText);if(numeric===null||numeric<0)');
+  });
+
   it('keeps one canonical stack navigation model and populated create reachability',()=>{
     expect(page).toContain('<Plus/> Προσθήκη πιστωτικής');
     expect(page).toContain('aria-label={`Αρχείο καρτών, ${archivedCredit.length}`}');
@@ -55,6 +60,20 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stackOne).toContain('transition:none');
   });
 
+  it('lets accessible pagination select the existing deck without a second host navigator',()=>{
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(stack).toContain('data-dot-id=');
+    expect(stack).toContain('aria-current=');
+    expect(stack).toContain('dots.addEventListener(\'click\',dotClick)');
+    expect(stack).toContain('dots.removeEventListener(\'click\',dotClick)');
+    expect(stack).toContain('if(swiping||drag||deleteMode||orderRef.current[0]===id||!currentCard(id))return');
+    expect(stack).toContain('if(focusedDot)(activeDot??stage).focus({preventScroll:true})');
+    expect(stackTwo).toContain('min-width:24px');
+    expect(stackTwo).toContain('.dot:focus-visible');
+    expect(qa).toContain('clicked indicator selects its card and retains focus');
+    expect(qa).toContain('indicator Home selects the first card with one Tab stop');
+  });
+
   it('contains pagination and exposes drag discovery without restoring host navigation',()=>{
     // Dot pagination must scroll its own horizontal rail without moving the document.
     expect(stack).toContain('dots.scrollTo({left,behavior:');
@@ -63,7 +82,7 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain('Σύρε κάθετα για αλλαγή κάρτας');
     expect(stackTwo).toContain('width:min(100%,280px)');
     expect(stackTwo).toContain('overflow-x:auto');
-    expect(stackTwo).toContain('flex:0 0 auto');
+    expect(stackTwo).toContain('flex:0 0 24px');
     expect(stackTwo).toContain('.stack-drag-hint');
   });
 
@@ -100,6 +119,26 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).not.toContain("top.addEventListener('pointerdown',startDrag)");
     expect(stack).not.toContain('activeDot.scrollIntoView');
     expect(stack).toContain('dots.scrollTo({left,behavior:');
+  });
+
+  it('does not ship obsolete physical-card action and inline editing selectors',()=>{
+    const stackFour=readFileSync(new URL('../src/styles/canonical-credit-card-stack-4.css',import.meta.url),'utf8');
+    const global=readFileSync(new URL('../src/styles/cards-v15-presentation.css',import.meta.url),'utf8');
+    const editor=readFileSync(new URL('../src/components/CardDetailsDialog.tsx',import.meta.url),'utf8');
+    const physical=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
+    for(const source of [stack,editor,physical,stackThree,stackFour,global])expect(source).not.toMatch(/\b(?:card-action|edit-number|edit-small)\b/);
+    expect(editor).toContain('card-inline-value');
+    expect(stack).toContain('class="card-toolbar"');
+  });
+
+  it('keeps real Greek nickname glyph clearance in both card face renderers',()=>{
+    const debit=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(stackOne).toContain('line-height:1.4;\n  max-width:190px');
+    expect(debit).toContain('letter-spacing:.035em;line-height:1.4;');
+    expect(stackThree).not.toMatch(/\.card-nickname[^{}]*\{[^{}]*line-height:1;/);
+    expect(qa).toContain('Greek nickname glyph ink fits the computed real font line box');
+    expect(qa).toContain('actualBoundingBoxAscent');
   });
 
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{

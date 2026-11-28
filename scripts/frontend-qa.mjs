@@ -86,8 +86,12 @@ try{
   await setCardField('CVV κάρτας','123');
   await clickAria('Αποθήκευση στοιχείων κάρτας');
   await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'long PAN vault save');
+  const maskedPanFit=()=>c.call("function(){const n=document.querySelector('.prototype-payment-card .card-number.masked');if(!n)return null;const range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect(),box=n.getBoundingClientRect();return {lastFour:/[0-9]{4}$/.test(n.textContent||''),fits:n.scrollWidth<=n.clientWidth+1&&text.right<=box.right+1,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth}}");
   for(const width of [320,375,1440]){
     await viewport(width,width===1440?1000:812);
+    const maskedBefore=await maskedPanFit();
+    await shot('card-masked-last-four-'+width);
+    assert(maskedBefore?.lastFour&&maskedBefore.fits,'masked PAN retains all four identifying digits at '+width+'px: '+JSON.stringify(maskedBefore));
     await clickAria('Εμφάνιση στοιχείων');
     await waitFor("function(){return (document.querySelector('.prototype-payment-card .card-number.revealed')?.textContent||'').replace(/\\D/g,'').length===16}",'16-digit eye reveal at '+width+'px');
     const fit=await c.call("function(){const n=document.querySelector('.prototype-payment-card .card-number.revealed'),card=n?.closest('.prototype-payment-card'),copy=card?.querySelector('.card-number-wrap .copy-mini');if(!n||!card)return null;const s=getComputedStyle(n),r=n.getBoundingClientRect(),c=card.getBoundingClientRect(),cr=copy?.getBoundingClientRect(),network=card.querySelector('.card-network-type')?.getBoundingClientRect(),brand=card.querySelector('.card-brand')?.getBoundingClientRect(),toolbar=card.querySelector('.card-toolbar')?.getBoundingClientRect();return {digits:(n.textContent||'').replace(/\\D/g,'').length,textOverflow:s.textOverflow,whiteSpace:s.whiteSpace,overflow:s.overflow,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth,scrollHeight:n.scrollHeight,clientHeight:n.clientHeight,bottom:r.bottom,cardBottom:c.bottom,copyRight:cr?.right||0,cardRight:c.right,networkBottom:network?.bottom||0,brandRight:brand?.right||0,toolbarLeft:toolbar?.left||0,pageOverflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
@@ -97,6 +101,8 @@ try{
     assert(fit&&fit.digits===16&&fit.textOverflow!=='ellipsis'&&fit.whiteSpace!=='nowrap'&&fit.overflow==='visible'&&fit.scrollWidth<=fit.clientWidth+2&&fit.scrollHeight<=fit.clientHeight+2&&fit.bottom<=fit.cardBottom+3&&fit.copyRight<=fit.cardRight+3&&fit.networkBottom>0&&fit.networkBottom<=fit.cardBottom+2&&fit.brandRight<=fit.toolbarLeft+2&&fit.pageOverflow<=2,'eye displays full 16-digit PAN without clipping at '+width+'px: '+JSON.stringify(fit));
     await clickAria('Απόκρυψη στοιχείων');
     assert(await c.eval("!document.querySelector('.prototype-payment-card .card-number.revealed')"),'eye remasks after long PAN');
+    const maskedAfter=await maskedPanFit();
+    assert(maskedAfter?.lastFour&&maskedAfter.fits,'remasking retains the full identifying quartet at '+width+'px: '+JSON.stringify(maskedAfter));
   }
   await viewport(1440,1000);
 

@@ -42,10 +42,50 @@ try{
   await viewport(820,900,false);
   for(const theme of ['light','dark'])for(const [page,heading] of Object.entries(pages)){if(!tabletPages.has(page))continue;await navigate(page,heading);await applyTheme(theme);await assertThemePage(theme,page);await shot(`${theme}-${page}-tablet`)}
 
+  console.log('Theme system QA: large-text responsive geometry');
+  for(const width of [320,375,390,768,1440,2560]){
+    await viewport(width,900,width<=680);
+    const url=new URL(baseUrl);url.searchParams.set('page','transactions');url.searchParams.set('visual','1');url.searchParams.set('text','large');
+    await c.send('Page.navigate',{url:url.href});
+    await waitFor("function(){return document.documentElement.dataset.textSize==='large'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'large-text ledger');
+    await applyTheme(width===390||width===2560?'dark':'light');
+    const geometry=await c.call(`function(){
+      const visible=node=>node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden';
+      const buttons=[...document.querySelectorAll('.mobile-nav button')].filter(visible);
+      const labels=buttons.map(button=>{
+        const label=button.querySelector('span'),range=document.createRange();range.selectNodeContents(label);
+        const b=button.getBoundingClientRect(),t=range.getBoundingClientRect();
+        return {size:parseFloat(getComputedStyle(label).fontSize),within:t.left>=b.left-1&&t.right<=b.right+1&&t.top>=b.top-1&&t.bottom<=b.bottom+1};
+      });
+      return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,labels,heading:parseFloat(getComputedStyle(document.querySelector('#main-workspace h1')).fontSize)};
+    }`);
+    assert(geometry.overflow<=1&&geometry.heading>=24,'large-text ledger fits viewport '+width+': '+JSON.stringify(geometry));
+    if(width<=680)assert(geometry.labels.length===6&&geometry.labels.every(label=>label.size>=10&&label.within),'mobile navigation labels remain readable and contained '+width+': '+JSON.stringify(geometry));
+    await shot('large-text-transactions-'+width);
+  }
+
   console.log('Theme system QA: Settings switching, selection and focus contract');
   await viewport(1440,900,false);await navigate('settings',pages.settings);await applyTheme('dark');
   let settings=await c.call(`function(){const groups=[...document.querySelectorAll('[role="radiogroup"]')];const group=groups.find(node=>node.getAttribute('aria-label')==='Θέμα εμφάνισης');const buttons=[...group?.querySelectorAll('button')||[]];const selected=buttons.find(button=>button.getAttribute('aria-checked')==='true');selected?.focus();const style=selected?getComputedStyle(selected):null;return {buttons:buttons.map(button=>button.innerText.trim()),selected:selected?.innerText||'',outlineWidth:style?.outlineWidth||'',outlineStyle:style?.outlineStyle||'',heading:document.querySelector('#main-workspace h1')?.textContent||''}}`);
   assert(settings.buttons.length===3,'Settings exposes exactly Σύστημα, Φωτεινό and Σκούρο theme choices');assert(settings.buttons.join('|')==='Σύστημα|Φωτεινό|Σκούρο',`Settings theme choices remain localized: ${JSON.stringify(settings.buttons)}`);assert(settings.selected.includes('Σκούρο'),'Σκούρο choice is selected');assert(settings.heading.includes('Ρυθμίσεις'),'theme selection preserves current route');assert(parseFloat(settings.outlineWidth)>=2&&settings.outlineStyle!=='none','focused selected theme control has a visible focus indicator');await shot('dark-settings-selected-focus-desktop');
+  const arrow=async key=>{await c.send('Input.dispatchKeyEvent',{type:'keyDown',key,code:key});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code:key})};
+  const radioState="function(label){const group=[...document.querySelectorAll('[role=radiogroup]')].find(node=>node.getAttribute('aria-label')===label),buttons=[...group?.querySelectorAll('button[role=radio]')||[]],selected=buttons.find(button=>button.getAttribute('aria-checked')==='true');return Boolean(selected&&document.activeElement===selected&&selected.tabIndex===0&&buttons.filter(button=>button.tabIndex===0).length===1)}";
+  assert(await c.call(radioState,['Θέμα εμφάνισης']),'selected theme is the only Tab stop in its radio group');
+  await arrow('ArrowRight');
+  await waitFor("function(){return document.documentElement.dataset.themePreference==='system'&&localStorage.getItem('myfinhub.theme')==='system'}",'theme ArrowRight wraps Dark to System and persists');
+  await waitFor(radioState,'theme radio focus follows selection',['Θέμα εμφάνισης']);
+  await arrow('End');
+  await waitFor("function(){return document.documentElement.dataset.themePreference==='dark'}",'theme End returns to Dark');
+  await waitFor(radioState,'theme radio End focus',['Θέμα εμφάνισης']);
+  const sizeFocused=await c.call("function(){const group=[...document.querySelectorAll('[role=radiogroup]')].find(node=>node.getAttribute('aria-label')==='Μέγεθος κειμένου'),selected=group?.querySelector('[aria-checked=true]');selected?.focus();return Boolean(selected)}");
+  assert(sizeFocused&&await c.call(radioState,['Μέγεθος κειμένου']),'selected text size is the only Tab stop in its radio group');
+  await arrow('End');
+  await waitFor("function(){return document.documentElement.dataset.textSize==='large'}",'text-size End selects large');
+  await waitFor(radioState,'text-size radio focus follows selection',['Μέγεθος κειμένου']);
+  await arrow('ArrowLeft');
+  await waitFor("function(){return document.documentElement.dataset.textSize==='normal'}",'text-size ArrowLeft restores normal');
+  await waitFor(radioState,'text-size radio ArrowLeft focus',['Μέγεθος κειμένου']);
+  await c.call("function(){document.querySelector('[role=radiogroup][aria-label=\"Θέμα εμφάνισης\"] [aria-checked=true]')?.focus();return true}");
   const switched=await c.call(`async function(){const before={theme:document.documentElement.dataset.theme,pref:document.documentElement.dataset.themePreference,stored:localStorage.getItem('myfinhub.theme')};const group=[...document.querySelectorAll('[role="radiogroup"]')].find(node=>node.getAttribute('aria-label')==='Θέμα εμφάνισης');const target=[...group.querySelectorAll('button')].find(button=>button.querySelector('b')?.innerText.trim()==='Φωτεινό');const disabled=target.disabled;target.click();await new Promise(resolve=>setTimeout(resolve,160));return {before,disabled,theme:document.documentElement.dataset.theme,pref:document.documentElement.dataset.themePreference,stored:localStorage.getItem('myfinhub.theme'),heading:document.querySelector('#main-workspace h1')?.textContent||'',selected:target.getAttribute('aria-checked')}}`);
   assert(switched.theme==='light'&&switched.pref==='light'&&switched.stored==='light',`Settings Φωτεινό choice applies and persists locally: ${JSON.stringify(switched)}`);assert(switched.heading.includes('Ρυθμίσεις'),'theme switch does not navigate away');assert(switched.selected==='true','theme radio semantics update after switching');await shot('light-settings-selected-desktop');
 
@@ -92,5 +132,48 @@ try{
   await navigate('reports',pages.reports);await applyTheme('dark');const darkReportExecutive=await computedContrast('.report-financial-picture');assert(darkReportExecutive&&darkReportExecutive.backgroundLuminance<.12,`dark Reports executive picture is a dark semantic surface: ${JSON.stringify(darkReportExecutive)}`);assert(darkReportExecutive&&darkReportExecutive.textContrast>=4.5,`dark Reports executive picture text contrast is readable: ${JSON.stringify(darkReportExecutive)}`);await shot('dark-reports-financial-picture-parity-desktop');
   await navigate('dashboard',pages.dashboard);await applyTheme('dark');await c.call("function(){document.querySelector('[data-global-quick-entry=\"desktop\"]')?.click();return true}");await waitFor("function(){return !!document.querySelector('.quick-modal')}",'dark Quick Entry parity');const darkQuickFooter=await computedContrast('.quick-modal>footer');assert(darkQuickFooter&&darkQuickFooter.backgroundLuminance<.12,`dark Quick Entry footer is a dark surface: ${JSON.stringify(darkQuickFooter)}`);assert(darkQuickFooter&&darkQuickFooter.textContrast>=4.5,`dark Quick Entry footer text contrast is readable: ${JSON.stringify(darkQuickFooter)}`);await shot('dark-quick-entry-surface-parity-desktop');
 
+  console.log('Theme system QA: forced colors preserve a real composite focus outline');
+  const authUrl=new URL(baseUrl);authUrl.searchParams.set('screen','login');
+  await c.send('Page.navigate',{url:authUrl.href});
+  await waitFor("function(){return !!document.querySelector('#login-email')}",'forced colors Login');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'forced-colors',value:'active'}]});
+  const forced=await c.call("function(){const field=document.querySelector('#login-email'),shell=field?.closest('.app-input-shell');field?.focus();const s=shell?getComputedStyle(shell):null,inner=field?getComputedStyle(field):null;return {mode:matchMedia('(forced-colors:active)').matches,focused:document.activeElement===field,outer:parseFloat(s?.outlineWidth||'0'),style:s?.outlineStyle,inner:parseFloat(inner?.outlineWidth||'0'),shadow:s?.boxShadow}}");
+  assert(forced.mode&&forced.focused&&forced.outer>=2&&forced.style==='solid'&&forced.inner===0&&forced.shadow==='none','forced colors retains a single visible composite field outline: '+JSON.stringify(forced));
+  await shot('forced-colors-login-focused');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  const reduced=await c.call("function(){const card=document.querySelector('.login-card'),style=getComputedStyle(card);return {media:matchMedia('(prefers-reduced-motion: reduce)').matches,animation:style.animationName,seconds:parseFloat(style.animationDuration),scroll:getComputedStyle(document.documentElement).scrollBehavior}}");
+  assert(reduced.media&&(reduced.animation==='none'||reduced.seconds<=.00001)&&reduced.scroll==='auto','OS reduced motion disables Login entrance and smooth scrolling');
+  await c.send('DOM.enable');await c.send('CSS.enable');
+  const {root}=await c.send('DOM.getDocument');
+  const fields=[];
+  for(const selector of ['#login-email','#login-password']){
+    const {nodeId}=await c.send('DOM.querySelector',{nodeId:root.nodeId,selector});
+    assert(nodeId,'login autofill field exists: '+selector);fields.push({selector,nodeId});
+  }
+  try{
+    for(const theme of ['light','dark']){
+      await applyTheme(theme);
+      for(const {selector,nodeId} of fields){
+        // Chrome's forced pseudo state exercises the real authored autofill
+        // cascade, not a password-manager credential retrieval or submission.
+        await c.call("function(selector){document.querySelector(selector).focus()}",[selector]);
+        await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:['autofill','focus','focus-visible']});
+        // The authored shadow transitions from zero to the autofill inset. Sample
+        // the settled cascade, not the first interpolated animation frame.
+        await waitFor("function(selector){const field=document.querySelector(selector),shell=field.closest('.app-input-shell');return field.matches(':-webkit-autofill')&&![...field.getAnimations(),...shell.getAnimations()].some(a=>a.playState==='running'&&Number.isFinite(a.effect?.getComputedTiming().endTime))}",'settled focused autofill '+selector,[selector]);
+        const state=await c.call(`function(selector){
+          const field=document.querySelector(selector),style=getComputedStyle(field),shell=getComputedStyle(field.closest('.app-input-shell'));
+          const rgb=value=>(value.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);
+          const lum=value=>rgb(value).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+          const ink=style.webkitTextFillColor,bg=shell.backgroundColor,a=lum(ink),b=lum(bg);
+          return {ink,bg,shadow:style.boxShadow,outerShadow:shell.boxShadow,innerOutline:parseFloat(style.outlineWidth),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};
+        }`,[selector]);
+        assert(state.shadow.includes('inset')&&state.shadow.includes('1000px')&&state.innerOutline===0&&state.outerShadow!=='none'&&state.ratio>=4.5,'focused autofill preserves semantic surface, readable text and outer ring '+theme+' '+selector+': '+JSON.stringify(state));
+        await shot(theme+'-login-autofill-'+selector.slice(7));
+        await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[]});
+      }
+    }
+  }finally{for(const {nodeId} of fields)await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[]})}
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
   c.close();console.log('Theme system rendered QA passed.');
 }finally{child.kill('SIGTERM')}

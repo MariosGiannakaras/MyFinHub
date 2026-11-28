@@ -50,6 +50,15 @@ describe('Settings post-v1.4 remediation contracts',()=>{
     expect(rendered).toContain('tab frame and visible content keep identical width');
   });
 
+  it('separates platform identity from actual update status and Profile access',()=>{
+    const update=readFileSync(new URL('../src/components/DesktopUpdatePanel.tsx',import.meta.url),'utf8');
+    expect(update).toContain('{desktop?<div><span>Κατάσταση ενημερώσεων</span>');
+    expect(update).not.toContain("return 'Windows Desktop';");
+    expect(update).not.toContain("return 'Web';");
+    expect(rendered).toContain('General keeps one platform identity and application version');
+    expect(rendered).toContain('Profile does not duplicate application metadata');
+  });
+
   it('keeps support diagnostics out of the product-default baseline',()=>{
     expect(settings).not.toContain('runtimeEnv?.DEV');
     expect(settings).toContain("VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1'");

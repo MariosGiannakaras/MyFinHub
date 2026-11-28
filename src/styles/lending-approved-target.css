@@ -72,7 +72,7 @@
   .lending-approved-table{width:min(100%,1120px);margin-inline:auto;min-width:760px}
   .lending-approved-table th{padding:8px 10px;background:var(--surface-inset);color:var(--text-secondary);white-space:nowrap}
   .lending-approved-table td{padding:8px 10px;vertical-align:middle}
-  .lending-approved-table td:nth-child(2){max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lending-approved-table td[data-column=description]{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lending-approved-table .receivable-action{display:inline-flex;align-items:center;min-height:22px;padding:3px 7px;border-radius:999px;font-weight:800}
   .lending-approved-table .receivable-action.lent{background:var(--accent-soft);color:var(--accent)}
   .lending-approved-table .receivable-action.repaid{background:var(--success-bg);color:var(--success)}

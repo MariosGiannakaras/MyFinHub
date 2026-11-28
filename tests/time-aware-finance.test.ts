@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { accountBalances } from '../src/lib/domain.js';
 import { allAttentionItems } from '../src/lib/attention.js';
 import { cashFlowForecast } from '../src/lib/forecast.js';
+import { forecastSourceSummary, completedScheduledDescription } from '../src/lib/forecastPresentation.js';
+import { shortDate } from '../src/lib/format.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import { createScheduledTransaction, pendingScheduled, scheduledHistory, scheduledLifecycle, scheduledToEvent, transitionScheduled } from '../src/lib/scheduled.js';
 import type { FinanceData } from '../src/types.js';
@@ -26,6 +28,22 @@ function baseData(): FinanceData {
 }
 
 describe('time-aware finance model', () => {
+  it('discloses every forecast source and resolves completed schedules to the actual linked event date',()=>{
+    const data=baseData();
+    const item=createScheduledTransaction(data,{id:'presentation-test',kind:'expense',dueDate:'2026-08-20',amount:125,accountId:'bank',note:'Planned charge'});
+    const event=scheduledToEvent(data,item,{date:'2026-08-23',amount:100,accountId:'bank'});
+    const complete=transitionScheduled(item,'completed',event.id);
+    data.state.events=[event];data.state.scheduled=[complete];
+    const before=JSON.stringify(data);
+    expect(completedScheduledDescription(data,item,'2026-08-21')).toBeNull();
+    expect(completedScheduledDescription(data,complete,'2026-08-21')).toBe('Καταχωρισμένη για μελλοντική ημερομηνία: '+shortDate(event.date));
+    expect(completedScheduledDescription(data,complete,'2026-08-23')).toBe('Καταχωρισμένη κίνηση: '+shortDate(event.date));
+    expect(completedScheduledDescription(data,{...complete,completedEventId:'missing'},'2026-08-23')).toBe('Η συνδεδεμένη κίνηση δεν είναι διαθέσιμη');
+    expect(forecastSourceSummary({scheduled:1,recurring:2,loan:3,dated_event:4})).toContain('4 καταχωρισμένες με μελλοντική ημερομηνία');
+    expect(forecastSourceSummary(cashFlowForecast(data,'2026-08-21',30).sourceCounts)).toContain('1 καταχωρισμένες με μελλοντική ημερομηνία');
+    expect(JSON.stringify(data)).toBe(before);
+  });
+
   it('keeps a pending scheduled expense outside actual balances until completion', () => {
     const data = baseData();
     const item = createScheduledTransaction(data, { kind: 'expense', dueDate: '2026-08-20', amount: 125.55, accountId: 'bank', category: 'Άλλο', note: 'Service' });

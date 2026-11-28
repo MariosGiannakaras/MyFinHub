@@ -3,7 +3,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const defaults = require('./runtime-defaults.cjs');
-const { registerAppLockIpc } = require('./app-lock-main.cjs');
 
 function requirePublicValue(name, value, placeholder) {
   const normalized = String(value || '').trim();
@@ -71,5 +70,4 @@ if (appData) {
   }
 }
 
-registerAppLockIpc();
 require('./main.cjs');

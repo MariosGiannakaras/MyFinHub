@@ -134,6 +134,23 @@ try{
   assert(singleAfter.topId===singleId&&!singleAfter.mode.includes('dragging'),'single active card does not enter restack choreography');
   await shot('credit-single-card');
 
+  console.log('Credit stack remediation QA: Greek nickname glyph clearance');
+  for(const [width,height,mobile,fixture] of [[320,812,true,'credit-greek-nickname-payzy'],[375,812,true,'credit-greek-nickname-payzy'],[1440,1000,false,'credit-greek-nickname-payzy'],[2560,1440,false,'credit-greek-nickname-payzy'],[1440,1000,false,'credit-greek-nickname']]){
+    await viewport(width,height,mobile);await navigate(fixture,'reduced');
+    const glyph=await c.call(`function(){const node=document.querySelector('#myfinhub-card-stack .stack-card.top .card-nickname');if(!node)return null;const style=getComputedStyle(node),text=node.textContent||'',probe=document.createElement('div');probe.style.cssText='position:fixed;left:-10000px;top:0;white-space:nowrap;padding:0;border:0;margin:0;';Object.assign(probe.style,{fontFamily:style.fontFamily,fontSize:style.fontSize,fontWeight:style.fontWeight,lineHeight:style.lineHeight,letterSpacing:style.letterSpacing});probe.textContent=text;const marker=document.createElement('span');marker.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';probe.append(marker);document.body.append(probe);try{const box=probe.getBoundingClientRect(),baseline=marker.getBoundingClientRect().top-box.top,context=document.createElement('canvas').getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;const metrics=context.measureText(text);return {text,font:style.fontFamily,size:style.fontSize,line:style.lineHeight,topClearance:baseline-metrics.actualBoundingBoxAscent,bottomClearance:box.height-baseline-metrics.actualBoundingBoxDescent,fullWidth:node.scrollWidth<=node.clientWidth+1}}finally{probe.remove()}}`);
+    await shot('credit-greek-nickname-'+fixture+'-'+width);
+    assert(glyph?.text==='Ύψος ΐΰ'&&glyph.fullWidth&&glyph.topClearance>=0&&glyph.bottomClearance>=0,'Greek nickname glyph ink fits the computed real font line box at '+width+'px: '+JSON.stringify(glyph));
+  }
+  await viewport(1440,1000,false);
+  console.log('Credit stack remediation QA: direct accessible selection');
+  await navigate('credit-stack');
+  const choice=await c.call("function(){const dots=[...document.querySelectorAll('#myfinhub-card-stack .dots button')],target=dots.at(-1);if(!target)return null;const rect=target.getBoundingClientRect();target.focus();target.click();return {id:target.dataset.dotId,width:rect.width,height:rect.height}}");
+  assert(choice?.id&&choice.width>=24&&choice.height>=24,'card indicators expose at least 24px real button targets');
+  await waitFor("function(id){const top=document.querySelector('#myfinhub-card-stack .stack-card.top'),selected=document.querySelector('#myfinhub-card-stack .dot[aria-current=true]');return top?.dataset.cardId===id&&selected?.dataset.dotId===id&&selected===document.activeElement&&selected.tabIndex===0}",'clicked indicator selects its card and retains focus',[choice.id]);
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Home',code:'Home',windowsVirtualKeyCode:36});
+  await waitFor("function(){const top=document.querySelector('#myfinhub-card-stack .stack-card.top'),selected=document.querySelector('#myfinhub-card-stack .dot[aria-current=true]');return top?.dataset.cardId==='qa-card'&&selected===document.activeElement&&document.querySelectorAll('#myfinhub-card-stack .dot[tabindex=\"0\"]').length===1}",'indicator Home selects the first card with one Tab stop');
+  await shot('credit-stack-indicator-focus');
   console.log('Credit stack remediation QA: long pagination containment');
   await navigate('credit-stack-long');
   let long=await state();
@@ -207,6 +224,48 @@ try{
   assert(staleRevealMasked,'staleRevealMasked: original card stays masked after full rotation; old vault read never latches visible');
   await shot('credit-stack-stale-vault-reveal-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCreditStaleRevealRestore?.();return true}"),'restore isolated credit vault reveal mock');
+
+  console.log('Credit archive cancellation restores opener and isolates follower controls');
+  await viewport(375,812,true);await navigate('credit-stack','reduced');
+  assert(await c.call("function(){const card=document.querySelector('.stack-card.top'),button=card.querySelector('.delete-btn');button.focus();button.click();return [...document.querySelectorAll('.stack-card:not(.top)')].every(node=>node.inert)}"),'inactive stack followers cannot receive focus');
+  await waitFor("function(){const top=document.querySelector('.stack-card.top');return document.activeElement?.classList.contains('delete-slider')&&top.querySelector('.card-header').inert&&top.querySelector('.card-body').inert}",'credit archive confirmation isolates covered controls');
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
+  await waitFor("function(){return !document.querySelector('.delete-confirm')&&document.activeElement?.classList.contains('delete-btn')}",'credit archive Escape restores opener');
+  await shot('credit-stack-archive-cancelled-focus');
+  await viewport(1440,1000,false);
+  console.log('Rejected credit archive receipt preserves active identity');
+  await navigate('credit-stack','reduced');
+  const rejectedId=(await state()).topId;
+  await c.call("function(){history.replaceState(null,'',location.pathname+'?page=credit&state=credit-stack&motion=reduced&card-profile-save-failure=1');return true}");
+  assert(await c.call("function(){const button=document.querySelector('.stack-card.top .delete-btn');button?.click();return Boolean(button)}"),'arm credit archive failure');
+  await waitFor("function(){return Boolean(document.querySelector('.stack-card.top .delete-slider'))}",'credit archive slider');
+  await c.call("function(){const slider=document.querySelector('.stack-card.top .delete-slider');for(const key of ['End','Enter'])slider.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}));return true}");
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=alert]')?.textContent.includes('Δεν επιβεβαιώθηκε')}",'credit archive rejected');
+  assert((await state()).topId===rejectedId&&(await state()).count===6,'rejected archive does not remove or reorder the credit deck');
+  await shot('credit-stack-archive-rejected-receipt');
+
+  console.log('Credit archive receipt, rejected restore and same-ID recovery');
+  await viewport(375,812,true);await navigate('credit-stack','reduced');
+  const restoredId=(await state()).topId;
+  const previousArchiveCount=await c.call("function(){const opener=document.querySelector('.page-heading [data-card-archive-opener]');return Number(opener?.getAttribute('aria-label')?.split(',').at(-1)?.trim()||0)}");
+  // The canonical fixture already contains archived cards. Never restore by row position.
+  const restoreSelector=`.card-archive-manager [data-archived-card-id=${JSON.stringify(restoredId)}] .card-archive-actions button:first-child`;
+  await c.call("function(){const button=document.querySelector('.stack-card.top .delete-btn');button.focus();button.click()}");
+  await waitFor("function(){return document.activeElement?.matches('.stack-card.top .delete-slider')}",'keyboard archive ready');
+  await c.call("function(){const slider=document.querySelector('.stack-card.top .delete-slider');for(const key of ['End','Enter'])slider.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}))}");
+  await waitFor("function(id){return ![...document.querySelectorAll('.stack-card')].some(node=>node.dataset.cardId===id)&&document.activeElement?.matches('[data-card-archive-opener]')}",'settled archive removes exact active ID and restores archive opener focus',[restoredId]);
+  await c.call("function(){document.activeElement.click()}");
+  await waitFor("function(selector){return Boolean(document.querySelector(selector))}",'exact archived credit row',[restoreSelector]);
+  await c.call("function(selector){const url=new URL(location.href);url.searchParams.set('card-profile-save-failure','1');history.replaceState(null,'',url.href);document.querySelector(selector).click()}",[restoreSelector]);
+  await waitFor("function(){return document.querySelector('#credit-archive-error[role=alert]')?.textContent.includes('δεν επιβεβαιώθηκε')}",'restore failure is announced inside the active archive manager');
+  await shot('credit-stack-restore-rejected-mobile');
+  await waitFor("function(selector){const b=document.querySelector(selector);return Boolean(b&&!b.disabled&&!b.closest('[inert]')&&!b.closest('[aria-busy=true]'))}",'restore retry is enabled after rejected receipt',[restoreSelector]);
+  await c.call("function(selector){const url=new URL(location.href);url.searchParams.delete('card-profile-save-failure');history.replaceState(null,'',url.href);document.querySelector(selector).focus();document.activeElement.click()}",[restoreSelector]);
+  await waitFor("function(id,count){return document.querySelector('.stack-card.top')?.dataset.cardId===id&&![...document.querySelectorAll('.card-archive-manager [data-archived-card-id]')].some(row=>row.dataset.archivedCardId===id)&&document.querySelectorAll('.card-archive-manager .card-archive-row').length===count&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'restored credit returns to same identity, retains unrelated archive rows and close focus',[restoredId,previousArchiveCount]);
+  await c.call("function(){document.activeElement.click()}");
+  await waitFor("function(count){return !document.querySelector('.card-archive-manager')&&document.activeElement?.matches(count?'[data-card-archive-opener]':'.credit-card-redesign-page h1')}",'archive manager close focuses surviving opener or heading',[previousArchiveCount]);
+  await shot('credit-stack-restored-focus-mobile');
 
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}
