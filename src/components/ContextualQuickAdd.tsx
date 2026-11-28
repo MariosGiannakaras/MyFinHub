@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CalendarClock, CreditCard, HandCoins, Landmark, PiggyBank, ReceiptText, X } from 'lucide-react';
 import { type QuickPrefill } from './QuickAdd';
 import { ReceiptAwareQuickAdd } from './ReceiptAwareQuickAdd';
@@ -9,6 +9,7 @@ import { Button } from './Button';
 import { DialogShell } from './DialogShell';
 import { ConfirmDialog } from './ConfirmDialog';
 import { FormError } from './FormError';
+import { useQuickEntryErrorFocus } from '../hooks/useQuickEntryErrorFocus';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { RecurringBrandMark } from './RecurringBrandMark';
@@ -109,8 +110,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
   const [receiptUnverified,setReceiptUnverified]=useState(false);
   const receiptUnverifiedRef=useRef(false);
   const visibleError=receiptUnverified?FINANCE_RECEIPT_UNVERIFIED:error;
-  useEffect(()=>{if(visibleError)document.getElementById('context-quick-error')?.focus({preventScroll:true})},[visibleError]);
   const [saving,setSaving]=useState(false);
+  useQuickEntryErrorFocus('context-quick-error',visibleError,!saving);
   const submitInFlight=useRef(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
