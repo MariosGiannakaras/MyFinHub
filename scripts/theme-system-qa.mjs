@@ -118,6 +118,37 @@ try{
   const forced=await c.call("function(){const field=document.querySelector('#login-email'),shell=field?.closest('.app-input-shell');field?.focus();const s=shell?getComputedStyle(shell):null,inner=field?getComputedStyle(field):null;return {mode:matchMedia('(forced-colors:active)').matches,focused:document.activeElement===field,outer:parseFloat(s?.outlineWidth||'0'),style:s?.outlineStyle,inner:parseFloat(inner?.outlineWidth||'0'),shadow:s?.boxShadow}}");
   assert(forced.mode&&forced.focused&&forced.outer>=2&&forced.style==='solid'&&forced.inner===0&&forced.shadow==='none','forced colors retains a single visible composite field outline: '+JSON.stringify(forced));
   await shot('forced-colors-login-focused');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  const reduced=await c.call("function(){const card=document.querySelector('.login-card'),style=getComputedStyle(card);return {media:matchMedia('(prefers-reduced-motion: reduce)').matches,animation:style.animationName,seconds:parseFloat(style.animationDuration),scroll:getComputedStyle(document.documentElement).scrollBehavior}}");
+  assert(reduced.media&&(reduced.animation==='none'||reduced.seconds<=.00001)&&reduced.scroll==='auto','OS reduced motion disables Login entrance and smooth scrolling');
+  await c.send('DOM.enable');await c.send('CSS.enable');
+  const {root}=await c.send('DOM.getDocument');
+  const fields=[];
+  for(const selector of ['#login-email','#login-password']){
+    const {nodeId}=await c.send('DOM.querySelector',{nodeId:root.nodeId,selector});
+    assert(nodeId,'login autofill field exists: '+selector);fields.push({selector,nodeId});
+  }
+  try{
+    for(const theme of ['light','dark']){
+      await applyTheme(theme);
+      for(const {selector,nodeId} of fields){
+        // Chrome's forced pseudo state exercises the real authored autofill
+        // cascade, not a password-manager credential retrieval or submission.
+        await c.call("function(selector){document.querySelector(selector).focus()}",[selector]);
+        await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:['autofill','focus','focus-visible']});
+        const state=await c.call(`function(selector){
+          const field=document.querySelector(selector),style=getComputedStyle(field),shell=getComputedStyle(field.closest('.app-input-shell'));
+          const rgb=value=>(value.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);
+          const lum=value=>rgb(value).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+          const ink=style.webkitTextFillColor,bg=shell.backgroundColor,a=lum(ink),b=lum(bg);
+          return {ink,bg,shadow:style.boxShadow,outerShadow:shell.boxShadow,innerOutline:parseFloat(style.outlineWidth),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};
+        }`,[selector]);
+        assert(state.shadow.includes('inset')&&state.shadow.includes('1000px')&&state.innerOutline===0&&state.outerShadow!=='none'&&state.ratio>=4.5,'focused autofill preserves semantic surface, readable text and outer ring '+theme+' '+selector+': '+JSON.stringify(state));
+        await shot(theme+'-login-autofill-'+selector.slice(7));
+        await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[]});
+      }
+    }
+  }finally{for(const {nodeId} of fields)await c.send('CSS.forcePseudoState',{nodeId,forcedPseudoClasses:[]})}
   await c.send('Emulation.setEmulatedMedia',{features:[]});
   c.close();console.log('Theme system rendered QA passed.');
 }finally{child.kill('SIGTERM')}

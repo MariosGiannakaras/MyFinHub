@@ -37,7 +37,7 @@ describe('semantic theme system',()=>{
   it('keeps semantic text, solid destructive labels and visible focus at their applicable contrast thresholds',()=>{
     for(const tokens of [LIGHT_THEME_TOKENS,DARK_THEME_TOKENS]){
       for(const role of ['success','error','warning','info'] as const){
-        expect(contrast(tokens['--'+role],tokens['--'+role+'-bg']),role).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(tokens[`--${role}`],tokens[`--${role}-bg`]),role).toBeGreaterThanOrEqual(4.5);
       }
       for(const surface of ['--surface','--surface-2','--surface-elevated'] as const){
         for(const role of ['--finance-positive','--finance-negative','--finance-neutral','--green','--red','--warning'] as const){

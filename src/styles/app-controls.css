@@ -3,7 +3,7 @@
 /* Composite fields keep one accessible focus ring on the outer shell. */
 .app-input-shell>.app-control:focus-visible{outline:0!important;box-shadow:none!important}
 .app-input-shell:focus-within{border-color:var(--accent,var(--blue))!important;box-shadow:var(--focus)!important}
-.app-input-shell>.app-control:-webkit-autofill{border-radius:0;-webkit-text-fill-color:var(--ink)!important;caret-color:var(--ink)}
+.app-input-shell>.app-control:-webkit-autofill{border-radius:0;-webkit-text-fill-color:var(--ink)!important;caret-color:var(--ink);box-shadow:0 0 0 1000px var(--control-bg,var(--surface)) inset!important}
 
 /* Composite field actions use the quiet variant and a full touch target. */
 .app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:46px;min-width:46px;height:46px;min-height:46px;flex:0 0 46px;border:0!important;background:transparent!important;background-image:none!important;box-shadow:none!important;transform:none!important}

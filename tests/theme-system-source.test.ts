@@ -91,6 +91,10 @@ describe('theme architecture source contract',()=>{
     expect(controls).toContain('.app-input-shell>.app-control:focus-visible{outline:0!important}');
     expect(rendered).toContain("name:'forced-colors',value:'active'");
     expect(rendered).toContain('forced colors retains a single visible composite field outline');
+    expect(rendered).toContain('OS reduced motion disables Login entrance and smooth scrolling');
+    expect(rendered).toContain("forcedPseudoClasses:['autofill','focus','focus-visible']");
+    expect(rendered).toContain('focused autofill preserves semantic surface, readable text and outer ring');
+    expect(controls).toContain('.app-input-shell>.app-control:-webkit-autofill{border-radius:0;-webkit-text-fill-color:var(--ink)!important;caret-color:var(--ink);box-shadow:0 0 0 1000px');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{
