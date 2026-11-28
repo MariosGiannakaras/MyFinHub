@@ -144,6 +144,12 @@ export function InteractivePaymentCard({
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
   const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
+  const cancelArchive=()=>{if(busy)return;resetDelete();requestAnimationFrame(()=>cardRef.current?.querySelector<HTMLButtonElement>('[aria-label="Αρχειοθέτηση κάρτας"]')?.focus({preventScroll:true}))};
+  useEffect(()=>{
+    if(!deleteOpen)return;
+    const frame=requestAnimationFrame(()=>sliderRef.current?.querySelector<HTMLButtonElement>('.r-card-archive-keyboard')?.focus({preventScroll:true}));
+    return()=>cancelAnimationFrame(frame);
+  },[deleteOpen]);
   const commitArchive=async()=>{
     if(!onArchive||archiveDisabled||archivingRef.current)return;
     archivingRef.current=true;
@@ -266,7 +272,7 @@ export function InteractivePaymentCard({
     {detailsEditor ? detailsEditor : <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerEnter={pointerEnter} onPointerMove={pointerMove} onPointerLeave={resetTilt} onPointerCancel={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
       <div className="card-inner">
         <>
-        <header className="card-header">
+        <header className="card-header" inert={deleteOpen}>
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
             <button className="card-icon-btn card-icon-reveal" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
@@ -274,7 +280,7 @@ export function InteractivePaymentCard({
             {onArchive?<button className="card-icon-btn card-icon-management" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setArchiveProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
-        <div className="card-body">
+        <div className="card-body" inert={deleteOpen}>
           <div className="card-number-wrap"><div className={`card-number ${visible&&revealed.pan?(legacyLongPan?'revealed card-number-long':'revealed'):'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
           <div className="card-fields">
             <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy||copyBusy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
@@ -282,7 +288,7 @@ export function InteractivePaymentCard({
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
-        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm r-card-archive-confirm" onKeyDown={event=>{if(event.key==='Escape'&&!busy){event.preventDefault();event.stopPropagation();cancelArchive()}}}><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" disabled={busy} onClick={cancelArchive}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
         </>
       </div>
     </article>}

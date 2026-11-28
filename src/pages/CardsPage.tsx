@@ -113,14 +113,21 @@ export function CardsPage({
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
   const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage('')};
-  const archive=async(card:PaymentCard)=>{setMessage('');try{await onArchiveCard(card)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
-  const restore=async(card:PaymentCard)=>{setMessage('');try{await onUpsertCardDurably(restoreCard(card))}catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}};
+  const focusAfterCardChange=(card:PaymentCard,restored=false)=>requestAnimationFrame(()=>{
+    if(document.activeElement!==document.body||!document.querySelector('.app-shell[data-page="cards"]'))return;
+    const bank=document.querySelector(`[data-bank="${CSS.escape(card.bankId)}"]`);
+    const target=restored?bank?.querySelector<HTMLElement>(`[data-command-card-id="${CSS.escape(card.id)}"]`):bank?.querySelector<HTMLElement>('.cards-archive>summary');
+    (target??bank?.querySelector<HTMLElement>('.bank-add-btn')??document.querySelector<HTMLElement>('.cards-prototype-page h1'))?.focus();
+  });
+  const archive=async(card:PaymentCard)=>{setMessage('');try{await onArchiveCard(card);focusAfterCardChange(card)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
+  const restore=async(card:PaymentCard)=>{setMessage('');try{await onUpsertCardDurably(restoreCard(card));focusAfterCardChange(card,true)}catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}};
   const confirmDelete=async()=>{
     if(!deleteTarget)return;
     setDeleteBusy(true);setMessage('');
     try{
       const name=deleteTarget.nickname;
       await onDeleteCard(deleteTarget);
+      focusAfterCardChange(deleteTarget);
       setDeleteTarget(null);
       setMessage(`Η «${name}» διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε.`);
     }catch(error){

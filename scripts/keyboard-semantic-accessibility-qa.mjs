@@ -86,7 +86,7 @@ try{
    const unnamed=controls.filter(el=>!labelText(el)).map(el=>el.outerHTML.slice(0,180));
    const positiveTab=[...document.querySelectorAll('[tabindex]')].filter(el=>Number(el.getAttribute('tabindex'))>0).map(el=>el.outerHTML.slice(0,160));
     const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex="-1"])';
-    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].flatMap(root=>[root,...root.querySelectorAll(hiddenSelector)]).filter(el=>el.matches(hiddenSelector)&&visible(el)).map(el=>el.outerHTML.slice(0,160));
+    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].flatMap(root=>[root,...root.querySelectorAll(hiddenSelector)]).filter(el=>el.matches(hiddenSelector)&&visible(el)&&!el.closest('[inert]')).map(el=>el.outerHTML.slice(0,160));
    const h1=[...document.querySelectorAll('h1')].filter(visible);
    const imgs=[...document.querySelectorAll('img')].filter(visible).filter(img=>!img.hasAttribute('alt')).map(img=>img.outerHTML.slice(0,160));
    const tables=[...document.querySelectorAll('table')].filter(visible).map(table=>({caption:Boolean(table.querySelector('caption')||table.getAttribute('aria-label')||table.getAttribute('aria-labelledby')),headers:table.querySelectorAll('th').length}));
@@ -454,6 +454,18 @@ try{
 
 
  await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light')}");
+ console.log('Keyboard/semantic accessibility QA: actual More destination selection and current route');
+ await navigate('dashboard',pages.dashboard,375,812,true);
+ for(const [label,page] of [['Πιστωτική','credit'],['Δόσεις & Δάνεια','loans'],['Δανεικά / Οφειλές','lending'],['Πάγια','recurring'],['Προγραμματισμός','planning'],['Έλεγχος','attention'],['Αναφορές','reports'],['Ρυθμίσεις','settings']]){
+   await c.call("function(){const b=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');b.focus();b.click();return true}");
+   await waitFor("function(){return document.querySelector('.mobile-more-menu')?.contains(document.activeElement)}",'More focus before selecting '+page);
+   assert(await c.call("function(label){const button=[...document.querySelectorAll('.mobile-more-menu nav button')].find(b=>b.textContent.trim()===label);button?.focus();button?.click();return Boolean(button)}",[label]),'More destination '+page);
+   await waitFor("function(page,title){return document.querySelector('.app-shell')?.dataset.page===page&&!document.querySelector('.mobile-more-menu')&&document.activeElement===document.querySelector('#main-workspace h1')&&document.activeElement.textContent.includes(title)}",'actual More route heading receives focus '+page,[page,pages[page]]);
+   await c.call("function(){const b=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');b.focus();b.click();return true}");
+   await waitFor("function(label){return document.querySelector('.mobile-more-menu nav button[aria-current=page]')?.textContent.trim()===label}",'More current destination '+page,[label]);
+   await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu')}",'More closes after route verification');
+ }
+ await shot('keyboard-mobile-more-actual-route');
  console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await viewport(720,500,false);

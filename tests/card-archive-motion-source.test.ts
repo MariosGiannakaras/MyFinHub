@@ -62,6 +62,18 @@ describe('card archive exit-motion regression #570',()=>{
     expect(credit).toContain("field.textContent='••••'");
   });
 
+  it('makes archive confirmation keyboard reachable and isolates covered card controls',()=>{
+    expect(debit).toContain('inert={deleteOpen}');
+    expect(debit).toContain('const cancelArchive=');
+    expect(debit).toContain("event.key==='Escape'&&!busy");
+    expect(credit).toContain('inert aria-hidden="true"');
+    expect(credit).toContain('stackIndex===0&&revealedRef.current.has(card.id)');
+    expect(credit).toContain("node.inert=true");
+    expect(credit).toContain("node.inert=false");
+    expect(credit).toContain("armed.querySelector<HTMLButtonElement>('.delete-btn')?.focus");
+    expect(credit).toContain("document.documentElement.dataset.motion==='reduced'");
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

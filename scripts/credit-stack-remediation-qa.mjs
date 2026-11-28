@@ -225,6 +225,15 @@ try{
   await shot('credit-stack-stale-vault-reveal-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCreditStaleRevealRestore?.();return true}"),'restore isolated credit vault reveal mock');
 
+  console.log('Credit archive cancellation restores opener and isolates follower controls');
+  await viewport(375,812,true);await navigate('credit-stack','reduced');
+  assert(await c.call("function(){const card=document.querySelector('.stack-card.top'),button=card.querySelector('.delete-btn');button.focus();button.click();return [...document.querySelectorAll('.stack-card:not(.top)')].every(node=>node.inert)}"),'inactive stack followers cannot receive focus');
+  await waitFor("function(){const top=document.querySelector('.stack-card.top');return document.activeElement?.classList.contains('delete-slider')&&top.querySelector('.card-header').inert&&top.querySelector('.card-body').inert}",'credit archive confirmation isolates covered controls');
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});
+  await waitFor("function(){return !document.querySelector('.delete-confirm')&&document.activeElement?.classList.contains('delete-btn')}",'credit archive Escape restores opener');
+  await shot('credit-stack-archive-cancelled-focus');
+  await viewport(1440,1000,false);
   console.log('Rejected credit archive receipt preserves active identity');
   await navigate('credit-stack','reduced');
   const rejectedId=(await state()).topId;
