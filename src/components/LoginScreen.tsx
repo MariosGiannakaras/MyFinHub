@@ -1,5 +1,5 @@
 import { AlertCircle, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { AppInputShell } from './AppInputShell';
 import { AppTextInput } from './AppTextInput';
 import { BrandMark } from './BrandMark';
@@ -10,6 +10,7 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [busy,setBusy]=useState(false);
+  const submitting=useRef(false);
   const [showPassword,setShowPassword]=useState(false);
   const [capsLock,setCapsLock]=useState(false);
   const [errorDismissed,setErrorDismissed]=useState(false);
@@ -20,9 +21,13 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
   const trackCaps=(event:KeyboardEvent<HTMLInputElement>)=>setCapsLock(event.getModifierState('CapsLock'));
   const submit=async(e:FormEvent)=>{
     e.preventDefault();
-    if(busy||!ready)return;
+    if(submitting.current||!ready)return;
+    submitting.current=true;
     setBusy(true);
-    try{await onLogin(email.trim(),password)}finally{setBusy(false)}
+    setErrorDismissed(true);
+    try{
+      if(!await onLogin(email.trim(),password))setErrorDismissed(false);
+    }finally{submitting.current=false;setBusy(false)}
   };
 
   const passwordDescription=[capsLock?'login-caps-hint':'',visibleError?'login-error':''].filter(Boolean).join(' ')||undefined;

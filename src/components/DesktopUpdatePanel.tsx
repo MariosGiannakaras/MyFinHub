@@ -22,8 +22,7 @@ declare global { interface Window { myFinHubDesktop?: DesktopBridge } }
 const idleState: UpdateState = { supported: false, currentVersion: '', status: 'idle', availableVersion: null, progress: 0, message: '' };
 const busyStatuses = new Set<UpdateStatus>(['checking', 'downloading', 'installing']);
 
-function statusLabel(state: UpdateState, desktop: boolean) {
-  if (!desktop) return 'Web';
+function statusLabel(state: UpdateState) {
   if (state.status === 'checking') return 'Έλεγχος ενημερώσεων';
   if (state.status === 'available') return `Νέα έκδοση ${state.availableVersion ?? ''}`.trim();
   if (state.status === 'downloading') return `Λήψη ${state.progress}%`;
@@ -31,7 +30,7 @@ function statusLabel(state: UpdateState, desktop: boolean) {
   if (state.status === 'installing') return 'Εγκατάσταση & επανεκκίνηση';
   if (state.status === 'up-to-date') return 'Ενημερωμένη';
   if (state.status === 'error') return 'Χρειάζεται επανάληψη';
-  return 'Windows Desktop';
+  return state.supported?'Έτοιμη για έλεγχο':'Μη διαθέσιμος έλεγχος';
 }
 
 export function DesktopUpdatePanel() {
@@ -95,7 +94,7 @@ export function DesktopUpdatePanel() {
       <div className="panel-head">
         <div>
           <span id="desktop-update-title">Εφαρμογή & Ενημερώσεις</span>
-          <small>Πληροφορίες εφαρμογής και οι υπάρχουσες δυνατότητες ενημέρωσης Windows, χωρίς διπλές ενότητες.</small>
+          <small>Έκδοση εφαρμογής και ενημερώσεις Windows.</small>
         </div>
         <MonitorCog size={19} />
       </div>
@@ -104,7 +103,7 @@ export function DesktopUpdatePanel() {
         <div><span>Προϊόν</span><b>{productName}</b></div>
         <div><span>Έκδοση</span><b>{currentVersion}</b></div>
         <div><span>Πλατφόρμα</span><b>{desktop ? 'Windows Desktop' : 'Web'}</b></div>
-        <div><span>Κατάσταση</span><b>{statusLabel(state, desktop)}</b></div>
+        {desktop?<div><span>Κατάσταση ενημερώσεων</span><b>{statusLabel(state)}</b></div>:null}
         {desktop && state.availableVersion ? <div><span>Διαθέσιμη έκδοση</span><b>{state.availableVersion}</b></div> : null}
       </div>
 

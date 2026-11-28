@@ -262,6 +262,28 @@ try{
    }
  }
 
+ // Exercise actual controlled login submission, not just static error markup.
+ for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['tablet',768,900,true],['mobile',320,700,true]]){
+   await viewport(width,height,mobile);
+   const url=new URL(baseUrl);url.searchParams.set('screen','login-retry');
+   await c.send('Page.navigate',{url:url.href});
+   await waitFor("function(){return !!document.querySelector('#login-password')}",mode+' retry login loaded');
+   await c.call("async function(theme){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[mode==='desktop'?'light':'dark']);
+   const fill=await c.call("function(){const set=(id,value)=>{const el=document.getElementById(id);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}))};set('login-email','qa@example.invalid');set('login-password','qa-only-password');return true}");
+   assert(fill,mode+' synthetic login input');
+   await waitFor("function(){return document.querySelector('.login-submit')?.disabled===false}",mode+' login ready');
+   for(const [index,message] of ['Λάθος στοιχεία σύνδεσης.','Λάθος στοιχεία σύνδεσης.','Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.','Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.'].entries()){
+     if(index===1)await c.call("function(){const el=document.querySelector('#login-password');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'qa-only-retry-password');el.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+     if(index===1)await waitFor("function(){return !document.querySelector('#login-error')}",mode+' editing dismisses the old error');
+     await c.call("function(){const form=document.querySelector('.login-form');for(let i=0;i<2;i++)form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));return true}");
+     await waitFor("function(n,message){const alert=document.querySelector('#login-error');return Number(document.documentElement.dataset.qaLoginAttempts)===n&&document.querySelector('.login-submit')?.disabled===false&&alert?.textContent?.trim()===message}",mode+' retry shows the correct alert and re-enables form',[index+1,message]);
+     const visible=await c.call("function(){const alert=document.querySelector('#login-error'),rect=alert?.getBoundingClientRect();return Boolean(alert?.getAttribute('role')==='alert'&&rect?.width>0&&rect?.height>0&&rect.top>=0&&rect.bottom<=innerHeight)}");
+     assert(visible,mode+' login retry alert is visible');
+   }
+   await waitForAuthMotion(mode+' login retry settled');
+   const capture=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-retry-${mode}.png`,Buffer.from(capture.data,'base64'));
+   await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
+ }
  await navigate('dashboard',pages.dashboard,1440,1000,false);
  // A pre-existing native inert subtree is not owned by the modal coordinator.
  await c.call("function(){const el=document.createElement('div');el.id='qa-existing-inert';el.inert=true;document.body.append(el);return true}");

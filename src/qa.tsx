@@ -882,7 +882,19 @@ function QaSessionSignalProbe(){
   return <LoginScreen onLogin={session.login} error={session.error}/>;
 }
 
+function QaLoginRetryProbe(){
+  const [error,setError]=useState('');
+  return <LoginScreen error={error} onLogin={async()=>{
+    const attempt=Number(document.documentElement.dataset.qaLoginAttempts||'0')+1;
+    document.documentElement.dataset.qaLoginAttempts=String(attempt);
+    await new Promise(resolve=>setTimeout(resolve,180));
+    setError(attempt<=2?'Λάθος στοιχεία σύνδεσης.':attempt===3?'Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.':'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.');
+    return false;
+  }}/>;
+}
+
 function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
+  if(screen==='login-retry')return <QaLoginRetryProbe/>;
   const loginErrors:Record<string,string>={
     'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
     'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',

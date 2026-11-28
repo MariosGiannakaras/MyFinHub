@@ -30,6 +30,17 @@ describe('login auth alert regression (#641)', () => {
     }
   });
 
+  it('guards duplicate submits synchronously and restores a repeated rejected error',()=>{
+    const source=readFileSync(new URL('../src/components/LoginScreen.tsx',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../scripts/keyboard-semantic-accessibility-qa.mjs',import.meta.url),'utf8');
+    expect(source).toContain('if(submitting.current||!ready)return');
+    expect(source).toContain('submitting.current=true');
+    expect(source).toContain('if(!await onLogin(email.trim(),password))setErrorDismissed(false)');
+    expect(source).toContain('finally{submitting.current=false;setBusy(false)}');
+    expect(qa).toContain('editing dismisses the old error');
+    expect(qa).toContain('retry shows the correct alert and re-enables form');
+  });
+
   it('does not create a spurious error alert when no error exists', () => {
     const html = renderToStaticMarkup(<LoginScreen onLogin={onLogin} error="" />);
     expect(html).not.toContain('id="login-error"');

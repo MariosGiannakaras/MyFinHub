@@ -72,6 +72,16 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain('last-row action menu must remain visible and clickable');
   });
 
+  it('exposes a named keyboard-scrollable scheduled list and distinguishes projections from bookings',()=>{
+    const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    const mobile=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+    expect(component).toContain('className="planning-approved-table-wrap" role="region" aria-labelledby="planning-approved-scheduled-title" tabIndex={0}');
+    expect(component).toContain('name="Προβλεπόμενη ρευστότητα"');
+    expect(component).toContain('οι εκτιμήσεις παγίων δεν είναι καταχωρισμένες πληρωμές');
+    expect(mobile).toContain('Καταχωρισμένο · μελλοντική ημερομηνία');
+    expect(qa).toContain('keyboard End reaches final scheduled row');
+  });
+
   it('allocates axis width from formatted cash values so large negative signs stay inside the chart',()=>{
     const qa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
     expect(component).toContain('const portfolioAxisWidth=Math.max(82');
