@@ -18,6 +18,9 @@ describe('Recurring post-v1.4 remediation contracts',()=>{
 
   it('keeps Payment primary while management/navigation controls stay secondary',()=>{
     expect(page).toContain('className="pay-action"');
+    expect(page).toContain('variant="primary" className="mobile-pay-action"');
+    expect(page).toContain('Εκτίμηση · όχι πραγματική πληρωμή');
+    expect(page).toContain('Εκτίμηση · όχι πληρωμή');
     expect(page).toContain('variant="primary"');
     expect(page.match(/<IconButton type="button" aria-label=/g)?.length).toBeGreaterThanOrEqual(5);
     expect(css).toContain('.recurring-workspace-table .recurring-actions button:not(.save-button){--control-gradient:transparent;--control-border:transparent;--ink:var(--text-secondary);--shadow-soft:none;');

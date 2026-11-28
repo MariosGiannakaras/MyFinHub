@@ -1,3 +1,9 @@
+## 2026-11-28 — Dashboard forecast provenance and responsive recurring action hierarchy
+
+**Implementations 14/23 completed · Sub-implementations 114/132 completed (86.4%).** Parent `7df36f9cb3b6bb257934201b5f5a498bdb776d55`: [CI #46143446490](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446490) and [CodeQL #46143446457](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446457) PASS; 350/350 files, 2687/2687 tests, hygiene, build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft CSS warning). No final rendered/Windows gate on Draft. I04.05: existing scoped MFA footer and duplicate group/name guards preserved. Forecast movement category is carried from the actual originating recurring item, nontransfer scheduled record or dated event instead of joining display labels; variable-prefixed and equal-name items no longer lose/cross categories. Dashboard separately identifies already booked future-dated events, preserves existing priority and four-row cap, and retains masked amounts. Regression exercises same-name scheduled, booked, fixed and variable movements and unchanged portfolio/history. I11.04: existing desktop estimate-vs-payment text and primary payment hierarchy reviewed; mobile explicitly identifies estimate as not a payment, keeps Pay primary and management collapsed; existing rendered cadence save/rejection suite now asserts the actually visible mobile row rather than text from hidden desktop DOM. Existing date/cadence/actual amount entry and durable receipt behavior preserved. Code/guard completion only; exact-head type/build/units/budgets and rendered acceptance pending. No new accrual or missed-cycle policy. 18 original IDs remain; explicit product boundaries I01.05/I05.02/I11.02 unchanged. Same #671; next bounded Windows/Settings/security and shared UI review, then full Ready gates together. No production/Android/data changes.
+
+---
+
 ## 2026-11-28 — Forecast presentation NodeNext preflight correction
 
 **Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Parent `4d2deb1e225e0bbfc21b27de68bcbb178630d253`: [CI #46140617465](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140617465) failed at hygiene/unused-symbols before build/tests: three TS2835 extension diagnostics in `forecastPresentation.ts` and consequential TS7006 on the untyped event callback. Direct/reusable CodeQL PASS; draft Windows/rendered/performance skipped. The helper is imported by NodeNext unit tests, so its three local imports now use the existing `.js` ESM convention of `forecast.ts` and its dependencies; no change to calculations, dates, copy, test assertions or thresholds. Exact-head hygiene, type, unit and hard bundle checks must confirm the fix; local full checkout unavailable. Keep sole draft #671, remaining 20 original IDs and explicit I01.05/I05.02/I11.02 decision boundaries unchanged. Continue compatible Windows/Settings/finance/UI evidence review, then one coherent Ready matrix, develop merge and separate authorized release. Do not deploy stale #645 or touch production data/Android.
@@ -1075,7 +1081,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I04.02** Guard hidden/revealed money and charts across account cards, summary, categories, recent movements, secondary balances and tooltips; privacy scope requires owner contract.
 - [x] **I04.03** Confirm account hierarchy, IBAN absence, account chart historic/future dates, first-/last-month balance provenance and large-number stress.
 - [x] **I04.04** Improve EOD vs event contextual labels and comparison percent-zero-basis explanation without changing canonical finance computations.
-- [ ] **I04.05** Resolve duplicate recurring/exposure labels and verify footer security/encryption claims against actual scoped guarantees before copy changes.
+- [x] **I04.05** Resolve duplicate recurring/exposure labels and verify footer security/encryption claims against actual scoped guarantees before copy changes.
 
 ### I05. Transactions / Συναλλαγές — 5/6
 
@@ -1146,7 +1152,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I11.01** Preserve shared canonical `recurringDue` current/overdue state and separate `nextRecurringDate` future schedule, with explicit time reference in UI.
 - [ ] **I11.02** Define unpaid past-cycle forecast policy via approved booked/due/estimated distinction; guard no double counting across 1/2/12/24-month cadences.
 - [x] **I11.03** Retest early/partial/duplicate payments, pause/stop/resume, day-end/Feb/annual rollover and linked canonical Loans payment.
-- [ ] **I11.04** Clarify variable amount estimate vs actual recorded amount; align due-state primary/secondary CTA hierarchy after visual/product review.
+- [x] **I11.04** Clarify variable amount estimate vs actual recorded amount; align due-state primary/secondary CTA hierarchy after visual/product review.
 - [x] **I11.05** Check provider logos/branding partial upload failure, mobile/dark long names, event origin and retry/conflict feedback.
 - [x] **I11.06** Protect historical legacy identity and lifetime purchases from forced monthly recurring reclassification.
 

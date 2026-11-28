@@ -14,6 +14,7 @@ interface ForecastMovement {
   date: string;
   label: string;
   source: ForecastSource;
+  category?: string;
   legs: LedgerLeg[];
   portfolioDelta: number;
 }
@@ -109,6 +110,7 @@ function recurringMovements(data: FinanceData, asOf: string, endDate: string, id
         date,
         label: item.amountMode==='variable'?`Εκτίμηση: ${item.name}`:item.name,
         source: 'recurring',
+        category: item.category,
         legs: [{ accountId: item.accountId, amount: -Math.abs(Number(item.amount || 0)) }],
       }, ids);
       const next = addRecurringInterval(date, item);
@@ -187,6 +189,7 @@ function scheduledMovements(data: FinanceData, asOf: string, endDate: string, id
       date,
       label: item.note,
       source: 'scheduled',
+      category: item.category,
       legs: [{ accountId: item.accountId, amount: item.kind === 'income' ? Math.abs(item.amount) : -Math.abs(item.amount) }],
     }, ids);
   }
@@ -204,6 +207,7 @@ function futureDatedEvents(data: FinanceData, asOf: string, endDate: string, ids
       date: event.date,
       label: event.note,
       source: 'dated_event',
+      category: event.category,
       legs,
     }, ids);
   }

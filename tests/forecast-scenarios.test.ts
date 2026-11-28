@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {cashFlowScenario} from '../src/lib/forecastScenarios.js';
 import {cashFlowForecast} from '../src/lib/forecast.js';
+import {upcomingPaymentGroup} from '../src/lib/forecastPresentation.js';
 import {accountBalances, createEvent, monthlyFlow, netWorth} from '../src/lib/domain.js';
 import {creditDebtForCard} from '../src/lib/cards.js';
 import {lendingOutstandingFor} from '../src/lib/lending.js';
@@ -85,6 +86,26 @@ describe('isolated 30/60/90-day what-if scenarios (#588 #7)',()=>{
     expect(JSON.stringify(d)).toBe(snapshot);
     expect(d.state.events).toEqual([]);
   });
+  it('classifies upcoming payments by originating category and source, not their display names',()=>{
+    const data=fixture(),asOf='2026-08-17';
+    data.seed.recurring=[
+      {id:'subscription',name:'Same name',amount:20,amountMode:'variable',firstExpectedDate:'2026-08-20',recurrenceUnit:'month',recurrenceInterval:1,accountId:'bank',category:'Συνδρομές',active:true},
+      {id:'utility',name:'Same name',amount:30,firstExpectedDate:'2026-08-21',recurrenceUnit:'month',recurrenceInterval:1,accountId:'bank',category:'Σταθερά έξοδα',active:true},
+    ];
+    data.state.scheduled![0].note='Same name';
+    data.state.scheduled![0].category='Άλλο';
+    data.state.events=[createEvent({kind:'expense',date:'2026-08-19',amount:10,note:'Same name',accountId:'bank',category:'Φαγητό'})];
+    const before=JSON.stringify(data),forecast=cashFlowForecast(data,asOf,30);
+    expect(forecast.movements.map(row=>({source:row.source,group:upcomingPaymentGroup(row),label:row.label,category:row.category}))).toEqual([
+      {source:'scheduled',group:'Προγραμματισμένα',label:'Same name',category:'Άλλο'},
+      {source:'dated_event',group:'Καταχωρισμένα',label:'Same name',category:'Φαγητό'},
+      {source:'recurring',group:'Συνδρομές',label:'Εκτίμηση: Same name',category:'Συνδρομές'},
+      {source:'recurring',group:'Πάγια',label:'Same name',category:'Σταθερά έξοδα'},
+    ]);
+    expect(forecast.projectedPortfolio).toBe(980);
+    expect(JSON.stringify(data)).toBe(before);
+  });
+
   it('keeps booked cash/receivables/credit separate from future due and estimates (#649 I22.06)',()=>{
     const data=fixture(),asOf='2026-08-17';
     const stamp='2026-08-01T00:00:00.000Z';

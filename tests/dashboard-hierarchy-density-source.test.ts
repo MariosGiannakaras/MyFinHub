@@ -14,6 +14,9 @@ describe('Dashboard hierarchy and painted-chart contracts',()=>{
     expect(page).toContain("item.group.trim().toLocaleLowerCase('el-GR')!==item.name.trim().toLocaleLowerCase('el-GR')");
     expect(focused).toContain('Dashboard security copy describes the verified two-factor access boundary');
     expect(focused).toContain('upcoming payment labels do not repeat an identical group and name');
+    expect(page).toContain('group:upcomingPaymentGroup(item)');
+    expect(page).not.toContain('recurringCategoryByName');
+    expect(page).toContain("category:item.source==='loan'?'Δάνειο':item.category");
   });
 
   it('uses shared readable dense typography and reduces nested Dashboard surface weight on desktop',()=>{

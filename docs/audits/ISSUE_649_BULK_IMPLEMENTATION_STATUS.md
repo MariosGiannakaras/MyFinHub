@@ -1,3 +1,9 @@
+## 2026-11-28 — Dashboard forecast provenance and responsive recurring action hierarchy
+
+**Implementations 14/23 completed · Sub-implementations 114/132 completed (86.4%).** Parent `7df36f9cb3b6bb257934201b5f5a498bdb776d55`: [CI #46143446490](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446490) and [CodeQL #46143446457](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46143446457) PASS; 350/350 files, 2687/2687 tests, hygiene, build, disposable PostgreSQL chronology/cent proofs, zero audit vulnerabilities, JS 527.7/528 KiB and CSS 559.5/560 KiB hard PASS (soft CSS warning). No final rendered/Windows gate on Draft. I04.05: existing scoped MFA footer and duplicate group/name guards preserved. Forecast movement category is carried from the actual originating recurring item, nontransfer scheduled record or dated event instead of joining display labels; variable-prefixed and equal-name items no longer lose/cross categories. Dashboard separately identifies already booked future-dated events, preserves existing priority and four-row cap, and retains masked amounts. Regression exercises same-name scheduled, booked, fixed and variable movements and unchanged portfolio/history. I11.04: existing desktop estimate-vs-payment text and primary payment hierarchy reviewed; mobile explicitly identifies estimate as not a payment, keeps Pay primary and management collapsed; existing rendered cadence save/rejection suite now asserts the actually visible mobile row rather than text from hidden desktop DOM. Existing date/cadence/actual amount entry and durable receipt behavior preserved. Code/guard completion only; exact-head type/build/units/budgets and rendered acceptance pending. No new accrual or missed-cycle policy. 18 original IDs remain; explicit product boundaries I01.05/I05.02/I11.02 unchanged. Same #671; next bounded Windows/Settings/security and shared UI review, then full Ready gates together. No production/Android/data changes.
+
+---
+
 ## 2026-11-28 — Forecast presentation NodeNext preflight correction
 
 **Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Parent `4d2deb1e225e0bbfc21b27de68bcbb178630d253`: [CI #46140617465](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140617465) failed at hygiene/unused-symbols before build/tests: three TS2835 extension diagnostics in `forecastPresentation.ts` and consequential TS7006 on the untyped event callback. Direct/reusable CodeQL PASS; draft Windows/rendered/performance skipped. The helper is imported by NodeNext unit tests, so its three local imports now use the existing `.js` ESM convention of `forecast.ts` and its dependencies; no change to calculations, dates, copy, test assertions or thresholds. Exact-head hygiene, type, unit and hard bundle checks must confirm the fix; local full checkout unavailable. Keep sole draft #671, remaining 20 original IDs and explicit I01.05/I05.02/I11.02 decision boundaries unchanged. Continue compatible Windows/Settings/finance/UI evidence review, then one coherent Ready matrix, develop merge and separate authorized release. Do not deploy stale #645 or touch production data/Android.
@@ -470,14 +476,14 @@ The split shared-control candidate immediately below is now the implementation c
 | I01 | 5/6 | I01.05 |
 | I02 | 2/6 | I02.01, I02.04, I02.05, I02.06 |
 | I03 | 6/6 | Complete |
-| I04 | 4/5 | I04.05 |
+| I04 | 5/5 | Complete |
 | I05 | 5/6 | I05.02 |
 | I06 | 5/5 | Complete |
 | I07 | 4/5 | I07.03 |
 | I08 | 6/6 | Complete |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
-| I11 | 4/6 | I11.02, I11.04 |
+| I11 | 5/6 | I11.02 |
 | I12 | 5/5 | Complete |
 | I13 | 5/5 | Complete |
 | I14 | 6/6 | Complete |

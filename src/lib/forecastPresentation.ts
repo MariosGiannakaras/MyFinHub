@@ -19,3 +19,9 @@ export function completedScheduledDescription(data:FinanceData,item:ScheduledTra
   if(!event)return 'Η συνδεδεμένη κίνηση δεν είναι διαθέσιμη';
   return `${event.date>asOf?'Καταχωρισμένη για μελλοντική ημερομηνία':'Καταχωρισμένη κίνηση'}: ${shortDate(event.date)}`;
 }
+
+export function upcomingPaymentGroup(item:CashFlowForecast['movements'][number]){
+  if(item.source==='recurring')return /συνδρομ/i.test(item.category??'')?'Συνδρομές':'Πάγια';
+  if(item.source==='loan')return 'Δόσεις / Δάνεια';
+  return item.source==='dated_event'?'Καταχωρισμένα':'Προγραμματισμένα';
+}
