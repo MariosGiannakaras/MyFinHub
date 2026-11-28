@@ -175,7 +175,7 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
   const lowAccounts = forecast.accounts.filter((row) => row.firstLowDate || row.firstNegativeDate);
 
   return <div className="page-stack planning-page" aria-busy={saving||undefined}>
-    <PageHeader eyebrow="ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ" title="Προγραμματισμός & πρόβλεψη ρευστότητας" description={<p>Οι προγραμματισμένες κινήσεις είναι one-off σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p>} trailing={<Button type="button" variant="primary" disabled={saving} onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη</Button>}/>
+    <PageHeader eyebrow="ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ" title="Προγραμματισμός & πρόβλεψη ρευστότητας" description={<p>Οι προγραμματισμένες κινήσεις είναι μεμονωμένα σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p>} trailing={<Button type="button" variant="primary" disabled={saving} onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη κίνηση</Button>}/>
     {message ? <div className="action-status" role="status" aria-live="polite">{message}</div> : null}
 
     <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>

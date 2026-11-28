@@ -104,6 +104,14 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(qa).toContain("includes('€')");
   });
 
+  it('keeps actual Planning heading and dense data readable instead of substituting tiny pseudo text',()=>{
+    expect(refinement).not.toMatch(/\.page-heading.*::(?:before|after)/);
+    expect(refinement).not.toMatch(/font-size:[789](?:\.\d+)?px/);
+    expect(refinement).toContain('.planning-approved-table{font-size:var(--ux-dense-data-size)}');
+    expect(target).toContain('overflow-wrap:anywhere;font-variant-numeric:tabular-nums');
+    expect(readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8')).toContain('Planning actual Greek heading, description and dense table follow large text roles');
+  });
+
   it('keeps a bounded four-column desktop account rhythm and readable horizon typography',()=>{
     expect(target).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
     expect(target).toContain('width:min(100%,1320px)');

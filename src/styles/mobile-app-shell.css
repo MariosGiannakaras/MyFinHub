@@ -134,12 +134,6 @@
   .flow-metric-grid .metric-card small{display:none}
   .flow-metric-grid .mini-progress{margin-top:auto;height:3px}
 
-  .dashboard-grid,.lower-grid{display:contents}
-  .dashboard-grid>.quick-panel{order:4}
-  .lower-grid>.panel:last-child{order:5}
-  .lower-grid>.panel:first-child{order:6}
-  .dashboard-grid>.chart-panel:nth-child(2){order:7}
-  .dashboard-grid>.chart-panel:nth-child(3){order:8}
 
   .quick-panel{padding:0;background:transparent;border:0;box-shadow:none}
   .quick-panel .panel-head{padding:0 2px 8px}
@@ -152,22 +146,11 @@
   .frequent-grid>button strong{font-size:10px}
   .quick-panel>.wide-action{display:none}
 
-  .lower-grid>.panel,.dashboard-grid>.chart-panel{border-radius:18px;padding:13px;background:rgba(248,251,255,.82);border:1px solid rgba(214,224,237,.82);box-shadow:var(--mobile-shadow-soft)}
   .panel-head{gap:8px}
-  .panel-head>div>span{font-size:11px}
-  .panel-head>div>small{font-size:8px;line-height:1.35}
+  .panel-head>div>span{font-size:var(--ux-dense-data-size)}
+  .panel-head>div>small{font-size:var(--ux-dense-label-size);line-height:1.35}
 
-  .dashboard-grid>.chart-panel:nth-child(2) .chart-wrap{display:none}
-  .dashboard-grid>.chart-panel:nth-child(2) .pie-layout{display:block}
-  .dashboard-grid>.chart-panel:nth-child(2) .legend{display:grid;grid-template-columns:1fr;gap:0;margin-top:4px}
-  .dashboard-grid>.chart-panel:nth-child(2) .legend>div{min-height:42px;border-bottom:1px solid #e0e8f2;padding:7px 1px;display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px}
-  .dashboard-grid>.chart-panel:nth-child(2) .legend>div:last-child{border-bottom:0}
-  .dashboard-grid>.chart-panel:nth-child(2) .legend span{font-size:9.5px}
-  .dashboard-grid>.chart-panel:nth-child(2) .legend b{font-size:10px}
 
-  .dashboard-grid>.chart-panel:nth-child(3)>div[aria-hidden="true"]{height:190px!important;max-height:190px;overflow:hidden}
-  .dashboard-grid>.chart-panel:nth-child(3) .recharts-responsive-container{height:190px!important}
-  .dashboard-grid>.chart-panel:nth-child(3) .chart-alt{margin-top:3px}
 
   .recurring-mini>div{min-height:44px;padding:8px 0;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;border-bottom:1px solid #e2e9f2}
   .recurring-mini>div:last-child{border-bottom:0}

@@ -72,7 +72,7 @@ describe('keyboard and semantic accessibility verification contract',()=>{
 
   it('keeps historical credit statement tables semantically labelled',()=>{
     expect(credit).toContain('<caption className="sr-only">Κινήσεις ιστορικής δήλωσης πιστωτικής</caption>');
-    expect(credit).toContain('<thead><tr><th>Ημερομηνία</th><th>Τύπος</th><th>Περιγραφή</th><th className="amount">Ποσό</th></tr></thead>');
+    expect(credit).toContain('<thead><tr><th scope="col">Ημερομηνία</th><th scope="col">Τύπος</th><th scope="col">Περιγραφή</th><th scope="col" className="amount">Ποσό</th></tr></thead>');
   });
 
   it('checks shared modal focus trapping, escape and opener restoration',()=>{

@@ -176,6 +176,19 @@ try{
   console.log('Planning QA: empty, typography and mobile responsive states');
   await navigate('empty',1440,1000);assert(await c.call("function(){return document.body.textContent.includes('Δεν υπάρχουν αρκετές γνωστές μελλοντικές ροές')&&document.body.textContent.includes('Δεν υπάρχουν pending προγραμματισμένες κινήσεις')}") ,'empty/insufficient forecast state is explicit');await noOverflow('planning empty desktop');
   await navigate('',1440,1000,'compact');const compact=await c.call("function(){return parseFloat(getComputedStyle(document.querySelector('.page-heading h1')).fontSize)}");await navigate('',1440,1000,'large');const large=await c.call("function(){return parseFloat(getComputedStyle(document.querySelector('.page-heading h1')).fontSize)}");assert(large>compact,`Planning typography preference changes computed heading size (${compact} -> ${large})`);
+  for(const width of [1100,1440,2560]){
+    await navigate('extreme',width,1000,'large');
+    const readable=await c.call(`function(){
+      const title=document.querySelector('.planning-page .page-heading h1'),description=title?.parentElement?.querySelector('p'),table=document.querySelector('.planning-approved-table');
+      const floor=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ux-dense-label-size'));
+      const nodes=[...table?.querySelectorAll('thead th,tbody td>b,tbody td>small,.planning-kind-chip,.planning-status-pill,.planning-row-menu>summary')||[]];
+      return Boolean(title&&description&&nodes.length&&getComputedStyle(title).color!=='rgba(0, 0, 0, 0)'&&getComputedStyle(title,'::before').content==='none'&&description.scrollHeight<=description.clientHeight+1&&nodes.every(node=>parseFloat(getComputedStyle(node).fontSize)>=floor-.1));
+    }`);
+    assert(readable,'Planning actual Greek heading, description and dense table follow large text roles at '+width);
+    await noOverflow('planning large text '+width);
+    await screenshot('planning-readable-large-'+width);
+  }
+  await navigate('',1440,1000,'large');
   await navigate('',375,812);await noOverflow('planning mobile');await noUnnamed('planning mobile');await touchTargets('planning mobile');assert(await c.call("function(){const control=document.querySelector('.horizon-control');const actions=document.querySelector('.scheduled-actions');return Boolean(control&&actions&&getComputedStyle(control).width!=='0px')}") ,'mobile keeps horizon and scheduled actions usable');await screenshot('planning-forecast-mobile');
 
   console.log('Planning QA: isolated what-if scenario remains nonposting and mobile-safe');

@@ -27,7 +27,9 @@ describe('v2.1 audit presentation regression contracts (#646)',()=>{
   it('does not substitute monthly savings flow for the common goal balance',()=>{
     expect(savings).toContain('<span>Κοινό υπόλοιπο</span><span>Ποσό στόχου</span>');
     expect(savings).toContain('Αποταμίευση μήνα: {money.format(flow.saving)}');
-    expect(savings).toContain('<strong>{money.format(savingsBalance)}</strong><strong>{targetTotal');
+    expect(savings).toContain("goalField(surface,'balance',money.format(savingsBalance))");
+    expect(savings).toContain("goalField(surface,'target',targetTotal>0?money.format(targetTotal):'—')");
+    expect(savings).not.toContain("goalField(surface,'balance',money.format(flow.saving))");
   });
 
   it('uses period-aware recurring lookup while retaining historic-month semantics',()=>{

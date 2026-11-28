@@ -76,6 +76,14 @@ describe('theme architecture source contract',()=>{
     expect(rendered).toContain('dark Reports executive picture is a dark semantic surface');
   });
 
+  it('keeps solid destructive confirmation contrast distinct from status foreground colors',()=>{
+    const primitives=readFileSync('scripts/primitives-adoption-qa.mjs','utf8');
+    expect(theme).toContain("'--danger-solid':'#b32942'");
+    expect(theme).toContain('background:var(--danger-solid)!important;color:var(--white)!important');
+    expect(primitives).toContain('actual destructive confirmation label contrast');
+    expect(primitives).toContain("for(const theme of ['light','dark'])");
+  });
+
   it('preserves actual outlines when forced colors suppress box shadows',()=>{
     const controls=readFileSync('src/styles/app-controls.css','utf8');
     expect(controls).toContain('@media (forced-colors:active)');

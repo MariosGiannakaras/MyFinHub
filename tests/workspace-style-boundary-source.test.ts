@@ -61,6 +61,9 @@ describe('lazy workspace CSS boundary',()=>{
     expect(read('src/pages/CreditCardPage.tsx')).toContain('data-credit-stat="available"');
     expect(read('src/styles/credit-approved-target.css')).toContain('[data-credit-stat=available]>b');
     expect(read('src/styles/mobile-app-shell.css')).not.toContain('.primary-balance-card:nth-child');
+    expect(read('src/styles/mobile-app-shell.css')).not.toContain('.chart-panel:nth-child');
+    expect(read('src/pages/DashboardPage.tsx')).not.toMatch(/className=["'](?:dashboard-grid|lower-grid)/);
+    expect(read('src/pages/DashboardPage.tsx')).toContain('data-dashboard-section="quick-entry"');
     for(const field of ['expiry','cvv']){
       expect(read('src/components/CanonicalCreditCardStack.tsx')).toContain('data-card-field="'+field+'"');
       expect(read('src/components/InteractivePaymentCard.tsx')).toContain('data-card-field="'+field+'"');
