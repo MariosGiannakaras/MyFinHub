@@ -7,7 +7,8 @@ type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enr
 function operationalMessage(error: unknown, fallback: string) {
   if (!(error instanceof ApiError)) return fallback;
   if (error.status === 429) return 'Έγιναν πολλές προσπάθειες. Περίμενε λίγο και δοκίμασε ξανά.';
-  if (error.status === 503 || error.status === 504) return 'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Η συνεδρία σου δεν διαγράφηκε· δοκίμασε ξανά.';
+  if (error.status === 503 || error.status === 504) return 'Η υπηρεσία σύνδεσης δεν είναι προσωρινά διαθέσιμη. Δοκίμασε ξανά.';
+  if (error.status === 0 && error.code?.startsWith('NETWORK_')) return 'Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.';
   return fallback;
 }
 

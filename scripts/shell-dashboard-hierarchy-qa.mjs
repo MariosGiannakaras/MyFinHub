@@ -51,11 +51,12 @@ try{
   assert(historicalFlowAxis&&historicalFlowAxis.count>=3&&historicalFlowAxis.minLeftInset>=-0.5&&historicalFlowAxis.smallestFont>=10&&historicalFlowAxis.maxValue>=3000,`historical-month Dashboard axis tick labels are fully visible, readable and retain thousands: ${JSON.stringify(historicalFlowAxis)}`);
   // Real navigation, without reloading the fixture or overwriting its month.
   const selectReportingRoute=async(label,page,heading,period)=>{
-    const clicked=await c.call("function(label){const b=[...document.querySelectorAll('.sidebar nav button')].find(node=>node.textContent?.trim()===label);b?.click();return Boolean(b)}",[label]);
+    const clicked=await c.call("function(label){const b=[...document.querySelectorAll('.sidebar nav button')].find(node=>node.textContent?.trim()===label);b?.focus();b?.click();return Boolean(b)}",[label]);
     assert(clicked,'sidebar route '+page+' is available');
     await waitFor(`function(){const shell=document.querySelector('.app-shell'),title=document.querySelector('#main-workspace h1'),label=document.querySelector('.period-control .period-label');return shell?.dataset.page===${JSON.stringify(page)}&&(title?.textContent||'').includes(${JSON.stringify(heading)})&&(${JSON.stringify(period)}===null?!label:(label?.textContent||'').includes(${JSON.stringify(period)}))}`,'selected reporting period persists across '+page);
     const active=await c.eval("(()=>[...document.querySelectorAll('.sidebar nav button[aria-current=page]')].map(b=>b.textContent.trim()))()");
     assert(active.length===1&&active[0]===label,'sidebar current route matches '+page);
+    await waitFor("function(){const heading=document.querySelector('#main-workspace h1');return Boolean(heading&&heading.tabIndex===-1&&document.activeElement===heading)}",'settled actual route heading receives navigation focus '+page);
   };
   await selectReportingRoute('Συναλλαγές','transactions','Συναλλαγές','Ιούλιος 2026');
   await selectReportingRoute('Αποταμίευση','savings','Αποταμίευση','Ιούλιος 2026');

@@ -41,6 +41,16 @@ describe('theme architecture source contract',()=>{
     expect(rendered).not.toContain("innerText.trim()==='Light'");
   });
 
+  it('uses the shared roving keyboard contract for both appearance radio groups',()=>{
+    expect(settings).toContain("rovingTabDestination(key,index,buttons.length)");
+    expect(settings).toContain("tabIndex={value === option.value ? 0 : -1}");
+    expect(settings).toContain("tabIndex={theme === option.value ? 0 : -1}");
+    expect(settings).toContain("event.key==='ArrowDown'?'ArrowRight':event.key==='ArrowUp'?'ArrowLeft'");
+    expect(rendered).toContain('theme ArrowRight wraps Dark to System and persists');
+    expect(rendered).toContain('text-size End selects large');
+    expect(rendered).toContain('text-size radio ArrowLeft focus');
+  });
+
   it('binds interactive borders and formerly light-biased chrome to semantic theme roles',()=>{
     expect(theme).toContain("'--control-border':'#5a7092'");
     expect(theme).toContain('.eyebrow,.quick-modal>header small{color:var(--info)!important}');

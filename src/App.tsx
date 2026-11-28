@@ -166,13 +166,6 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
 
   useEffect(() => { setMonth((current) => reportingMonthForDate(current, today, monthIsManual)); }, [today, monthIsManual]);
-  useEffect(() => {
-    if (notFound) return;
-    requestAnimationFrame(() => {
-      const heading = document.querySelector<HTMLElement>('#main-workspace h1');
-      if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-    });
-  }, [page, notFound]);
 
   const data = finance.data;
   // One shared operation for user-initiated, automatic-on-reload and manual

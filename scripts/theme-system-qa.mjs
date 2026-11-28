@@ -46,6 +46,24 @@ try{
   await viewport(1440,900,false);await navigate('settings',pages.settings);await applyTheme('dark');
   let settings=await c.call(`function(){const groups=[...document.querySelectorAll('[role="radiogroup"]')];const group=groups.find(node=>node.getAttribute('aria-label')==='Θέμα εμφάνισης');const buttons=[...group?.querySelectorAll('button')||[]];const selected=buttons.find(button=>button.getAttribute('aria-checked')==='true');selected?.focus();const style=selected?getComputedStyle(selected):null;return {buttons:buttons.map(button=>button.innerText.trim()),selected:selected?.innerText||'',outlineWidth:style?.outlineWidth||'',outlineStyle:style?.outlineStyle||'',heading:document.querySelector('#main-workspace h1')?.textContent||''}}`);
   assert(settings.buttons.length===3,'Settings exposes exactly Σύστημα, Φωτεινό and Σκούρο theme choices');assert(settings.buttons.join('|')==='Σύστημα|Φωτεινό|Σκούρο',`Settings theme choices remain localized: ${JSON.stringify(settings.buttons)}`);assert(settings.selected.includes('Σκούρο'),'Σκούρο choice is selected');assert(settings.heading.includes('Ρυθμίσεις'),'theme selection preserves current route');assert(parseFloat(settings.outlineWidth)>=2&&settings.outlineStyle!=='none','focused selected theme control has a visible focus indicator');await shot('dark-settings-selected-focus-desktop');
+  const arrow=async key=>{await c.send('Input.dispatchKeyEvent',{type:'keyDown',key,code:key});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key,code:key})};
+  const radioState="function(label){const group=[...document.querySelectorAll('[role=radiogroup]')].find(node=>node.getAttribute('aria-label')===label),buttons=[...group?.querySelectorAll('button[role=radio]')||[]],selected=buttons.find(button=>button.getAttribute('aria-checked')==='true');return Boolean(selected&&document.activeElement===selected&&selected.tabIndex===0&&buttons.filter(button=>button.tabIndex===0).length===1)}";
+  assert(await c.call(radioState,['Θέμα εμφάνισης']),'selected theme is the only Tab stop in its radio group');
+  await arrow('ArrowRight');
+  await waitFor("function(){return document.documentElement.dataset.themePreference==='system'&&localStorage.getItem('myfinhub.theme')==='system'}",'theme ArrowRight wraps Dark to System and persists');
+  await waitFor(radioState,'theme radio focus follows selection',['Θέμα εμφάνισης']);
+  await arrow('End');
+  await waitFor("function(){return document.documentElement.dataset.themePreference==='dark'}",'theme End returns to Dark');
+  await waitFor(radioState,'theme radio End focus',['Θέμα εμφάνισης']);
+  const sizeFocused=await c.call("function(){const group=[...document.querySelectorAll('[role=radiogroup]')].find(node=>node.getAttribute('aria-label')==='Μέγεθος κειμένου'),selected=group?.querySelector('[aria-checked=true]');selected?.focus();return Boolean(selected)}");
+  assert(sizeFocused&&await c.call(radioState,['Μέγεθος κειμένου']),'selected text size is the only Tab stop in its radio group');
+  await arrow('End');
+  await waitFor("function(){return document.documentElement.dataset.textSize==='large'}",'text-size End selects large');
+  await waitFor(radioState,'text-size radio focus follows selection',['Μέγεθος κειμένου']);
+  await arrow('ArrowLeft');
+  await waitFor("function(){return document.documentElement.dataset.textSize==='normal'}",'text-size ArrowLeft restores normal');
+  await waitFor(radioState,'text-size radio ArrowLeft focus',['Μέγεθος κειμένου']);
+  await c.call("function(){document.querySelector('[role=radiogroup][aria-label=\"Θέμα εμφάνισης\"] [aria-checked=true]')?.focus();return true}");
   const switched=await c.call(`async function(){const before={theme:document.documentElement.dataset.theme,pref:document.documentElement.dataset.themePreference,stored:localStorage.getItem('myfinhub.theme')};const group=[...document.querySelectorAll('[role="radiogroup"]')].find(node=>node.getAttribute('aria-label')==='Θέμα εμφάνισης');const target=[...group.querySelectorAll('button')].find(button=>button.querySelector('b')?.innerText.trim()==='Φωτεινό');const disabled=target.disabled;target.click();await new Promise(resolve=>setTimeout(resolve,160));return {before,disabled,theme:document.documentElement.dataset.theme,pref:document.documentElement.dataset.themePreference,stored:localStorage.getItem('myfinhub.theme'),heading:document.querySelector('#main-workspace h1')?.textContent||'',selected:target.getAttribute('aria-checked')}}`);
   assert(switched.theme==='light'&&switched.pref==='light'&&switched.stored==='light',`Settings Φωτεινό choice applies and persists locally: ${JSON.stringify(switched)}`);assert(switched.heading.includes('Ρυθμίσεις'),'theme switch does not navigate away');assert(switched.selected==='true','theme radio semantics update after switching');await shot('light-settings-selected-desktop');
 

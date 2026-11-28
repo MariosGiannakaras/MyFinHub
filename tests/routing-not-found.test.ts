@@ -80,7 +80,15 @@ describe('routing and 404 contract',()=>{
     expect(app).toContain("history.pushState(null, '', hash)");
     expect(app).toContain("window.addEventListener('hashchange', sync)");
     expect(app).toContain("window.addEventListener('popstate', sync)");
-    expect(app).toContain("heading.focus({ preventScroll: true })");
+    const heading=readFileSync(new URL('../src/components/PageHeader.tsx',import.meta.url),'utf8');
+    const shellQa=readFileSync(new URL('../scripts/shell-dashboard-hierarchy-qa.mjs',import.meta.url),'utf8');
+    expect(app).not.toContain("document.querySelector<HTMLElement>('#main-workspace h1')");
+    expect(heading).toContain('<h1 ref={headingRef} tabIndex={-1}>');
+    expect(heading).toContain("heading.focus({ preventScroll: true })");
+    expect(heading).toContain("heading.closest('[inert]')");
+    expect(heading).toContain("active===document.body||active?.closest('.sidebar nav,.mobile-nav,.brand-home-button')");
+    expect(heading).toContain('cancelAnimationFrame(frame)');
+    expect(shellQa).toContain('settled actual route heading receives navigation focus');
     expect(app).toContain("onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}");
     expect(notFoundPage).toContain("titleRef.current?.focus({ preventScroll: true })");
     expect(notFoundPage).toContain('tabIndex={-1}');
