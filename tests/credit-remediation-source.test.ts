@@ -116,6 +116,16 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain('dots.scrollTo({left,behavior:');
   });
 
+  it('does not ship obsolete physical-card action and inline editing selectors',()=>{
+    const stackFour=readFileSync(new URL('../src/styles/canonical-credit-card-stack-4.css',import.meta.url),'utf8');
+    const global=readFileSync(new URL('../src/styles/cards-v15-presentation.css',import.meta.url),'utf8');
+    const editor=readFileSync(new URL('../src/components/CardDetailsDialog.tsx',import.meta.url),'utf8');
+    const physical=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
+    for(const source of [stack,editor,physical,stackThree,stackFour,global])expect(source).not.toMatch(/\b(?:card-action|edit-number|edit-small)\b/);
+    expect(editor).toContain('card-inline-value');
+    expect(stack).toContain('class="card-toolbar"');
+  });
+
   it('keeps real Greek nickname glyph clearance in both card face renderers',()=>{
     const debit=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
     const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
