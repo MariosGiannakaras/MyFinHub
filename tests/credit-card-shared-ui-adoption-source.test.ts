@@ -33,7 +33,7 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('initialCard={profileCard}');
     expect(source).toContain('<CardDetailsDialog');
     expect(source).toContain('<Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}');
-    expect(source).toContain('<Button data-autofocus={index===0?\'true\':undefined} type="button" variant="primary" onClick={()=>restoreArchived(archived)}');
+    expect(source).toContain('<Button data-autofocus={index===0?\'true\':undefined} type="button" variant="primary" disabled={restoring||deleteCardBusy} onClick={()=>restoreArchived(archived)}');
   });
 
   it('keeps finance, statement, archive and modal-focus behavior unchanged',()=>{

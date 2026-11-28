@@ -1,3 +1,9 @@
+## 2026-11-28 — Consolidated card/entry source completion and session copy
+
+**Implementations 17/23 completed · Sub-implementations 123/132 completed (93.2%).** Exact parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` [CI #46166329855](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329855) failed three exact-source guards (347/350 files, 2701/2704 tests); [CodeQL #46166329870](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329870) PASS. Correct stale assertions to require actual shared Button/disabled archive states and truthful no-cleanup-started message; update legacy Greek marker assertion. Consolidate prepared candidate `0aea725bc80e1fccac0cbc8c2b4d7090fff1ec86` (see checkpoint below). I07.03 code/guard complete: existing reversible archive/restore, pointer/keyboard, reduced-motion, settled hard-delete/tombstone proof plus exact-ID lifecycle/receipt/focus regressions, not yet rendered acceptance. I19.01 code/guard complete: canonical eight-intent create/edit/readback matrix plus existing contextual domain paths, shared controls and strict legacy/direct Credit/Lending lexical amounts; real-stack acceptance remains required. I15.05 partial: actual hard-expiry event now explains re-login without falsely marking untouched credentials invalid; ambiguous logout copy no longer asserts active session. I23.07 provenance code prepared; actual immutable artifacts and inspection pending. No scope decision for privacy/running balances/forecast policy. Remaining 9 IDs. No local application execution; JS harness syntax/isolated timestamp probe and source review only. Next exact-head draft CI, finish remaining compatible preference/accessibility/copy/performance and evidence work, then grouped Ready gates. No merge, production, hosted or Android changes.
+
+---
+
 ## 2026-11-28 — Identity-specific card QA, direct lending, Greek timestamps and immutable evidence
 
 **Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` CI #46166329855: completed/failure; CodeQL #46166329870: in_progress/pending at preparation. Correct the new credit restore QA to select the exact archived ID and preserve the fixture's pre-existing archived rows; assert focus on surviving archive opener or heading. Direct Lending creation/repayment now uses canonical lexical cent validation, real-stack negative cases must not advance revision. Greek historical correction copy, truthful uncertain logout, explicit year/local timestamp and missing-date display in history/device/backup/support surfaces. Final 216-image manifest now records actual synthetic path/query, observed privacy controls (not a claim of global masking), verified theme and per-file SHA-256. No artifact sweep has run yet. Source-only guards, JS parse and isolated timestamp checks completed; TypeScript/full CI/rendered/real-stack/Windows acceptance remains. No change to auth policy, finance semantics, history schema, privacy scope or budget limits. Remaining 11 checklist IDs pending detailed acceptance; continue consolidated review, no production/Android/hosted action.
@@ -1175,13 +1181,13 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I06.04** Reproduce and guard saving transfer, manual cash offset, HELP/RETURN and goal allocation with linked-account selection and no double posting.
 - [x] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
 
-### I07. Debit and prepaid Cards / Κάρτες — 4/5
+### I07. Debit and prepaid Cards / Κάρτες — 5/5
 
 **Priority:** P1 · **Owner:** `CardsPage, CardCreateDialog, CardDetailsDialog, bank visuals` · **Dependencies:** no Android repo change
 
 - [x] **I07.01** Reconcile card header/recent activity panel widths and large desktop whitespace without implying debit card owns a separate ledger.
 - [x] **I07.02** Verify exact 16-digit PAN 4×4 input, expiry/CVV, credential reveal/hide, clipboard state, and zero layout shift at 320/375/1440.
-- [ ] **I07.03** Review card stack, archive/recovery/hard-delete settled-state requirements, close focus, keyboard/drag interactions and responsive action affordances.
+- [x] **I07.03** Review card stack, archive/recovery/hard-delete settled-state requirements, close focus, keyboard/drag interactions and responsive action affordances.
 - [x] **I07.04** Validate linked-account transaction provenance: repeated merchant charges remain separate account ledger events, no fabricated card transaction grouping.
 - [x] **I07.05** Guard vault receipt, encrypted secret exclusion from ordinary FinanceData, reveal after reload, partial save/upload failure, cleanup/retry and privacy.
 
@@ -1301,11 +1307,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I18.05** Verify device session list, revocation denial paths, stale access, active owner+AAL2 authorization and red failure vs genuine green save receipt.
 - [x] **I18.06** Run desktop backup panel empty/restore/failure/retry/light/dark/mobile accessibility with no physical device gate.
 
-### I19. Quick Entry, payments, local receipts and spending capture — 6/7
+### I19. Quick Entry, payments, local receipts and spending capture — 7/7
 
 **Priority:** P0 · **Owner:** `QuickAdd, ContextualQuickAdd, ReceiptAwareQuickAdd, payment flows` · **Dependencies:** cross-store partial writes and domain posting
 
-- [ ] **I19.01** Audit all create/edit transaction types and actual account/source-target-result editors via shared MoneyInput/Category/Date and keyboard/validation.
+- [x] **I19.01** Audit all create/edit transaction types and actual account/source-target-result editors via shared MoneyInput/Category/Date and keyboard/validation.
 - [x] **I19.02** Guarantee each payment posts exactly one canonical logical event and correct ledger legs across credit, loans, lending, recurring and savings.
 - [x] **I19.03** Verify receipts remain local/authorized, filename/image restrictions, OCR limitations, mapping, ambiguous matches, duplicate imports and no exfiltration.
 - [x] **I19.04** Test independent asset upload/metadata and finance revision partial-success states, cleanup, retry/idempotency and conflict feedback.

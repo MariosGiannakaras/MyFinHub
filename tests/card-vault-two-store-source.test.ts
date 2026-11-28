@@ -33,8 +33,8 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(dlg).toContain('saveError instanceof UnverifiedCardVaultWrite');
     expect(dlg).toContain('else if(requireCvv&&!profileStaged)setError(');
     expect(dlg).toContain('else if(requireCvv)setError(');
-    expect(cards).toContain('Τα ασφαλή στοιχεία δεν αφαιρέθηκαν.');
-    expect(credit).toContain('Τα ασφαλή στοιχεία δεν αφαιρέθηκαν.');
+    expect(cards).toContain('Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε.');
+    expect(credit).toContain('Ο καθαρισμός των ασφαλών στοιχείων δεν ξεκίνησε.');
     expect(qa).toContain("get('card-profile-save-failure')==='1'");
     expect(read('scripts/card-vault-runtime-qa.mjs')).toContain('card-vault-finance-profile-failure');
   });

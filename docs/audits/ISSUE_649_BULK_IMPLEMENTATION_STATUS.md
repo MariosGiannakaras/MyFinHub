@@ -1,3 +1,9 @@
+## 2026-11-28 — Consolidated card/entry source completion and session copy
+
+**Implementations 17/23 completed · Sub-implementations 123/132 completed (93.2%).** Exact parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` [CI #46166329855](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329855) failed three exact-source guards (347/350 files, 2701/2704 tests); [CodeQL #46166329870](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329870) PASS. Correct stale assertions to require actual shared Button/disabled archive states and truthful no-cleanup-started message; update legacy Greek marker assertion. Consolidate prepared candidate `0aea725bc80e1fccac0cbc8c2b4d7090fff1ec86` (see checkpoint below). I07.03 code/guard complete: existing reversible archive/restore, pointer/keyboard, reduced-motion, settled hard-delete/tombstone proof plus exact-ID lifecycle/receipt/focus regressions, not yet rendered acceptance. I19.01 code/guard complete: canonical eight-intent create/edit/readback matrix plus existing contextual domain paths, shared controls and strict legacy/direct Credit/Lending lexical amounts; real-stack acceptance remains required. I15.05 partial: actual hard-expiry event now explains re-login without falsely marking untouched credentials invalid; ambiguous logout copy no longer asserts active session. I23.07 provenance code prepared; actual immutable artifacts and inspection pending. No scope decision for privacy/running balances/forecast policy. Remaining 9 IDs. No local application execution; JS harness syntax/isolated timestamp probe and source review only. Next exact-head draft CI, finish remaining compatible preference/accessibility/copy/performance and evidence work, then grouped Ready gates. No merge, production, hosted or Android changes.
+
+---
+
 ## 2026-11-28 — Identity-specific card QA, direct lending, Greek timestamps and immutable evidence
 
 **Implementations 15/23 completed · Sub-implementations 121/132 completed (91.7%).** Parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` CI #46166329855: completed/failure; CodeQL #46166329870: in_progress/pending at preparation. Correct the new credit restore QA to select the exact archived ID and preserve the fixture's pre-existing archived rows; assert focus on surviving archive opener or heading. Direct Lending creation/repayment now uses canonical lexical cent validation, real-stack negative cases must not advance revision. Greek historical correction copy, truthful uncertain logout, explicit year/local timestamp and missing-date display in history/device/backup/support surfaces. Final 216-image manifest now records actual synthetic path/query, observed privacy controls (not a claim of global masking), verified theme and per-file SHA-256. No artifact sweep has run yet. Source-only guards, JS parse and isolated timestamp checks completed; TypeScript/full CI/rendered/real-stack/Windows acceptance remains. No change to auth policy, finance semantics, history schema, privacy scope or budget limits. Remaining 11 checklist IDs pending detailed acceptance; continue consolidated review, no production/Android/hosted action.
@@ -550,7 +556,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I04 | 5/5 | Complete |
 | I05 | 5/6 | I05.02 |
 | I06 | 5/5 | Complete |
-| I07 | 4/5 | I07.03 |
+| I07 | 5/5 | — |
 | I08 | 6/6 | Complete |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
@@ -562,7 +568,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I16 | 6/6 | Complete |
 | I17 | 6/6 | Complete |
 | I18 | 6/6 | Complete |
-| I19 | 6/7 | I19.01 |
+| I19 | 7/7 | — |
 | I20 | 6/6 | Complete |
 | I21 | 4/5 | I21.05 |
 | I22 | 7/7 | Complete |

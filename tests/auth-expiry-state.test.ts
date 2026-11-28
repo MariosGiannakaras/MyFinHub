@@ -58,6 +58,14 @@ describe('client auth-state expiry signals',()=>{
     expect(workflow).toContain("'ui-ux-runtime'");
   });
 
+  it('explains revoked/expired access without falsely marking new credentials invalid',()=>{
+    const hook=readFileSync('src/hooks/useSession.ts','utf8');
+    const login=readFileSync('src/components/LoginScreen.tsx','utf8');
+    expect(hook).toContain("setError(AUTH_RELOGIN_MESSAGE); setState('anonymous')");
+    expect(login).toContain('Boolean(visibleError&&visibleError!==AUTH_RELOGIN_MESSAGE)');
+    expect(hook).not.toContain('Η τρέχουσα συνεδρία παραμένει ενεργή');
+  });
+
   it('keeps rendered MFA downgrade verification aligned with the current MFA challenge contract',()=>{
     const runtime=readFileSync('scripts/ui-ux-runtime-qa.mjs','utf8');
     expect(runtime).toContain("document.querySelector('#mfa-title')");

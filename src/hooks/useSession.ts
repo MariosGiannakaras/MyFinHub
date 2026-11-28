@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, enrollMfa as enrollMfaApi, getSession, login as loginApi, logout as logoutApi, verifyMfa as verifyMfaApi, type MfaEnrollment, type SessionInfo } from '../lib/api';
 import { clearAppUnlockToken } from '../lib/appUnlockToken';
+import { AUTH_RELOGIN_MESSAGE } from '../lib/authExpiry';
 
 type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enroll' | 'error';
 
@@ -61,7 +62,7 @@ export function useSession() {
     const expired = () => {
       ++transitionEpoch.current;
       clearAppUnlockToken();
-      setEmail(null); setError(''); setState('anonymous');
+      setEmail(null); setError(AUTH_RELOGIN_MESSAGE); setState('anonymous');
     };
     const mfaRequired = () => { void refresh(); };
     window.addEventListener('rheomiq:auth-expired', expired);

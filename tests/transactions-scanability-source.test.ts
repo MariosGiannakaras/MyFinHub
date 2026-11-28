@@ -10,7 +10,7 @@ const focusedQa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs
 const coordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions scanability source contracts',()=>{
-  it('removes routine app provenance and replaces internal kind fallbacks with human labels',()=>{expect(page).not.toContain("'MyFinHub'");expect(page).toContain("row.category===row.kind?eventKindLabel(row.kind):categoryPath");expect(page).toContain("if(row.source!=='legacy')return category");expect(page).toContain("row.overridden?'Ιστορικό · override':'Ιστορικό'")});
+  it('removes routine app provenance and replaces internal kind fallbacks with human labels',()=>{expect(page).not.toContain("'MyFinHub'");expect(page).toContain("row.category===row.kind?eventKindLabel(row.kind):categoryPath");expect(page).toContain("if(row.source!=='legacy')return category");expect(page).toContain("row.overridden?'Ιστορικό · διορθωμένο':'Ιστορικό'")});
   it('preserves row IDs and bank-account links instead of grouping equal merchants (#649 I07.04)',()=>{
     const source=page.slice(page.indexOf('const sourceRows=useMemo'),page.indexOf('useEffect(()=>{',page.indexOf('const sourceRows=useMemo')));
     const filtered=page.slice(page.indexOf('const rows=useMemo'),page.indexOf('const firstComment='));
