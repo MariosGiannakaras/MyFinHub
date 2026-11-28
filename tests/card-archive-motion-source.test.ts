@@ -75,6 +75,15 @@ describe('card archive exit-motion regression #570',()=>{
     expect(credit).toContain("document.documentElement.dataset.motion==='reduced'");
   });
 
+  it('retains same-card action focus after imperative DOM replacement without focusing covered cards',()=>{
+    const render=credit.slice(credit.indexOf('    function render(){'),credit.indexOf('    renderRef.current=render;'));
+    expect(render.indexOf('const focused=document.activeElement')).toBeLessThan(render.indexOf('stage.innerHTML='));
+    expect(render).toContain('focusedId===activeId&&document.activeElement===document.body');
+    expect(render).toContain('`.stack-card.top .${action}`');
+    expect(render).toContain("button.dataset.field===field");
+    expect(render).toContain('(replacement??stage).focus({preventScroll:true})');
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

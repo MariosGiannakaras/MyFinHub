@@ -214,11 +214,22 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       for(const card of cardsRef.current)if(!orderedIds.has(card.id)){orderRef.current.push(card.id);orderedIds.add(card.id)}
       const orderedCards=orderRef.current.map(id=>cardById.get(id)).filter((card):card is RuntimeCard=>Boolean(card));
       for(const id of revealedRef.current)if(id!==orderRef.current[0])revealedRef.current.delete(id);
+      // A durable data/provider refresh replaces imperative DOM nodes. Keep
+      // keyboard focus on the same active card and action, never a covered card.
+      const focused=document.activeElement;
+      const focusedButton=focused instanceof HTMLButtonElement&&stage.contains(focused)?focused:null;
+      const focusedId=focusedButton?.closest<HTMLElement>('.stack-card')?.dataset.cardId;
+      const action=focusedButton&&['reveal-btn','edit-profile-btn','edit-details-btn','delete-btn','copy-btn'].find(name=>focusedButton.classList.contains(name));
+      const field=focusedButton?.dataset.field;
       stage.innerHTML=orderedCards.map((card,index)=>renderCard(card,index)).join('');Array.from(stage.children).forEach((element,index)=>applyLayout(element as HTMLElement,index));
       stage.classList.toggle('single-card',orderedCards.length===1);
       const focusedDot=dots.contains(document.activeElement);
       const activeId=orderRef.current[0]??null;dots.innerHTML=cardsRef.current.length>1?cardsRef.current.map((card,index)=>`<button type="button" class="dot${card.id===activeId?' active':''}" data-dot-id="${esc(card.id)}" aria-label="${esc(`Κάρτα ${index+1} από ${cardsRef.current.length}: ${card.name}`)}" aria-current="${card.id===activeId?'true':'false'}" tabindex="${card.id===activeId?0:-1}"></button>`).join(''):'';const activeDot=dots.querySelector<HTMLElement>('.dot.active');
       if(focusedDot)(activeDot??stage).focus({preventScroll:true});
+      else if(focusedButton&&focusedId===activeId&&document.activeElement===document.body){
+        const replacement=action?[...stage.querySelectorAll<HTMLButtonElement>(`.stack-card.top .${action}`)].find(button=>action!=='copy-btn'||button.dataset.field===field):null;
+        (replacement??stage).focus({preventScroll:true});
+      }
       if(activeDot)requestAnimationFrame(()=>{
         // scrollIntoView on a nested pagination dot also scrolls the document.
         // After repeated card changes that used to move the entire physical

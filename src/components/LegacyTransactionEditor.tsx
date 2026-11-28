@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { allAccounts } from '../lib/domain';
 import { normalizeLegacyOverride } from '../lib/legacyTransactions';
+import { parseMoneyInputAmount } from '../lib/moneyInput';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, LegacyTransaction } from '../types';
 import { AppDateInput } from './AppDateInput';
@@ -41,6 +42,11 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const categoryKind = type === 'income' ? 'income' : 'expense';
+  // Preserve an unchanged imported amount (including historical precision).
+  // New amount/type edits must use the same strict cent parser as Quick Entry.
+  const numeric = amount === String(transaction.amount) && type === transaction.type
+    ? transaction.amount : parseMoneyInputAmount(amount, type === 'adjustment');
+  const amountInvalid = numeric === null || !Number.isFinite(numeric) || (type === 'adjustment' ? numeric === 0 : numeric <= 0);
 
   const changeType = (next: LegacyTransaction['type']) => {
     setType(next);
@@ -57,7 +63,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
   const submit = async () => {
     if(saving)return;
     try {
-      const numeric = Number(amount.replace(',', '.'));
+      if (numeric === null || amountInvalid) throw new Error('Συμπλήρωσε έγκυρο ποσό με έως δύο δεκαδικά ψηφία.');
       const normalized = normalizeLegacyOverride(data, {
         ...transaction,
         type,
@@ -94,7 +100,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
     <div className="form-grid" inert={saving}>
       <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος ιστορικής κίνησης" value={type} onChange={(event) => changeType(event.target.value as LegacyTransaction['type'])}>{(Object.keys(typeLabels) as LegacyTransaction['type'][]).map((value) => <option key={value} value={value}>{typeLabels[value]}</option>)}</AppSelectInput></label>
       <label><span>Ημερομηνία</span><AppDateInput aria-label="Ημερομηνία ιστορικής κίνησης" value={date} onChange={(event) => setDate(event.target.value)}/></label>
-      <label><span>Ποσό</span><MoneyInput data-autofocus="true" aria-label="Ποσό ιστορικής κίνησης" value={amount} onValueChange={setAmount} invalid={Boolean(error && !Number.isFinite(Number(amount.replace(',', '.'))))}/></label>
+      <label><span>Ποσό</span><MoneyInput data-autofocus="true" aria-label="Ποσό ιστορικής κίνησης" value={amount} onValueChange={setAmount} invalid={Boolean(error && amountInvalid)}/></label>
       {type === 'transfer' ? <>
         <label><span>Από λογαριασμό</span><AppSelectInput aria-label="Λογαριασμός προέλευσης ιστορικής μεταφοράς" value={fromAccountId} onChange={(event) => setFromAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{accountDisplayName(data, account.id)}</option>)}</AppSelectInput></label>
         <label><span>Προς λογαριασμό</span><AppSelectInput aria-label="Λογαριασμός προορισμού ιστορικής μεταφοράς" value={toAccountId} onChange={(event) => setToAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{accountDisplayName(data, account.id)}</option>)}</AppSelectInput></label>
