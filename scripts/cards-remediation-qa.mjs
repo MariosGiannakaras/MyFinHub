@@ -181,5 +181,15 @@ try{
   await shot('cards-sensitive-copy-unmounted-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCardStaleVaultRestore?.();return true}"),'restore isolated pending vault and clipboard spies');
 
+  console.log('Rejected archive receipt preserves the original debit card');
+  await navigate('');
+  await c.call("function(){history.replaceState(null,'',location.pathname+'?page=cards&card-profile-save-failure=1');return true}");
+  assert(await c.call("function(){const button=document.querySelector('.prototype-payment-card button[aria-label=\\\"Αρχειοθέτηση κάρτας\\\"]');button?.click();return Boolean(button)}"),'arm rejected archive');
+  await waitFor("function(){return Boolean(document.querySelector('.r-card-archive-keyboard'))}",'rejected archive slider');
+  await c.call("function(){document.querySelector('.r-card-archive-keyboard').click();return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card'))&&!document.querySelector('.r-card-archive-shred')&&document.querySelector('.r-card-status')?.textContent.includes('δεν επιβεβαιώθηκε')}",'rejected archive remains visible and announces failure');
+  assert(await c.call("function(){return !document.querySelector('.cards-archive .card-archive-row')&&!document.querySelector('.r-card-status')?.textContent.includes('αρχειοθετήθηκε') }"),'rejected archive has no archived row or success state');
+  await shot('cards-archive-rejected-receipt');
+
   c.close();console.log(`Cards remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

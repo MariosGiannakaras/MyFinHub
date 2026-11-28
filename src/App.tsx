@@ -277,7 +277,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const upsertCardDurably=(card:PaymentCard)=>finance.updateDurably(current=>withCard(current,card));
   const stageNewCard=(card:PaymentCard)=>finance.updateDurably(current=>
     (current.state.cards??[]).some(item=>item.id===card.id)?current:withCard(current,{...card,last4:undefined,vaultRef:undefined}));
-  const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
+  const archiveCard = (card: PaymentCard) => upsertCardDurably(archiveCardRecord(card));
   const deleteCard=async(card:PaymentCard)=>{
     if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
     await finance.updateDurably(current=>withCardSecretCleanupPending(current,card,new Date().toISOString(),today));

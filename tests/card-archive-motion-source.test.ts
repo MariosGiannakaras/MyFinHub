@@ -42,6 +42,26 @@ describe('card archive exit-motion regression #570',()=>{
     expect(debitCss).toContain('pointer-events:none');
   });
 
+  it('requires durable archive and restore receipts without changing irreversible deletion',()=>{
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(app).toContain('upsertCardDurably(archiveCardRecord(card))');
+    expect(qa).toContain('upsertCardDurably(archiveCardRecord(card))');
+    for(const page of ['CardsPage','CreditCardPage']){
+      const source=readFileSync(new URL(`../src/pages/${page}.tsx`,import.meta.url),'utf8');
+      expect(source).toContain('onArchiveCard:(card:PaymentCard)=>Promise<void>');
+      expect(source).toContain('await onArchiveCard(');
+      expect(source).toContain('await onUpsertCardDurably(');
+      expect(source).toContain('Η αρχειοθέτηση δεν επιβεβαιώθηκε.');
+      expect(source).toContain('Η επαναφορά δεν επιβεβαιώθηκε.');
+    }
+    expect(credit).toContain('finally{swiping=false}if(!effectActive)return;');
+    expect(credit).toContain('maskDecoration(ghostNode)');
+    expect(credit).toContain('maskDecoration(clone)');
+    expect(credit).toContain("node.setAttribute('aria-hidden','true');node.inert=true");
+    expect(credit).toContain("field.textContent='••••'");
+  });
+
   it('retains OS/app reduced-motion paths and the existing credit-card shred without altering finance deletion',()=>{
     expect(debit).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(debit).toContain("document.documentElement.dataset.motion==='reduced'");

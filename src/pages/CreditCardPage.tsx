@@ -38,7 +38,7 @@ export function CreditCardPage({
 }:{
   data:FinanceData;asOf:string;commandCardId?:string|null;commandCardKey?:number;
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
-  onUpsertCard:(card:PaymentCard)=>void;onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;onStageNewCard:(card:PaymentCard)=>Promise<void>;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
+  onUpsertCard:(card:PaymentCard)=>void;onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;onStageNewCard:(card:PaymentCard)=>Promise<void>;onArchiveCard:(card:PaymentCard)=>Promise<void>;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
 }){
   const providerCatalog=useFinancialProviders();
   const banks=useMemo(()=>cardBanks(data,providerCatalog.providers),[data,providerCatalog.providers]);
@@ -166,8 +166,8 @@ export function CreditCardPage({
   const closePurchase=()=>{setPurchaseOpen(false);setError('')};
   const requestDelete=(event:FinanceEvent)=>setDeleteEventTarget(event);
   const confirmDelete=()=>{if(!deleteEventTarget)return;onDeleteEvent(deleteEventTarget.id);setMessage(deleteEventTarget.kind==='card_payment'?'Η διαγραφή αποπληρωμής αποθηκεύεται. Η κατάσταση λογαριασμού υπολογίζεται ξανά από τις πραγματικές κινήσεις.':'Η διαγραφή αγοράς αποθηκεύεται. Η κατάσταση λογαριασμού υπολογίζεται ξανά χωρίς ιστορική επανεκχώρηση.');setDeleteEventTarget(null)};
-  const archiveFromStack=(target:PaymentCard)=>{onArchiveCard(target);setMessage(`Η αρχειοθέτηση της «${target.nickname}» αποθηκεύεται. Το ιστορικό και τα ασφαλή στοιχεία παραμένουν.`)};
-  const restoreArchived=(target:PaymentCard)=>{const restored=restoreCard(target);onUpsertCard(restored);setSelectedCardId(restored.id);setMessage(`Η επαναφορά της «${restored.nickname}» αποθηκεύεται. Το ιστορικό και τα ασφαλή στοιχεία παραμένουν.`)};
+  const archiveFromStack=async(target:PaymentCard)=>{setMessage('');try{await onArchiveCard(target)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
+  const restoreArchived=async(target:PaymentCard)=>{const restored=restoreCard(target);setMessage('');try{await onUpsertCardDurably(restored);setSelectedCardId(restored.id)}catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}};
   const confirmCardDelete=async()=>{
     if(!deleteCardTarget)return;
     if(!canPermanentlyDeleteCreditCard(data,deleteCardTarget.id,asOf)){setMessage('Η ολική διαγραφή επιτρέπεται μόνο για αρχειοθετημένη και πλήρως εξοφλημένη πιστωτική.');setDeleteCardTarget(null);return}

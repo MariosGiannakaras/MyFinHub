@@ -153,7 +153,7 @@ export function InteractivePaymentCard({
       await onArchive(card);
       setRevealed({});resetDelete();setMessageTone('success');setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
     }catch{
-      setMessageTone('error');setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
+      setMessageTone('error');setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε.');
       resetDelete();
     }finally{archivingRef.current=false;setBusy(false)}
   };

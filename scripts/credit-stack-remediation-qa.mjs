@@ -225,5 +225,16 @@ try{
   await shot('credit-stack-stale-vault-reveal-cancelled-desktop');
   assert(await c.call("function(){globalThis.__qaCreditStaleRevealRestore?.();return true}"),'restore isolated credit vault reveal mock');
 
+  console.log('Rejected credit archive receipt preserves active identity');
+  await navigate('credit-stack','reduced');
+  const rejectedId=(await state()).topId;
+  await c.call("function(){history.replaceState(null,'',location.pathname+'?page=credit&state=credit-stack&motion=reduced&card-profile-save-failure=1');return true}");
+  assert(await c.call("function(){const button=document.querySelector('.stack-card.top .delete-btn');button?.click();return Boolean(button)}"),'arm credit archive failure');
+  await waitFor("function(){return Boolean(document.querySelector('.stack-card.top .delete-slider'))}",'credit archive slider');
+  await c.call("function(){const slider=document.querySelector('.stack-card.top .delete-slider');for(const key of ['End','Enter'])slider.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}));return true}");
+  await waitFor("function(){return document.querySelector('#myfinhub-card-stack .sr-status[role=alert]')?.textContent.includes('Δεν επιβεβαιώθηκε')}",'credit archive rejected');
+  assert((await state()).topId===rejectedId&&(await state()).count===6,'rejected archive does not remove or reorder the credit deck');
+  await shot('credit-stack-archive-rejected-receipt');
+
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}

@@ -702,7 +702,7 @@ function QaWorkspace(){
   const upsertCard=(card:PaymentCard)=>update(current=>({...current,state:{...current.state,cards:[...(current.state.cards??[]).filter(item=>item.id!==card.id),card]}}));
   const upsertCardDurably=async(card:PaymentCard)=>{if(new URLSearchParams(location.search).get('card-profile-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προφίλ απέτυχε.');upsertCard(card)};
   const stageNewCard=async(card:PaymentCard)=>{if(!(data.state.cards??[]).some(item=>item.id===card.id))upsertCard({...card,last4:undefined,vaultRef:undefined})};
-  const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
+  const archiveCard=(card:PaymentCard)=>upsertCardDurably(archiveCardRecord(card));
   const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});

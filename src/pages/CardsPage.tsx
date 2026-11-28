@@ -37,7 +37,7 @@ export function CardsPage({
   onUpsertCard:(card:PaymentCard)=>void;
   onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;
   onStageNewCard:(card:PaymentCard)=>Promise<void>;
-  onArchiveCard:(card:PaymentCard)=>void;
+  onArchiveCard:(card:PaymentCard)=>Promise<void>;
   onDeleteCard:(card:PaymentCard)=>Promise<void>;
 }){
   const providerCatalog=useFinancialProviders();
@@ -113,8 +113,8 @@ export function CardsPage({
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
   const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage('')};
-  const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η αρχειοθέτηση της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν διαθέσιμα.`)};
-  const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η επαναφορά της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν.`)};
+  const archive=async(card:PaymentCard)=>{setMessage('');try{await onArchiveCard(card)}catch(error){setMessage('Η αρχειοθέτηση δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.');throw error}};
+  const restore=async(card:PaymentCard)=>{setMessage('');try{await onUpsertCardDurably(restoreCard(card))}catch{setMessage('Η επαναφορά δεν επιβεβαιώθηκε. Επαναφόρτωσε πριν επαναλάβεις την ενέργεια.')}};
   const confirmDelete=async()=>{
     if(!deleteTarget)return;
     setDeleteBusy(true);setMessage('');
