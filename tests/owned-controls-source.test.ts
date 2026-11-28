@@ -111,7 +111,7 @@ describe('app-owned entry controls',()=>{
   it('keeps Settings focus and mobile input presentation on shared primitives',()=>{
     expect(settingsStyles).not.toContain('.category-icon-pack-switcher>button:focus-visible');
     expect(settingsStyles).not.toMatch(/\.settings-[^\n{]*\b(?:input|textarea)\b[^\n{]*\{[^}]*\b(?:height|min-height|border|border-radius|padding|font-size|outline|box-shadow)\s*:/);
-    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:max(16px,var(--ux-body-size))}');
   });
   it('keeps account editor text and select presentation shared while preserving semantic checkboxes',()=>{
     expect(accountSource).toContain("import { AppTextInput } from './AppTextInput'");
@@ -127,8 +127,8 @@ describe('app-owned entry controls',()=>{
     expect(styles).toMatch(/\.owned-popover-backdrop\s*\{\s*position:fixed;inset:0/);
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:16px}');
-    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:max(16px,var(--ux-body-size))}');
+    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:max(16px,var(--ux-body-size))}');
   });
   it('keeps browser-native select, date, datalist and page-owned textarea controls out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));

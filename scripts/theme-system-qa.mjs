@@ -42,6 +42,28 @@ try{
   await viewport(820,900,false);
   for(const theme of ['light','dark'])for(const [page,heading] of Object.entries(pages)){if(!tabletPages.has(page))continue;await navigate(page,heading);await applyTheme(theme);await assertThemePage(theme,page);await shot(`${theme}-${page}-tablet`)}
 
+  console.log('Theme system QA: large-text responsive geometry');
+  for(const width of [320,375,390,768,1440,2560]){
+    await viewport(width,900,width<=680);
+    const url=new URL(baseUrl);url.searchParams.set('page','transactions');url.searchParams.set('visual','1');url.searchParams.set('text','large');
+    await c.send('Page.navigate',{url:url.href});
+    await waitFor("function(){return document.documentElement.dataset.textSize==='large'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'large-text ledger');
+    await applyTheme(width===390||width===2560?'dark':'light');
+    const geometry=await c.call(`function(){
+      const visible=node=>node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden';
+      const buttons=[...document.querySelectorAll('.mobile-nav button')].filter(visible);
+      const labels=buttons.map(button=>{
+        const label=button.querySelector('span'),range=document.createRange();range.selectNodeContents(label);
+        const b=button.getBoundingClientRect(),t=range.getBoundingClientRect();
+        return {size:parseFloat(getComputedStyle(label).fontSize),within:t.left>=b.left-1&&t.right<=b.right+1&&t.top>=b.top-1&&t.bottom<=b.bottom+1};
+      });
+      return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,labels,heading:parseFloat(getComputedStyle(document.querySelector('#main-workspace h1')).fontSize)};
+    }`);
+    assert(geometry.overflow<=1&&geometry.heading>=24,'large-text ledger fits viewport '+width+': '+JSON.stringify(geometry));
+    if(width<=680)assert(geometry.labels.length===6&&geometry.labels.every(label=>label.size>=10&&label.within),'mobile navigation labels remain readable and contained '+width+': '+JSON.stringify(geometry));
+    await shot('large-text-transactions-'+width);
+  }
+
   console.log('Theme system QA: Settings switching, selection and focus contract');
   await viewport(1440,900,false);await navigate('settings',pages.settings);await applyTheme('dark');
   let settings=await c.call(`function(){const groups=[...document.querySelectorAll('[role="radiogroup"]')];const group=groups.find(node=>node.getAttribute('aria-label')==='Θέμα εμφάνισης');const buttons=[...group?.querySelectorAll('button')||[]];const selected=buttons.find(button=>button.getAttribute('aria-checked')==='true');selected?.focus();const style=selected?getComputedStyle(selected):null;return {buttons:buttons.map(button=>button.innerText.trim()),selected:selected?.innerText||'',outlineWidth:style?.outlineWidth||'',outlineStyle:style?.outlineStyle||'',heading:document.querySelector('#main-workspace h1')?.textContent||''}}`);

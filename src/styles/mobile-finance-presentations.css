@@ -32,21 +32,21 @@
   .mobile-transaction-row.kind-refund{--mobile-row-tint:rgba(82,98,125,.045);--mobile-row-accent:#7d8da5}
   .mobile-transaction-row.kind-lending,.mobile-transaction-row.kind-repayment,.mobile-transaction-row.kind-split{--mobile-row-tint:rgba(105,71,168,.04);--mobile-row-accent:#8063b6}
   .mobile-transaction-row.kind-reconciliation{--mobile-row-tint:rgba(154,95,0,.045);--mobile-row-accent:#b37b24}
-  .mobile-transaction-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+  .mobile-transaction-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,42%);gap:10px;align-items:start}
   .mobile-transaction-identity{display:flex;gap:9px;align-items:flex-start;min-width:0}
   .mobile-transaction-identity>div{min-width:0;display:grid;gap:3px}
-  .mobile-transaction-identity b{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
-  .mobile-transaction-identity small{font-size:9.5px;color:var(--muted);line-height:1.35}
-  .mobile-transaction-main>strong{font-size:13px;line-height:1.35;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .mobile-transaction-comment{display:flex;gap:6px;align-items:flex-start;margin:8px 0 0 37px;color:#52627d;font-size:10px;line-height:1.42}
+  .mobile-transaction-identity b{font-size:var(--ux-dense-data-size);line-height:1.35;overflow-wrap:anywhere}
+  .mobile-transaction-identity small{font-size:var(--ux-dense-label-size);color:var(--muted);line-height:1.35}
+  .mobile-transaction-main>strong{font-size:var(--ux-small-size);line-height:1.35;text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+  .mobile-transaction-comment{display:flex;gap:6px;align-items:flex-start;margin:8px 0 0 37px;color:#52627d;font-size:var(--ux-dense-label-size);line-height:1.42}
   .mobile-transaction-comment svg{flex:0 0 auto;margin-top:1px;color:#6f7f99}
-  .mobile-transaction-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 0 37px;color:var(--muted);font-size:9.5px}
-  .mobile-transaction-meta .flow-pill{font-size:9px}
-  .mobile-account-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .mobile-transaction-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 0 37px;color:var(--muted);font-size:var(--ux-dense-label-size)}
+  .mobile-transaction-meta .flow-pill{font-size:var(--ux-dense-label-size)}
+  .mobile-account-path{min-width:0;overflow-wrap:anywhere;max-width:100%}
   .mobile-row-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(208,219,233,.72)}
   .mobile-row-actions .text-button{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:8px 10px}
   .danger-text{color:#a52d43!important}
-  .mobile-history-label{display:block;margin:8px 0 0 37px;color:var(--muted);font-size:9px}
+  .mobile-history-label{display:block;margin:8px 0 0 37px;color:var(--muted);font-size:var(--ux-dense-label-size)}
 
   .mobile-recurring-list{gap:9px}
   .mobile-recurring-row{border:1px solid #d7e2ef;border-radius:16px;padding:12px;background:linear-gradient(145deg,#fbfdff,#edf3fa);box-shadow:var(--shadow-soft);position:relative}
@@ -54,8 +54,8 @@
   .mobile-recurring-amount{display:grid;justify-items:end;gap:2px;font-variant-numeric:tabular-nums}
   .mobile-recurring-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:11px 0;padding:10px;border-radius:12px;background:#eef3fa;box-shadow:var(--shadow-inset)}
   .mobile-recurring-meta>span{display:grid;gap:3px;min-width:0}
-  .mobile-recurring-meta b{font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mobile-recurring-meta small{font-size:9px;color:var(--muted);line-height:1.35;overflow-wrap:anywhere}
+  .mobile-recurring-meta b{font-size:var(--ux-dense-data-size);overflow-wrap:anywhere}
+  .mobile-recurring-meta small{font-size:var(--ux-dense-label-size);color:var(--muted);line-height:1.35;overflow-wrap:anywhere}
   .mobile-recurring-actions{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:7px;align-items:center}
   .mobile-pay-action{min-height:44px;width:100%;justify-content:center}
   .mobile-action-menu{position:relative}
@@ -63,12 +63,12 @@
   .mobile-action-menu summary::-webkit-details-marker{display:none}
   .mobile-action-menu[open] summary{color:var(--blue-2);box-shadow:var(--shadow-inset)}
   .mobile-action-menu>div{position:absolute;right:0;bottom:50px;z-index:15;width:min(210px,72vw);display:grid;gap:4px;padding:6px;border:1px solid #d7e1ee;border-radius:13px;background:rgba(248,251,255,.98);box-shadow:0 14px 30px rgba(28,51,91,.16)}
-  .mobile-action-menu>div button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:10px;font-weight:700}
+  .mobile-action-menu>div button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:var(--ux-dense-data-size);font-weight:700}
   .mobile-action-menu>div button:active{background:rgba(47,111,237,.09);transform:scale(.985)}
 
   /* Prevent iOS Safari focus zoom while keeping compact layout through height/padding. */
-  input,select,textarea{font-size:16px!important}
-  .searchbox input,.money-input input{font-size:16px!important}
+  input,select,textarea{font-size:max(16px,var(--ux-body-size))!important}
+  .searchbox input,.money-input input{font-size:max(16px,var(--ux-body-size))!important}
 
   /* Consistent practical touch targets and press feedback after native tap highlight suppression. */
   .text-button,.loan-actions button,.settings-actions button,.report-eye,.secondary,.save-button{min-height:44px}

@@ -180,6 +180,9 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('attention-decisions-persisted');
     expect(source).toContain('stage budget-create-reload');
     expect(source).toContain('stage rule-create-apply-reload');
+    expect(source).toContain('readability preferences survive authenticated reload');
+    expect(source).toContain('durable text-size ');
+    expect(source).toContain('await chooseSize(oldTextSize);await chooseTheme(oldTheme)');
     expect(source).toContain('stage cards-lifecycle-reload');
     // The accepted inline debit-card editor uses an icon-only Save control. The
     // actual-browser flow must find it by accessible name, not visible text.

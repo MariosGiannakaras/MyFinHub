@@ -86,7 +86,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;');
     // The app's general 16px mobile form-input override must not inflate the
     // physical card's 16-digit PAN and force unseen wrapped textarea rows.
-    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:16px!important}');
+    expect(file('../src/styles/mobile-finance-presentations.css')).toContain('input,select,textarea{font-size:max(16px,var(--ux-body-size))!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-pan{font-size:inherit!important}');
     expect(inlineCss).toContain('.app-card-details-inline .card-inline-edit-host>.card-inline-pan{width:calc(100% + 24px);max-width:none}');
     expect(inlineCss).toContain('.app-card-details-inline .card-number.card-inline-edit-host{');

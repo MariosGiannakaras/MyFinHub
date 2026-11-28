@@ -49,6 +49,9 @@ describe('theme architecture source contract',()=>{
     expect(rendered).toContain('theme ArrowRight wraps Dark to System and persists');
     expect(rendered).toContain('text-size End selects large');
     expect(rendered).toContain('text-size radio ArrowLeft focus');
+    expect(rendered).toContain('large-text responsive geometry');
+    expect(rendered).toContain('[320,375,390,768,1440,2560]');
+    expect(rendered).toContain('mobile navigation labels remain readable and contained');
   });
 
   it('binds interactive borders and formerly light-biased chrome to semantic theme roles',()=>{
