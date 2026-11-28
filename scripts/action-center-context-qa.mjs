@@ -368,6 +368,9 @@ try{
   await chooseProvenanceDate('2026-08-27');
   await clickText('.generic-quick-modal footer button','Εφαρμογή αλλαγών');
   await waitFor("function(){return (document.querySelector('.generic-quick-modal #quick-add-error[role=alert]')?.textContent||'').includes('μετά την ήδη καταγεγραμμένη αναμενόμενη επιστροφή')}",'due-date inconsistent lending edit visibly denied');
+  // Error text can commit before the application-owned next-frame focus.
+  // Observe that transition without focusing, scrolling or retrying the submission.
+  await assertErrorFocus('quick-add-error','lending date rejection focus and alert are actually onscreen','quick-entry-lending-return-conflict-desktop');
   assert(await c.call("function(attempts,writes){const alert=document.querySelector('.generic-quick-modal #quick-add-error');return Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts&&Number(document.documentElement.dataset.qaFinanceWrites||0)===writes&&document.activeElement===alert&&Boolean(document.querySelector('.generic-quick-modal'))}",[lendingAttemptsBefore,lendingWritesBefore]),
     'rejected lending date must not even attempt a finance write; editor/accessible focus remain');
   assert(await c.call("function(){const original=globalThis.__myfinhubQaEntryEditProvenance?.('qa-provenance-lending');return original?.date==='2026-08-16'&&original.expectedReturnDate==='2026-08-25'&&original.source==='migration'}"),

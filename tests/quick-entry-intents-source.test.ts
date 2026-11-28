@@ -158,6 +158,13 @@ describe('Quick Entry intent UI source contract',()=>{
     expect(script).toContain("await navigate('transactions','entry-edit-provenance')");
     expect(script).toContain("await chooseProvenanceDate('2026-08-27')");
     expect(script).toContain('rejected lending date must not even attempt a finance write');
+    const wait=script.indexOf("await assertErrorFocus('quick-add-error','lending date rejection focus and alert are actually onscreen'");
+    const rejection=script.indexOf('rejected lending date must not even attempt a finance write');
+    expect(wait).toBeGreaterThan(script.indexOf('due-date inconsistent lending edit visibly denied'));
+    expect(wait).toBeLessThan(rejection);
+    expect(script.slice(wait,rejection)).toContain('document.activeElement===alert');
+    expect(script.slice(wait,rejection)).toContain('Number(document.documentElement.dataset.qaQuickEventAttempts||0)===attempts');
+    expect(script.slice(wait,rejection)).toContain('Number(document.documentElement.dataset.qaFinanceWrites||0)===writes');
     expect(script).toContain('confirmed same-ID lending edit preserves return date and original source');
     expect(script).toContain('confirmed saving edit preserves owner-confirmed saving origin and original audit source');
     expect(script).toContain('quick-entry-lending-return-conflict-desktop');
