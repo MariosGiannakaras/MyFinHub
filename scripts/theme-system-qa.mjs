@@ -110,5 +110,14 @@ try{
   await navigate('reports',pages.reports);await applyTheme('dark');const darkReportExecutive=await computedContrast('.report-financial-picture');assert(darkReportExecutive&&darkReportExecutive.backgroundLuminance<.12,`dark Reports executive picture is a dark semantic surface: ${JSON.stringify(darkReportExecutive)}`);assert(darkReportExecutive&&darkReportExecutive.textContrast>=4.5,`dark Reports executive picture text contrast is readable: ${JSON.stringify(darkReportExecutive)}`);await shot('dark-reports-financial-picture-parity-desktop');
   await navigate('dashboard',pages.dashboard);await applyTheme('dark');await c.call("function(){document.querySelector('[data-global-quick-entry=\"desktop\"]')?.click();return true}");await waitFor("function(){return !!document.querySelector('.quick-modal')}",'dark Quick Entry parity');const darkQuickFooter=await computedContrast('.quick-modal>footer');assert(darkQuickFooter&&darkQuickFooter.backgroundLuminance<.12,`dark Quick Entry footer is a dark surface: ${JSON.stringify(darkQuickFooter)}`);assert(darkQuickFooter&&darkQuickFooter.textContrast>=4.5,`dark Quick Entry footer text contrast is readable: ${JSON.stringify(darkQuickFooter)}`);await shot('dark-quick-entry-surface-parity-desktop');
 
+  console.log('Theme system QA: forced colors preserve a real composite focus outline');
+  const authUrl=new URL(baseUrl);authUrl.searchParams.set('screen','login');
+  await c.send('Page.navigate',{url:authUrl.href});
+  await waitFor("function(){return !!document.querySelector('#login-email')}",'forced colors Login');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'forced-colors',value:'active'}]});
+  const forced=await c.call("function(){const field=document.querySelector('#login-email'),shell=field?.closest('.app-input-shell');field?.focus();const s=shell?getComputedStyle(shell):null,inner=field?getComputedStyle(field):null;return {mode:matchMedia('(forced-colors:active)').matches,focused:document.activeElement===field,outer:parseFloat(s?.outlineWidth||'0'),style:s?.outlineStyle,inner:parseFloat(inner?.outlineWidth||'0'),shadow:s?.boxShadow}}");
+  assert(forced.mode&&forced.focused&&forced.outer>=2&&forced.style==='solid'&&forced.inner===0&&forced.shadow==='none','forced colors retains a single visible composite field outline: '+JSON.stringify(forced));
+  await shot('forced-colors-login-focused');
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
   c.close();console.log('Theme system rendered QA passed.');
 }finally{child.kill('SIGTERM')}

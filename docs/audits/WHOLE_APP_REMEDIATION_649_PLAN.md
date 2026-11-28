@@ -1,3 +1,9 @@
+## 2026-11-28 — Shared control preflight and release-path checkpoint
+
+**Implementations 9/23 completed · Sub-implementations 101/132 completed (76.5%).** On `fix/649-bulk-final`, parent `ecd3574703b35189258f852c71cc8ff6d5f4cbee`. Reviewed I01.02 end-to-end code/source guards: production and QA share as-of clock, same 4 reporting routes, month survives navigation, Planning excluded, safe upper year compare, existing snapshot/domain regressions. Code implementation complete; real browser proof of new route traversal still pending. Updated pre-existing Stage 2 Login guard for synchronous in-flight protection without removing existing disabled/shared primitive contract. Shared app-controls forced-colors outline supplements shadow-based focus, retains single composite field outline; new real forced-colors Login QA and source guard. CSS entry inventory in existing UI system audit (80+5+14 unique explicit paths), cheap ordered boundary guard; no import shuffle or selector-wide cleanup without evidence. I02.01/I02.05 remain partial; further effective ownership/high contrast/autofill review needed. 12 direct parser/source/inventory checks passed; actual full application build unavailable locally. Tight previous JS/CSS budget headroom (527.9/528, 559.7/560 KiB) makes actual type/build/unit check necessary before more shared-root edits. Open a single Draft PR to develop for ordinary validate/CodeQL (expensive rendered/Windows gates remain deferred to the completed Ready candidate); keep scope and existing tracker, continue independent finance/Windows review without repeatedly restarting the exact head. No production release yet; owner has authorized the final consolidated deploy, not the old #645 candidate or destructive DB/recovery actions. 
+   
+---
+
 ## 2026-11-28 — Credit stack direct navigation checkpoint
 
 **Implementations 9/23 completed · Sub-implementations 100/132 completed (75.8%).** Owner-authorized consolidated deployment remains gated on completion, required validation, merge, release and smoke. Implemented I08.03: actual clickable 24px credit deck pagination buttons, canonical card IDs, aria-current, one selected Tab stop, ArrowLeft/Right/Home/End, stable delegated events with cleanup, focus retained across imperative/parent rerenders. Direct selection is intentionally immediate (no new choreography), guarded against in-flight drag/restack/archive confirmation, and uses existing active-card callback. No vault read/reveal, archive semantics, keyboard stage or drag behavior changed. Existing long-rail/single-card proof retained; new browser assertions exercise click, Home, focus and target geometry. 10 direct parser/source/selection-logic checks passed, full application QA pending; no merge or production change. Branch parent `a34cff21b4a1a001eeaf3e4fd2149bd544b2b7a2`. Continue remaining card nickname/credential/desktop and finance scopes in same batch. 
@@ -964,12 +970,12 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 
 ## Code work packages and explicit sub-implementations
 
-### I01. Shared AppShell, navigation and routing — 2/6
+### I01. Shared AppShell, navigation and routing — 3/6
 
 **Priority:** P1 · **Owner:** `AppShell, routing, period controls, command entry` · **Dependencies:** none
 
 - [ ] **I01.01** Align sidebar/More-menu, route titles, current-route highlight and Greek labels across desktop/tablet/mobile without changing canonical route IDs.
-- [ ] **I01.02** Verify global period-navigation availability and actual active period after route switch; standardize contextual month/as-of semantics where wrong.
+- [x] **I01.02** Verify global period-navigation availability and actual active period after route switch; standardize contextual month/as-of semantics where wrong.
 - [x] **I01.03** Give global search, history, refresh and notification popovers anchored flip/edge containment and keyboard/focus return; reproduce historical G-01 tooltip overlap.
 - [ ] **I01.04** Audit route loading, lazy-import failure, unknown hash, route recovery and changed-route focus; preserve recoverable PageErrorBoundary.
 - [ ] **I01.05** Reconcile persistent shell privacy visibility and route-scoped money screens against an explicitly approved scope; document nonpersistent reset/no accidental reveal.

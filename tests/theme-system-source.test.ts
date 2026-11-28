@@ -76,6 +76,15 @@ describe('theme architecture source contract',()=>{
     expect(rendered).toContain('dark Reports executive picture is a dark semantic surface');
   });
 
+  it('preserves actual outlines when forced colors suppress box shadows',()=>{
+    const controls=readFileSync('src/styles/app-controls.css','utf8');
+    expect(controls).toContain('@media (forced-colors:active)');
+    expect(controls).toContain('outline:2px solid Highlight!important');
+    expect(controls).toContain('.app-input-shell>.app-control:focus-visible{outline:0!important}');
+    expect(rendered).toContain("name:'forced-colors',value:'active'");
+    expect(rendered).toContain('forced colors retains a single visible composite field outline');
+  });
+
   it('registers a dedicated rendered Light Dark matrix',()=>{
     expect(runner).toContain("scripts/theme-system-qa.mjs");
     expect(rendered).toContain("for(const theme of ['light','dark'])");
