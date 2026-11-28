@@ -9,7 +9,10 @@ export function useQuickEntryErrorFocus(id:string,message:string,ready:boolean){
     const frame=requestAnimationFrame(()=>{
       const alert=document.getElementById(id);
       if(!alert?.isConnected||alert.closest('[inert]'))return;
-      alert.scrollIntoView({block:'nearest',behavior:'instant'});
+      // Nearest alignment can leave the alert and focus ring flush against
+      // a moving footer or fractional scroll boundary. Center where possible;
+      // the scrollport clamps naturally when the alert is near the end.
+      alert.scrollIntoView({block:'center',behavior:'instant'});
       alert.focus({preventScroll:true});
     });
     return ()=>cancelAnimationFrame(frame);

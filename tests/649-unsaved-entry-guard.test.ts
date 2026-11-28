@@ -56,7 +56,7 @@ describe('#649 unsaved Quick Entry/receipt review protection',()=>{
     expect(focus).toContain('const alert=document.getElementById(id)');
     expect(focus).toContain('if(!ready||!message)return');
     expect(focus).toContain("alert.closest('[inert]')");
-    expect(focus).toContain("alert.scrollIntoView({block:'nearest',behavior:'instant'})");
+    expect(focus).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
     expect(focus).toContain('alert.focus({preventScroll:true})');
     expect(focus).toContain('[id,message,ready]');
     expect(focus).toContain('cancelAnimationFrame(frame)');

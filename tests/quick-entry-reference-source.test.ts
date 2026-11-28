@@ -20,7 +20,7 @@ describe('Quick Entry owner-reference contract',()=>{
     expect(quick).toContain("useQuickEntryErrorFocus('quick-add-error',visibleError,open&&!saving)");
     expect(focus).toContain('const alert=document.getElementById(id)');
     expect(focus).toContain("alert.closest('[inert]')");
-    expect(focus).toContain("alert.scrollIntoView({block:'nearest',behavior:'instant'})");
+    expect(focus).toContain("alert.scrollIntoView({block:'center',behavior:'instant'})");
     expect(focus).toContain('alert.focus({preventScroll:true})');
     expect(focus.indexOf('alert.scrollIntoView(')).toBeLessThan(focus.indexOf('alert.focus('));
     expect(rendered).toContain('nested discard keyboard Tab stays in topmost alertdialog');
