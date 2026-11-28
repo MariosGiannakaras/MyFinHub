@@ -1,19 +1,19 @@
 import { CheckCircle2, Download, MonitorCog, RefreshCw, RotateCcw, ShieldCheck, TriangleAlert } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
 import type { DesktopBackupBridge } from '../lib/desktopBackups';
 import { Button } from './Button';
 import { Surface } from './Surface';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'installing' | 'error' | 'unsupported';
-type UpdateState = { supported: boolean; currentVersion: string; status: UpdateStatus; availableVersion: string | null; progress: number; message: string };
+type UpdateState = { sequence?: number; supported: boolean; currentVersion: string; status: UpdateStatus; availableVersion: string | null; progress: number; message: string };
 type DesktopInfo = { productName: string; version: string; packaged: boolean };
 type DesktopBridge = DesktopBackupBridge & {
   getInfo: () => Promise<DesktopInfo>;
   getUpdateState: () => Promise<UpdateState>;
   checkForUpdates: () => Promise<UpdateState>;
-  downloadUpdate: () => Promise<UpdateState>;
-  installUpdate: () => Promise<UpdateState>;
+  downloadUpdate: (version: string | null) => Promise<UpdateState>;
+  installUpdate: (version: string | null) => Promise<UpdateState>;
   onUpdateState: (listener: (state: UpdateState) => void) => () => void;
 };
 
@@ -38,51 +38,77 @@ export function DesktopUpdatePanel() {
   const [info, setInfo] = useState<DesktopInfo | null>(null);
   const [state, setState] = useState<UpdateState>(idleState);
   const [localError, setLocalError] = useState('');
+  const [pending, setPending] = useState(false);
+  const actionPending = useRef(false);
+  const currentState = useRef(idleState);
+  const lifecycle = useRef(0);
+  const eventVersion = useRef(0);
+  const acceptState = useCallback((next: UpdateState) => {
+    if (next.sequence !== undefined && currentState.current.sequence !== undefined && next.sequence < currentState.current.sequence) return;
+    currentState.current = next;
+    setState(next);
+    setLocalError('');
+  }, []);
 
   useEffect(() => {
     if (!bridge) return;
     let alive = true;
+    lifecycle.current += 1;
+    currentState.current = idleState;
+    const initialEvent = eventVersion.current;
     const unsubscribe = bridge.onUpdateState((next) => {
       if (alive) {
-        setState(next);
-        setLocalError('');
+        eventVersion.current += 1;
+        acceptState(next);
       }
     });
     void Promise.all([bridge.getInfo(), bridge.getUpdateState()])
       .then(([nextInfo, nextState]) => {
         if (!alive) return;
         setInfo(nextInfo);
-        setState(nextState);
+        if (eventVersion.current === initialEvent && !actionPending.current) acceptState(nextState);
       })
       .catch(() => {
-        if (alive) setLocalError('Δεν ήταν δυνατή η ανάγνωση της κατάστασης ενημερώσεων.');
+        if (alive && eventVersion.current === initialEvent && !actionPending.current) setLocalError('Δεν ήταν δυνατή η ανάγνωση της κατάστασης ενημερώσεων.');
       });
     return () => {
       alive = false;
+      lifecycle.current += 1;
+      actionPending.current = false;
       unsubscribe();
     };
-  }, [bridge]);
+  }, [bridge, acceptState]);
 
   const desktop = Boolean(bridge);
-  const busy = busyStatuses.has(state.status);
+  const busy = pending || busyStatuses.has(state.status);
   const productName = info?.productName || 'MyFinHub';
   const currentVersion = info?.version || state.currentVersion || packageJson.version;
   const run = async (action: () => Promise<UpdateState>) => {
-    if (busy) return;
+    if (actionPending.current || busyStatuses.has(currentState.current.status)) return;
+    actionPending.current = true;
+    const generation = lifecycle.current;
+    const eventAtStart = ++eventVersion.current;
+    setPending(true);
     setLocalError('');
     try {
-      setState(await action());
+      const result = await action();
+      if (generation === lifecycle.current && (result.sequence !== undefined || eventVersion.current === eventAtStart)) acceptState(result);
     } catch {
-      setLocalError('Η ενέργεια ενημέρωσης δεν ολοκληρώθηκε. Δεν άλλαξε η εγκατεστημένη έκδοση.');
+      if (generation === lifecycle.current && eventVersion.current === eventAtStart) setLocalError('Η ενέργεια ενημέρωσης δεν επιβεβαιώθηκε. Έλεγξε την τρέχουσα κατάσταση πριν συνεχίσεις.');
+    } finally {
+      if (generation === lifecycle.current) {
+        actionPending.current = false;
+        setPending(false);
+      }
     }
   };
 
   const action = !bridge
     ? null
     : state.status === 'available'
-      ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(bridge.downloadUpdate)}><Download size={16} /> Λήψη ενημέρωσης</Button>
+      ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(() => bridge.downloadUpdate(state.availableVersion))}><Download size={16} /> Λήψη ενημέρωσης</Button>
       : state.status === 'ready'
-        ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(bridge.installUpdate)}><RotateCcw size={16} /> Εγκατάσταση & επανεκκίνηση</Button>
+        ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(() => bridge.installUpdate(state.availableVersion))}><RotateCcw size={16} /> Εγκατάσταση & επανεκκίνηση</Button>
         : <Button variant="secondary" type="button" disabled={busy || state.status === 'installing'} onClick={() => void run(bridge.checkForUpdates)}><RefreshCw size={16} className={state.status === 'checking' ? 'is-spinning' : ''} /> Έλεγχος τώρα</Button>;
 
   const statusMessage = !desktop

@@ -66,8 +66,7 @@ function createDesktopBackupStore({ userData, documents }) {
     return value;
   }
   function folder() { return config().folder; }
-  function readIndex() {
-    const target = folder();
+  function readIndex(target = folder()) {
     assertDirectory(target);
     const filename = path.join(target, INDEX_NAME);
     if (!fs.existsSync(filename)) {
@@ -83,28 +82,28 @@ function createDesktopBackupStore({ userData, documents }) {
     readIndex();
     return status();
   }
-  function checkedEntry(entry) {
+  function checkedEntry(entry, target = folder()) {
     if (!entry || typeof entry !== 'object' || !VALID_NAME.test(entry.name) ||
         !/^[a-f0-9]{64}$/.test(entry.sha256) || !Number.isSafeInteger(entry.size) ||
         entry.size < 1 || entry.size > MAX_BYTES || !/^[0-9]{1,18}$/.test(entry.revision)) {
       throw new Error('Μη έγκυρα μεταδεδομένα backup.');
     }
-    const filename = path.join(folder(), entry.name);
+    const filename = path.join(target, entry.name);
     const stat = fs.lstatSync(filename);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== entry.size) throw new Error('Το αντίγραφο δεν είναι έγκυρο.');
     const content = fs.readFileSync(filename);
     if (digest(content) !== entry.sha256) throw new Error('Αποτυχία επαλήθευσης checksum backup.');
     return content;
   }
-  function status() {
-    const index = readIndex();
+  function status(target = folder()) {
+    const index = readIndex(target);
     const backups = index.backups.map(entry => {
       let valid = false;
-      try { checkedEntry(entry); valid = true; } catch { /* preserve failed entry */ }
+      try { checkedEntry(entry, target); valid = true; } catch { /* preserve failed entry */ }
       return { name: entry.name, createdAt: entry.createdAt, revision: entry.revision, bytes: entry.size, valid };
     });
     const latestValid = backups.find(item => item.valid);
-    return { folder: folder(), intervalHours: 24, retentionDays: 30, backups,
+    return { folder: target, intervalHours: 24, retentionDays: 30, backups,
       lastValidBackupAt: latestValid?.createdAt ?? null,
       lastValidBackupRevision: latestValid?.revision ?? null,
       lastFailureAt: typeof index.lastFailureAt === 'string' ? index.lastFailureAt : null };
@@ -154,16 +153,11 @@ function createDesktopBackupStore({ userData, documents }) {
     if (typeof next !== 'string' || !path.isAbsolute(next)) throw new Error('Μη έγκυρη επιλογή φακέλου.');
     if (busy) throw new Error('Το backup είναι σε εξέλιξη.');
     assertDirectory(next);
-    // Validate destination BEFORE changing settings; do not silently migrate old backups.
-    const previous = folder();
-    try {
-      atomicWrite(configPath, JSON.stringify({ folder: next }) + '\n');
-      readIndex();
-    } catch (error) {
-      atomicWrite(configPath, JSON.stringify({ folder: previous }) + '\n');
-      throw error;
-    }
-    return status();
+    // Read and verify the destination catalog before committing the setting.
+    // Neither malformed catalogs nor filesystem failures may change the old folder.
+    const selectedStatus = status(next);
+    atomicWrite(configPath, JSON.stringify({ folder: next }) + '\n');
+    return selectedStatus;
   }
   // Used when the authenticated /api/data read fails before a local file write.
   function reportFailure() {

@@ -17,8 +17,8 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   openBackupFolder: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-open-folder', unlockToken),
   getUpdateState: () => ipcRenderer.invoke('myfinhub:get-update-state'),
   checkForUpdates: () => ipcRenderer.invoke('myfinhub:check-updates'),
-  downloadUpdate: () => ipcRenderer.invoke('myfinhub:download-update'),
-  installUpdate: () => ipcRenderer.invoke('myfinhub:install-update'),
+  downloadUpdate: (version) => ipcRenderer.invoke('myfinhub:download-update', version),
+  installUpdate: (version) => ipcRenderer.invoke('myfinhub:install-update', version),
   onUpdateState: (listener) => {
     if (typeof listener !== 'function') return () => {};
     const handler = (_event, state) => listener(state);

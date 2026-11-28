@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
@@ -207,6 +208,58 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(automatic).not.toContain('installDownloadedUpdate()');
     expect(main).toContain("buttons: ['Λήψη ενημέρωσης', 'Αργότερα']");
     expect(main).toContain("buttons: ['Εγκατάσταση & επανεκκίνηση', 'Αργότερα']");
+  });
+
+  it('preserves ready installers and binds native prompts to the exact release and installer',async()=>{
+    const checks=mainBlock('async function checkForUpdates(', 'async function downloadText');
+    const prompt=mainBlock('async function promptForAvailableUpdate()', 'function scheduleAutomaticUpdateChecks');
+    const release={version:'1.7.0'};
+    let answer:(value:{response:number})=>void=()=>{};
+    let downloads=0,installs=0,dialogs=0;
+    const context={
+      PRODUCT_NAME:'MyFinHub',app:{isPackaged:true},process:{platform:'win32'},updateState:{status:'ready'},
+      updatePromptActive:false,pendingRelease:release,downloadedInstaller:'verified.exe',
+      mainWindow:{isDestroyed:()=>false},sanitizedUpdateState:()=>context.updateState,
+      dialog:{showMessageBox:()=>{dialogs++;return new Promise<{response:number}>(resolve=>{answer=resolve})}},
+      downloadUpdate:async()=>{downloads++;context.updateState.status='ready'},
+      installDownloadedUpdate:()=>{installs++},
+      setUpdateState:()=>{throw new Error('Unexpected state mutation')},
+    };
+    const api=runInNewContext(checks+'\n'+prompt+'\n({checkForUpdates,promptForAvailableUpdate})',context) as {checkForUpdates:()=>Promise<unknown>;promptForAvailableUpdate:()=>Promise<void>};
+    await api.checkForUpdates();
+    expect(context.updateState.status).toBe('ready');
+    context.updateState.status='available';
+    const stale=api.promptForAvailableUpdate();
+    await api.checkForUpdates();
+    expect(context.updateState.status).toBe('available');
+    context.pendingRelease={version:'1.8.0'};
+    answer({response:0});await stale;
+    expect(downloads).toBe(0);
+    context.pendingRelease=release;
+    const changedInstaller=api.promptForAvailableUpdate();
+    answer({response:0});await new Promise(resolve=>setTimeout(resolve,0));
+    expect(dialogs).toBe(3);
+    context.downloadedInstaller='different.exe';
+    answer({response:0});await changedInstaller;
+    expect(downloads).toBe(1);
+    expect(installs).toBe(0);
+    expect(context.updatePromptActive).toBe(false);
+  });
+
+  it('uses version-bound IPC and monotonically ordered renderer update receipts',()=>{
+    expect(main).toContain('sequence: updateState.sequence + 1');
+    for(const channel of ['download-update','install-update']){
+      const start=main.indexOf("ipcMain.handle('myfinhub:"+channel+"'");
+      expect(start).toBeGreaterThan(-1);
+      expect(main.slice(start,start+500)).toContain("typeof version !== 'string' || version !== pendingRelease?.version");
+      expect(preload).toContain("ipcRenderer.invoke('myfinhub:"+channel+"', version)");
+    }
+    expect(updatePanel).toContain('next.sequence < currentState.current.sequence');
+    expect(updatePanel).toContain('eventVersion.current === initialEvent && !actionPending.current');
+    expect(updatePanel).toContain('actionPending.current || busyStatuses.has(currentState.current.status)');
+    expect(updatePanel).toContain('bridge.downloadUpdate(state.availableVersion)');
+    expect(updatePanel).toContain('bridge.installUpdate(state.availableVersion)');
+    expect(updatePanel).not.toContain('Δεν άλλαξε η εγκατεστημένη έκδοση.');
   });
 
   it('reruns every Windows gate when the bundled Node runtime contract changes', () => {

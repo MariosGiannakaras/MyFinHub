@@ -40,7 +40,7 @@ let downloadedInstaller = null;
 let startingConfiguredApp = false;
 let lastSetupDiagnostic = null;
 let setupRuntimeState = { progress: 6, step: 1, message: 'Αναμονή για τα στοιχεία σύνδεσης.', error: null };
-let updateState = { supported: process.platform === 'win32', currentVersion: app.getVersion(), status: 'idle', availableVersion: null, progress: 0, message: '' };
+let updateState = { sequence: 0, supported: process.platform === 'win32', currentVersion: app.getVersion(), status: 'idle', availableVersion: null, progress: 0, message: '' };
 
 app.setName(PRODUCT_NAME);
 const singleInstance = app.requestSingleInstanceLock();
@@ -439,7 +439,7 @@ function sanitizedUpdateState() {
 }
 
 function setUpdateState(patch) {
-  updateState = { ...updateState, ...patch };
+  updateState = { ...updateState, ...patch, sequence: updateState.sequence + 1 };
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('myfinhub:update-state', sanitizedUpdateState());
 }
 
@@ -474,7 +474,7 @@ async function checkForUpdates(manual = false) {
     setUpdateState({ status: 'unsupported', message: 'Οι ενημερώσεις είναι διαθέσιμες μόνο στην εγκατεστημένη έκδοση Windows.' });
     return sanitizedUpdateState();
   }
-  if (['checking', 'downloading', 'installing'].includes(updateState.status)) return sanitizedUpdateState();
+  if (updatePromptActive || ['checking', 'downloading', 'ready', 'installing'].includes(updateState.status)) return sanitizedUpdateState();
   setUpdateState({ status: 'checking', progress: 0, message: manual ? 'Έλεγχος για νέα έκδοση…' : '' });
   try {
     const found = await fetchLatestRelease();
@@ -594,7 +594,12 @@ function powershellLiteral(value) {
 }
 
 function installDownloadedUpdate() {
-  if (!downloadedInstaller || updateState.status !== 'ready' || !fs.existsSync(downloadedInstaller)) throw new Error('No verified update is ready.');
+  if (!downloadedInstaller || !pendingRelease || updateState.status !== 'ready') throw new Error('No verified update is ready.');
+  if (!fs.existsSync(downloadedInstaller)) {
+    downloadedInstaller = null;
+    setUpdateState({ status: 'error', progress: 0, message: 'Το επαληθευμένο αρχείο δεν είναι διαθέσιμο. Έλεγξε ξανά για ενημέρωση.' });
+    return sanitizedUpdateState();
+  }
   const currentExe = process.execPath;
   const command = [
     'Start-Sleep -Milliseconds 1500',
@@ -613,21 +618,27 @@ function installDownloadedUpdate() {
 async function promptForAvailableUpdate() {
   if (updatePromptActive || !mainWindow || mainWindow.isDestroyed() || !pendingRelease || updateState.status !== 'available') return;
   updatePromptActive = true;
+  const release = pendingRelease;
   try {
     const choice = await dialog.showMessageBox(mainWindow, {
-      type: 'info', title: `${PRODUCT_NAME} — Ενημέρωση`, message: `Νέα έκδοση ${pendingRelease.version}`,
+      type: 'info', title: `${PRODUCT_NAME} — Ενημέρωση`, message: `Νέα έκδοση ${release.version}`,
       detail: 'Θα ληφθεί από το επίσημο GitHub Release και θα επαληθευτεί με SHA-256 πριν γίνει διαθέσιμη για εγκατάσταση.',
       buttons: ['Λήψη ενημέρωσης', 'Αργότερα'], defaultId: 0, cancelId: 1, noLink: true,
     });
-    if (choice.response !== 0) return;
+    if (choice.response !== 0 || release !== pendingRelease || updateState.status !== 'available') return;
     await downloadUpdate();
-    if (updateState.status !== 'ready' || !downloadedInstaller || !mainWindow || mainWindow.isDestroyed()) return;
+    if (release !== pendingRelease || updateState.status !== 'ready' || !downloadedInstaller || !mainWindow || mainWindow.isDestroyed()) return;
+    const installer = downloadedInstaller;
     const install = await dialog.showMessageBox(mainWindow, {
-      type: 'info', title: `${PRODUCT_NAME} — Έτοιμη ενημέρωση`, message: `Η έκδοση ${pendingRelease.version} είναι έτοιμη`,
+      type: 'info', title: `${PRODUCT_NAME} — Έτοιμη ενημέρωση`, message: `Η έκδοση ${release.version} είναι έτοιμη`,
       detail: 'Το MyFinHub θα κλείσει, θα εγκαταστήσει την επαληθευμένη ενημέρωση και θα ανοίξει ξανά. Χωρίς πληρωμένο Windows certificate μπορεί να εμφανιστεί Unknown publisher / SmartScreen.',
       buttons: ['Εγκατάσταση & επανεκκίνηση', 'Αργότερα'], defaultId: 0, cancelId: 1, noLink: true,
     });
-    if (install.response === 0) installDownloadedUpdate();
+    if (install.response === 0 && release === pendingRelease && installer === downloadedInstaller && updateState.status === 'ready') installDownloadedUpdate();
+  } catch {
+    if (release === pendingRelease && ['available', 'ready'].includes(updateState.status)) {
+      setUpdateState({ message: 'Η επιβεβαίωση ενημέρωσης δεν ολοκληρώθηκε. Μπορείς να συνεχίσεις από τις ρυθμίσεις.' });
+    }
   } finally {
     updatePromptActive = false;
   }
@@ -660,8 +671,16 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('myfinhub:get-update-state', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return sanitizedUpdateState(); });
   ipcMain.handle('myfinhub:check-updates', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return checkForUpdates(true); });
-  ipcMain.handle('myfinhub:download-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return downloadUpdate(); });
-  ipcMain.handle('myfinhub:install-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return installDownloadedUpdate(); });
+  ipcMain.handle('myfinhub:download-update', (event, version) => {
+    if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.');
+    if (typeof version !== 'string' || version !== pendingRelease?.version) throw new Error('Update selection changed.');
+    return downloadUpdate();
+  });
+  ipcMain.handle('myfinhub:install-update', (event, version) => {
+    if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.');
+    if (typeof version !== 'string' || version !== pendingRelease?.version) throw new Error('Update selection changed.');
+    return installDownloadedUpdate();
+  });
   // The renderer has no Node filesystem or privileged database credentials.
   // Backup snapshots are fetched by main from authenticated server GET /api/data.
   const assertBackupSender = event => {
