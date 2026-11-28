@@ -29,7 +29,7 @@
 .prototype-payment-card .card-nickname{
   max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--card-muted);font-size:var(--ux-dense-data-size);font-weight:760;
-  letter-spacing:.035em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.13);
+  letter-spacing:.035em;line-height:1.4;text-shadow:0 1px 3px rgba(0,0,0,.13);
 }
 .prototype-payment-card .card-toolbar{
   display:flex;align-items:center;justify-content:flex-end;gap:5px;

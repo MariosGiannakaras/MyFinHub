@@ -367,6 +367,10 @@ function buildQaData(params:URLSearchParams){
       next.state.cards=[...cards,...variants.map((item,index)=>({...base,...item,createdAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`,updatedAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`}))];
     }
   }
+  if(params.get('state')==='credit-greek-nickname'||params.get('state')==='credit-greek-nickname-payzy'){
+    const payzy=params.get('state')==='credit-greek-nickname-payzy';
+    next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'&&card.active!==false?{...card,nickname:'Ύψος ΐΰ',...(payzy?{bankId:'payzy',designId:'payzy-neo'}:{})}:card);
+  }
   if(params.get('state')==='credit-stack'||params.get('state')==='credit-stack-long'){
     const cards=next.state.cards??[],base=cards.find(card=>card.kind==='credit'&&card.active!==false);
     if(base){

@@ -116,6 +116,16 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain('dots.scrollTo({left,behavior:');
   });
 
+  it('keeps real Greek nickname glyph clearance in both card face renderers',()=>{
+    const debit=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(stackOne).toContain('line-height:1.4;\n  max-width:190px');
+    expect(debit).toContain('letter-spacing:.035em;line-height:1.4;');
+    expect(stackThree).not.toMatch(/\.card-nickname[^{}]*\{[^{}]*line-height:1;/);
+    expect(qa).toContain('Greek nickname glyph ink fits the computed real font line box');
+    expect(qa).toContain('actualBoundingBoxAscent');
+  });
+
   it('bounds dynamic provider artwork and keeps the canonical card dominant',()=>{
     expect(stackThree).toContain('.provider-brand-img');
     expect(stackThree).toContain('max-width:112px');

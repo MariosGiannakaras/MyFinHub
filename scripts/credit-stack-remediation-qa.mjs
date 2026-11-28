@@ -134,6 +134,14 @@ try{
   assert(singleAfter.topId===singleId&&!singleAfter.mode.includes('dragging'),'single active card does not enter restack choreography');
   await shot('credit-single-card');
 
+  console.log('Credit stack remediation QA: Greek nickname glyph clearance');
+  for(const [width,height,mobile,fixture] of [[320,812,true,'credit-greek-nickname-payzy'],[375,812,true,'credit-greek-nickname-payzy'],[1440,1000,false,'credit-greek-nickname-payzy'],[2560,1440,false,'credit-greek-nickname-payzy'],[1440,1000,false,'credit-greek-nickname']]){
+    await viewport(width,height,mobile);await navigate(fixture,'reduced');
+    const glyph=await c.call(`function(){const node=document.querySelector('#myfinhub-card-stack .stack-card.top .card-nickname');if(!node)return null;const style=getComputedStyle(node),text=node.textContent||'',probe=document.createElement('div');probe.style.cssText='position:fixed;left:-10000px;top:0;white-space:nowrap;padding:0;border:0;margin:0;';Object.assign(probe.style,{fontFamily:style.fontFamily,fontSize:style.fontSize,fontWeight:style.fontWeight,lineHeight:style.lineHeight,letterSpacing:style.letterSpacing});probe.textContent=text;const marker=document.createElement('span');marker.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';probe.append(marker);document.body.append(probe);try{const box=probe.getBoundingClientRect(),baseline=marker.getBoundingClientRect().top-box.top,context=document.createElement('canvas').getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;const metrics=context.measureText(text);return {text,font:style.fontFamily,size:style.fontSize,line:style.lineHeight,topClearance:baseline-metrics.actualBoundingBoxAscent,bottomClearance:box.height-baseline-metrics.actualBoundingBoxDescent,fullWidth:node.scrollWidth<=node.clientWidth+1}}finally{probe.remove()}}`);
+    await shot('credit-greek-nickname-'+fixture+'-'+width);
+    assert(glyph?.text==='Ύψος ΐΰ'&&glyph.fullWidth&&glyph.topClearance>=0&&glyph.bottomClearance>=0,'Greek nickname glyph ink fits the computed real font line box at '+width+'px: '+JSON.stringify(glyph));
+  }
+  await viewport(1440,1000,false);
   console.log('Credit stack remediation QA: direct accessible selection');
   await navigate('credit-stack');
   const choice=await c.call("function(){const dots=[...document.querySelectorAll('#myfinhub-card-stack .dots button')],target=dots.at(-1);if(!target)return null;const rect=target.getBoundingClientRect();target.focus();target.click();return {id:target.dataset.dotId,width:rect.width,height:rect.height}}");
