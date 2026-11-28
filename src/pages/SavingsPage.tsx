@@ -144,7 +144,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     const targetAmount=priorGoal&&goalAmountText===String(priorGoal.targetAmount)?priorGoal.targetAmount:parseMoneyInputAmount(goalAmountText);
     if(!name){setGoalError('Δώσε ένα όνομα στον στόχο.');return}
     if(targetAmount===null||!Number.isFinite(targetAmount)||targetAmount<=0){setGoalError('Συμπλήρωσε έγκυρο θετικό ποσό στόχου σε ευρώ και λεπτά.');return}
-    if(!validSavingsGoalDeadline(goalEdit.targetDate,asOf,priorGoal?.targetDate)){setGoalError('Η νέα προθεσμία δεν μπορεί να είναι πριν από σήμερα.');return}
+    if(!validSavingsGoalDeadline(goalEdit.targetDate,asOf,priorGoal?.targetDate)){setGoalError('Διάλεξε έγκυρη προθεσμία που δεν είναι πριν από σήμερα.');return}
     goalSavingRef.current=true;setGoalBusy(true);setGoalError('');
     try{
       await onUpsertGoal({...goalEdit,name,targetAmount,targetDate:goalEdit.targetDate||null,updatedAt:new Date().toISOString()});

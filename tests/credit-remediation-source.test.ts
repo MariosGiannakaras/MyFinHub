@@ -56,6 +56,7 @@ describe('Credit post-v1.4 remediation contracts',()=>{
   });
 
   it('lets accessible pagination select the existing deck without a second host navigator',()=>{
+    const qa=readFileSync(new URL('../scripts/credit-stack-remediation-qa.mjs',import.meta.url),'utf8');
     expect(stack).toContain('data-dot-id=');
     expect(stack).toContain('aria-current=');
     expect(stack).toContain('dots.addEventListener(\'click\',dotClick)');
@@ -76,7 +77,7 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain('Σύρε κάθετα για αλλαγή κάρτας');
     expect(stackTwo).toContain('width:min(100%,280px)');
     expect(stackTwo).toContain('overflow-x:auto');
-    expect(stackTwo).toContain('flex:0 0 auto');
+    expect(stackTwo).toContain('flex:0 0 24px');
     expect(stackTwo).toContain('.stack-drag-hint');
   });
 

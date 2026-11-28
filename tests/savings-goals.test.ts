@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { migrateData } from '../src/lib/domain.js';
+import { createEvent, migrateData } from '../src/lib/domain.js';
 import { savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../src/lib/savingsGoals.js';
 import { isSavingsAccount } from '../src/lib/accountSelection.js';
 import type { FinanceData, SavingsGoal } from '../src/types.js';
@@ -45,6 +45,22 @@ describe('savings goal semantics',()=>{
     expect(validSavingsGoalDeadline('2026-10-12',asOf,null)).toBe(true);
     expect(validSavingsGoalDeadline('2026-11-01',asOf,'2026-09-30')).toBe(true);
     expect(validSavingsGoalDeadline(null,asOf,'2026-09-30')).toBe(true);
+  });
+
+  it('rejects malformed calendar deadlines, including unchanged malformed values',()=>{
+    expect(validSavingsGoalDeadline('2026-02-30','2026-01-01','2026-02-30')).toBe(false);
+    expect(validSavingsGoalDeadline('not-a-date','2026-01-01')).toBe(false);
+    expect(validSavingsGoalDeadline(null,'2026-02-30')).toBe(false);
+    expect(validSavingsGoalDeadline('','2026-01-01')).toBe(true);
+  });
+
+  it('does not count future savings transfers until their booked date',()=>{
+    const data=fixture();
+    data.state.events=[createEvent({kind:'transfer',date:'2026-10-01',amount:200,note:'Goal funding',fromAccountId:'current',toAccountId:'save-a'})];
+    const before=JSON.stringify(data);
+    expect(savingsGoalBalance(data,'2026-09-28')).toBe(850);
+    expect(savingsGoalBalance(data,'2026-10-01')).toBe(1050);
+    expect(JSON.stringify(data)).toBe(before);
   });
 
   it('calculates bounded progress without fabricating a target',()=>{

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { nextRecurringDate, recurringMonthlyTotal } from '../src/lib/recurring.js';
-import { addRecurringInterval, recurringCadenceLabel } from '../src/lib/recurringCadence.js';
+import { addRecurringInterval, advanceRecurringDate, recurringCadenceLabel } from '../src/lib/recurringCadence.js';
 import type { FinanceData, RecurringItem } from '../src/types.js';
 
 type CadencedRecurring = RecurringItem & { recurrenceUnit?: 'month' | 'year'; recurrenceInterval?: number };
@@ -40,6 +40,15 @@ describe('recurring cadence', () => {
     expect(nextRecurringDate(data, annual, '2026-08-25')).toBe('2026-12-15');
     expect(nextRecurringDate(data, biennial, '2026-08-25')).toBe('2027-06-12');
     expect(addRecurringInterval('2024-02-29', annual)).toBe('2025-02-28');
+  });
+
+  it('keeps recurrence inside valid calendar years and never returns a stale cycle after the iteration guard',()=>{
+    const monthly=recurring({recurrenceUnit:'month',recurrenceInterval:1});
+    expect(addRecurringInterval('0001-01-31',monthly)).toBe('0001-02-28');
+    expect(addRecurringInterval('0099-12-31',monthly)).toBe('0100-01-31');
+    expect(addRecurringInterval('9999-12-01',monthly)).toBeNull();
+    expect(addRecurringInterval('2026-02-30',monthly)).toBeNull();
+    expect(advanceRecurringDate('1900-01-01',monthly,'2026-01-01')).toBeNull();
   });
 
   it('uses monthly-equivalent totals for mixed recurrence intervals', () => {

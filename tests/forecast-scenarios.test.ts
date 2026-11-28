@@ -149,6 +149,31 @@ describe('isolated 30/60/90-day what-if scenarios (#588 #7)',()=>{
     expect(JSON.stringify(data)).toBe(immutable);
   });
 
+  it('projects large inter-account transfers only once across all horizons without altering booked history',()=>{
+    const data=fixture(),asOf='2026-08-17';
+    data.seed.snapshots[0].balances={bank:1000000,cash:100};
+    const transfer=createEvent({kind:'transfer',date:'2026-08-19',amount:1100000,note:'Completed planned transfer',fromAccountId:'bank',toAccountId:'cash'});
+    const income=createEvent({kind:'income',date:'2026-09-17',amount:75,note:'Future income',accountId:'bank'});
+    data.state.events=[transfer,income];
+    data.state.scheduled!.push({id:'completed-transfer',kind:'transfer',status:'completed',dueDate:transfer.date,amount:1100000,note:'Completed planned transfer',fromAccountId:'bank',toAccountId:'cash',completedEventId:transfer.id,createdAt:'2026-08-01T00:00:00.000Z',updatedAt:'2026-08-01T00:00:00.000Z'});
+    const before=JSON.stringify(data);
+    for(const horizon of [30,60,90] as const){
+      const forecast=cashFlowForecast(data,asOf,horizon);
+      expect(forecast.currentPortfolio).toBe(1000100);
+      expect(forecast.projectedPortfolio).toBe(horizon===30?1000040:1000115);
+      expect(forecast.accounts.find(row=>row.accountId==='bank')).toMatchObject({minimum:-100060,firstNegativeDate:'2026-08-19',projected:horizon===30?-100060:-99985});
+      expect(forecast.accounts.find(row=>row.accountId==='cash')?.projected).toBe(1100100);
+      expect(forecast.sourceCounts).toEqual({scheduled:1,recurring:0,loan:0,dated_event:horizon===30?1:2});
+      expect(forecast.movements.filter(row=>row.date==='2026-08-19')).toEqual([expect.objectContaining({source:'dated_event',portfolioDelta:0})]);
+      expect(new Set(forecast.movements.map(row=>row.id)).size).toBe(forecast.movements.length);
+      expect(forecast.points.every(point=>Object.values(point.balances).reduce((sum,value)=>sum+value,0)===point.portfolio)).toBe(true);
+    }
+    expect(accountBalances(data,asOf)).toMatchObject({bank:1000000,cash:100});
+    expect(accountBalances(data,'2026-08-19')).toMatchObject({bank:-100000,cash:1100100});
+    expect(monthlyFlow(data,'2026-08',asOf).expense).toBe(0);
+    expect(JSON.stringify(data)).toBe(before);
+  });
+
   it('supports an empty scenario as unchanged read-only forecast across all horizons',()=>{
     const d=fixture();
     for(const horizon of [30,60,90] as const){

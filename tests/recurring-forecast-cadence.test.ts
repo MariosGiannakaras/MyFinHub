@@ -85,6 +85,22 @@ describe('recurring cadence forecast', () => {
     expect(movements.some(m=>m.date.startsWith('2026-08'))).toBe(false);
   });
 
+  it('keeps missed recurring cycles in Attention and excludes them from the future forecast across established cadences',()=>{
+    const asOf='2026-08-11';
+    for(const [unit,interval,expected] of [['month',1,'2026-09-10'],['month',2,'2026-10-10'],['year',1,'2027-08-10'],['year',2,'2028-08-10']] as const){
+      const item:CadencedRecurring={id:'overdue',name:'Missed renewal',amount:25,day:10,firstExpectedDate:'2024-08-10',accountId:'bank',category:'Συνδρομές',active:true,status:'active',recurrenceUnit:unit,recurrenceInterval:interval};
+      const data=dataWith(item),before=JSON.stringify(data);
+      expect(recurringDue(data,item,asOf)).toMatchObject({date:'2026-08-10',overdue:true});
+      expect(nextRecurringDate(data,item,asOf)).toBe(expected);
+      const forecast=cashFlowForecast(data,asOf,90);
+      const movements=forecast.movements.filter(row=>row.source==='recurring');
+      expect(movements.every(row=>row.date>=asOf&&row.date<=forecast.endDate)).toBe(true);
+      expect(new Set(movements.map(row=>row.id)).size).toBe(movements.length);
+      expect(movements[0]?.date).toBe(expected<=forecast.endDate?expected:undefined);
+      expect(JSON.stringify(data)).toBe(before);
+    }
+  });
+
   it('does not project a stopped workbook subscription', () => {
     const item: CadencedRecurring = { id: 'stopped', name: 'Stopped plan', amount: 40, firstExpectedDate: '2026-09-03', day: 3, accountId: 'bank', category: 'Συνδρομές', active: false, status: 'stopped', recurrenceUnit: 'month', recurrenceInterval: 1 };
     const forecast = cashFlowForecast(dataWith(item), '2026-08-25', 90);
