@@ -29,6 +29,15 @@ const sessionRuntimeQa = readFileSync('scripts/session-runtime-qa.mjs', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
+  it('binds routine and final evidence to the actual checkout, PR head/base and image bytes',()=>{
+    const store=readFileSync('scripts/visual-evidence-store.mjs','utf8');
+    expect(store).toContain('source.pullRequestHead=pr.head.sha;source.pullRequestBase=pr.base.sha');
+    expect(store).toContain("checksums[output]=createHash('sha256').update(readFileSync(target)).digest('hex')");
+    expect(finalScreenshots).toContain('source:context.source,baseUrl,count:screenshots.length,screenshots');
+    expect(finalScreenshots).toContain('fixture:{path:evidence.fixturePath,query:evidence.fixtureQuery}');
+    expect(finalScreenshots).toContain('privacyControls:evidence.privacyControls');
+    expect(finalScreenshots).toContain("sha256:createHash('sha256').update(bytes).digest('hex')");
+  });
   it('preflights primary Chromium through an isolated fixed headless CDP endpoint with diagnostics', () => {
     expect(coordinator).toContain("'--headless=new'");
     expect(coordinator).toContain('const port=9300+attempt');

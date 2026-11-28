@@ -26,7 +26,7 @@ describe('canonical credit-card stack adoption',()=>{
     expect(credit).toContain('Ολική διαγραφή');
     expect(credit).toContain('const canDelete=canPermanentlyDeleteCreditCard(data,archived.id,asOf)');
     expect(credit).toContain('disabled={!canDelete||restoring||deleteCardBusy}');
-    expect(credit).toContain('κανόνα A');
+    expect(credit).toContain('Η οριστική διαγραφή επιτρέπεται μόνο σε αρχειοθετημένη πιστωτική με μηδενική οφειλή.');
     expect(credit).toContain('Διαγραμμένη κάρτα');
     expect(cardDomain).toContain('export function canPermanentlyDeleteCreditCard');
     expect(cardDomain).toContain("card?.kind==='credit'");

@@ -20,7 +20,7 @@ describe('Cards shared action primitive ownership',()=>{
     expect(cards).toContain('<Button type="button" variant="secondary" className="modal-secondary"');
     expect(cards).toContain('<Button type="button" variant="primary" className="modal-primary"');
     expect(cards).toContain('<Button type="button" variant="primary" disabled={restoring||deleteBusy} onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button>');
-    expect(cards).toContain('<Button type="button" variant="danger" className="danger" onClick={()=>setDeleteTarget(card)}');
+    expect(cards).toContain('<Button type="button" variant="danger" className="danger" disabled={restoring||deleteBusy} onClick={()=>setDeleteTarget(card)}');
   });
 
   it('keeps card-domain and composite controls raw',()=>{

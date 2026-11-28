@@ -1,3 +1,9 @@
+## 2026-11-28 — Freeze consolidated review candidate
+
+**Implementations 18/23 completed · Sub-implementations 126/132 completed (95.5%).** Parent `cef9e7ff1e5ed62d6ebc9216042e2592a2c8a7a7` [CI #46166740592](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166740592) failed exactly one stale Cards shared-Button source assertion (350/351 files, 2707/2708 tests; other earlier failures corrected); [CodeQL #46166740612](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166740612) PASS. Fix remaining source assertion to retain mutual exclusion on destructive action. I15.03 code/guard complete: shared keyboard radiogroups, durable text-size/readback/reload and theme restoration in real-stack, six-width large-text reflow, OS reduced motion, autofill/focus/forced-colors and native overlay/zoom contracts; final actual cross-engine/Windows acceptance separate. I15.05 code/guard complete: prior Greek legacy/timestamp/session/uncertain logout changes, existing truthful backup JSON vs database/Storage/PIN/vault exclusions, archive/deleted-history plain Greek settlement/copy (no internal rule nickname). I23.03 code/guard complete: actual expanded route/keyboard/aria-live/long-Greek/200%-equivalent reflow plus actual Login 200% zoom, contrast/danger/forced-colors/reduced-motion guards. I23.07 provenance: retain actual checkout SHA, explicitly distinguish PR head/base from synthetic merge checkout, hash routine PNG bytes while preserving existing output-list contract, final capture already observes fixture/theme/privacy controls and hashes PNGs. Actual inspection still pending. **Freeze safe code scope; six original items remain:** I01.05 privacy scope, I05.02 deterministic per-event running-balance contract, I11.02 unpaid forecast policy remain owner decisions, existing behavior preserved. I21.05 Windows artifacts, I23.06 exact-head budgets/loading-shift/large-state/contrast, I23.07 immutable evidence inspection remain acceptance obligations. No new PR or issue. Source assertions/JS parse only here; no local application build. Transition existing #671 to Ready once, run all normal mandatory jobs together, collect entire failure set before a correction push, then final visual sweep only after required green and direct focused inspection. Do not merge until required exact-head gates and review are accepted; no production/hosted/Android change. No budget/security/accessibility threshold relaxation.
+
+---
+
 ## 2026-11-28 — Consolidated card/entry source completion and session copy
 
 **Implementations 17/23 completed · Sub-implementations 123/132 completed (93.2%).** Exact parent `ed8d417242e3a11221131fc97d3ebc84cbadd062` [CI #46166329855](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329855) failed three exact-source guards (347/350 files, 2701/2704 tests); [CodeQL #46166329870](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46166329870) PASS. Correct stale assertions to require actual shared Button/disabled archive states and truthful no-cleanup-started message; update legacy Greek marker assertion. Consolidate prepared candidate `0aea725bc80e1fccac0cbc8c2b4d7090fff1ec86` (see checkpoint below). I07.03 code/guard complete: existing reversible archive/restore, pointer/keyboard, reduced-motion, settled hard-delete/tombstone proof plus exact-ID lifecycle/receipt/focus regressions, not yet rendered acceptance. I19.01 code/guard complete: canonical eight-intent create/edit/readback matrix plus existing contextual domain paths, shared controls and strict legacy/direct Credit/Lending lexical amounts; real-stack acceptance remains required. I15.05 partial: actual hard-expiry event now explains re-login without falsely marking untouched credentials invalid; ambiguous logout copy no longer asserts active session. I23.07 provenance code prepared; actual immutable artifacts and inspection pending. No scope decision for privacy/running balances/forecast policy. Remaining 9 IDs. No local application execution; JS harness syntax/isolated timestamp probe and source review only. Next exact-head draft CI, finish remaining compatible preference/accessibility/copy/performance and evidence work, then grouped Ready gates. No merge, production, hosted or Android changes.
@@ -1264,15 +1270,15 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I14.05** Recheck budget create/edit/delete/rule priority/rollover, canceled/pending receipts, conflict, shortcuts, keyboard and deep links.
 - [x] **I14.06** Review 375×4259 mobile long scroll, section anchor visibility, sticky controls, dark theme and horizontal overflow with stress fixtures.
 
-### I15. Settings — General, Profile and Readability — 3/5
+### I15. Settings — General, Profile and Readability — 5/5
 
 **Priority:** P1 · **Owner:** `SettingsPage tabs general/profile, AccountSecuritySettings` · **Dependencies:** release #645 auth errors separate
 
 - [x] **I15.01** Audit General vs Profile information hierarchy to remove redundant platform metadata without hiding support/diagnostics.
 - [x] **I15.02** Review settings tabs as tabs (selection/arrow navigation/activation/focus) on 320/375/768/desktop including deep-linked active tab.
-- [ ] **I15.03** Validate readability/theme preference persistence, large text, reduced motion, focus contrast and browser/native accessibility.
+- [x] **I15.03** Validate readability/theme preference persistence, large text, reduced motion, focus contrast and browser/native accessibility.
 - [x] **I15.04** Recheck profile email/owner session and security actions against actual supported backend calls; no fictitious device activity metadata.
-- [ ] **I15.05** Verify messages/copy in Greek, timestamps, login/session failure instructions and no unsupported claims about encryption/recovery.
+- [x] **I15.05** Verify messages/copy in Greek, timestamps, login/session failure instructions and no unsupported claims about encryption/recovery.
 
 ### I16. Settings — Accounts and Financial Providers — 6/6
 
@@ -1352,13 +1358,13 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I22.06** Test material financial definitions: booked vs due vs estimated, receivable vs cash, credit purchase vs payment and positive-only distribution vs net worth.
 - [x] **I22.07** Establish sensitive-data/redaction invariants for diagnostics, screenshots, browser console, Windows logs and app memory while testing recovery.
 
-### I23. Cross-app rendered QA, accessibility, performance and regression tooling — 4/7
+### I23. Cross-app rendered QA, accessibility, performance and regression tooling — 5/7
 
 **Priority:** P1 · **Owner:** `scripts/run-rendered-qa, visual-evidence, defect intelligence` · **Dependencies:** on last coherent batch only
 
 - [x] **I23.01** Fix visual evidence capture stability: Transactions staggered enter/virtual rows, Dashboard deferred charts, fonts/images/layout ready before full-page screenshot.
 - [x] **I23.02** Build a durable interface-state coverage manifest covering 12 routes × breakpoints/themes plus 7 settings tabs, auth, modals, error/empty/loading/conflict/offline.
-- [ ] **I23.03** Expand meaningful regression locks for focus, aria-live, keyboard, 200% zoom, responsive overflow, hover/focus/danger, reduced motion and long Greek labels.
+- [x] **I23.03** Expand meaningful regression locks for focus, aria-live, keyboard, 200% zoom, responsive overflow, hover/focus/danger, reduced motion and long Greek labels.
 - [x] **I23.04** Add selective visual geometry/data provenance fixtures rather than screenshot-pixel overrides, and document confirmed defect classes in quality/defect-patterns.json.
 - [x] **I23.05** Retain exact-page source tests and narrow browser preflight for changes; run complete rendered + WebKit + Lighthouse + Windows matrix only on final coherent Ready heads.
 - [ ] **I23.06** Audit bundle budgets, loading skeleton shift, large-data route responsiveness and accessibility contrasts without weakening thresholds.

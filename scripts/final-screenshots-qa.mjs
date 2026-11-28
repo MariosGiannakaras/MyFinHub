@@ -246,7 +246,7 @@ try{
   const settingsNestedStateCount=8;
   const expectedScreenshots=themes.length*viewports.length*(Object.keys(pages).length+settingsTabs.length+authScreens.length+utilityScreens.length+settingsNestedStateCount);
   if(screenshots.length!==expectedScreenshots)throw new Error(`Expected ${expectedScreenshots} final screenshots, captured ${screenshots.length}.`);
-  const manifest={schemaVersion:2,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
+  const manifest={schemaVersion:2,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:context.source,baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
   console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs and nested editors, auth success/failure states and the 404 surface.`);
 }finally{

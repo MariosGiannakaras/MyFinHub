@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
@@ -33,7 +34,13 @@ export function visualEvidenceContext(date=new Date()){
   const shortSha=sourceSha==='local'?'local':sourceSha.slice(0,8);
   const sourceBranch=(process.env.GITHUB_HEAD_REF||process.env.GITHUB_REF_NAME||gitValue('rev-parse','--abbrev-ref','HEAD')||'local').trim();
   const evidenceRoot=resolve(repositoryRoot,process.env.MYFINHUB_UX_EVIDENCE_ROOT||'.qa-artifacts/visual');
-  return {repositoryRoot,appVersion,timeZone,timestamp,generatedAt:date.toISOString(),sourceSha,shortSha,sourceBranch,evidenceRoot};
+  const source={sha:sourceSha,shortSha,branch:sourceBranch};
+  if(process.env.GITHUB_EVENT_NAME==='pull_request'&&process.env.GITHUB_EVENT_PATH){
+    const pr=JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH,'utf8')).pull_request;
+    if(!/^[a-f0-9]{40}$/.test(pr?.head?.sha||'')||!/^[a-f0-9]{40}$/.test(pr?.base?.sha||''))throw new Error('Missing immutable PR visual evidence provenance.');
+    source.pullRequestHead=pr.head.sha;source.pullRequestBase=pr.base.sha;
+  }
+  return {repositoryRoot,appVersion,timeZone,timestamp,generatedAt:date.toISOString(),sourceSha,shortSha,sourceBranch,source,evidenceRoot};
 }
 
 export function prepareSuiteEvidence(key){
@@ -57,12 +64,13 @@ export function persistSuiteEvidence({key,surface,evidenceDirs,context=visualEvi
   const targetDir=resolve(context.evidenceRoot,sanitize(surface));mkdirSync(targetDir,{recursive:true});
   const marker=`__qa-${sanitize(key)}__`;
   for(const name of readdirSync(targetDir))if(name.includes(marker)&&(name.endsWith('.png')||name===`qa-${sanitize(key)}.json`))rmSync(resolve(targetDir,name),{force:true});
-  const outputs=[];
+  const outputs=[],checksums={};
   for(const capture of captures){
     const sourceName=sanitize(relative(capture.dir,capture.file).replace(/\.png$/i,''));
     const fileName=`${context.appVersion}__${context.timestamp}${marker}${capture.index?`source-${capture.index}__`:''}${sourceName}.png`;
-    copyFileSync(capture.file,resolve(targetDir,fileName));outputs.push(relative(context.repositoryRoot,resolve(targetDir,fileName)).replaceAll('\\','/'));
+    const target=resolve(targetDir,fileName);copyFileSync(capture.file,target);
+    const output=relative(context.repositoryRoot,target).replaceAll('\\','/');outputs.push(output);checksums[output]=createHash('sha256').update(readFileSync(target)).digest('hex');
   }
-  writeFileSync(resolve(targetDir,`qa-${sanitize(key)}.json`),`${JSON.stringify({schemaVersion:2,layout:'surface-first-latest-only',appVersion:context.appVersion,suite:key,surface,generatedAt:context.generatedAt,timeZone:context.timeZone,source:{sha:context.sourceSha,shortSha:context.shortSha,branch:context.sourceBranch},screenshots:outputs},null,2)}\n`);
+  writeFileSync(resolve(targetDir,`qa-${sanitize(key)}.json`),`${JSON.stringify({schemaVersion:2,layout:'surface-first-latest-only',appVersion:context.appVersion,suite:key,surface,generatedAt:context.generatedAt,timeZone:context.timeZone,source:context.source??{sha:context.sourceSha,shortSha:context.shortSha,branch:context.sourceBranch},screenshots:outputs,checksums},null,2)}\n`);
   return outputs.length;
 }
