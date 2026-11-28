@@ -1,3 +1,11 @@
+## 2026-11-28 — Planning/Savings/installed first-run implementation reconciliation
+
+**Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Newly completed code/guard IDs I06.05, I12.01, I12.03, I12.05, I21.01. Final validation separately pending. Existing goal deadline, future funding, over-target, empty/large, rejected edit/delete and held receipt guards reviewed; added successful create→edit→confirmed synthetic delete with exact row count and unchanged actual savings balances, preserving both-theme editor captures. Added unit coverage for shared forecast source summary and real linked completed-event date (future/date-reached/missing), immutability; existing large multi-account 30/60/90 matrix (tests/forecast-scenarios.test.ts) proves one completed transfer and negative per-account projection, future income, exact portfolio sum, no double count or history mutation. Long-list native wheel and focus code/guards implemented, desktop/mobile source and date semantics reconciled. I21.01 existing first-run implementation/source/packaging guards and successful prior M3 installer/launch gate reviewed; SHA-256 independently verified in prior checkpoint. None of these marks asserts the final exact-head rendered/Windows matrix has run. I21.05 remains final acceptance, not a missing installer implementation.
+
+Remaining 20 original IDs. I01.05/I05.02/new I11.02 policy decision boundaries remain explicit. Continue same #671, exact-head draft validation and remaining independent safe changes; final review and release not yet performed. No production/Android/data changes.
+
+---
+
 ## 2026-11-28 — Planning projection provenance and long-list reachability
 
 **Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Parent `9516a539e59ffdfbcf32991a29324157ec3b6652`: [CI #46140179627](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140179627) validate PASS, 350/350 files, 2685/2685 tests and production bundle hard PASS 527.7/528 KiB JS, 559.5/560 KiB CSS (soft warning). Reusable/direct CodeQL still pending at observation. Earlier accepted M3 Windows [CI #46130114663](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46130114663) all three Windows gates success, first-run 20/20 focused tests; inspected actual clean install/launch/uninstall and runtime-config assertions; downloaded artifact #15257710588, verified actual 149.77 MiB NSIS binary SHA-256 matches companion checksum. This is earlier immutable evidence only, not final release acceptance or a new installer publication.
@@ -458,13 +466,13 @@ The split shared-control candidate immediately below is now the implementation c
 | I03 | 6/6 | Complete |
 | I04 | 4/5 | I04.05 |
 | I05 | 5/6 | I05.02 |
-| I06 | 4/5 | I06.05 |
+| I06 | 5/5 | Complete |
 | I07 | 4/5 | I07.03 |
 | I08 | 6/6 | Complete |
 | I09 | 5/5 | Complete |
 | I10 | 5/5 | Complete |
 | I11 | 4/6 | I11.02, I11.04 |
-| I12 | 2/5 | I12.01, I12.03, I12.05 |
+| I12 | 5/5 | Complete |
 | I13 | 5/5 | Complete |
 | I14 | 6/6 | Complete |
 | I15 | 3/5 | I15.03, I15.05 |
@@ -473,7 +481,7 @@ The split shared-control candidate immediately below is now the implementation c
 | I18 | 6/6 | Complete |
 | I19 | 6/7 | I19.01 |
 | I20 | 6/6 | Complete |
-| I21 | 0/5 | I21.01, I21.02, I21.03, I21.04, I21.05 |
+| I21 | 1/5 | I21.02, I21.03, I21.04, I21.05 |
 | I22 | 7/7 | Complete |
 | I23 | 4/7 | I23.03, I23.06, I23.07 |
 

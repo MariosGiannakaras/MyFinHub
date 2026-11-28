@@ -172,6 +172,15 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('data-shared-goal-gap');
   });
 
+  it('covers successful goal CRUD and durable failure/pending states without changing savings money',()=>{
+    const receipts=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    expect(remediationQa).toContain('goal edit replaces same row instead of creating duplicate');
+    expect(remediationQa).toContain('confirmed goal deletion restores original count');
+    expect(remediationQa).toContain('goal deletion changes no actual savings money');
+    expect(receipts).toContain('rejected goal edit leaves draft and original row');
+    expect(receipts).toContain('pending personal goal freezes inputs and leaves original stored goal');
+  });
+
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
     expect(source).toContain('className="empty-state savings-goals-empty"');
     expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');

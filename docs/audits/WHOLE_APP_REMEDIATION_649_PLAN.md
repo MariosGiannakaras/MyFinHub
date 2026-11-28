@@ -1,3 +1,11 @@
+## 2026-11-28 — Planning/Savings/installed first-run implementation reconciliation
+
+**Implementations 13/23 completed · Sub-implementations 112/132 completed (84.8%).** Newly completed code/guard IDs I06.05, I12.01, I12.03, I12.05, I21.01. Final validation separately pending. Existing goal deadline, future funding, over-target, empty/large, rejected edit/delete and held receipt guards reviewed; added successful create→edit→confirmed synthetic delete with exact row count and unchanged actual savings balances, preserving both-theme editor captures. Added unit coverage for shared forecast source summary and real linked completed-event date (future/date-reached/missing), immutability; existing large multi-account 30/60/90 matrix (tests/forecast-scenarios.test.ts) proves one completed transfer and negative per-account projection, future income, exact portfolio sum, no double count or history mutation. Long-list native wheel and focus code/guards implemented, desktop/mobile source and date semantics reconciled. I21.01 existing first-run implementation/source/packaging guards and successful prior M3 installer/launch gate reviewed; SHA-256 independently verified in prior checkpoint. None of these marks asserts the final exact-head rendered/Windows matrix has run. I21.05 remains final acceptance, not a missing installer implementation.
+
+Remaining 20 original IDs. I01.05/I05.02/new I11.02 policy decision boundaries remain explicit. Continue same #671, exact-head draft validation and remaining independent safe changes; final review and release not yet performed. No production/Android/data changes.
+
+---
+
 ## 2026-11-28 — Planning projection provenance and long-list reachability
 
 **Implementations 11/23 completed · Sub-implementations 107/132 completed (81.1%).** Parent `9516a539e59ffdfbcf32991a29324157ec3b6652`: [CI #46140179627](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46140179627) validate PASS, 350/350 files, 2685/2685 tests and production bundle hard PASS 527.7/528 KiB JS, 559.5/560 KiB CSS (soft warning). Reusable/direct CodeQL still pending at observation. Earlier accepted M3 Windows [CI #46130114663](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/46130114663) all three Windows gates success, first-run 20/20 focused tests; inspected actual clean install/launch/uninstall and runtime-config assertions; downloaded artifact #15257710588, verified actual 149.77 MiB NSIS binary SHA-256 matches companion checksum. This is earlier immutable evidence only, not final release acceptance or a new installer publication.
@@ -1074,7 +1082,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I05.05** Recheck filtering/sorting/date range/pagination/export, accurate counts, empty/no-results states, and shortcut/deep focus for exact event.
 - [x] **I05.06** Exercise edit/delete/undo/receipt/recurring linkage/correction conflict and native/legacy semantic preservation, with durable receipt and failure UI.
 
-### I06. Savings / Αποταμίευση — 4/5
+### I06. Savings / Αποταμίευση — 5/5
 
 **Priority:** P1 · **Owner:** `SavingsPage, goal projections, domain savings` · **Dependencies:** #646 S-03 completed
 
@@ -1082,7 +1090,7 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I06.02** Correct chart tick precision and repeated labels for low ranges without synthetic maximum or manipulating underlying balances.
 - [x] **I06.03** Explicitly distinguish monthly savings flow, common cash pool, per-goal target and nonreserved goals; verify #646 S-03 remains intact.
 - [x] **I06.04** Reproduce and guard saving transfer, manual cash offset, HELP/RETURN and goal allocation with linked-account selection and no double posting.
-- [ ] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
+- [x] **I06.05** Test goal create/edit/delete/over-target, date/deadline, future events, conflict, autosave receipt, empty/large-state and dark/light.
 
 ### I07. Debit and prepaid Cards / Κάρτες — 4/5
 
@@ -1136,15 +1144,15 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I11.05** Check provider logos/branding partial upload failure, mobile/dark long names, event origin and retry/conflict feedback.
 - [x] **I11.06** Protect historical legacy identity and lifetime purchases from forced monthly recurring reclassification.
 
-### I12. Planning and future cashflow / Προγραμματισμός — 2/5
+### I12. Planning and future cashflow / Προγραμματισμός — 5/5
 
 **Priority:** P1 · **Owner:** `PlanningPage, scheduled cashflow, forecast components` · **Dependencies:** #647 P-02/P-03 complete
 
-- [ ] **I12.01** Reconcile nested pending-list scroll/last-row reachability, keyboard wheel/trackpad and 320/mobile long-viewport accessibility.
+- [x] **I12.01** Reconcile nested pending-list scroll/last-row reachability, keyboard wheel/trackpad and 320/mobile long-viewport accessibility.
 - [x] **I12.02** Keep current portfolio visible and flat sparklines centered as fixed #646, with true forecast vs booked value provenance.
-- [ ] **I12.03** Distinguish scheduled/estimated/due/actually posted transactions in labels, chart legend, tooltip and date resolution.
+- [x] **I12.03** Distinguish scheduled/estimated/due/actually posted transactions in labels, chart legend, tooltip and date resolution.
 - [x] **I12.04** Test create/edit/skip/cancel/complete/failure/undo scheduled events with exact one logical posting, negative scenarios and conflict receipts.
-- [ ] **I12.05** Verify multi-account cash projections, large dates/amounts, expected negative balances and history comparison without double posting.
+- [x] **I12.05** Verify multi-account cash projections, large dates/amounts, expected negative balances and history comparison without double posting.
 
 ### I13. Attention center / Έλεγχος — 5/5
 
@@ -1233,11 +1241,11 @@ This ordering is a **dependency graph**, not a request to start all 23 branches.
 - [x] **I20.05** Reproduce tooltips/popovers/overflow at topbar and bottom sheet, anchored flipping and reduced motion, with shared regression geometry. Accepted #669, exact cb6e898d CI #46062409972 and inspected 14 focused screenshots; integrated 19a8f899.
 - [x] **I20.06** Exercise copied sensitive value, clipboard fallback, live status/error role, text truncation and mobile reduced-viewport dialogs.
 
-### I21. Windows desktop-only shell, updates and app lock — 0/5
+### I21. Windows desktop-only shell, updates and app lock — 1/5
 
 **Priority:** P1 · **Owner:** `Windows/Electron titlebar, loopback, app lock, updater, backup` · **Dependencies:** never require physical hardware as baseline
 
-- [ ] **I21.01** Validate installed-user launch/first run/loopback without runtime configuration prompts or packaging secret credentials.
+- [x] **I21.01** Validate installed-user launch/first run/loopback without runtime configuration prompts or packaging secret credentials.
 - [ ] **I21.02** Audit app-owned PIN lock/recovery/rate limit, owner+AAL2 session timing, lock-after-idle and foreground/background visibility.
 - [ ] **I21.03** Recheck desktop titlebar, updates, tray/minimize/close navigation, zoom/keyboard/dark/light and error-recovery affordances.
 - [ ] **I21.04** Verify desktop backup/restore native file semantics, safe file picker/permission denied, no partial restore and exact user-visible scope.

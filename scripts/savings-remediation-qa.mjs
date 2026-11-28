@@ -169,5 +169,18 @@ try{
   assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal metadata does not move actual savings money');
   await waitFor("function(){const row=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')].find(n=>(n.textContent||'').includes('Synthetic cent precision goal'));if(!row)return false;row.scrollIntoView({block:'center',behavior:'instant'});for(let node=row;node;node=node.parentElement){if(Number(getComputedStyle(node).opacity)<.995||node.getAnimations().some(animation=>animation.playState==='running'&&Number.isFinite(animation.effect?.getComputedTiming().endTime)))return false}const rect=row.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight+1}",'saved cent-exact Savings goal visible and settled');
   await screenshot('savings-goal-cent-exact-mobile');
+  assert(await c.call("function(){const row=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')].find(n=>n.textContent.includes('Synthetic cent precision goal'));const b=[...row.querySelectorAll('button')].find(n=>n.textContent.includes('Επεξεργασία'));b.click();return Boolean(b)}"),'edit the same created personal goal');
+  await waitFor("function(){return document.querySelector('#savings-goal-editor-title')?.textContent.includes('Επεξεργασία')}",'created goal edit opens');
+  await setGoalField('Όνομα στόχου','Synthetic edited personal goal');
+  await setGoalField('Στόχος ποσού','12345678,90');assert(await saveGoal(),'save edited high target');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')];return !document.querySelector('#savings-goal-editor-title')&&rows.some(n=>n.textContent.includes('Synthetic edited personal goal'))&&!rows.some(n=>n.textContent.includes('Synthetic cent precision goal'))}",'goal edit replaces same row instead of creating duplicate');
+  assert((await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}"))===goalCount+1,'edit preserves goal identity and count');
+  assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal edit changes no actual savings money');
+  assert(await c.call("function(){const row=[...document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal')].find(n=>n.textContent.includes('Synthetic edited personal goal'));const b=[...row.querySelectorAll('button')].find(n=>n.textContent.includes('Διαγραφή'));b.click();return Boolean(b)}"),'open delete only for synthetic goal');
+  await waitFor("function(){return document.querySelector('.app-confirm-dialog[role=alertdialog]')?.textContent.includes('Synthetic edited personal goal')}",'goal deletion is explicitly confirmed');
+  assert(await c.call("function(){const b=[...document.querySelectorAll('.app-confirm-dialog button')].find(n=>n.textContent.trim()==='Διαγραφή');b.click();return Boolean(b)}"),'confirm synthetic goal removal');
+  await waitFor("function(n){return !document.querySelector('.app-confirm-dialog')&&document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length===n&&!document.querySelector('.savings-mobile-legacy .savings-goals').textContent.includes('Synthetic edited personal goal')}",'confirmed goal deletion restores original count',[goalCount]);
+  assert(JSON.stringify(await state())===JSON.stringify(beforeGoal),'goal deletion changes no actual savings money');
+  await screenshot('savings-goal-deleted-mobile');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);
 }finally{await browserSession?.stop()}
