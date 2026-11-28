@@ -96,7 +96,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
     preferredFocus='[data-autofocus="true"]'
     onRequestClose={()=>{if(!saving)onClose()}}
   >
-    <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η αλλαγή αποθηκεύεται ως override. Το αρχικό εισαγόμενο record παραμένει ανέπαφο.</p></div><IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" disabled={saving} onClick={onClose}><X aria-hidden="true"/></IconButton></header>
+    <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η διόρθωση αποθηκεύεται χωριστά. Η αρχική εισαγόμενη εγγραφή παραμένει ανέπαφη.</p></div><IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" disabled={saving} onClick={onClose}><X aria-hidden="true"/></IconButton></header>
     <div className="form-grid" inert={saving}>
       <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος ιστορικής κίνησης" value={type} onChange={(event) => changeType(event.target.value as LegacyTransaction['type'])}>{(Object.keys(typeLabels) as LegacyTransaction['type'][]).map((value) => <option key={value} value={value}>{typeLabels[value]}</option>)}</AppSelectInput></label>
       <label><span>Ημερομηνία</span><AppDateInput aria-label="Ημερομηνία ιστορικής κίνησης" value={date} onChange={(event) => setDate(event.target.value)}/></label>
@@ -109,6 +109,6 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
       <label className="full"><span>Περιγραφή / σχόλιο</span><AppTextarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
     </div>
     {error ? <FormError id="legacy-transaction-edit-error">{error}</FormError> : null}
-    <footer className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση override'}</Button></footer>
+    <footer className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση διόρθωσης'}</Button></footer>
   </DialogShell>;
 }

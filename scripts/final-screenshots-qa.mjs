@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { assertSyntheticVisualQaUrl, visualEvidenceContext } from './visual-evidence-store.mjs';
@@ -208,13 +209,15 @@ try{
   };
 
   const capture=async(surface,state,theme,mode,width,height)=>{
+    const evidence=await c.call("function(){const url=new URL(location.href);return {fixturePath:url.pathname,fixtureQuery:url.search,theme:document.documentElement.dataset.theme,privacyControls:[...document.querySelectorAll('.privacy-toggle[aria-pressed]')].map(node=>({label:node.getAttribute('aria-label')||'',pressed:node.getAttribute('aria-pressed')==='true'}))}}");
+    if(evidence.theme!==theme)throw new Error(`Final capture theme mismatch for ${surface}/${state}: ${evidence.theme}`);
     const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
     const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));
     const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:captureWidth,height:captureHeight,scale:1}});
     const dir=resolve(evidenceRoot,clean(surface));mkdirSync(dir,{recursive:true});
     const fileName=`${appVersion}__${timestamp}__${clean(state)}-${theme}__${mode}-${width}x${height}.png`;
-    const path=resolve(dir,fileName);writeFileSync(path,Buffer.from(shot.data,'base64'));
-    screenshots.push({file:relative(repositoryRoot,path).replaceAll('\\','/'),surface,state,theme,viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight}});
+    const path=resolve(dir,fileName);const bytes=Buffer.from(shot.data,'base64');writeFileSync(path,bytes);
+    screenshots.push({file:relative(repositoryRoot,path).replaceAll('\\','/'),surface,state,theme,viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight},fixture:{path:evidence.fixturePath,query:evidence.fixtureQuery},privacyControls:evidence.privacyControls,sha256:createHash('sha256').update(bytes).digest('hex')});
   };
 
   for(const theme of themes){
@@ -243,7 +246,7 @@ try{
   const settingsNestedStateCount=8;
   const expectedScreenshots=themes.length*viewports.length*(Object.keys(pages).length+settingsTabs.length+authScreens.length+utilityScreens.length+settingsNestedStateCount);
   if(screenshots.length!==expectedScreenshots)throw new Error(`Expected ${expectedScreenshots} final screenshots, captured ${screenshots.length}.`);
-  const manifest={schemaVersion:1,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
+  const manifest={schemaVersion:2,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
   console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs and nested editors, auth success/failure states and the 404 surface.`);
 }finally{

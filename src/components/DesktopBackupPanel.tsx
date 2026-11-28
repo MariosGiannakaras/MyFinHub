@@ -1,3 +1,4 @@
+import { formatLocalTimestamp } from '../lib/formatTimestamp';
 import { CheckCircle2, FolderOpen, HardDriveDownload, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { desktopBackupBridge, type LocalBackupStatus } from '../lib/desktopBackups';
@@ -7,7 +8,7 @@ import { Surface } from './Surface';
 
 const HOUR_MS = 60 * 60 * 1000;
 const STATUS_REFRESH_MS = 5 * 60 * 1000;
-const dateLabel = (value:string) => new Date(value).toLocaleString('el-GR');
+const dateLabel = formatLocalTimestamp;
 
 export function DesktopBackupPanel({
   refreshToken, onPrepareRestore,
@@ -118,7 +119,7 @@ export function DesktopBackupPanel({
         {!status && !error ? <RefreshCw size={18} aria-hidden="true"/> : statusAttention ? <TriangleAlert size={18} aria-hidden="true"/> : <CheckCircle2 size={18} aria-hidden="true"/>}
         <div className="settings-data-action-copy">
           <strong>{stateText}</strong>
-          <small>{status ? (status.lastValidBackupAt ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}${revisionBehind ? ' · Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.' : ''}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
+          <small>{status ? (Number.isFinite(lastValid) ? `Τελευταίο επιβεβαιωμένο: ${dateLabel(status.lastValidBackupAt)}${revisionBehind ? ' · Δεν περιλαμβάνει ακόμη τις νεότερες οικονομικές αλλαγές.' : ''}` : invalidOnly ? 'Υπάρχουν τοπικά αρχεία, αλλά κανένα δεν πέρασε τον έλεγχο ακεραιότητας SHA-256.' : 'Δεν έχει δημιουργηθεί ακόμη τοπικό backup.') : 'Φόρτωση στοιχείων ή μη διαθέσιμη σύνδεση.'}</small>
         </div>
       </div>
       <div className="settings-app-list desktop-backup-facts">

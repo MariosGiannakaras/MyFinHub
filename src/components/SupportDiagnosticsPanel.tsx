@@ -1,3 +1,4 @@
+import { formatLocalTimestamp } from '../lib/formatTimestamp';
 import { ClipboardCopy, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import type { FinanceData } from '../types';
@@ -57,18 +58,18 @@ export function SupportDiagnosticsPanel({data,filePath,lastSavedAt}:Props){
   return <section className="panel surface-raised support-diagnostics" aria-labelledby="support-diagnostics-title">
     <div className="panel-head"><div><span id="support-diagnostics-title">Διαγνωστικά υποστήριξης</span><small>Μόνο για development/support builds. Δεν περιλαμβάνονται ποσά, περιγραφές συναλλαγών, στοιχεία κάρτας ή tokens.</small></div><Wrench/></div>
     <div className="support-diagnostics-grid">
-      <span><small>Schema</small><b>{snapshot.schemaVersion}</b></span>
+      <span><small>Έκδοση σχήματος</small><b>{snapshot.schemaVersion}</b></span>
       <span><small>Λογαριασμοί</small><b>{snapshot.counts.accounts}</b></span>
       <span><small>Συναλλαγές</small><b>{snapshot.counts.transactions}</b></span>
-      <span><small>Events</small><b>{snapshot.counts.events}</b></span>
-      <span><small>Recurring</small><b>{snapshot.counts.recurring}</b></span>
+      <span><small>Κινήσεις</small><b>{snapshot.counts.events}</b></span>
+      <span><small>Πάγια</small><b>{snapshot.counts.recurring}</b></span>
       <span><small>Κάρτες</small><b>{snapshot.counts.cards}</b></span>
       <span><small>Δάνεια</small><b>{snapshot.counts.loans}</b></span>
-      <span><small>Savings goals</small><b>{snapshot.counts.savingsGoals}</b></span>
-      <span><small>Budgets</small><b>{snapshot.counts.budgets}</b></span>
-      <span><small>Rules</small><b>{snapshot.counts.rules}</b></span>
-      <span><small>Storage</small><b>{snapshot.storage}</b></span>
-      <span><small>Last save</small><b>{snapshot.lastSavedAt?new Date(snapshot.lastSavedAt).toLocaleString('el-GR'):'—'}</b></span>
+      <span><small>Στόχοι αποταμίευσης</small><b>{snapshot.counts.savingsGoals}</b></span>
+      <span><small>Προϋπολογισμοί</small><b>{snapshot.counts.budgets}</b></span>
+      <span><small>Κανόνες</small><b>{snapshot.counts.rules}</b></span>
+      <span><small>Αποθήκευση</small><b>{snapshot.storage}</b></span>
+      <span><small>Τελευταία αποθήκευση</small><b>{formatLocalTimestamp(snapshot.lastSavedAt)}</b></span>
     </div>
     <div className="editor-actions"><Button type="button" variant="secondary" onClick={()=>void copy()}><ClipboardCopy size={15}/> Αντιγραφή ασφαλών διαγνωστικών</Button></div>
     {message?<OperationFeedback className="logic-note compact" tone={copyError?'error':'success'}>{message}</OperationFeedback>:null}

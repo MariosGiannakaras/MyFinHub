@@ -464,7 +464,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await selectPeriod(seedPeriod,'previous');
     await search('Synthetic real-stack seed income');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income'))}",'legacy seed row');
     const editLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income'));const button=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(editLegacy,'Legacy edit action is missing.');
-    await waitFor("function(){return Boolean(document.querySelector('.legacy-transaction-editor[role=dialog]'))}",'legacy editor');await setByLabel('Ποσό ιστορικής κίνησης','101.25');await setByLabel('Περιγραφή ιστορικής κίνησης','Synthetic real-stack seed income override');await clickText('.legacy-transaction-editor button','Αποθήκευση override');await waitLegacy('Synthetic real-stack seed income override',false);
+    await waitFor("function(){return Boolean(document.querySelector('.legacy-transaction-editor[role=dialog]'))}",'legacy editor');await setByLabel('Ποσό ιστορικής κίνησης','101.25');await setByLabel('Περιγραφή ιστορικής κίνησης','Synthetic real-stack seed income override');await clickText('.legacy-transaction-editor button','Αποθήκευση διόρθωσης');await waitLegacy('Synthetic real-stack seed income override',false);
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy edit');await selectPeriod(seedPeriod,'previous');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy override after reload');
     const deleteLegacy=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-transaction-source=legacy]')].find(item=>(item.textContent||'').includes('Synthetic real-stack seed income override'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(deleteLegacy,'Legacy delete action is missing.');
     await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'legacy delete confirm');await clickText('[role=alertdialog] button','Διαγραφή');await waitLegacy('Synthetic real-stack seed income override',true);
@@ -544,7 +544,14 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά / Οφειλές')}",'lending workspace');
     await clickText('.lending-selected-toolbar button','Νέο άτομο');
     await waitFor("function(){return Boolean(document.querySelector('#lending-dialog-title'))}",'lending create editor');
-    await setByLabel('Πρόσωπο','Real Browser Person');await setByLabel('Ποσό','42');await setByLabel('Σχόλιο','Real Browser Lending');await clickText('.lending-dialog button','Καταχώριση');
+    await setByLabel('Πρόσωπο','Real Browser Person');
+    const beforeInvalidLending=await currentRevision();
+    for(const malformed of ['1e2','0x20','42.001']){
+      await setByLabel('Ποσό',malformed);await clickText('.lending-dialog button','Καταχώριση');
+      await waitFor("function(){return Boolean(document.querySelector('#lending-dialog-error[role=alert]'))}",'invalid direct lending amount');
+      assert(await currentRevision()===beforeInvalidLending,'Malformed lending amount changed the canonical revision.');
+    }
+    await setByLabel('Ποσό','42');await setByLabel('Σχόλιο','Real Browser Lending');await clickText('.lending-dialog button','Καταχώριση');
     await waitStateText('Real Browser Lending');
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά / Οφειλές')}",'lending reload after create');
     await waitStateText('Real Browser Lending');

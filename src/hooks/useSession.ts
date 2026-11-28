@@ -134,7 +134,7 @@ export function useSession() {
       return true;
     } catch (e) {
       if (epoch !== transitionEpoch.current) return false;
-      setError(operationalMessage(e, 'Η αποσύνδεση δεν ολοκληρώθηκε. Η τρέχουσα συνεδρία παραμένει ενεργή. Δοκίμασε ξανά.'));
+      setError(operationalMessage(e, 'Η αποσύνδεση δεν επιβεβαιώθηκε. Δοκίμασε ξανά.'));
       return false;
     }
   }, [applySession]);

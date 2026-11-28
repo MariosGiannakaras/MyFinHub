@@ -248,19 +248,22 @@ try{
   console.log('Credit archive receipt, rejected restore and same-ID recovery');
   await viewport(375,812,true);await navigate('credit-stack','reduced');
   const restoredId=(await state()).topId;
+  const previousArchiveCount=await c.call("function(){const opener=document.querySelector('.page-heading [data-card-archive-opener]');return Number(opener?.getAttribute('aria-label')?.split(',').at(-1)?.trim()||0)}");
+  // The canonical fixture already contains archived cards. Never restore by row position.
+  const restoreSelector=`.card-archive-manager [data-archived-card-id=${JSON.stringify(restoredId)}] .card-archive-actions button:first-child`;
   await c.call("function(){const button=document.querySelector('.stack-card.top .delete-btn');button.focus();button.click()}");
   await waitFor("function(){return document.activeElement?.matches('.stack-card.top .delete-slider')}",'keyboard archive ready');
   await c.call("function(){const slider=document.querySelector('.stack-card.top .delete-slider');for(const key of ['End','Enter'])slider.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}))}");
   await waitFor("function(id){return ![...document.querySelectorAll('.stack-card')].some(node=>node.dataset.cardId===id)&&document.activeElement?.matches('[data-card-archive-opener]')}",'settled archive removes exact active ID and restores archive opener focus',[restoredId]);
   await c.call("function(){document.activeElement.click()}");
-  await waitFor("function(){return Boolean(document.querySelector('.card-archive-manager .card-archive-row'))}",'archived credit manager');
-  await c.call("function(){const url=new URL(location.href);url.searchParams.set('card-profile-save-failure','1');history.replaceState(null,'',url.href);document.querySelector('.card-archive-manager .card-archive-actions button').click()}");
+  await waitFor("function(selector){return Boolean(document.querySelector(selector))}",'exact archived credit row',[restoreSelector]);
+  await c.call("function(selector){const url=new URL(location.href);url.searchParams.set('card-profile-save-failure','1');history.replaceState(null,'',url.href);document.querySelector(selector).click()}",[restoreSelector]);
   await waitFor("function(){return document.querySelector('#credit-archive-error[role=alert]')?.textContent.includes('δεν επιβεβαιώθηκε')}",'restore failure is announced inside the active archive manager');
   await shot('credit-stack-restore-rejected-mobile');
-  await c.call("function(){const url=new URL(location.href);url.searchParams.delete('card-profile-save-failure');history.replaceState(null,'',url.href);document.querySelector('.card-archive-manager .card-archive-actions button').focus();document.activeElement.click()}");
-  await waitFor("function(id){return document.querySelector('.stack-card.top')?.dataset.cardId===id&&!document.querySelector('.card-archive-manager .card-archive-row')&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'restored credit returns to same identity and close focus',[restoredId]);
+  await c.call("function(selector){const url=new URL(location.href);url.searchParams.delete('card-profile-save-failure');history.replaceState(null,'',url.href);document.querySelector(selector).focus();document.activeElement.click()}",[restoreSelector]);
+  await waitFor("function(id,count){return document.querySelector('.stack-card.top')?.dataset.cardId===id&&![...document.querySelectorAll('.card-archive-manager [data-archived-card-id]')].some(row=>row.dataset.archivedCardId===id)&&document.querySelectorAll('.card-archive-manager .card-archive-row').length===count&&document.activeElement?.matches('.card-archive-manager .close-picker')}",'restored credit returns to same identity, retains unrelated archive rows and close focus',[restoredId,previousArchiveCount]);
   await c.call("function(){document.activeElement.click()}");
-  await waitFor("function(){return !document.querySelector('.card-archive-manager')&&document.activeElement?.matches('.credit-card-redesign-page h1')}",'last archive manager close focuses surviving page heading');
+  await waitFor("function(count){return !document.querySelector('.card-archive-manager')&&document.activeElement?.matches(count?'[data-card-archive-opener]':'.credit-card-redesign-page h1')}",'archive manager close focuses surviving opener or heading',[previousArchiveCount]);
   await shot('credit-stack-restored-focus-mobile');
 
   c.close();console.log(`Credit stack remediation QA passed. Evidence: ${evidenceDir}`);

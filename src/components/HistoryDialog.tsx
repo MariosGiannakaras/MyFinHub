@@ -1,3 +1,4 @@
+import { formatLocalTimestamp } from '../lib/formatTimestamp';
 import {motion} from 'framer-motion';
 import {History,X} from 'lucide-react';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -9,7 +10,7 @@ import {Button} from './Button';
 import {IconButton} from './IconButton';
 
 const historyPositionLabel=(position:'current'|'redo'|'stored')=>position==='current'?'Τρέχουσα κατάσταση':position==='redo'?'Αναιρεμένη · διαθέσιμη για επαναφορά':'Αποθηκευμένο σημείο';
-const historyTime=(at:string)=>{if(!at)return 'Πρόσφατα';const date=new Date(at);return Number.isNaN(date.getTime())?'Πρόσφατα':date.toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});};
+const historyTime=formatLocalTimestamp;
 
 export default function HistoryDialog({onClose,reduce,history,saveState,savePending,historyAvailable,undoDepth,redoDepth,canUndo,canRedo,onUndo,onRedo,onNavigate}:{
   onClose:()=>void;reduce:boolean;history:ChangeHistoryEntry[];saveState:SaveState;savePending:boolean;historyAvailable:boolean;

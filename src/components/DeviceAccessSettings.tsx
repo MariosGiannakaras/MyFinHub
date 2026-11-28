@@ -1,3 +1,4 @@
+import { formatLocalTimestamp } from '../lib/formatTimestamp';
 import { Globe2, Monitor, RefreshCw, ShieldCheck, ShieldMinus, Smartphone } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, getConnectedDevices, renameConnectedDevice, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
@@ -26,12 +27,13 @@ function activityLabel(value:string){
   const timestamp=Date.parse(value);
   // Missing or malformed registry timestamps must not imply recent verified activity.
   if(!Number.isFinite(timestamp))return 'Μη διαθέσιμη';
-  const minutes=Math.max(0,Math.round((Date.now()-timestamp)/60_000));
+  if(timestamp>Date.now())return formatLocalTimestamp(value);
+  const minutes=Math.round((Date.now()-timestamp)/60_000);
   if(minutes<1)return 'Μόλις τώρα';
   if(minutes<60)return `Πριν από ${minutes} ${minutes===1?'λεπτό':'λεπτά'}`;
   const hours=Math.round(minutes/60);
   if(hours<24)return `Πριν από ${hours} ${hours===1?'ώρα':'ώρες'}`;
-  return new Date(timestamp).toLocaleString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  return formatLocalTimestamp(value);
 }
 
 function loadError(error:unknown){
@@ -136,7 +138,7 @@ export function DeviceAccessSettings(){
               <div><dt>Πρόγραμμα</dt><dd>{device.browserName||'Μη διαθέσιμο'}</dd></div>
               <div><dt>Τύπος</dt><dd>{device.deviceType==='phone'?'Κινητό':device.deviceType==='tablet'?'Tablet':device.deviceType==='desktop'?'Υπολογιστής':'Άγνωστος'}</dd></div>
               <div><dt>Αναγνωριστικό</dt><dd>{device.defaultLabel||device.label}</dd></div>
-              <div><dt>Πρώτη σύνδεση</dt><dd>{new Date(device.firstSeenAt).toLocaleString('el-GR')}</dd></div>
+              <div><dt>Πρώτη σύνδεση</dt><dd>{formatLocalTimestamp(device.firstSeenAt)}</dd></div>
               <div><dt>Έκδοση</dt><dd>{device.appVersion||'Μη διαθέσιμη'}</dd></div>
             </dl>
           </details>
