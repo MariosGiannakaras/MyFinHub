@@ -41,6 +41,8 @@ function injectNativeBackupFixture(){
   // React StrictMode can run effects twice; preserve the synthetic failure
   // until the QA explicitly activates recovery and clicks the real Refresh.
   let transientStatusFailure=mode==='retry';
+  let holdNextStatus=false,releaseStatus,denyOpen=false,folderCalls=0;
+  window.__qaBackupRace={hold:()=>{holdNextStatus=true},held:()=>Boolean(releaseStatus),release:()=>{releaseStatus?.(status);releaseStatus=undefined},denyOpen:()=>{denyOpen=true},folderCalls:()=>folderCalls};
   window.__myfinhubQaEnableBackupStatusRetry=()=>{transientStatusFailure=false};
   Object.defineProperty(window,'myFinHubDesktop',{configurable:false,writable:false,value:{
     getInfo:async()=>({productName:'MyFinHub',version:'1.6.0',packaged:true}),
@@ -51,9 +53,10 @@ function injectNativeBackupFixture(){
     onUpdateState:()=>()=>{},
     getBackupStatus:async()=>{
       if(transientStatusFailure)throw new Error('synthetic transient status failure')
+      if(holdNextStatus){holdNextStatus=false;return await new Promise(resolve=>{releaseStatus=resolve})}
       return status;
     },saveLocalBackup:async()=>({name:good.name,createdAt:good.createdAt,revision:'465',verified:true}),
-    reportBackupFailure:async()=>true,chooseBackupFolder:async()=>status,openBackupFolder:async()=>true,
+    reportBackupFailure:async()=>true,chooseBackupFolder:async()=>{folderCalls++;return status},openBackupFolder:async()=>{if(denyOpen)throw new Error('synthetic permission denial');return true},
     // Restore Candidate must pass the same non-destructive client preview as
     // genuine FinanceData before a destructive confirmation is possible.
     getRestoreCandidate:async()=>({
@@ -118,6 +121,21 @@ try{
         await c.call("async function(){localStorage.setItem('myfinhub.theme','light');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true;}");
       }
       if(mode==='populated'&&viewport.name==='desktop'){
+        // Synthetic cancellation leaves the selected folder and catalog unchanged.
+        const folderBefore=await c.call("function(){return document.querySelector('.desktop-backup-path')?.textContent}");
+        await c.call("function(){const b=[...document.querySelectorAll('.desktop-backup-controls button')].find(x=>x.textContent.includes('Αλλαγή φακέλου'));b.click();b.click();return true}");
+        await wait("function(){return globalThis.__qaBackupRace.folderCalls()===1&&document.querySelector('.desktop-backup-panel')?.getAttribute('aria-busy')==='false'}",'single native folder action after duplicate activation');
+        assert(await c.call("function(before){return document.querySelector('.desktop-backup-path')?.textContent===before}",[folderBefore]),'cancelled folder picker preserves destination');
+        await c.call("function(){globalThis.__qaBackupRace.hold();window.dispatchEvent(new Event('focus'));return true}");
+        await wait("function(){return globalThis.__qaBackupRace.held()}",'held old backup status read');
+        await c.call("function(){globalThis.__qaBackupRace.denyOpen();[...document.querySelectorAll('.desktop-backup-controls button')].find(x=>x.textContent.includes('Άνοιγμα φακέλου')).click();return true}");
+        await wait("function(){return document.querySelector('.desktop-backup-error[role=alert]')?.textContent?.includes('Η ενέργεια ή η επιβεβαίωσή της')}",'permission denial clears backup status');
+        await c.call("function(){globalThis.__qaBackupRace.release();return true}");await delay(150);
+        assert(await c.call("function(){return Boolean(document.querySelector('.desktop-backup-error[role=alert]')&&document.querySelector('.desktop-backup-entry')===null)}"),'old successful read cannot resurrect catalog after permission failure');
+        const denied=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+        writeFileSync(evidenceDir+'/desktop-backup-permission-denied-desktop.png',Buffer.from(denied.data,'base64'));
+        await c.call("function(){[...document.querySelectorAll('.desktop-backup-controls button')].find(x=>x.textContent.includes('Ανανέωση κατάστασης')).click();return true}");
+        await wait("function(){return document.querySelectorAll('.desktop-backup-entry').length===2&&!document.querySelector('.desktop-backup-error[role=alert]')}",'explicit retry restores authorized backup catalog');
         const opened=await c.call("function(){const row=[...document.querySelectorAll('.desktop-backup-entry')].find(el=>el.textContent.includes('Επαληθευμένο (SHA-256)'));const button=row?.querySelector('button');if(!button||button.disabled)return false;button.click();return true}");
         assert(opened,'valid restore action enabled');
         try{

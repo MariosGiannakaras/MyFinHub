@@ -41,6 +41,8 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(browser).toContain("alert?.textContent?.trim()==='"+conflict+"'");
    expect(browser).toContain("held.estimate==='80'&&held.min==='60'&&held.max==='100'&&held.error.trim()===expectedRejection");
    expect(browser).toContain('recurring-variable-rejected-save-diagnostic-mobile');
-   expect(browser).toContain('responsive recurring list visibly labels the forecast amount as estimate');
+   expect(browser).toContain('responsive recurring list visibly separates estimated amount from actual payment, with payment primary and management collapsed');
+   expect(browser).toContain("item.querySelector('.mobile-recurring-amount small')?.textContent==='Εκτίμηση · όχι πληρωμή'");
+   expect(browser).toContain('menu&&!menu.open');
  });
 });

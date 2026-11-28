@@ -33,6 +33,31 @@ describe('Desktop backup auth and privilege separation',()=>{
     expect(main).toContain("origin.hostname !== LOOPBACK");
   });
 
+  it('rechecks authorization after the folder dialog before either returning catalog data or changing the destination',()=>{
+    const start=main.indexOf("ipcMain.handle('myfinhub:backup-choose-folder'");
+    const end=main.indexOf("ipcMain.handle('myfinhub:backup-open-folder'",start);
+    const handler=main.slice(start,end);
+    const dialog=handler.indexOf('await dialog.showOpenDialog');
+    const checks=[...handler.matchAll(/await requireBackupAccess\(event, unlockToken\)/g)].map(match=>match.index!);
+    expect(checks).toHaveLength(2);
+    expect(checks[0]).toBeLessThan(dialog);
+    expect(checks[1]).toBeGreaterThan(dialog);
+    expect(checks[1]).toBeLessThan(handler.indexOf('if (picked.canceled'));
+    expect(checks[1]).toBeLessThan(handler.indexOf('desktopBackupStore.setFolder'));
+  });
+
+  it('ignores stale status reads, serializes native actions and verifies access before restoring',()=>{
+    const panel=read('src/components/DesktopBackupPanel.tsx');
+    expect(panel).toContain('if (actionPending.current) return;');
+    expect(panel).toContain('if (actionPending.current || !active.current) return;');
+    expect(panel).toContain('const version = ++requestVersion.current;');
+    expect(panel).toContain('live && version === requestVersion.current');
+    expect(panel).toContain('active.current && version === requestVersion.current');
+    expect(panel).toContain("kind === 'refresh' ? result as LocalBackupStatus : await bridge.getBackupStatus()");
+    expect(panel.indexOf("if (kind === 'restore') onPrepareRestore")).toBeGreaterThan(panel.indexOf('setStatus(current);',panel.indexOf('const action = async')));
+    expect(panel).toContain("'restore', () => bridge.getRestoreCandidate(item.name)");
+  });
+
   it('does not trust renderer-supplied finance state or expose database secrets',()=>{
     expect(preload).toContain("saveLocalBackup: (unlockToken) => ipcRenderer.invoke('myfinhub:backup-save', unlockToken)");
     expect(preload).not.toContain('saveLocalBackup: (snapshot)');

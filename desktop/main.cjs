@@ -721,9 +721,10 @@ function registerIpcHandlers() {
       defaultPath: desktopBackupStore.folder(),
       properties: ['openDirectory', 'createDirectory'],
     });
-    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
-    // Recheck after the native dialog: session can expire while it is open.
+    // Recheck after the native dialog even on cancellation: returning the
+    // backup catalog is itself a privileged read.
     await requireBackupAccess(event, unlockToken);
+    if (picked.canceled || !picked.filePaths[0]) return desktopBackupStore.status();
     return desktopBackupStore.setFolder(picked.filePaths[0]);
   });
   ipcMain.handle('myfinhub:backup-open-folder', async (event, unlockToken) => {
