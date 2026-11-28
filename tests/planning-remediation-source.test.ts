@@ -78,7 +78,17 @@ describe('Planning post-v1.4 remediation contracts',()=>{
     expect(component).toContain('className="planning-approved-table-wrap" role="region" aria-labelledby="planning-approved-scheduled-title" tabIndex={0}');
     expect(component).toContain('name="Προβλεπόμενη ρευστότητα"');
     expect(component).toContain('οι εκτιμήσεις παγίων δεν είναι καταχωρισμένες πληρωμές');
-    expect(mobile).toContain('Καταχωρισμένο · μελλοντική ημερομηνία');
+    const presentation=readFileSync(new URL('../src/lib/forecastPresentation.ts',import.meta.url),'utf8');
+    expect(presentation).toContain('Καταχωρισμένο · μελλοντική ημερομηνία');
+    expect(presentation).toContain('counts.dated_event');
+    expect(presentation).toContain('event.date>asOf');
+    expect(presentation).toContain('event.id===item.completedEventId');
+    expect(component).toContain('forecastSourceSummary(forecasts[90].sourceCounts)');
+    expect(mobile).toContain('forecastSourceSummary(forecast.sourceCounts)');
+    expect(component).toContain('completedScheduledDescription(data,item,asOf)');
+    expect(mobile).toContain('completedScheduledDescription(data,item,asOf)');
+    expect(qa).toContain('physical wheel reaches earlier scheduled rows');
+    expect(qa).toContain('mobile pending expansion focuses first newly available row');
     expect(qa).toContain('keyboard End reaches final scheduled row');
   });
 

@@ -152,6 +152,12 @@ try{
   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'End',code:'End',windowsVirtualKeyCode:35});
   await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'End',code:'End',windowsVirtualKeyCode:35});
   await waitFor("function(){const node=document.querySelector('.planning-approved-table-wrap');return node&&node.scrollHeight-node.clientHeight>0&&Math.abs(node.scrollTop-(node.scrollHeight-node.clientHeight))<=1}",'keyboard End reaches final scheduled row');
+  const wheelTarget=await c.call("function(){const n=document.querySelector('.planning-approved-table-wrap'),r=n.getBoundingClientRect();return {x:r.left+r.width/2,y:(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2,max:n.scrollHeight-n.clientHeight}}");
+  await c.send('Input.dispatchMouseEvent',{type:'mouseWheel',x:wheelTarget.x,y:wheelTarget.y,deltaX:0,deltaY:-180});
+  await waitFor("function(){const n=document.querySelector('.planning-approved-table-wrap');return n.scrollTop<n.scrollHeight-n.clientHeight-1}",'physical wheel reaches earlier scheduled rows');
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'End',code:'End',windowsVirtualKeyCode:35});
+  await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'End',code:'End',windowsVirtualKeyCode:35});
+  await waitFor("function(){const n=document.querySelector('.planning-approved-table-wrap');return Math.abs(n.scrollTop-(n.scrollHeight-n.clientHeight))<=1}",'keyboard returns to final scheduled row after wheel');
   const reachability=await c.call("function(){const scroller=document.querySelector('.planning-approved-table-wrap'),rows=[...document.querySelectorAll('.planning-approved-table tbody tr')],last=rows.at(-1);if(!scroller||!last)return null;const max=scroller.scrollHeight-scroller.clientHeight;scroller.scrollIntoView({block:'end',behavior:'instant'});scroller.scrollTop=scroller.scrollHeight;const bounds=scroller.getBoundingClientRect(),row=last.getBoundingClientRect();const summary=last.querySelector('.planning-row-menu>summary');summary?.click();return {count:rows.length,max,scrollTop:scroller.scrollTop,scrollWithin:max>0&&Math.abs(scroller.scrollTop-max)<=1,lastRowVisible:row.bottom<=bounds.bottom+1&&row.top>=bounds.top-1,popupExists:Boolean(summary)}}");
   assert(reachability&&reachability.count>=18&&reachability.scrollWithin&&reachability.lastRowVisible&&reachability.popupExists,'200%-equivalent Planning desktop must scroll to last scheduled row: '+JSON.stringify(reachability));
   await sleep(100);
@@ -159,6 +165,13 @@ try{
   await screenshot('planning-scheduled-last-row-menu-1100');
   assert(popupVisibility&&popupVisibility.within&&popupVisibility.withinViewport&&popupVisibility.hitInside,'Planning last-row action menu must remain visible and clickable within nested scroll viewport: '+JSON.stringify(popupVisibility));
   await navigate('extreme',320,700);await noOverflow('planning extreme 320');await touchTargets('planning extreme 320');
+  const mobileBefore=await c.call("function(){return document.querySelectorAll('.scheduled-row').length}");
+  assert(await c.call("function(){const b=document.querySelector('.planning-scheduled-more');b?.focus();b?.click();return Boolean(b)}"),'narrow pending expansion reachable');
+  await waitFor("function(n){const rows=[...document.querySelectorAll('.scheduled-row')];return rows.length>n&&document.activeElement===rows[n]}",'mobile pending expansion focuses first newly available row',[mobileBefore]);
+  const mobileLast=await c.call("function(){const row=[...document.querySelectorAll('.scheduled-row')].at(-1),button=row?.querySelector('.scheduled-actions button');button?.focus();return Boolean(button&&document.activeElement===button)}");
+  assert(mobileLast,'last narrow pending row action is keyboard reachable');
+  await noOverflow('planning expanded extreme 320');await screenshot('planning-scheduled-last-row-mobile-320');
+  assert(await c.call("function(){return [...document.querySelectorAll('[data-forecast-source-summary]')].some(n=>n.textContent.includes('καταχωρισμένες με μελλοντική ημερομηνία'))}"),'all four projection source counts are disclosed');
 
   console.log('Planning QA: empty, typography and mobile responsive states');
   await navigate('empty',1440,1000);assert(await c.call("function(){return document.body.textContent.includes('Δεν υπάρχουν αρκετές γνωστές μελλοντικές ροές')&&document.body.textContent.includes('Δεν υπάρχουν pending προγραμματισμένες κινήσεις')}") ,'empty/insufficient forecast state is explicit');await noOverflow('planning empty desktop');
