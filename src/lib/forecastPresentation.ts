@@ -1,6 +1,6 @@
-import type { CashFlowForecast } from './forecast';
-import type { FinanceData, ScheduledTransaction } from '../types';
-import { shortDate } from './format';
+import type { CashFlowForecast } from './forecast.js';
+import type { FinanceData, ScheduledTransaction } from '../types.js';
+import { shortDate } from './format.js';
 
 export const forecastSourceLabel:Record<keyof CashFlowForecast['sourceCounts'],string>={
   scheduled:'Προγραμματισμένο · όχι καταχωρισμένο',
