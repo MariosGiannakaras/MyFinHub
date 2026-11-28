@@ -6,6 +6,17 @@ const theme=readFileSync(new URL('../src/lib/theme.ts',import.meta.url),'utf8');
 const renderedQa=readFileSync(new URL('../scripts/shell-dashboard-hierarchy-qa.mjs',import.meta.url),'utf8');
 
 describe('Dashboard selected reporting-period contract',()=>{
+  it('uses the same reactive finance as-of date for both period owners, not an independent wall clock',()=>{
+    const control=readFileSync(new URL('../src/components/PeriodControl.tsx',import.meta.url),'utf8');
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(control).toContain("canAdvanceReportingMonth(month,asOf.slice(0,7))");
+    expect(control).not.toContain('setInterval(');
+    expect(control).not.toContain('localMonthKey');
+    for(const owner of [app,qa])expect(owner).toContain('<PeriodControl month={month} asOf={today} onChange=');
+    expect(renderedQa).toContain('current fixture as-of month explicitly disables future advance after route switches');
+  });
+
   it('scopes account balances, history, deltas and comparisons to the selected period end',()=>{
     expect(dashboard).toContain('const range=monthRange(month);const periodEndDate=reportingPeriodEndDate(month,asOf);');
     expect(dashboard).toContain('const balances=selectAccountBalances(data,periodEndDate)');
@@ -36,6 +47,11 @@ describe('Dashboard selected reporting-period contract',()=>{
     expect(renderedQa).toContain("selected historical month changes the payroll account-history graph");
     expect(renderedQa).toContain("returning to the current reporting month restores the as-of balance and account-history graph");
     expect(renderedQa).toContain("shell-dashboard-hierarchy-historical-july");
+    expect(renderedQa).toContain("historical Dashboard balance and chart survive cross-route reporting navigation");
+    for(const [label,page] of [['Συναλλαγές','transactions'],['Αποταμίευση','savings'],['Αναφορές','reports'],['Dashboard','dashboard']]){
+      expect(renderedQa).toContain("await selectReportingRoute('"+label+"','"+page+"'");
+    }
+    expect(renderedQa).toContain("await selectReportingRoute('Προγραμματισμός','planning','Προγραμματισμός',null)");
     expect(renderedQa).toContain('button[aria-label="Προηγούμενος μήνας"]');
     expect(renderedQa).toContain('button[aria-label^="Επόμενος μήνας"]');
   });

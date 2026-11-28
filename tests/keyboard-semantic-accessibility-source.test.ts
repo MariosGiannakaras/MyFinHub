@@ -14,6 +14,8 @@ const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
+    expect(qa).toContain('canonical sidebar route and current label agree');
+    expect(qa).toContain('mobile primary/More current route agrees');
     for(const page of ['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']){
       expect(qa).toContain(`${page}:`);
     }

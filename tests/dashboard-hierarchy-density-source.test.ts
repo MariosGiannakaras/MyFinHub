@@ -4,6 +4,18 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 describe('Dashboard hierarchy and painted-chart contracts',()=>{
+  it('uses scoped two-factor access copy and avoids duplicate upcoming payment labels',()=>{
+    const page=read('src/pages/DashboardPage.tsx');
+    const security=read('SECURITY.md');
+    const focused=read('scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(security).toContain('email/password authentication plus TOTP MFA (`aal2`)');
+    expect(page).toContain('Πρόσβαση με έλεγχο ταυτότητας δύο παραγόντων.');
+    expect(page).not.toContain('Τα δεδομένα σας είναι ασφαλή και κρυπτογραφημένα.');
+    expect(page).toContain("item.group.trim().toLocaleLowerCase('el-GR')!==item.name.trim().toLocaleLowerCase('el-GR')");
+    expect(focused).toContain('Dashboard security copy describes the verified two-factor access boundary');
+    expect(focused).toContain('upcoming payment labels do not repeat an identical group and name');
+  });
+
   it('uses shared readable dense typography and reduces nested Dashboard surface weight on desktop',()=>{
     const css=read('src/styles/dashboard-approved-target.css');
     expect(css).toContain('--dashboard-caption-size:var(--ux-dense-data-size)');

@@ -149,6 +149,11 @@ try{
  for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
    for(const [page,heading] of Object.entries(pages)){
      await navigate(page,heading,width,height,mobile);
+     const navigation=await c.call("function(){const shell=document.querySelector('.app-shell'),desktop=[...document.querySelectorAll('.sidebar nav button[aria-current=page]')],primary=[...document.querySelectorAll('.mobile-nav button[aria-current=page]')],more=document.querySelector('.mobile-nav button[aria-haspopup=dialog]');return {page:shell?.dataset.page,desktop:desktop.map(b=>b.textContent.trim()),primary:primary.map(b=>b.getAttribute('aria-label')),more:more?.classList.contains('active')}}");
+     const navLabel={dashboard:'Dashboard',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική',loans:'Δόσεις & Δάνεια',lending:'Δανεικά / Οφειλές',recurring:'Πάγια',planning:'Προγραμματισμός',attention:'Έλεγχος',reports:'Αναφορές',settings:'Ρυθμίσεις'}[page];
+     const primaryRoute=['dashboard','transactions','savings','cards'].includes(page);
+     assert(navigation.page===page&&navigation.desktop.length===1&&navigation.desktop[0]===navLabel,`${mode}/${page}: canonical sidebar route and current label agree`);
+     assert(primaryRoute?navigation.primary.length===1&&navigation.primary[0]===navLabel&&!navigation.more:navigation.primary.length===0&&navigation.more,`${mode}/${page}: mobile primary/More current route agrees`);
      const audit=await semanticAudit();
      assert(audit.main===1,`${mode}/${page}: expected one main landmark, got ${audit.main}`);
      assert(audit.h1===1,`${mode}/${page}: expected one visible H1, got ${audit.h1}`);
