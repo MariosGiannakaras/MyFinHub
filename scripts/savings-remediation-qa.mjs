@@ -22,7 +22,7 @@ try{
   await c.send('Page.navigate',{url:url.href});
   const waitFor=async(fn,label)=>{for(let i=0;i<120;i++){if(await c.call(fn))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings heading');
-  const state=()=>c.call("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));const route=document.querySelector('.savings-route-target');const routeValues=[...route?.querySelectorAll('em')||[]].map(node=>(node.textContent||'').replace(/\\s+/g,' ').trim());const goal=[...document.querySelectorAll('.savings-goal-row.personal')].find(row=>(row.textContent||'').includes('Ταμείο ασφαλείας'));return {period:(label?.textContent||'').trim(),heading:(document.querySelector('.savings-month-card h2')?.textContent||'').trim(),routeValues,goalBalance:(goal?.querySelector(':scope > strong')?.textContent||'').replace(/\\s+/g,' ').trim(),goalProgress:(goal?.querySelector('.savings-goal-progress b')?.textContent||'').trim()}}");
+  const state=()=>c.call("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));const route=document.querySelector('.savings-route-target');const routeValues=[...route?.querySelectorAll('em')||[]].map(node=>(node.textContent||'').replace(/\\s+/g,' ').trim());const goal=[...document.querySelectorAll('.savings-goal-row.personal')].find(row=>(row.textContent||'').includes('Ταμείο ασφαλείας'));return {period:(label?.textContent||'').trim(),heading:(document.querySelector('.savings-month-card h2')?.textContent||'').trim(),routeValues,goalBalance:(goal?.querySelector('[data-goal-field=balance] [data-goal-value]')?.textContent||'').replace(/\\s+/g,' ').trim(),goalProgress:(goal?.querySelector('.savings-goal-progress b')?.textContent||'').trim()}}");
   // The selected reporting-month label updates synchronously; route balances
   // and goals can settle in a later render. Wait for the *actual finance values*
   // instead of guessing a fixed 350ms paint delay under concurrent QA load.
@@ -43,6 +43,13 @@ try{
   assert(august.period.includes('Αύγουστος 2026')&&august.heading==='Αυτός ο μήνας','current Savings state identifies August as the current reporting month');
   assert(august.routeValues.length===2&&august.goalBalance&&august.goalProgress,'current Savings route and personal-goal snapshot are rendered');
 
+  // Reordering action siblings must not swap their semantic tones.
+  const actionTones=await c.call(`function(){
+    const grid=document.querySelector('.savings-action-grid'),nodes=[...grid.children];
+    const colors=()=>Object.fromEntries([...grid.children].map(node=>[node.dataset.savingSource,getComputedStyle(node.querySelector('.savings-action-icon')).color]));
+    const before=colors();try{grid.append(nodes[0]);const after=colors();return Object.keys(before).length===3&&new Set(Object.values(before)).size===3&&Object.keys(before).every(key=>before[key]===after[key])}finally{grid.prepend(nodes[0])}
+  }`);
+  assert(actionTones,'Savings action identity survives sibling reorder');
   console.log('Savings remediation QA: advisory goal forecast does not post money');
   const realBefore=await state();
   const openedProjection=await c.call("function(){const button=[...document.querySelectorAll('.savings-desktop-target .savings-goal-row.personal button')].find(node=>(node.textContent||'').includes('Προβολή στόχου'));button?.click();return Boolean(button)}");
@@ -133,6 +140,16 @@ try{
   }
   // A malformed goal amount must not create any goal or affect actual balances.
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
+  const labelledGoal=await c.call(`function(){
+    const row=document.querySelector('.savings-goals-mobile .savings-goal-row.personal');
+    if(!row)return false;
+    const fields=[...row.querySelectorAll(':scope > [data-goal-field]')],labels={balance:'Κοινό υπόλοιπο',target:'Στόχος',deadline:'Προθεσμία'};
+    const check=()=>fields.length===3&&fields.every(field=>field.querySelector('.savings-goal-label')?.textContent.trim()===labels[field.dataset.goalField]+':'&&field.querySelector('[data-goal-value]')?.textContent.trim()&&getComputedStyle(field,'::before').content==='none');
+    const before=check(),first=fields[0],next=first?.nextSibling;
+    if(!first)return false;
+    try{row.append(first);return before&&check()}finally{row.insertBefore(first,next)}
+  }`);
+  assert(labelledGoal,'Savings goal meanings remain actual text after sibling reorder');
   const beforeGoal=await state();
   const goalCount=await c.call("function(){return document.querySelectorAll('.savings-mobile-legacy .savings-goal-row.personal').length}");
   assert(await c.call("function(){const button=[...document.querySelectorAll('.savings-mobile-legacy .savings-goals button')].find(n=>(n.textContent||'').includes('Νέος στόχος'));button?.click();return Boolean(button)}"),'mobile goal opener');

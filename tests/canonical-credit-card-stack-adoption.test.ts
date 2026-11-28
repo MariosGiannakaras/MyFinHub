@@ -130,9 +130,19 @@ describe('canonical credit-card stack adoption',()=>{
     expect(hostCss).toContain('@media(max-width:680px)');
     expect(hostCss).toContain('.card-archive-row');
     expect(hostCss).toContain('.credit-card-redesign-page .semantic-table tr');
-    expect(hostCss).toContain('.credit-purchases-table td:nth-child(5)::before');
-    expect(hostCss).toContain('.credit-payments-table td:nth-child(4)::before');
-    expect(hostCss).toContain('.deleted-credit-history .semantic-table td:nth-child(4)::before');
+    expect(hostCss).toContain('.semantic-table td[data-label]::before{content:attr(data-label)}');
+    expect(hostCss).not.toContain('td:nth-child');
+    const tables=[...credit.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/g)];
+    expect(tables).toHaveLength(6);
+    for(const [table] of tables){
+      const headers=[...table.matchAll(/<th\b[^>]*>([^<]+)<\/th>/g)].map(match=>match[1]);
+      const cells=[...table.matchAll(/<td\b[^>]*data-label="([^"]+)"/g)].map(match=>match[1]);
+      expect(cells).toEqual(headers);
+    }
+    const payment=credit.slice(credit.indexOf('className="semantic-table credit-payments-table"'));
+    expect(payment).toContain('<td data-label="Κατάσταση">{event.statementId?');
+    expect(payment).toContain('<td data-label="Ποσό" className="amount">');
+    expect(payment).toContain('<td data-label="Ενέργειες" className="actions">');
     const mobileRows=hostCss.slice(hostCss.indexOf('.credit-card-redesign-page .semantic-table tr{'),hostCss.indexOf('.credit-card-redesign-page .semantic-table td{'));
     expect(mobileRows).toContain('border:1px solid var(--border-subtle)');
     expect(mobileRows).toContain('background:var(--surface-2)');

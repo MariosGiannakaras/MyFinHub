@@ -46,6 +46,28 @@ describe('lazy workspace CSS boundary',()=>{
     expect(lazy.at(-1)).toBe('./dark-theme-surfaces.css');
   });
 
+  it('binds semantic width, amount and color rules to actual component roles',()=>{
+    const read=(file:string)=>fs.readFileSync(path.join(root,file),'utf8');
+    for(const [page,css,columns] of [
+      ['src/components/PlanningApprovedDesktop.tsx','src/styles/planning-approved-target.css',['date','kind','description','account','amount','status','actions']],
+      ['src/pages/RecurringPage.tsx','src/styles/recurring-approved-target.css',['item','next','account','amount','actions']],
+    ] as const){
+      const markup=read(page),style=read(css);
+      expect(style).not.toContain('th:nth-child');
+      for(const column of columns){expect(markup).toContain('data-column="'+column+'"');expect(style).toContain('th[data-column='+column+']{width:')}
+    }
+    expect(read('src/pages/LendingPage.tsx')).toContain('data-column="description"');
+    expect(read('src/styles/lending-approved-target.css')).toContain('td[data-column=description]');
+    expect(read('src/pages/CreditCardPage.tsx')).toContain('data-credit-stat="available"');
+    expect(read('src/styles/credit-approved-target.css')).toContain('[data-credit-stat=available]>b');
+    expect(read('src/styles/mobile-app-shell.css')).not.toContain('.primary-balance-card:nth-child');
+    for(const field of ['expiry','cvv']){
+      expect(read('src/components/CanonicalCreditCardStack.tsx')).toContain('data-card-field="'+field+'"');
+      expect(read('src/components/InteractivePaymentCard.tsx')).toContain('data-card-field="'+field+'"');
+      expect(read('src/styles/canonical-credit-card-stack-1.css')).toContain('[data-card-field='+field+'] .card-field-value');
+    }
+  });
+
   it('keeps global shell styling in the eagerly loaded root layer',()=>{
     const rootCompat=fs.readFileSync(path.join(root,'src/styles/root-compat.css'),'utf8');
     expect(rootCompat).toContain("@import './shell-navigation-foundations.css';");

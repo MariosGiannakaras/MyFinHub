@@ -36,7 +36,7 @@
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>div+div{border-top:1px solid color-mix(in srgb,var(--line) 78%,transparent)}
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats span{display:block;margin-bottom:5px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);font-weight:760;letter-spacing:.015em}
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats b{display:block;color:var(--ink);font-size:27px;line-height:1.08;font-weight:840;letter-spacing:-.025em}
-  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>div:nth-child(2)>b{color:var(--green)}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>[data-credit-stat=available]>b{color:var(--green)}
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats small{display:block;margin-top:5px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);line-height:1.4}
   .credit-card-redesign-page>.credit-card-stage .credit-usage{height:10px;margin-top:9px;border-radius:999px;overflow:hidden}
   .credit-card-redesign-page>.credit-card-stage .credit-usage>i{border-radius:999px}

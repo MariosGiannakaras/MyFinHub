@@ -85,6 +85,20 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('<MoneyInput data-autofocus="true"');
   });
 
+  it('keeps Savings action tones and goal meanings independent of DOM sibling index',()=>{
+    expect(source).toContain('data-saving-source={action.source}');
+    expect(source).toContain('data-goal-field={field}');
+    expect(source).toContain("surface==='desktop'?'sr-only':'savings-goal-label'");
+    expect(source).toContain("goalField(surface,'balance',money.format(savingsBalance))");
+    expect(source).toContain("goalField(surface,'target',money.format(goal.targetAmount))");
+    expect(composition).not.toMatch(/nth-child|nth-of-type/);
+    expect(composition).toContain('[data-saving-source=manual_transfer]');
+    expect(composition).toContain('[data-saving-source=cash_offset]');
+    expect(composition).toContain('font-variant-numeric:tabular-nums');
+    expect(remediationQa).toContain('Savings action identity survives sibling reorder');
+    expect(remediationQa).toContain('Savings goal meanings remain actual text after sibling reorder');
+  });
+
   it('keeps the intermediate/200%-equivalent Savings layout shrink-safe',()=>{
     expect(composition).toContain('@media (min-width:681px) and (max-width:820px)');
     expect(composition).toContain('grid-template-columns:minmax(150px,180px) minmax(0,1fr)');

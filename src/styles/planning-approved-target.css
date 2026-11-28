@@ -55,7 +55,7 @@
   .planning-approved-table-wrap{max-height:330px;overflow:auto;border-radius:0 0 16px 16px}
   .planning-approved-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
   .planning-approved-table thead th{position:sticky;top:0;z-index:2;height:34px;padding:7px 10px;border-bottom:1px solid var(--border-subtle);background:var(--surface-inset);color:var(--muted);font-weight:780;text-align:left;white-space:nowrap}
-  .planning-approved-table thead th:nth-child(1){width:13%}.planning-approved-table thead th:nth-child(2){width:12%}.planning-approved-table thead th:nth-child(3){width:22%}.planning-approved-table thead th:nth-child(4){width:22%}.planning-approved-table thead th:nth-child(5){width:10%}.planning-approved-table thead th:nth-child(6){width:11%}.planning-approved-table thead th:nth-child(7){width:10%}
+  .planning-approved-table thead th[data-column=date]{width:13%}.planning-approved-table thead th[data-column=kind]{width:12%}.planning-approved-table thead th[data-column=description]{width:22%}.planning-approved-table thead th[data-column=account]{width:22%}.planning-approved-table thead th[data-column=amount]{width:10%}.planning-approved-table thead th[data-column=status]{width:11%}.planning-approved-table thead th[data-column=actions]{width:10%}
   .planning-approved-table tbody td{height:56px;padding:8px 10px;border-bottom:1px solid var(--border-subtle);background:var(--surface-2);vertical-align:middle;color:var(--ink-2)}
   .planning-approved-table tbody tr:last-child td{border-bottom:0}
   .planning-approved-table td>b{display:block;color:var(--ink);line-height:1.25}

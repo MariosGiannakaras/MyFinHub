@@ -190,7 +190,7 @@ export function RecurringPage({data,asOf,commandRecurringId=null,commandRecurrin
         <div className="semantic-table-wrap desktop-finance-table recurring-approved-table-wrap">
           <table className="semantic-table recurring-workspace-table">
             <caption className="sr-only">Ενεργά πάγια και συνδρομές</caption>
-            <thead><tr><th scope="col">Πάγιο</th><th scope="col">Επόμενη πληρωμή</th><th scope="col">Λογαριασμός</th><th scope="col" className="amount">Ποσό</th><th scope="col" className="actions">Ενέργειες</th></tr></thead>
+            <thead><tr><th scope="col" data-column="item">Πάγιο</th><th scope="col" data-column="next">Επόμενη πληρωμή</th><th scope="col" data-column="account">Λογαριασμός</th><th scope="col" data-column="amount" className="amount">Ποσό</th><th scope="col" data-column="actions" className="actions">Ενέργειες</th></tr></thead>
             {recurringGroups.map(group=><tbody data-content-entrance="table" key={group.category} data-recurring-group={group.category}>
               <tr className="recurring-group-row"><th scope="rowgroup" colSpan={5}><FinanceIcon settings={data.state.settings} kind="expense" category={group.category} size={16}/><span>{group.category}</span></th></tr>
               {group.rows.map(({item,nextDate,lastPayment})=>{const typical=typicalPaymentDay(data,item);const endDate=item.endDate;const due=recurringDue(data,item,asOf);return <tr key={item.id} data-command-recurring-id={item.id} tabIndex={-1} data-recurring-status="active">

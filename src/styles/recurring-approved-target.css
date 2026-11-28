@@ -39,11 +39,11 @@
   .recurring-approved-table-wrap{overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
   .recurring-workspace-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:var(--ux-dense-data-size)}
   .recurring-workspace-table thead th{height:37px;padding:7px 10px;border:0;background:transparent;color:var(--text-secondary);font-weight:780;text-align:left;white-space:nowrap}
-  .recurring-workspace-table thead th:nth-child(1){width:28%}
-  .recurring-workspace-table thead th:nth-child(2){width:18%}
-  .recurring-workspace-table thead th:nth-child(3){width:18%}
-  .recurring-workspace-table thead th:nth-child(4){width:12%}
-  .recurring-workspace-table thead th:nth-child(5){width:24%}
+  .recurring-workspace-table thead th[data-column=item]{width:28%}
+  .recurring-workspace-table thead th[data-column=next]{width:18%}
+  .recurring-workspace-table thead th[data-column=account]{width:18%}
+  .recurring-workspace-table thead th[data-column=amount]{width:12%}
+  .recurring-workspace-table thead th[data-column=actions]{width:24%}
   .recurring-workspace-table tbody+tbody .recurring-group-row th{padding-top:10px}
   .recurring-workspace-table .recurring-group-row th{height:39px;padding:5px 10px;border:1px solid var(--border-subtle);border-bottom:0;border-radius:12px 12px 0 0;background:color-mix(in srgb,var(--accent-soft) 68%,var(--surface));color:var(--ink);font-weight:840;text-align:left}
   .recurring-group-row th>span{vertical-align:middle}
